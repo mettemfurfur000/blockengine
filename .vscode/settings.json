@@ -1,0 +1,25 @@
+{
+    "files.associations": {
+        "cstdio": "cpp",
+        "game_types.h": "c",
+        "game_functions.c": "cpp",
+        "cstdlib": "c",
+        "cctype": "c",
+        "cfloat": "c",
+        "cmath": "c",
+        "compare": "c",
+        "concepts": "c",
+        "cstdarg": "c",
+        "cwchar": "c",
+        "type_traits": "c",
+        "limits": "c",
+        "new": "c",
+        "*.tcc": "c",
+        "cinttypes": "c",
+        "cstdint": "c",
+        "typeinfo": "c",
+        "stdlib.h": "c",
+        "memory_control_functions.c": "cpp",
+        "random": "c"
+    }
+}
