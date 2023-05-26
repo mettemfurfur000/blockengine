@@ -2,7 +2,7 @@
 
 typedef unsigned char byte;
 
-typedef world;
+struct world;
 
 typedef struct
 {
@@ -10,11 +10,9 @@ typedef struct
 
     int data_size;
     byte* data;
-
-    void (*custom_behaviour_function)(world*,char,int,int);
 } block;
 
-block void_block = {0,0,0,0};
+block void_block = {0,0,0};
 
 typedef struct
 {

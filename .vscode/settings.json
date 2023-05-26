@@ -20,6 +20,8 @@
         "typeinfo": "c",
         "stdlib.h": "c",
         "memory_control_functions.c": "cpp",
-        "random": "c"
-    }
+        "random": "c",
+        "algorithm": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

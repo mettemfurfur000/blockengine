@@ -22,6 +22,11 @@ void block_data_alloc(block *b, int size)
     b->data_size = size;
 }
 
+void block_data_init(block* b)
+{
+    b->data = (byte*)calloc(b->data_size,1);
+}
+
 void block_data_resize(block *b, int change)
 {
     byte *buffer = (byte*)calloc(b->data_size,1);
