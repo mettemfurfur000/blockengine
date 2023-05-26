@@ -1,5 +1,3 @@
-#pragma once
-
 typedef unsigned char byte;
 
 struct world;
@@ -16,7 +14,12 @@ block void_block = {0, 0, 0};
 
 typedef struct
 {
-    int width; // all chunks are squares
+    byte activity;
+    //0 - inactive, will unload
+    //1 - active, stay
+    //2+ - have constantly active blocks, newer auto-unload
+
+    int width; // all chunks has square form
     block **blocks;
 } layer_chunk;
 
@@ -33,6 +36,8 @@ typedef struct
 
 struct world
 {
+    char worldname[64];
+
     int depth;
     world_layer *layers;
 };

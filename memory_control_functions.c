@@ -1,5 +1,3 @@
-#pragma once
-
 #include "game_types.h"
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +35,7 @@ void block_data_resize(block *b, int change)
     b->data = buffer;
 }
 
-void erase_block(block *b)
+void block_erase(block *b)
 {
     block_data_free(b);
     *b = void_block;
@@ -60,15 +58,19 @@ void block_teleport(block *dest, block *src)
     memcpy(src, dest, sizeof(block));
     memcpy(src->data, dest->data, src->data_size);
 
-    erase_block(src);
+    block_erase(src);
 }
 
 void chunk_free(layer_chunk *l)
 {
     if (!l->blocks)
         return;
-    for (size_t i = 0; i < l->width; i++)
+    for (int i = 0; i < l->width; i++)
     {
+        for (int j = 0; j < l->width; j++)
+        {
+            block_erase(&l->blocks[i][j]);
+        }
         free(l->blocks[i]);
     }
     free(l->blocks);
@@ -83,7 +85,7 @@ void chunk_alloc(layer_chunk *l, int width)
         chunk_free(l);
 
     l->blocks = (block **)calloc(width, sizeof(block *));
-    for (size_t i = 0; i < width; i++)
+    for (int i = 0; i < width; i++)
     {
         l->blocks[i] = (block *)calloc(width, sizeof(block));
     }
@@ -96,8 +98,12 @@ void world_layer_free(world_layer *wl)
     if (!wl->chunks)
         return;
 
-    for (size_t i = 0; i < wl->size_x; i++)
+    for (int i = 0; i < wl->size_x; i++)
     {
+        for (int j = 0; j < wl->size_y; j++)
+        {
+            free(wl->chunks[i][j]);
+        }
         free(wl->chunks[i]);
     }
 
@@ -106,6 +112,7 @@ void world_layer_free(world_layer *wl)
     wl->chunks = 0;
     wl->size_x = 0;
     wl->size_y = 0;
+    wl->chunk_width = 0;
 }
 
 void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width)
@@ -113,12 +120,13 @@ void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width)
     if (wl->chunks)
         world_layer_free(wl);
 
-    wl->chunks = (layer_chunk ***)calloc(size_x, sizeof(layer_chunk *));
-    for (size_t i = 0; i < size_x; i++)
+    wl->chunks = (layer_chunk ***)calloc(size_x, sizeof(layer_chunk **));
+    for (int i = 0; i < size_x; i++)
     {
-        wl->chunks[i] = (layer_chunk **)calloc(size_y, sizeof(layer_chunk));
+        wl->chunks[i] = (layer_chunk **)calloc(size_y, sizeof(layer_chunk *));
     }
 
     wl->size_x = size_x;
     wl->size_y = size_y;
+    wl->chunk_width = chunk_width;
 }
