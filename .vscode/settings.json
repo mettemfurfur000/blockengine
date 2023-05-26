@@ -21,7 +21,9 @@
         "stdlib.h": "c",
         "memory_control_functions.c": "cpp",
         "random": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "file_system_functions.c": "cpp",
+        "string.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
