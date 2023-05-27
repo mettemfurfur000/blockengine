@@ -1,4 +1,4 @@
-#include "memory_control_functions.c"
+#include "../memory_control_functions.c"
 #include <stdio.h>
 
 int test_block_init()

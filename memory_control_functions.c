@@ -135,6 +135,7 @@ void world_layer_free(world_layer *wl)
         for (int j = 0; j < wl->size_y; j++)
         {
             chunk_free(wl->chunks[i][j]);
+            free(wl->chunks[i][j]);
         }
         free(wl->chunks[i]);
     }
@@ -157,6 +158,7 @@ void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width)
         wl->chunks[i] = (layer_chunk **)calloc(size_y, sizeof(layer_chunk *));
         for (int j = 0; j < size_y; j++)
         {
+            wl->chunks[i][j] = (layer_chunk*)calloc(1,sizeof(layer_chunk));
             chunk_alloc(wl->chunks[i][j], chunk_width);
         }
     }

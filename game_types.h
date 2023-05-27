@@ -3,8 +3,6 @@ typedef unsigned char byte;
 #define SUCCESS 1
 #define FAIL 0
 
-struct world;
-
 typedef struct
 {
     int id;
@@ -37,10 +35,10 @@ typedef struct
     layer_chunk ***chunks;
 } world_layer;
 
-struct world
+typedef struct
 {
     char worldname[64];
 
     int depth;
     world_layer *layers;
-};
+} world;
