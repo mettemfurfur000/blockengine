@@ -30,7 +30,7 @@ int write_chunk(layer_chunk *c, const char *filename)
 {
     FILE *f = fopen(filename, "wb");
     if (!f)
-        return 0;
+        return FAIL;
     for (int i = 0; i < c->width; i++)
     {
         for (int j = 0; j < c->width; j++)
@@ -40,14 +40,14 @@ int write_chunk(layer_chunk *c, const char *filename)
     }
 
     fclose(f);
-    return 1;
+    return SUCCESS;
 }
 
 int read_chunk(layer_chunk *c, const char *filename)
 {
     FILE *f = fopen(filename, "rb");
     if (!f)
-        return 0;
+        return FAIL;
     if (c != 0)
         chunk_free(c);
     chunk_alloc(c, c->width);
@@ -60,7 +60,7 @@ int read_chunk(layer_chunk *c, const char *filename)
         }
     }
     fclose(f);
-    return 1;
+    return SUCCESS;
 }
 
 int chunk_save(world *w, char letter, int chunk_x, int chunk_y, layer_chunk *c)
@@ -130,7 +130,7 @@ void save_world(world* w)
 {
     for (int i = 0; i < w->depth; i++)
     {
-        save_layer(w,w->layers[i]);
+        save_layer(w,&w->layers[i]);
     }
 }
 
@@ -138,6 +138,6 @@ void unload_world(world* w)
 {
     for (int i = 0; i < w->depth; i++)
     {
-        unload_layer(w,w->layers[i]);
+        unload_layer(w,&w->layers[i]);
     }
 }

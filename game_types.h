@@ -1,5 +1,8 @@
 typedef unsigned char byte;
 
+#define SUCCESS 1
+#define FAIL 0
+
 struct world;
 
 typedef struct
