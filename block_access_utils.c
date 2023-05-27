@@ -1,11 +1,4 @@
 #include "file_system_functions.c"
-#include <stdlib.h>
-#include <string.h>
-
-int is_block_void(block *b)
-{
-    return b->id || b->data_size || b->data;
-}
 
 int get_world_layer(world *w, char letter, world_layer *out)
 {

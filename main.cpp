@@ -1,6 +1,7 @@
-#include "block_access_utils.c"
+#include "test_mcf.c"
 
 int main()
 {
+    test_block_all();
     return 0;
 }

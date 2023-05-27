@@ -1,6 +1,4 @@
 #include "memory_control_functions.c"
-#include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
 
 const int bigendianchecker = 1;
