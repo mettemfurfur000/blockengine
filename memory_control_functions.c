@@ -20,18 +20,15 @@ void block_data_alloc(block *b, int size)
     b->data_size = size;
 }
 
-void block_data_init(block *b)
-{
-    b->data = (byte *)calloc(b->data_size, 1);
-}
-
 void block_data_resize(block *b, int change)
 {
-    byte *buffer = (byte *)calloc(b->data_size, 1);
-    memcpy(buffer, b->data, b->data_size);
+    int new_size = b->data_size + change;
+    byte *buffer = (byte *)calloc(new_size, 1);
+
+    memcpy(buffer, b->data, new_size);
     free(b->data);
 
-    b->data_size += change;
+    b->data_size = new_size;
     b->data = buffer;
 }
 
@@ -45,18 +42,13 @@ void block_copy(block *dest, block *src)
 {
     block_data_free(dest);
 
-    memcpy(src, dest, sizeof(block));
-    memcpy(src->data, dest->data, src->data_size);
-
-    dest->data_size = src->data_size;
+    memcpy(dest, src, sizeof(block));
+    memcpy(dest->data, src->data, src->data_size);
 }
 
 void block_teleport(block *dest, block *src)
 {
-    block_data_free(dest);
-
-    memcpy(src, dest, sizeof(block));
-    memcpy(src->data, dest->data, src->data_size);
+    block_copy(dest,src);
 
     block_erase(src);
 }
@@ -65,6 +57,7 @@ void chunk_free(layer_chunk *l)
 {
     if (!l->blocks)
         return;
+    
     for (int i = 0; i < l->width; i++)
     {
         for (int j = 0; j < l->width; j++)
@@ -81,10 +74,10 @@ void chunk_free(layer_chunk *l)
 
 void chunk_alloc(layer_chunk *l, int width)
 {
-    if (l->blocks)
-        chunk_free(l);
+    chunk_free(l);
 
     l->blocks = (block **)calloc(width, sizeof(block *));
+
     for (int i = 0; i < width; i++)
     {
         l->blocks[i] = (block *)calloc(width, sizeof(block));
@@ -102,7 +95,7 @@ void world_layer_free(world_layer *wl)
     {
         for (int j = 0; j < wl->size_y; j++)
         {
-            free(wl->chunks[i][j]);
+            chunk_free(wl->chunks[i][j]);
         }
         free(wl->chunks[i]);
     }
@@ -117,13 +110,16 @@ void world_layer_free(world_layer *wl)
 
 void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width)
 {
-    if (wl->chunks)
-        world_layer_free(wl);
+    world_layer_free(wl);
 
     wl->chunks = (layer_chunk ***)calloc(size_x, sizeof(layer_chunk **));
     for (int i = 0; i < size_x; i++)
     {
         wl->chunks[i] = (layer_chunk **)calloc(size_y, sizeof(layer_chunk *));
+        for (int j = 0; j < size_y; j++)
+        {
+            chunk_alloc(wl->chunks[i][j],chunk_width);
+        }
     }
 
     wl->size_x = size_x;
