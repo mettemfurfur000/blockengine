@@ -31,7 +31,7 @@ int test_layer_init()
 
 int test_save_world()
 {
-    char filename[64];
+    char filename[256];
     int status = 0;
 
     world_alloc(tw, 1, test_world);
@@ -58,7 +58,7 @@ int test_save_world()
 
 int test_load_world()
 {
-    char filename[64];
+    char filename[256];
     int status = 0;
 
     world_alloc(tw, 1, test_world);
