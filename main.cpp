@@ -1,4 +1,4 @@
-#include "test_mcf.c"
+#include "tests/test_mcf.c"
 
 int main()
 {
