@@ -1,11 +1,14 @@
+#ifndef MEMORY_CONTROL_FUNCTIONS_H
+#define MEMORY_CONTROL_FUNCTIONS_H 1
+
 #include "game_types.h"
 #include <stdlib.h>
 #include <string.h>
 
 int is_data_equal(block *a, block *b)
 {
-    int real_size_a = strlen((const char*)a->data);
-    int real_size_b = strlen((const char*)b->data);
+    int real_size_a = strlen((const char *)a->data);
+    int real_size_b = strlen((const char *)b->data);
 
     // strlen can make mistakes
     real_size_a = real_size_a > a->data_size ? a->data_size : real_size_a;
@@ -28,7 +31,7 @@ int is_block_void(block *b)
 
 int is_block_equal(block *a, block *b)
 {
-    return a->id == b->id && a->data_size == b->data_size && is_data_equal(a,b);
+    return a->id == b->id && a->data_size == b->data_size && is_data_equal(a, b);
 }
 
 void block_data_free(block *b)
@@ -70,19 +73,19 @@ void block_erase(block *b)
 void block_copy(block *dest, block *src)
 {
     block_data_free(dest);
-    //copy fields
+    // copy fields
     memcpy(dest, src, sizeof(block));
-    //copy data itself
+    // copy data itself
     dest->data = 0;
     block_data_alloc(dest, src->data_size);
     memcpy(dest->data, src->data, src->data_size);
 }
 
-void block_init(block *b, int id, int data_size,const char* data = "\0")
+void block_init(block *b, int id, int data_size, const char *data = "\0")
 {
     b->id = id;
     block_data_alloc(b, data_size);
-    memcpy(b->data,data,b->data_size);
+    memcpy(b->data, data, b->data_size);
 }
 
 void block_teleport(block *dest, block *src)
@@ -148,7 +151,7 @@ void world_layer_free(world_layer *wl)
     wl->chunk_width = 0;
 }
 
-void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width)
+void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width, char index)
 {
     world_layer_free(wl);
 
@@ -158,7 +161,7 @@ void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width)
         wl->chunks[i] = (layer_chunk **)calloc(size_y, sizeof(layer_chunk *));
         for (int j = 0; j < size_y; j++)
         {
-            wl->chunks[i][j] = (layer_chunk*)calloc(1,sizeof(layer_chunk));
+            wl->chunks[i][j] = (layer_chunk *)calloc(1, sizeof(layer_chunk));
             chunk_alloc(wl->chunks[i][j], chunk_width);
         }
     }
@@ -166,4 +169,21 @@ void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width)
     wl->size_x = size_x;
     wl->size_y = size_y;
     wl->chunk_width = chunk_width;
+    wl->index = index;
 }
+
+void world_free(world *w)
+{
+    free(w->layers);
+    w->depth = 0;
+    w->worldname = 0;
+}
+
+void world_alloc(world *w, int depth, char *name)
+{
+    w->depth = depth;
+    w->worldname = name;
+    w->layers = (world_layer *)calloc(depth, sizeof(world_layer));
+}
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef GAME_TYPES
+#define GAME_TYPES 1
+
 typedef unsigned char byte;
 
 #define SUCCESS 1
@@ -16,9 +19,9 @@ block void_block = {0, 0, 0};
 typedef struct
 {
     byte activity;
-    //0 - inactive, will unload
-    //1 - active, stay
-    //2+ - have constantly active blocks, newer auto-unload
+    // 0 - inactive, will unload
+    // 1 - active, stay
+    // 2+ - have constantly active blocks, newer auto-unload
 
     int width; // all chunks has square form
     block **blocks;
@@ -26,7 +29,7 @@ typedef struct
 
 typedef struct
 {
-    char letter;
+    int index;
 
     int size_x;
     int size_y;
@@ -37,8 +40,10 @@ typedef struct
 
 typedef struct
 {
-    char worldname[64];
+    char *worldname;
 
     int depth;
     world_layer *layers;
 } world;
+
+#endif
