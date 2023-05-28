@@ -15,8 +15,11 @@ void block_set_random(block *b)
     }
 }
 
-void chunk_random_fill(layer_chunk *l)
+void chunk_random_fill(layer_chunk *l,unsigned int seed = 0)
 {
+    if(seed)
+        srand(seed);
+    
     for (int i = 0; i < l->width; i++)
     {
         for (int j = 0; j < l->width; j++)

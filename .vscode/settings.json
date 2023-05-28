@@ -26,7 +26,8 @@
         "string.h": "c",
         "block_access_utils.c": "cpp",
         "test_mcf.c": "cpp",
-        "test_fsf.c": "cpp"
+        "test_fsf.c": "cpp",
+        "misc_utils.c": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

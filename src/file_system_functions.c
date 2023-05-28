@@ -2,6 +2,7 @@
 #define FILE_SYSTEM_FUNCTIONS_H 1
 
 #include "memory_control_functions.c"
+#include "misc_utils.c"
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
@@ -13,7 +14,7 @@ bool is_bigendian() { return (*(char *)&bigendianchecker) == 0; };
 
 struct stat st = {0};   
 
-void make_full_chunk_path(char filename[256], world *w, char index, int x, int y)
+void make_full_chunk_path(char filename[256], world *w, int index, int x, int y)
 {
     char working_path[256];
     getcwd(working_path, 256);
@@ -22,7 +23,7 @@ void make_full_chunk_path(char filename[256], world *w, char index, int x, int y
     if (stat(filename, &st) == -1)
         mkdir(filename, 0700);
 
-    sprintf(filename, "%s/layer_%c", filename, index);
+    sprintf(filename, "%s/layer_%d", filename, index);
 
     if (stat(filename, &st) == -1)
         mkdir(filename, 0700);
@@ -40,7 +41,7 @@ void make_full_layer_path(char filename[256], world *w, int index)
     if (stat(filename, &st) == -1)
         mkdir(filename, 0700);
 
-    sprintf(filename, "%s/layer_%c", filename, index);
+    sprintf(filename, "%s/layer_%d", filename, index);
 
     if (stat(filename, &st) == -1)
         mkdir(filename, 0700);
@@ -196,21 +197,21 @@ int read_world(world *w, const char *filename)
 /*load/save fucntions*/
 // unload means save to file and then free memory
 
-int chunk_save(world *w, char index, int chunk_x, int chunk_y, layer_chunk *c)
+int chunk_save(world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
 {
     char filename[256];
     make_full_chunk_path(filename, w, index, chunk_x, chunk_y);
     return write_chunk(c, filename);
 }
 
-int chunk_load(world *w, char index, int chunk_x, int chunk_y, layer_chunk *c)
+int chunk_load(world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
 {
     char filename[256];
     make_full_chunk_path(filename, w, index, chunk_x, chunk_y);
     return read_chunk(c, filename);
 }
 
-int chunk_unload(world *w, char index, int chunk_x, int chunk_y, layer_chunk *c)
+int chunk_unload(world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
 {
     int ret;
     char filename[256];
@@ -251,9 +252,7 @@ void layer_load(world *w, world_layer *wl, int index)
     {
         for (int j = 0; j < wl->size_y; j++)
         {
-            if (!chunk_load(w, wl->index, i, j, wl->chunks[i][j]))
-            {
-            }
+            chunk_load(w, wl->index, i, j, wl->chunks[i][j]);
         }
     }
 }

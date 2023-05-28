@@ -7,6 +7,9 @@
 
 int is_data_equal(block *a, block *b)
 {
+    if (!a->data_size && !b->data_size)
+        return SUCCESS;
+
     int real_size_a = strlen((const char *)a->data);
     int real_size_b = strlen((const char *)b->data);
 
@@ -32,6 +35,22 @@ int is_block_void(block *b)
 int is_block_equal(block *a, block *b)
 {
     return a->id == b->id && a->data_size == b->data_size && is_data_equal(a, b);
+}
+
+int is_chunk_equal(layer_chunk *a, layer_chunk *b)
+{
+    if (a->width != b->width)
+        return FAIL;
+    
+    int status = 1;
+    for (int i = 0; i < a->width; i++)
+    {
+        for (int j = 0; j < a->width; j++)
+        {
+            status &= is_block_equal(&a->blocks[i][j], &b->blocks[i][j]);
+        }
+    }
+    return status;
 }
 
 void block_data_free(block *b)
@@ -151,7 +170,7 @@ void world_layer_free(world_layer *wl)
     wl->chunk_width = 0;
 }
 
-void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width, char index)
+void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width, int index)
 {
     world_layer_free(wl);
 
@@ -172,19 +191,19 @@ void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width,
     wl->index = index;
 }
 
-world* world_make(int depth,char* name_to_copy_from)
+world *world_make(int depth, char *name_to_copy_from)
 {
-    world* w = (world*)calloc(1,sizeof(world));
+    world *w = (world *)calloc(1, sizeof(world));
 
-    w->worldname = (char*)calloc(1,strlen(name_to_copy_from));
-    strcpy(w->worldname,name_to_copy_from);
+    w->worldname = (char *)calloc(1, strlen(name_to_copy_from));
+    strcpy(w->worldname, name_to_copy_from);
 
     w->depth = depth;
-    w->layers = (world_layer*)calloc(depth,sizeof(world_layer));
+    w->layers = (world_layer *)calloc(depth, sizeof(world_layer));
     return w;
 }
 
-void world_free(world* w)
+void world_free(world *w)
 {
     free(w->layers);
     free(w->worldname);
