@@ -12,7 +12,7 @@
 const int bigendianchecker = 1;
 bool is_bigendian() { return (*(char *)&bigendianchecker) == 0; };
 
-struct stat st = {0};   
+struct stat st = {0};
 
 void make_full_chunk_path(char filename[256], world *w, int index, int x, int y)
 {
@@ -27,7 +27,7 @@ void make_full_chunk_path(char filename[256], world *w, int index, int x, int y)
 
     if (stat(filename, &st) == -1)
         mkdir(filename, 0700);
-    
+
     sprintf(filename, "%s/chunk_%d_%d.bin", filename, x, y);
 }
 

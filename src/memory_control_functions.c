@@ -41,7 +41,7 @@ int is_chunk_equal(layer_chunk *a, layer_chunk *b)
 {
     if (a->width != b->width)
         return FAIL;
-    
+
     int status = 1;
     for (int i = 0; i < a->width; i++)
     {
