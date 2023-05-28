@@ -172,18 +172,23 @@ void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width,
     wl->index = index;
 }
 
-void world_free(world *w)
+world* world_make(int depth,char* name_to_copy_from)
 {
-    free(w->layers);
-    w->depth = 0;
-    w->worldname = 0;
+    world* w = (world*)calloc(1,sizeof(world));
+
+    w->worldname = (char*)calloc(1,strlen(name_to_copy_from));
+    strcpy(w->worldname,name_to_copy_from);
+
+    w->depth = depth;
+    w->layers = (world_layer*)calloc(depth,sizeof(world_layer));
+    return w;
 }
 
-void world_alloc(world *w, int depth, char *name)
+void world_free(world* w)
 {
-    w->depth = depth;
-    w->worldname = name;
-    w->layers = (world_layer *)calloc(depth, sizeof(world_layer));
+    free(w->layers);
+    free(w->worldname);
+    free(w);
 }
 
 #endif

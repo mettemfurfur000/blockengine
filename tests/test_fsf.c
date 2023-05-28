@@ -1,13 +1,12 @@
 #include "../src/file_system_functions.c"
 #include <unistd.h>
 
-world *tw = (world*)calloc(1,sizeof(world));
-
 char *test_world = "test_world\0";
 
 int test_world_init()
 {
-    world_alloc(tw, 2, test_world);
+    world *tw = world_make(2,test_world);
+
     int status = tw->depth == 2 && strcmp(tw->worldname, test_world) == 0;
 
     world_free(tw);
@@ -16,7 +15,7 @@ int test_world_init()
 
 int test_layer_init()
 {
-    world_alloc(tw, 1, test_world);
+    world *tw = world_make(1,test_world);
 
     world_layer_alloc(&tw->layers[0], 4, 4, 16, 'a');
 
@@ -34,7 +33,7 @@ int test_save_world()
     char filename[256];
     int status = 1;
 
-    world_alloc(tw, 1, test_world);
+    world *tw = world_make(1,test_world);
 
     world_layer_alloc(&tw->layers[0], 8, 8, 32, 'a');
 
@@ -61,7 +60,7 @@ int test_load_world()
     char filename[256];
     int status = 1;
 
-    world_alloc(tw, 1, test_world);
+    world *tw = world_make(1,test_world);
 
     world_layer_alloc(&tw->layers[0], 8, 8, 32, 'a');
 
@@ -80,6 +79,11 @@ int test_load_world()
     world_free(tw);
 
     return status;
+}
+
+int test_save_load_random()
+{
+
 }
 
 int test_world_all()
