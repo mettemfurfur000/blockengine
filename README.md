@@ -22,4 +22,21 @@ This project is for fun and aims to create a little engine with the following ma
 
 In summary, developers can create a layer of game logic (marked "d", for example) and build a "mechanism" from the blocks that accepts user input and moves the player around on the game layer, as well as create other mechanisms for monsters, interfaces, and more.
 
+## Roadmap
+
+- [x] Basic operations on blocks
+- [x] Block memory control
+- [x] Chunk memory control
+- [x] Saving and Loading 
+- [x] Tests for everything above
+- [ ] Basic game cycle
+   - [ ] Loading or generating a world
+   - [ ] Inactive chunks unloading from memory
+   - [ ] World update and update rate setting
+   - [ ] Test for everything above
+- [ ] List of permanent block parameters
+- [ ] Saving and loading permanent block parameters
+- [ ] Lua scripting for blocks
+- [ ] Graphics
+
 That's the list I'm currently aiming for. Hope this helps!
