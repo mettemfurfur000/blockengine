@@ -120,6 +120,17 @@ void block_teleport(block *dest, block *src)
     block_erase(src);
 }
 
+void block_swap(block *a, block *b)
+{
+    block tmp;
+
+    memcpy(&tmp,a,sizeof(block));
+
+    memcpy(a,b,sizeof(block));
+
+    memcpy(b,&tmp,sizeof(block));
+}
+
 void chunk_free(layer_chunk *l)
 {
     if (!l->blocks)
