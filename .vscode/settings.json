@@ -27,7 +27,15 @@
         "block_access_utils.c": "cpp",
         "test_mcf.c": "cpp",
         "test_fsf.c": "cpp",
-        "misc_utils.c": "cpp"
+        "misc_utils.c": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "atomic": "cpp",
+        "cstddef": "cpp",
+        "functional": "cpp",
+        "memory_resource": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

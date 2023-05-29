@@ -7,20 +7,22 @@
 
 int is_data_equal(block *a, block *b)
 {
-    if (!a->data_size && !b->data_size)
+    if (!a->data && !b->data)
         return SUCCESS;
+    if (!a->data || !b->data)
+        return FAIL;
 
-    int real_size_a = strlen((const char *)a->data);
-    int real_size_b = strlen((const char *)b->data);
+    int real_size_a = strlen((const char *)(a->data + 1));
+    int real_size_b = strlen((const char *)(b->data + 1));
 
     // strlen can make mistakes
-    real_size_a = real_size_a > a->data_size ? a->data_size : real_size_a;
-    real_size_b = real_size_b > b->data_size ? b->data_size : real_size_b;
+    real_size_a = real_size_a > a->data[0] ? a->data[0] : real_size_a;
+    real_size_b = real_size_b > b->data[0] ? b->data[0] : real_size_b;
 
     if (real_size_a != real_size_b)
         return FAIL;
 
-    for (int i = 0; i < real_size_a; i++)
+    for (int i = 1; i < real_size_a + 1; i++)
         if (a->data[i] != b->data[i])
             return FAIL;
 
@@ -29,12 +31,12 @@ int is_data_equal(block *a, block *b)
 
 int is_block_void(block *b)
 {
-    return !(b->id || b->data_size || b->data);
+    return !(b->id || b->data);
 }
 
 int is_block_equal(block *a, block *b)
 {
-    return a->id == b->id && a->data_size == b->data_size && is_data_equal(a, b);
+    return a->id == b->id && is_data_equal(a, b);
 }
 
 int is_chunk_equal(layer_chunk *a, layer_chunk *b)
@@ -59,28 +61,32 @@ void block_data_free(block *b)
         return;
     free(b->data);
     b->data = 0;
-    b->data_size = 0;
 }
 
 void block_data_alloc(block *b, int size)
 {
     if (b->data)
         free(b->data);
+    if (!size)
+    {
+        b->data = 0;
+        return;
+    }
 
-    b->data = (byte *)calloc(size, 1);
-    b->data_size = size;
+    b->data = (byte *)calloc(size + 1, 1);
+    b->data[0] = (byte)size;
 }
 
 void block_data_resize(block *b, int change)
 {
-    int new_size = b->data_size + change;
-    byte *buffer = (byte *)calloc(new_size, 1);
+    int new_size = b->data[0] + change;
+    byte *buffer = (byte *)calloc(new_size + 1, 1);
 
-    memcpy(buffer, b->data, new_size);
+    memcpy(buffer + 1, b->data + 1, new_size);
     free(b->data);
 
-    b->data_size = new_size;
     b->data = buffer;
+    b->data[0] = new_size;
 }
 
 void block_erase(block *b)
@@ -96,15 +102,15 @@ void block_copy(block *dest, block *src)
     memcpy(dest, src, sizeof(block));
     // copy data itself
     dest->data = 0;
-    block_data_alloc(dest, src->data_size);
-    memcpy(dest->data, src->data, src->data_size);
+    block_data_alloc(dest, src->data[0]);
+    memcpy(dest->data + 1, src->data + 1, src->data[0]);
 }
 
 void block_init(block *b, int id, int data_size, const char *data = "\0")
 {
     b->id = id;
     block_data_alloc(b, data_size);
-    memcpy(b->data, data, b->data_size);
+    memcpy(b->data + 1, data + 1, b->data[0]);
 }
 
 void block_teleport(block *dest, block *src)

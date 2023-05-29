@@ -7,7 +7,7 @@ int test_block_init()
 
     block_init(&t1, 10, 32);
 
-    int status = t1.id == 10 && t1.data_size == 32;
+    int status = t1.id == 10 && t1.data[0] == 32;
 
     block_data_free(&t1);
 
@@ -22,7 +22,7 @@ int test_block_data_resize()
 
     block_data_resize(&t1, 25);
 
-    int status = t1.id == 10 && t1.data_size == 57;
+    int status = t1.id == 10 && t1.data[0] == 57;
 
     block_data_free(&t1);
 

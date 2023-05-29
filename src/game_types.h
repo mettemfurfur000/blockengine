@@ -10,11 +10,16 @@ typedef struct
 {
     int id;
 
-    int data_size;
     byte *data;
 } block;
 
-block void_block = {0, 0, 0};
+/*
+    data format:
+    fist byte - size
+    data+1 to data+1+size - custom bytes for you. max 256 <3 
+*/
+
+block void_block = {0, 0};
 
 typedef struct
 {

@@ -10,14 +10,14 @@ void block_set_random(block *b)
     // generate data at 0.5% situations
     if (rand() % 1000 > 5)
     {
-        b->data_size = 0;
+        b->data = 0;
         return;
     }
 
-    b->data_size = rand() % 128;
-    block_data_alloc(b, b->data_size);
+    int size = 1 + rand() % 255;
+    block_data_alloc(b, size);
     
-    for (size_t i = 0; i < b->data_size; i++)
+    for (size_t i = 1; i < size + 1; i++)
     {
         b->data[i] = 'A' + rand() % 52;
     }

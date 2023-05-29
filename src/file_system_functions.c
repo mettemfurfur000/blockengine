@@ -64,17 +64,33 @@ void make_full_world_path(char filename[256], world *w, char world_name[64])
 /* write/read functions */
 void write_block(block *b, FILE *f)
 {
+    int size = 1;
     fwrite(&b->id, sizeof(int), 1, f);
-    fwrite(&b->data_size, sizeof(int), 1, f);
-    fwrite(b->data, 1, b->data_size, f);
+    if (b->data)
+    {
+        size = b->data[0] + 1;
+        fwrite(b->data, sizeof(byte), size, f);
+        return;
+    }
+    fputc(0,f);
 }
 
 void read_block(block *b, FILE *f)
 {
+    block_data_free(b);
+
     fread(&b->id, sizeof(int), 1, f);
-    fread(&b->data_size, sizeof(int), 1, f);
-    b->data = (byte *)calloc(b->data_size, 1);
-    fread(b->data, 1, b->data_size, f);
+
+    byte size = 0;
+    fread(&size, sizeof(byte), 1, f);
+
+    if(size)
+    {
+        b->data = (byte *)calloc(size + 1, sizeof(byte));
+        b->data[0] = size;
+        fread(b->data + 1, sizeof(byte), size, f);
+        return;
+    }
 }
 
 int write_chunk(layer_chunk *c, const char *filename)

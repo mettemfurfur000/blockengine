@@ -85,7 +85,7 @@ int test_save_load_random()
 {
     char filename[256];
     int status = 1;
-    int w_width = 64;
+    int w_width = 16;
     int ch_width = 64;
     layer_chunk *t = (layer_chunk *)calloc(1, sizeof(layer_chunk));
 
