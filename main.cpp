@@ -5,5 +5,7 @@
 int main()
 {
     test_hash_table();
+
+    //test_hash_table_stress();
     return 0;
 }

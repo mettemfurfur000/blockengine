@@ -38,7 +38,9 @@
         "memory_resource": "cpp",
         "string": "cpp",
         "block_properties.c": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "hash_table.c": "cpp",
+        "test_hst.c": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
