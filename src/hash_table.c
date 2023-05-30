@@ -4,9 +4,7 @@
 #include <unistd.h>
 #include "../src/game_types.h"
 
-#define TABLE_SIZE 97
-
-//ٴٴٴٴٴ
+#define TABLE_SIZE 10007
 
 typedef struct hash_table
 {
@@ -168,7 +166,6 @@ int remove_entry(hash_table **table, char *key)
 
     return SUCCESS;
 }
-
 
 int appr_size_of(hash_table **table)
 {
