@@ -1,9 +1,9 @@
 #include "tests/test_mcf.c"
 #include "tests/test_fsf.c"
+#include "tests/test_hst.c"
 
 int main()
 {
-    test_block_all();
-    test_world_all();
+    test_hash_table();
     return 0;
 }
