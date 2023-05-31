@@ -19,6 +19,18 @@ char *mk_test(int iskey, int num)
     return str;
 }
 
+void write_test(char *str, int iskey, int num)
+{
+    if (iskey)
+    {
+        sprintf(str, "testkey_%d", num);
+    }
+    else
+    {
+        sprintf(str, "%d_aboba_%d", num, rand() % 5555);
+    }
+}
+
 float startTime;
 void bench_start()
 {
@@ -36,9 +48,9 @@ void bench_end()
 
 int test_rand_fill_and_remove()
 {
-    hash_table **table = (hash_table **)calloc(TABLE_SIZE, sizeof(hash_table *));
-    char *key;
-    char *val;
+    hash_table **table = alloc_table();
+    char key[128];
+    char val[128];
     char *ret;
     int rand_val;
     int status = 1;
@@ -52,19 +64,17 @@ int test_rand_fill_and_remove()
 
         rand_val = rand() % 555;
 
-        key = mk_test(1, rand_val);
+        write_test(key, 1, rand_val);
 
         if (rand() % 2 == 0)
         {
-            val = mk_test(0, rand_val);
+            write_test(val, 0, rand_val);
 
             put_entry(table, key, val);
 
             ret = get_entry(table, key);
 
             status &= (strcmp(ret, val) == 0);
-
-            free(val);
         }
         else
         {
@@ -73,8 +83,6 @@ int test_rand_fill_and_remove()
             ret = get_entry(table, key);
 
             status &= (ret == 0);
-
-            free(key);
         }
     }
 
@@ -84,9 +92,9 @@ int test_rand_fill_and_remove()
 
 int test_hash_table_stress()
 {
-    hash_table **table = (hash_table **)calloc(TABLE_SIZE, sizeof(hash_table *));
-    char *key;
-    char *val;
+    hash_table **table = alloc_table();
+    char key[128];
+    char val[128];
     char *ret;
     int rand_val;
     int status = 1;
@@ -105,19 +113,17 @@ int test_hash_table_stress()
 
         rand_val = rand() % 555;
 
-        key = mk_test(1, rand_val);
+        write_test(key, 1, rand_val);
 
         if (rand() % 2 == 0)
         {
-            val = mk_test(0, rand_val);
+            write_test(val, 0, rand_val);
 
             put_entry(table, key, val);
 
             ret = get_entry(table, key);
 
             status &= (strcmp(ret, val) == 0);
-
-            free(val);
         }
         else
         {
@@ -127,7 +133,6 @@ int test_hash_table_stress()
 
             status &= (ret == 0);
         }
-        free(key);
     }
 
     free_table(table);
@@ -136,14 +141,14 @@ int test_hash_table_stress()
 
 int test_hash_table_fill()
 {
-    hash_table **table = (hash_table **)calloc(TABLE_SIZE, sizeof(hash_table *));
-    char *key;
-    char *val;
+    hash_table **table = alloc_table();
+    char key[128];
+    char val[128];
     char *ret;
     int rand_val;
     int status = 1;
 
-    const int tests = 1000;
+    const int tests = 10000;
 
     int i = 1;
 
@@ -153,30 +158,33 @@ int test_hash_table_fill()
     {
         rand_val = rand();
 
-        key = mk_test(1, rand_val);
+        write_test(key, 1, rand_val);
 
-        val = mk_test(0, rand_val);
+        write_test(val, 0, rand_val);
 
         put_entry(table, key, val);
-
-        free(val);
-        free(key);
     }
 
     bench_end();
-    bench_start();
-
-    for (int i = 0; i < tests; i++)
+    for (int j = 0; j < 25; j++)
     {
-        rand_val = rand();
+        bench_start();
 
-        key = mk_test(1, rand_val);
+        for (int i = 0; i < tests; i++)
+        {
+            rand_val = rand();
 
-        ret = get_entry(table, key);
+            write_test(key, 1, rand_val);
 
-        free(key);
+            write_test(val, 0, rand_val);
+
+            ret = get_entry(table, key);
+
+            if (ret)
+                status &= (strcmp(val, ret) == 0);
+        }
+        bench_end();
     }
-    bench_end();
 
     bench_start();
     free_table(table);
