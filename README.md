@@ -34,8 +34,8 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [ ] Inactive chunks unloading from memory
    - [ ] World update and update rate setting
    - [ ] Test for everything above
-- [ ] List of permanent block parameters
-- [ ] Saving and loading permanent block parameters
+- [x] List of permanent block parameters
+- [x] Saving and loading permanent block parameters
 - [ ] Lua scripting for blocks
 - [ ] Graphics
 
