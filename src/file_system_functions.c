@@ -2,7 +2,6 @@
 #define FILE_SYSTEM_FUNCTIONS_H 1
 
 #include "memory_control_functions.c"
-#include "misc_utils.c"
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>

@@ -1,3 +1,6 @@
+#ifndef HASH_TABLE_H
+#define HASH_TABLE_H 1
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +18,7 @@ typedef struct hash_table
 
 unsigned long hash_function(char *key)
 {
+    // thanks https://t.me/codemaniacbot
     unsigned long hash = 5381;
     int c;
     while ((c = *key++))
@@ -51,7 +55,6 @@ void copy_value(hash_table *node, char *value)
         free(node->value);
 
     node->value = (char *)calloc(strlen(value), 1);
-    ;
     strcpy(node->value, value);
 }
 
@@ -67,7 +70,6 @@ void copy_all(hash_table *node, char *key, char *value)
         free(node->value);
 
     node->value = (char *)calloc(strlen(value), 1);
-    ;
     strcpy(node->value, value);
 }
 
@@ -78,6 +80,7 @@ hash_table **alloc_table()
 
 void free_table(hash_table **table)
 {
+    // thanks https://t.me/codemaniacbot
     hash_table *node;
     hash_table *next_node;
     for (int i = 0; i < TABLE_SIZE; ++i)
@@ -94,6 +97,7 @@ void free_table(hash_table **table)
 
 void put_entry(hash_table **table, char *key, char *value)
 {
+    // thanks https://t.me/codemaniacbot
     unsigned long hash = hash_function(key);
     hash_table *node = table[hash];
     if (node == NULL)
@@ -122,6 +126,7 @@ void put_entry(hash_table **table, char *key, char *value)
 
 char *get_entry(hash_table **table, char *key)
 {
+    // thanks https://t.me/codemaniacbot
     unsigned long hash = hash_function(key);
     hash_table *node = table[hash];
 
@@ -148,7 +153,7 @@ void print_table(hash_table **table)
         while (node != NULL)
         {
             next_node = node->next;
-            printf("%s:%s\n", node->key, node->value);
+            printf("    %s %s %s\n", node->key, strlen(node->value) ? "=" : "", node->value);
             node = next_node;
         }
     }
@@ -206,3 +211,17 @@ int appr_size_of(hash_table **table)
     }
     return size;
 }
+
+void fill_test_data(char *str, int iskey, int num)
+{
+    if (iskey)
+    {
+        sprintf(str, "testkey_%d", num);
+    }
+    else
+    {
+        sprintf(str, "%d_aboba_%d", num, rand() % 5555);
+    }
+}
+
+#endif

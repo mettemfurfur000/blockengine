@@ -40,7 +40,8 @@
         "block_properties.c": "cpp",
         "ostream": "cpp",
         "hash_table.c": "cpp",
-        "test_hst.c": "cpp"
+        "test_hst.c": "cpp",
+        "benchmarking.c": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

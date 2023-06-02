@@ -124,11 +124,11 @@ void block_swap(block *a, block *b)
 {
     block tmp;
 
-    memcpy(&tmp,a,sizeof(block));
+    memcpy(&tmp, a, sizeof(block));
 
-    memcpy(a,b,sizeof(block));
+    memcpy(a, b, sizeof(block));
 
-    memcpy(b,&tmp,sizeof(block));
+    memcpy(b, &tmp, sizeof(block));
 }
 
 void chunk_free(layer_chunk *l)
@@ -212,7 +212,7 @@ world *world_make(int depth, char *name_to_copy_from)
 {
     world *w = (world *)calloc(1, sizeof(world));
 
-    w->worldname = (char *)calloc(1, strlen(name_to_copy_from));
+    w->worldname = (char *)calloc(1, strlen(name_to_copy_from) + 1);
     strcpy(w->worldname, name_to_copy_from);
 
     w->depth = depth;
@@ -225,6 +225,43 @@ void world_free(world *w)
     free(w->layers);
     free(w->worldname);
     free(w);
+}
+
+// some useful functions
+
+void block_set_random(block *b)
+{
+    block_data_free(b);
+
+    b->id = rand();
+    // generate data at 0.5% situations
+    if (rand() % 1000 > 5)
+    {
+        b->data = 0;
+        return;
+    }
+
+    int size = 1 + rand() % 255;
+    block_data_alloc(b, size);
+
+    for (size_t i = 1; i < size + 1; i++)
+    {
+        b->data[i] = 'A' + rand() % 52;
+    }
+}
+
+void chunk_random_fill(layer_chunk *l, unsigned int seed = 0)
+{
+    if (seed)
+        srand(seed);
+
+    for (int i = 0; i < l->width; i++)
+    {
+        for (int j = 0; j < l->width; j++)
+        {
+            block_set_random(&l->blocks[i][j]);
+        }
+    }
 }
 
 #endif
