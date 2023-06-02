@@ -109,7 +109,7 @@ int test_hash_table_fill()
 int test_hash_table_all()
 {
     printf("tests:\n");
-    printf("    test_rand_fill_and_remove:          %s\n", test_rand_fill_and_remove() ? "SUCCESS" : "FAIL");
-    printf("    test_hash_table_fill:               %s\n", test_hash_table_fill() ? "SUCCESS" : "FAIL");
+    printf("    test_rand_fill_and_remove: %s\n", test_rand_fill_and_remove() ? "SUCCESS" : "FAIL");
+    printf("    test_hash_table_fill:      %s\n", test_hash_table_fill() ? "SUCCESS" : "FAIL");
     return SUCCESS;
 }

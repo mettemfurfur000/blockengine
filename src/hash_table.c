@@ -224,4 +224,51 @@ void fill_test_data(char *str, int iskey, int num)
     }
 }
 
+void put_random_entry(hash_table **table,int seed)
+{
+    srand(seed);
+    char key[128] = {0};
+    char value[128] = {0};
+
+    int len = 4 + rand() % 16;
+    for (int i = 0; i < len; i++)
+    {
+        key[i] = 'a' + rand() % 26;
+    }
+
+    len = 4 + rand() % 16;
+    for (int i = 0; i < len; i++)
+    {
+        value[i] = 'a' + rand() % 26;
+    }
+
+    put_entry(table,key,value);
+}
+
+int verify_random_entry(hash_table **table,int seed)
+{
+    srand(seed);
+    char key[128] = {0};
+    char value[128] = {0};
+    char *ret_value;
+
+    int len = 4 + rand() % 16;
+    for (int i = 0; i < len; i++)
+    {
+        key[i] = 'a' + rand() % 26;
+    }
+
+    len = 4 + rand() % 16;
+    for (int i = 0; i < len; i++)
+    {
+        value[i] = 'a' + rand() % 26;
+    }
+
+    ret_value = get_entry(table,key);
+
+    if(ret_value)
+        return strcmp(value,ret_value) == 0;
+    return FAIL;
+}
+
 #endif

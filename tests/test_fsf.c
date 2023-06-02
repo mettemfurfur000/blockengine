@@ -140,10 +140,10 @@ int test_save_load_random()
 int test_world_all()
 {
     printf("tests:\n");
-    printf("    test_world_init: %s\n", test_world_init() ? "SUCCESS" : "FAIL");
-    printf("    test_layer_init: %s\n", test_layer_init() ? "SUCCESS" : "FAIL");
-    printf("    test_save_world: %s\n", test_save_world() ? "SUCCESS" : "FAIL");
-    printf("    test_load_world: %s\n", test_load_world() ? "SUCCESS" : "FAIL");
+    printf("    test_world_init:       %s\n", test_world_init() ? "SUCCESS" : "FAIL");
+    printf("    test_layer_init:       %s\n", test_layer_init() ? "SUCCESS" : "FAIL");
+    printf("    test_save_world:       %s\n", test_save_world() ? "SUCCESS" : "FAIL");
+    printf("    test_load_world:       %s\n", test_load_world() ? "SUCCESS" : "FAIL");
     printf("    test_save_load_random: %s\n", test_save_load_random() ? "SUCCESS" : "FAIL");
     return SUCCESS;
 }
