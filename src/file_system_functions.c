@@ -64,7 +64,7 @@ void make_full_world_path(char filename[256], world *w, char world_name[64])
 void write_block(block *b, FILE *f)
 {
     int size = 1;
-    fwrite(&b->id, sizeof(int), 1, f);
+    fwrite(&b->id, sizeof(b->id), 1, f);
     if (b->data)
     {
         size = b->data[0] + 1;
@@ -78,7 +78,7 @@ void read_block(block *b, FILE *f)
 {
     block_data_free(b);
 
-    fread(&b->id, sizeof(int), 1, f);
+    fread(&b->id, sizeof(b->id), 1, f);
 
     byte size = 0;
     fread(&size, sizeof(byte), 1, f);

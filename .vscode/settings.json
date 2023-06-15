@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.dsc": "denizenscript",
         "cstdio": "cpp",
         "game_types.h": "c",
         "game_functions.c": "cpp",
@@ -41,7 +42,10 @@
         "ostream": "cpp",
         "hash_table.c": "cpp",
         "test_hst.c": "cpp",
-        "benchmarking.c": "cpp"
+        "benchmarking.c": "cpp",
+        "inet.h": "c",
+        "system_error": "c",
+        "tuple": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

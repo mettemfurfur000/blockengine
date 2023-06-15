@@ -110,6 +110,7 @@ void block_init(block *b, int id, int data_size, const char *data = "\0")
 {
     b->id = id;
     block_data_alloc(b, data_size);
+    if(!data_size) return;
     memcpy(b->data + 1, data + 1, b->data[0]);
 }
 
