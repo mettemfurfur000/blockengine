@@ -6,18 +6,30 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-// 1 byte for size
-// next 1-256 bytes for custom user data
-// format for data: ..(letter)(length)[data](letter)(length)[data]..
+/*
+1 byte for size
+the next 1-255 bytes for user data
+if the size is 0, we just don't allocate any data and keep the pointer equal to 0
+format for data: ...(letter)(length)[data](letter)(length)[data]...
 
-// Find Data Element Start Position (nice naming)
-// returns index of letter
-//
-// example = "a 2 hh b 5 ahfgb c 1 j \0"
-//            ^ - 1            ^ - 12
-//
-// fdesp(example,'c') returns 12
-// dfesp(example,'g') returns 0 (Failure)
+Find Data Element Start Position (nice naming)
+returns index of letter
+
+example = "14  a  2  h  h  b  5  a  h  f  g  b  c  1  j " (not real values, just for example)
+indexes =  0   1  2  3  4  5  6  7  8  9  10 11 12 13 14
+           ^   #  %  -  -  #  %  -  -  -  -  -  #  %  -
+
+ ^  - size byte
+ #  - letter byte (like name of variable)
+ %  - size of variable
+"-" - actual data
+
+fdesp(example,'c') returns 12
+fdesp(example,'a') returns 1
+fdesp(example,'g') returns 0 (Failure)
+
+actual array size is 15, 1 byte for size byte and others for data (no \0 symbol, this is not string)
+*/
 
 int fdesp(byte *data, char letter)
 {
@@ -64,25 +76,25 @@ int data_create_element(byte **data_ptr, char letter, byte size)
     if (!data_ptr)
         return FAIL;
     byte *data = *data_ptr;
+
     if (data)
         if (fdesp(data, letter))
             return SUCCESS;
-    int data_size = 1;
-    if (data)
-        data_size += data[0];
+
+    int data_size = data ? data[0] : 0;
 
     int new_data_size = data_size + size + 2;
 
-    if (new_data_size > 255)
+    if (new_data_size > 0xFF)
         return FAIL;
 
-    byte *new_data = (byte *)calloc(new_data_size, sizeof(byte));
+    byte *new_data = (byte *)calloc(new_data_size + 1, sizeof(byte));
 
     if (data)
         memcpy(new_data, data, data_size);
 
-    new_data[data_size] = letter;
-    new_data[data_size + 1] = size;
+    new_data[data_size + 1] = letter;
+    new_data[data_size + 2] = size;
     new_data[0] = new_data_size;
 
     *data_ptr = new_data;
@@ -97,45 +109,53 @@ int data_delete_element(byte **data_ptr, char letter)
 {
     if (!data_ptr)
         return FAIL;
-    byte *data = *data_ptr;
-    if (!data)
-        return SUCCESS;
 
-    short data_size = data[0] + 1;
+    byte *data = *data_ptr;
+
+    if (!data)
+        return FAIL;
+
+    short data_size = data[0];
     short element_pos = fdesp(data, letter);
+    short pos_before_element = element_pos - 1;
 
     if (!element_pos)
-        return SUCCESS;
+        return FAIL;
 
-    byte skipped_bytes_size = 2 + data[element_pos + 1];
-    short new_data_size = data_size - skipped_bytes_size;
+    short bytes_to_skip_size = 2 + data[element_pos + 1];
+    short new_data_size = data_size - bytes_to_skip_size;
 
-    if(new_data_size == 0)
+    if (new_data_size == 0)
     {
         free(data);
         *data_ptr = 0;
         return SUCCESS;
     }
 
-    byte *new_data = (byte *)calloc(new_data_size, sizeof(byte));
+    byte *new_data = (byte *)calloc(new_data_size + 1, sizeof(byte));
+    byte *actual_data = data + 1;
+    byte *actual_new_data = new_data + 1;
 
-    if (element_pos == 1)
+    if (pos_before_element == 0)
     {
         // first
-        memcpy(new_data,
-               data + skipped_bytes_size + 1,
-               new_data_size);
+        memcpy(actual_new_data, actual_data + bytes_to_skip_size, new_data_size);
     }
-    else if (element_pos == new_data_size)
+    else if (pos_before_element + bytes_to_skip_size == data_size)
     {
         // last
-        memcpy(new_data, data, new_data_size);
+        memcpy(actual_new_data, actual_data, new_data_size);
     }
     else
     {
-        memcpy(new_data, data, element_pos);
-        memcpy(new_data + element_pos + skipped_bytes_size, data, new_data_size - element_pos);
+        // somethere in middle
+        // copy elements before skipped element
+        memcpy(actual_new_data, actual_data, pos_before_element);
+        // cope elements after
+        memcpy(actual_new_data + pos_before_element + bytes_to_skip_size, actual_data, new_data_size - pos_before_element);
     }
+
+    new_data[0] = new_data_size;
 
     *data_ptr = new_data;
 
@@ -146,7 +166,7 @@ int data_delete_element(byte **data_ptr, char letter)
 
 // set
 
-int data_set(byte *data, char letter, byte *src, int size)
+int data_set_str(byte *data, char letter, byte *src, int size)
 {
     byte *el_dest = data_get_ptr(data, letter);
     if (!el_dest)
@@ -157,29 +177,29 @@ int data_set(byte *data, char letter, byte *src, int size)
     return SUCCESS;
 }
 
-int data_set(byte *data, char letter, int value)
+int data_set_i(byte *data, char letter, int value)
 {
     byte *el_dest = data_get_ptr(data, letter);
     if (!el_dest)
         return FAIL;
 
-    *el_dest = (int)htonl(value);
+    *(int *)el_dest = (int)htonl(value);
 
     return SUCCESS;
 }
 
-int data_set(byte *data, char letter, short value)
+int data_set_s(byte *data, char letter, short value)
 {
     byte *el_dest = data_get_ptr(data, letter);
     if (!el_dest)
         return FAIL;
 
-    *el_dest = (short)htons(value);
+    *(short *)el_dest = (short)htons(value);
 
     return SUCCESS;
 }
 
-int data_set(byte *data, char letter, byte value)
+int data_set_b(byte *data, char letter, byte value)
 {
     byte *el_dest = data_get_ptr(data, letter);
     if (!el_dest)
@@ -192,7 +212,7 @@ int data_set(byte *data, char letter, byte value)
 
 // get
 
-int data_get(byte *data, char letter, byte *dest, int size)
+int data_get_str(byte *data, char letter, byte *dest, int size)
 {
     byte *el_src = data_get_ptr(data, letter);
     if (!el_src)
@@ -203,29 +223,29 @@ int data_get(byte *data, char letter, byte *dest, int size)
     return SUCCESS;
 }
 
-int data_get(byte *data, char letter, int *dest)
+int data_get_i(byte *data, char letter, int *dest)
 {
     byte *el_src = data_get_ptr(data, letter);
     if (!el_src)
         return FAIL;
 
-    *dest = ntohl(*(int*)el_src);
+    *(int *)dest = ntohl(*(int *)el_src);
 
     return SUCCESS;
 }
 
-int data_get(byte *data, char letter, short *dest)
+int data_get_s(byte *data, char letter, short *dest)
 {
     byte *el_src = data_get_ptr(data, letter);
     if (!el_src)
         return FAIL;
 
-    *dest = ntohs(*(short*)el_src);
+    *(short *)dest = ntohs(*(short *)el_src);
 
     return SUCCESS;
 }
 
-int data_get(byte *data, char letter, byte *dest)
+int data_get_b(byte *data, char letter, byte *dest)
 {
     byte *el_src = data_get_ptr(data, letter);
     if (!el_src)

@@ -8,9 +8,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-const int bigendianchecker = 1;
-bool is_bigendian() { return (*(char *)&bigendianchecker) == 0; };
-
 struct stat st = {0};
 
 void make_full_chunk_path(char filename[256], world *w, int index, int x, int y)

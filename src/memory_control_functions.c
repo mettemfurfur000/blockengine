@@ -106,7 +106,7 @@ void block_copy(block *dest, block *src)
     memcpy(dest->data + 1, src->data + 1, src->data[0]);
 }
 
-void block_init(block *b, int id, int data_size, const char *data = "\0")
+void block_init(block *b, int id, int data_size, const char *data)
 {
     b->id = id;
     block_data_alloc(b, data_size);
@@ -251,7 +251,7 @@ void block_set_random(block *b)
     }
 }
 
-void chunk_random_fill(layer_chunk *l, unsigned int seed = 0)
+void chunk_random_fill(layer_chunk *l, unsigned int seed)
 {
     if (seed)
         srand(seed);

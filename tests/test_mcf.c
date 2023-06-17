@@ -5,7 +5,7 @@ int test_block_init()
 {
     block t1 = void_block;
 
-    block_init(&t1, 10, 32);
+    block_init(&t1, 10, 32, "example");
 
     int status = t1.id == 10 && t1.data[0] == 32;
 
@@ -18,7 +18,7 @@ int test_block_data_resize()
 {
     block t1 = void_block;
 
-    block_init(&t1, 10, 32);
+    block_init(&t1, 10, 32, "example");
 
     block_data_resize(&t1, 25);
 
@@ -33,7 +33,7 @@ int test_block_erase()
 {
     block t1 = void_block;
 
-    block_init(&t1, 10, 32);
+    block_init(&t1, 10, 32, "example");
 
     block_erase(&t1);
 
@@ -111,7 +111,7 @@ int test_block_swap()
 
 int test_block_all()
 {
-    printf("tests:\n");
+    printf("test_block_all:\n");
     printf("    test_block_init:        %s\n", test_block_init() ? "SUCCESS" : "FAIL");
     printf("    test_block_data_resize: %s\n", test_block_data_resize() ? "SUCCESS" : "FAIL");
     printf("    test_block_erase:       %s\n", test_block_erase() ? "SUCCESS" : "FAIL");

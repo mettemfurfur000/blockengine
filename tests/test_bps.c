@@ -33,7 +33,7 @@ int test_random_save_cycle()
         status &= verify_random_entry(table, i + 66);
     }
 
-    print_table(table);
+    //print_table(table);
 
     free_table(table);
 
@@ -42,7 +42,7 @@ int test_random_save_cycle()
 
 int test_block_props_all()
 {
-    printf("tests:\n");
+    printf("test_block_props_all:\n");
     printf("    test_basic_io:          %s\n", test_basic_io() ? "SUCCESS" : "FAIL");
     printf("    test_random_save_cycle: %s\n", test_random_save_cycle() ? "SUCCESS" : "FAIL");
     return SUCCESS;

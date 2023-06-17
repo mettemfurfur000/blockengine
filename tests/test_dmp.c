@@ -12,8 +12,10 @@ int test_basic_data_manip()
     block_init(&t, 16, 0, 0);
 
     status &= data_create_element(&t.data, 't', sizeof(src));
-    status &= data_set(t.data, 't', src);
-    status &= data_get(t.data, 't', &dest);
+    status &= data_set_i(t.data, 't', src);
+    status &= data_get_i(t.data, 't', &dest);
+
+    status &= (src == dest);
 
     block_data_free(&t);
 
@@ -32,8 +34,8 @@ int test_array_data()
     block_init(&t, 16, 0, 0);
 
     status &= data_create_element(&t.data, 's', sizeof(cool_string));
-    status &= data_set(t.data, 's', (byte *)cool_string, sizeof(cool_string));
-    status &= data_get(t.data, 's', (byte *)not_cool_string, sizeof(not_cool_string));
+    status &= data_set_str(t.data, 's', (byte *)cool_string, sizeof(cool_string));
+    status &= data_get_str(t.data, 's', (byte *)not_cool_string, sizeof(not_cool_string));
     status &= (strcmp(cool_string, not_cool_string) == 0);
 
     block_data_free(&t);
@@ -72,8 +74,8 @@ int test_random_data()
 
         status &= data_create_element(&t.data, 's', rand_size);
 
-        status &= data_set(t.data, 's', (byte *)rand_src, rand_size);
-        status &= data_get(t.data, 's', (byte *)rand_dest, rand_size);
+        status &= data_set_str(t.data, 's', (byte *)rand_src, rand_size);
+        status &= data_get_str(t.data, 's', (byte *)rand_dest, rand_size);
 
         if (strcmp(rand_src, rand_dest))
         {
@@ -94,7 +96,7 @@ int test_random_data()
 
 int test_all_data_manip()
 {
-    printf("tests:\n");
+    printf("test_all_data_manip:\n");
     printf("    test_basic_data_manip:       %s\n", test_basic_data_manip() ? "SUCCESS" : "FAIL");
     printf("    test_array_data:             %s\n", test_array_data() ? "SUCCESS" : "FAIL");
     printf("    test_random_data:            %s\n", test_random_data() ? "SUCCESS" : "FAIL");
