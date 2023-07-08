@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "../src/game_types.h"
 
-#define TABLE_SIZE 88513
+#define TABLE_SIZE 113
 
 typedef struct hash_table
 {

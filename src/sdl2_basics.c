@@ -2,11 +2,11 @@
 #define SDL2_BASICS_H 1
 
 #include <SDL2/SDL.h>
-#include "game_types.h"
+#include "block_properties.c"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb/stb_image.h"
 
-// Screen dimension constants
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
@@ -18,11 +18,53 @@ SDL_Surface *g_screen = NULL;
 
 SDL_Renderer *g_renderer = NULL;
 
-typedef struct basic_texture
+typedef struct texture
 {
-    SDL_Point sizes;
     SDL_Texture *ptr;
-} basic_texture;
+
+    int width;
+    int height;
+
+    int frame_side_size;
+
+    int frames_per_line;
+    int frames;
+} texture;
+
+int gcd(int a, int b)
+{
+    int temp;
+    while (b != 0)
+    {
+        temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+char *get_folder_path(char *file_path, int bonus_for_str_size)
+{
+    // from you.com/chat
+    int len = strlen(file_path);
+    char *folder_path = (char *)malloc(len + bonus_for_str_size);
+    strcpy(folder_path, file_path);
+    // find the last occurrence of '/'
+    char *last_slash = strrchr(folder_path, '/');
+    if (last_slash != NULL)
+    {
+        // if there is a slash, terminate the string after it
+        *last_slash = '\0';
+    }
+    else
+    {
+        // if there is no slash, return NULL
+        free(folder_path);
+        return NULL;
+    }
+
+    return folder_path;
+}
 
 int init_graphics()
 {
@@ -79,41 +121,54 @@ int handle_events()
     return SUCCESS;
 }
 
-int texture_load(basic_texture *dest, char *path_to_file)
+int texture_load(texture *dest, char *path_to_file)
 {
     if (!dest)
         return FAIL;
     if (!path_to_file)
         return FAIL;
 
-    int width, height, channels;
-    unsigned char *image_data = stbi_load(path_to_file, &width, &height, &channels, STBI_rgb_alpha);
+    unsigned char *image_data;
+    int channels;
 
-    SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(image_data, width, height, 32, width * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
-
-    stbi_image_free(image_data);
-
-    if (!surface)
+    if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height, &channels, STBI_rgb_alpha)))
         return FAIL;
 
-    SDL_Texture *texture_ptr = SDL_CreateTextureFromSurface(g_renderer, surface);
+    SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(image_data, dest->width, dest->height, 32, dest->width * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
 
-    if (!texture_ptr)
-        return FAIL;
-
-    dest->ptr = texture_ptr;
-    dest->sizes.x = width;
-    dest->sizes.y = height;
+    dest->ptr = SDL_CreateTextureFromSurface(g_renderer, surface);
 
     SDL_FreeSurface(surface);
+
+    if (!dest->ptr)
+        return FAIL;
+
+    // animation data calculations
+
+    dest->frame_side_size = gcd(dest->height, dest->width);
+    dest->frames_per_line = dest->width / dest->frame_side_size;
+    dest->frames = dest->frames_per_line * (dest->height / dest->frame_side_size);
 
     return SUCCESS;
 }
 
-int texture_render(basic_texture *texture, int x, int y)
+int texture_render(texture *texture, int x, int y, float scale)
 {
-    SDL_Rect dest = {x, y, texture->sizes.x, texture->sizes.y};
-    return !SDL_RenderCopy(g_renderer, texture->ptr, NULL, &dest);
+    SDL_Rect src = {0, 0, texture->frame_side_size, texture->frame_side_size};
+    SDL_Rect dest = {x, y, texture->frame_side_size*scale, texture->frame_side_size*scale};
+    return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
+}
+
+int texture_render_anim(texture *texture, int x, int y, int frame, float scale)
+{
+    frame = frame % texture->frames;
+    int frame_x = texture->frame_side_size * (frame % texture->frames_per_line);
+    int frame_y = texture->frame_side_size * (frame / texture->frames_per_line);
+
+    SDL_Rect src = {frame_x, frame_y, texture->frame_side_size, texture->frame_side_size};
+
+    SDL_Rect dest = {x, y, texture->frame_side_size, texture->frame_side_size};
+    return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
 }
 
 #endif
