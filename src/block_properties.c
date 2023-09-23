@@ -1,7 +1,7 @@
 #ifndef BLOCK_PROPS
 #define BLOCK_PROPS 1
 
-#include "../src/hash_table.c"
+#include "hash_table.c"
 
 void write_properties(FILE *f, char *key, char *value)
 {

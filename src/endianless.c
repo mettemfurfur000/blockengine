@@ -1,44 +1,90 @@
 #ifndef ENDIANLESS_H
 #define ENDIANLESS_H
+
 #include "game_types.h"
 
-int is_bigendian()
+volatile byte is_big_endian(void)
 {
-    unsigned int x = 1;
-    char *c = (char *)&x;
-    return (int)*c;
+	volatile union
+	{
+		unsigned int i;
+		char c[4];
+	} e = {0x01000000};
+
+	return e.c[0];
 }
 
-int swap_order_i(int x)
+volatile byte is_little_endian(void)
 {
-    int b0, b1, b2, b3;
+	volatile union
+	{
+		unsigned int i;
+		char c[4];
+	} e = {0x00000001};
 
-    b0 = (x & 0x000000ff) << 24u;
-    b1 = (x & 0x0000ff00) << 8u;
-    b2 = (x & 0x00ff0000) >> 8u;
-    b3 = (x & 0xff000000) >> 24u;
-
-    return b0 | b1 | b2 | b3;
+	return e.c[0];
 }
 
-short swap_order_s(short x)
+int flip_bytes_in_place(byte *bytes, int size)
 {
-    short b0, b1;
+	if (size == 1)
+		return SUCCESS;
+	if (size % 2 != 0)
+		return FAIL;
+	int sizehalf = size / 2;
+	byte temp;
+	int end_index;
 
-    b0 = (x & 0x00ff) << 8u;
-    b1 = (x & 0xff00) >> 8u;
+	for (int i = 0; i < sizehalf; i++)
+	{
+		end_index = size - i - 1;
 
-    return b0 | b1;
+		temp = bytes[i];
+
+		bytes[i] = bytes[end_index];
+
+		bytes[end_index] = temp;
+	}
+	return SUCCESS;
 }
 
-int make_normal_i(int x)
-{
-    return is_bigendian() ? swap_order_i(x) : x;
-}
+// make byte data little endian
+// in little endian makes no change
+// in big flips bytes
 
-int make_normal_s(int x)
+// for example
+/*
+value = 0x12345678;
+
+byte* val_arr = (byte*)&value;
+
+val_arr[i] =
+
+	0		1		2		3
+	|		|		|		|
+	v		V		V		V
+
+	[ 12 ]	[ 34 ] 	[ 56 ] 	[ 78 ]
+
+no changes in little endian, but in big makes this:
+
+make_endianless(val_arr,4)
+
+val_arr[i] =
+
+	0		1		2		3
+	|		|		|		|
+	v		V		V		V
+
+	[ 78 ]	[ 56 ] 	[ 34 ] 	[ 12 ]
+
+*/
+
+int make_endianless(byte *bytes, int size)
 {
-    return is_bigendian() ? swap_order_s(x) : x;
+	if (is_big_endian())
+		return flip_bytes_in_place(bytes, size);
+	return SUCCESS;
 }
 
 #endif

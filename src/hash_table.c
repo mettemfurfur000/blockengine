@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "../src/game_types.h"
+#include "game_types.h"
 
 #define TABLE_SIZE 113
 
@@ -124,6 +124,7 @@ void put_entry(hash_table **table, char *key, char *value)
     }
 }
 
+//returns only pointer to string, so you can read from it.
 char *get_entry(hash_table **table, char *key)
 {
     // thanks https://t.me/codemaniacbot
