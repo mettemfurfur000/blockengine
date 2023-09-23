@@ -57,7 +57,6 @@ int test_save_world()
 
 int test_load_world()
 {
-    char filename[256];
     int status = 1;
 
     world *tw = world_make(1, test_world);
@@ -83,13 +82,12 @@ int test_load_world()
 
 int test_save_load_random()
 {
-    char filename[256];
     int status = 1;
     int w_width = 16;
     int ch_width = 64;
     layer_chunk *t = (layer_chunk *)calloc(1, sizeof(layer_chunk));
 
-    char rand_world[16] = "rand_world\n";
+    char rand_world[16] = "rand_world";
 
     world *tw = world_make(1, rand_world);
 

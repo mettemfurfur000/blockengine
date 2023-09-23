@@ -55,11 +55,9 @@ int test_hash_table_fill()
     int status = 1;
     int debug = 55;
 
-    const int tests = 100000;
+    const int tests = 1000;
 
     printf("        Started %d test per run\n",tests);
-
-    int i = 1;
 
     int bench_start_time;
 

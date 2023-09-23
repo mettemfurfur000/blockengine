@@ -1,44 +1,43 @@
 #include "src/sdl2_basics.c"
 #include <stdio.h>
-#include <unistd.h>
 
 int main(int argc, char *argv[])
 {
-    if (!init_graphics())
-        return 1;
+	if (!init_graphics())
+		return 1;
 
-    // black_frame();
+	// black_frame();
 
-    texture test = {};
-    texture numbers = {};
+	texture test = {};
+	texture numbers = {};
 
-    texture_load(&test, "test.png");
-    texture_load(&numbers, "numbers.png");
+	texture_load(&test, "textures/est.png");
+	texture_load(&numbers, "textures/numbers.png");
 
-    double i = 0;
-    int frame = 0;
+	double i = 0;
+	int frame = 0;
 
-    while (handle_events())
-    {
-        SDL_RenderClear(g_renderer);
+	while (handle_events())
+	{
+		SDL_RenderClear(g_renderer);
 
-        for (size_t j = 0; j < 32; j++)
-        {
-            for (size_t l = 0; l < 32; l++)
-            {
-                texture_render_anim(&numbers, j * numbers.frame_side_size, l * numbers.frame_side_size, frame / 15, 1.0);
-            }
-        }
+		for (size_t j = 0; j < 32; j++)
+		{
+			for (size_t l = 0; l < 32; l++)
+			{
+				texture_render_anim(&numbers, j * numbers.frame_side_size, l * numbers.frame_side_size, frame / 15, 1.0);
+			}
+		}
 
-        texture_render(&test, 64 + sin(i) * 64, 64 + cos(i) * 64, 1 + 0.5 * sin(i));
+		texture_render(&test, 64 + sin(i) * 64, 64 + cos(i) * 64, 1 + 0.5 * sin(i));
 
-        SDL_RenderPresent(g_renderer);
-        SDL_Delay(16);
+		SDL_RenderPresent(g_renderer);
+		SDL_Delay(16);
 
-        i += M_PI / 90;
-        frame++;
-    }
+		i += 0.01;
+		frame++;
+	}
 
-    exit_graphics();
-    return 0;
+	exit_graphics();
+	return 0;
 }

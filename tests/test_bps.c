@@ -18,7 +18,6 @@ int test_basic_io()
 int test_random_save_cycle()
 {
     int status = 1;
-    char *file = (char *)"test.prop";
     hash_table **table = alloc_table();
 
     int tests = 150;
