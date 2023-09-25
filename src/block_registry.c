@@ -167,15 +167,9 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 		// special cases for strings or unknown types
 		if (type == STRING || type == UNKNOWN)
 		{
-			token = strtok(NULL, "\n"); // take everything until first newline character
-			while (*token == ' ')		// skip spaces
-				token++;
-			if (*token == '=') // and '=' character
-				token++;
-			while (*token == ' ') // skip spaces
-				token++;
-			value_length = strlen(token);
-			memcpy(data_buffer, token, value_length + 1);
+			token = strtok_take_all_line();
+			// memcpy(data_buffer, token, value_length + 1);
+			strcpy((char *)data_buffer, token);
 		}
 		else
 		{
@@ -240,6 +234,8 @@ int parse_block_from_file(char *file_path, block *dest)
 
 	char data_str[512] = {0};
 	strcpy(data_str, get_entry(ht, "data"));
+
+	print_table(ht);
 
 	free_table(ht);
 

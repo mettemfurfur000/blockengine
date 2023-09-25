@@ -11,9 +11,9 @@ int main()
 	
     // test_block_all();
     // test_world_all();
-    // test_hash_table_all();
-    // test_block_props_all();
+    test_hash_table_all();
+    test_block_props_all();
     // test_all_data_manip();
-	test_all_registry();
+	// test_all_registry();
     return 0;
 }

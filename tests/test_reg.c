@@ -24,6 +24,6 @@ int test_all_registry()
 {
 	printf("test_all_registry:\n");
 	printf("    test_read_from_string:        %s\n", test_read_from_string() ? "SUCCESS" : "FAIL");
-	printf("    test_parse_from_file:        %s\n", test_parse_from_file() ? "SUCCESS" : "FAIL");
+	printf("    test_parse_from_file:         %s\n", test_parse_from_file() ? "SUCCESS" : "FAIL");
 	return SUCCESS;
 }
