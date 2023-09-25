@@ -124,18 +124,17 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 
 	char *str = malloc(1 + strlen(str_to_cpy));
 	strcpy(str, str_to_cpy);
-	// replace_char(str,'\n',' ');
 
-	printf("Lets start! Out string is:\n[%s]\n", str);
+	// printf("Lets start! Out string is:\n[%s]\n", str);
 
 	char *token = strtok(str, " \n"); // consume start
 	if (strcmp(token, "#START") != 0)
 	{
-		printf("Error, wrong start token!\n");
+		// printf("Error, wrong start token!\n");
 		goto block_data_exit;
 	}
 
-	printf("Got %s token\n", token);
+	// printf("Got %s token\n", token);
 
 	while (1)
 	{
@@ -146,12 +145,12 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 
 		if (strcmp(token, "#END") == 0)
 		{
-			printf("Got %s token\n", token);
+			// printf("Got %s token\n", token);
 			goto block_data_exit;
 		}
 
 		int type = str_to_enum(token);
-		printf("Got '%s' token for type\n", token);
+		// printf("Got '%s' token for type\n", token);
 
 		token = strtok(NULL, " \n"); // character
 
@@ -159,7 +158,7 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 			goto block_data_exit;
 
 		character = token[0]; // copy just 1 character
-		printf("Got '%c' token for character\n", character);
+		// printf("Got '%c' token for character\n", character);
 
 		memset(data_buffer, 0, 256);
 		value = 0;
@@ -185,7 +184,7 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 			if (!token)
 				goto block_data_exit;
 
-			printf("Got '%s' token for value\n", token);
+			// printf("Got '%s' token for value\n", token);
 			value = atoll(token);
 
 			value_length = get_length_to_alloc(value, type);
@@ -195,27 +194,29 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 			strip_digit(data_buffer, value, value_length);
 		}
 
-		printf("Result:\n");
-
 		data_to_load[data_iterator] = character;
 		data_iterator++;
 		data_to_load[data_iterator] = value_length;
 		data_iterator++;
 		for (int i = 0; i < value_length; i++, data_iterator++)
-		{
 			data_to_load[data_iterator] = data_buffer[i];
-			printf("%c", data_buffer[i]);
-		}
-		printf("\nor, as data:\n");
-		for (int i = 0; i < value_length; i++)
-			printf("%.2x ", data_buffer[i]);
-		printf("\n");
+
+		// printf("Result:\n");
+
+		// for (int i = 0; i < value_length; i++)
+		// 	printf("%c", data_buffer[i]);
+
+		// printf("\nor, as data:\n");
+		// for (int i = 0; i < value_length; i++)
+		// 	printf("%.2x ", data_buffer[i]);
+
+		// printf("\n");
 
 		if (data_iterator > 255)
 			goto block_data_exit;
 	}
 block_data_exit:
-	printf("Now we exiting\n");
+	// printf("Now we exiting\n");
 	data_to_load[0] = data_iterator - 1; // writing size byte
 
 	*out_data_ptr = (byte *)malloc(data_iterator);
@@ -231,12 +232,13 @@ int parse_block_from_file(char *file_path, block *dest)
 {
 	hash_table **ht = alloc_table();
 
-	load_properties(file_path, ht);
+	if (!load_properties(file_path, ht))
+		return FAIL;
 
 	char id_str[64] = {0};
 	strcpy(id_str, get_entry(ht, "id"));
 
-	char data_str[64] = {0};
+	char data_str[512] = {0};
 	strcpy(data_str, get_entry(ht, "data"));
 
 	free_table(ht);
