@@ -10,8 +10,6 @@ int test_basic_io()
 
 	status &= save_properties(file, table);
 
-	print_table(table);
-
 	free_table(table);
 
 	return status;
@@ -25,16 +23,10 @@ int test_random_save_cycle()
 	int tests = 150;
 
 	for (int i = 0; i < tests; i++)
-	{
 		put_random_entry(table, i + 66);
-	}
 
 	for (int i = 0; i < tests; i++)
-	{
 		status &= verify_random_entry(table, i + 66);
-	}
-
-	// print_table(table);
 
 	free_table(table);
 

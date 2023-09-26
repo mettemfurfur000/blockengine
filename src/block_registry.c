@@ -235,8 +235,6 @@ int parse_block_from_file(char *file_path, block *dest)
 	char data_str[512] = {0};
 	strcpy(data_str, get_entry(ht, "data"));
 
-	print_table(ht);
-
 	free_table(ht);
 
 	dest->id = atoi(id_str);

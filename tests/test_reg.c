@@ -5,8 +5,8 @@ int test_read_from_string()
 	int status = SUCCESS;
 	byte *data_out;
 	char *test_string = "#START\nbyte a = 30\nint i = 1024\ndigit d = 666\nstring @ Hello gordon freeman!\n#END";
-	status = make_block_data_from_string(test_string, &data_out);
 
+	status = make_block_data_from_string(test_string, &data_out);
 	return status;
 }
 
