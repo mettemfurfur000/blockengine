@@ -23,6 +23,7 @@ SDL_Renderer *g_renderer = NULL;
 typedef struct texture
 {
 	SDL_Texture *ptr;
+	char *filename;
 
 	int width;
 	int height;
@@ -126,15 +127,25 @@ int handle_events()
 int texture_load(texture *dest, char *path_to_file)
 {
 	if (!dest)
+	{
+		printf("texture_load Error: No desination texture\n");
 		return FAIL;
-	if (!path_to_file)
-		return FAIL;
+	}
 
-	unsigned char *image_data;
+	if (!path_to_file)
+	{
+		printf("texture_load Error: No path to file\n");
+		return FAIL;
+	}
+
+	byte *image_data;
 	int channels;
 
 	if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height, &channels, STBI_rgb_alpha)))
+	{
+		printf("texture_load Error: stbi_load failed, no such file?\n");
 		return FAIL;
+	}
 
 	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(image_data, dest->width, dest->height, 32, dest->width * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
 
@@ -143,13 +154,24 @@ int texture_load(texture *dest, char *path_to_file)
 	SDL_FreeSurface(surface);
 
 	if (!dest->ptr)
+		{
+		printf("texture_load Error: SDL_CreateTextureFromSurface failed, failed to create texture\n");
 		return FAIL;
+	}
 
 	// animation data calculations
 
 	dest->frame_side_size = greatest_common_divisor(dest->height, dest->width);
 	dest->frames_per_line = dest->width / dest->frame_side_size;
 	dest->frames = dest->frames_per_line * (dest->height / dest->frame_side_size);
+
+	// copy filename
+	char *filename = strrchr(path_to_file, '/') + 1;
+	int namelen = strlen(filename);
+
+	dest->filename = (char *)malloc(namelen + 1);
+
+	strcpy(dest->filename, filename);
 
 	return SUCCESS;
 }

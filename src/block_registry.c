@@ -1,6 +1,10 @@
 #ifndef BLOCK_REGISTRY_H
 #define BLOCK_REGISTRY_H 1
 
+//vscode itellisense wants this define so bad...
+#define _DEFAULT_SOURCE
+
+#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -10,6 +14,8 @@
 #include "endianless.c"
 #include "game_types.h"
 #include "../vec/src/vec.h"
+
+#define MAX_PATH_LENGTH 512
 
 // new type for vector of textures
 typedef vec_t(texture) texture_vec_t;
@@ -241,6 +247,58 @@ int parse_block_from_file(char *file_path, block *dest)
 
 	make_block_data_from_string(data_str, &dest->data);
 
+	return SUCCESS;
+}
+
+int load_textures_from_folder(char *folder_path, texture_vec_t *dest, int recursive)
+{
+	DIR *dir;
+	struct dirent *entry;
+
+	dir = opendir(folder_path);
+	if (dir == NULL)
+	{
+		printf("Failed to open directory: %s\n", folder_path);
+		return FAIL;
+	}
+
+	while ((entry = readdir(dir)) != NULL)
+	{
+		if (entry->d_type == DT_DIR && recursive)
+		{
+			if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+			{
+				char subfolder_path[MAX_PATH_LENGTH];
+				snprintf(subfolder_path, sizeof(subfolder_path) - 2, "%s/%s", folder_path, entry->d_name);
+				load_textures_from_folder(subfolder_path, dest, recursive);
+			}
+		}
+		else if (entry->d_type == DT_REG)
+		{
+			char file_path[MAX_PATH_LENGTH];
+			snprintf(file_path, sizeof(file_path) - 2, "%s/%s", folder_path, entry->d_name);
+
+			texture t;
+
+			if (texture_load(&t, file_path))
+				vec_push(dest, t);
+			else
+				printf("Failed to load texture: %s\n", file_path);
+		}
+	}
+
+	closedir(dir);
+	return SUCCESS;
+}
+
+int load_block_to_registry(block_registry_t *reg, char *file_path)
+{
+	block_resources br;
+
+	if (!parse_block_from_file(file_path, &br.block_sample))
+		return FAIL;
+
+	vec_push(reg, br);
 	return SUCCESS;
 }
 
