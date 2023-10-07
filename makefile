@@ -4,8 +4,8 @@ vec:
 
 .PHONY: resources
 resources:
-	cp -n -r textures/ build/textures/
-	cp -n -r blocks/ build/blocks/
+	cp -r textures/ build/textures/
+	cp -r blocks/ build/blocks/
 	cp test.prop build/test.prop
 
 test: test.c resources vec
