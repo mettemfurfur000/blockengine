@@ -1,5 +1,6 @@
 #include "../src/hash_table.c"
 #include "../src/benchmarking.c"
+#include "utils.h"
 
 int test_rand_fill_and_remove()
 {
@@ -105,7 +106,8 @@ int test_hash_table_fill()
 int test_hash_table_all()
 {
     printf("test_hash_table_all:\n");
-    printf("    test_rand_fill_and_remove: %s\n", test_rand_fill_and_remove() ? "SUCCESS" : "FAIL");
-    printf("    test_hash_table_fill:      %s\n", test_hash_table_fill() ? "SUCCESS" : "FAIL");
+	RUN_TEST(test_rand_fill_and_remove)
+    RUN_TEST(test_hash_table_fill)
+	
     return SUCCESS;
 }

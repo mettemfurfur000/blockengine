@@ -1,4 +1,5 @@
 #include "../src/data_manipulations.c"
+#include "utils.h"
 
 int test_basic_data_manip()
 {
@@ -91,9 +92,9 @@ int test_random_data()
 int test_all_data_manip()
 {
 	printf("test_all_data_manip:\n");
-	printf("    test_basic_data_manip:       %s\n", test_basic_data_manip() ? "SUCCESS" : "FAIL");
-	printf("    test_array_data:             %s\n", test_array_data() ? "SUCCESS" : "FAIL");
-	printf("    test_random_data:            %s\n", test_random_data() ? "SUCCESS" : "FAIL");
+	RUN_TEST(test_basic_data_manip)
+	RUN_TEST(test_array_data)
+	RUN_TEST(test_random_data)
 
 	return SUCCESS;
 }

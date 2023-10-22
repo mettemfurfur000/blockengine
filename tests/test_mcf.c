@@ -1,5 +1,6 @@
 #include "../src/memory_control_functions.c"
 #include <stdio.h>
+#include "utils.h"
 
 int test_block_init()
 {
@@ -112,11 +113,12 @@ int test_block_swap()
 int test_block_all()
 {
 	printf("test_block_all:\n");
-	printf("    test_block_init:        %s\n", test_block_init() ? "SUCCESS" : "FAIL");
-	printf("    test_block_data_resize: %s\n", test_block_data_resize() ? "SUCCESS" : "FAIL");
-	printf("    test_block_erase:       %s\n", test_block_erase() ? "SUCCESS" : "FAIL");
-	printf("    test_block_copy:        %s\n", test_block_copy() ? "SUCCESS" : "FAIL");
-	printf("    test_block_teleport:    %s\n", test_block_teleport() ? "SUCCESS" : "FAIL");
-	printf("    test_block_swap:        %s\n", test_block_swap() ? "SUCCESS" : "FAIL");
+	RUN_TEST(test_block_init)
+	RUN_TEST(test_block_data_resize)
+	RUN_TEST(test_block_erase)
+	RUN_TEST(test_block_copy)
+	RUN_TEST(test_block_teleport)
+	RUN_TEST(test_block_swap)
+	
 	return SUCCESS;
 }

@@ -1,9 +1,10 @@
 #include "../src/block_properties.c"
+#include "utils.h"
 
 int test_basic_io()
 {
 	int status = SUCCESS;
-	char *file = "test.prop";
+	char *file = "resources/test.prop";
 	hash_table **table = alloc_table();
 
 	status &= load_properties(file, table);
@@ -36,7 +37,8 @@ int test_random_save_cycle()
 int test_block_props_all()
 {
 	printf("test_block_props_all:\n");
-	printf("    test_basic_io:          %s\n", test_basic_io() ? "SUCCESS" : "FAIL");
-	printf("    test_random_save_cycle: %s\n", test_random_save_cycle() ? "SUCCESS" : "FAIL");
+	RUN_TEST(test_basic_io)
+	RUN_TEST(test_random_save_cycle)
+
 	return SUCCESS;
 }

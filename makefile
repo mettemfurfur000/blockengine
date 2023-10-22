@@ -6,10 +6,10 @@ vec:
 #part with resources copy
 .PHONY: resources
 resources:
-	mkdir -p build/textures
-	mkdir -p build/blocks
-	cp resources/* build/resources
-	cp test.prop build/resources/properties/test.prop
+	mkdir -p build/resources
+	mkdir -p build/resources/textures
+	mkdir -p build/resources/blocks
+	cp -r resources/* build/resources
 
 .PHONY: test
 test: test.c resources vec
@@ -29,3 +29,5 @@ test_lua:
 
 clean:
 	rm -rf build/*
+
+all: test graphic test_lua

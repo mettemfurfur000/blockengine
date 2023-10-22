@@ -1,4 +1,5 @@
 #include "../src/block_registry.c"
+#include "utils.h"
 
 int test_read_from_string()
 {
@@ -27,7 +28,7 @@ int test_parse_from_file()
 	int status = SUCCESS;
 	block b = void_block;
 
-	status = parse_block_from_file("blocks/test.blk", &b);
+	status = parse_block_from_file("resources/blocks/test.blk", &b);
 
 	return status;
 }
@@ -41,7 +42,7 @@ int test_add_to_vector()
 	texture_vec_t test_textures;
 	vec_init(&test_textures);
 
-	status &= load_textures_from_folder("textures", &test_textures, 0);
+	status &= load_textures_from_folder("resources/textures", &test_textures, 0);
 
 	for (int i = 0; i < test_textures.length; i++)
 	{
@@ -57,8 +58,9 @@ int test_add_to_vector()
 int test_all_registry()
 {
 	printf("test_all_registry:\n");
-	printf("    test_read_from_string:        %s\n", test_read_from_string() ? "SUCCESS" : "FAIL");
-	printf("    test_parse_from_file:         %s\n", test_parse_from_file() ? "SUCCESS" : "FAIL");
-	printf("	test_add_to_vector:			  %s\n", test_add_to_vector() ? "SUCCESS" : "FAIL");
+	RUN_TEST(test_read_from_string)
+	RUN_TEST(test_parse_from_file)
+	RUN_TEST(test_add_to_vector)
+	
 	return SUCCESS;
 }
