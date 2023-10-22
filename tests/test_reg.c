@@ -36,7 +36,7 @@ int test_add_to_vector()
 {
 	int status = SUCCESS;
 
-	init_graphics();
+	status &= init_graphics();
 
 	texture_vec_t test_textures;
 	vec_init(&test_textures);

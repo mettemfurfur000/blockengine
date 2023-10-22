@@ -90,7 +90,7 @@ int get_length_to_alloc(long long value, int type)
 	case BYTE:
 		return sizeof(byte);
 	default:
-		return sizeof(byte);
+		return length(value);
 	}
 }
 

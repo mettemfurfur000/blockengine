@@ -16,8 +16,6 @@ const char *window_name = "Block Engine";
 
 SDL_Window *g_window = NULL;
 
-SDL_Surface *g_screen = NULL;
-
 SDL_Renderer *g_renderer = NULL;
 
 typedef struct texture
@@ -79,25 +77,15 @@ int init_graphics()
 	g_window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	status &= g_window ? 1 : 0;
 
-	g_screen = SDL_GetWindowSurface(g_window);
-	status &= g_screen ? 1 : 0;
-
-	g_renderer = SDL_CreateRenderer(g_window, -1, SDL_RENDERER_ACCELERATED);
+	g_renderer = SDL_CreateRenderer(g_window, -1, 0);
 	status &= g_renderer ? 1 : 0;
+
+	if (!status)
+		printf("init_graphics() error:[%s]\n", SDL_GetError());
 
 	SDL_SetRenderDrawColor(g_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
-	if (!status)
-		printf("woops:[%s]\n", SDL_GetError());
-
 	return status;
-}
-
-int black_frame()
-{
-	SDL_FillRect(g_screen, NULL, SDL_MapRGB(g_screen->format, 0xFF, 0xFF, 0xFF));
-
-	return !SDL_UpdateWindowSurface(g_window);
 }
 
 int exit_graphics()
@@ -143,7 +131,7 @@ int texture_load(texture *dest, char *path_to_file)
 
 	if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height, &channels, STBI_rgb_alpha)))
 	{
-		printf("texture_load Error: stbi_load failed, no such file?\n");
+		printf("texture_load Error: stbi_load failed, no such file: %s\n", path_to_file);
 		return FAIL;
 	}
 
@@ -154,7 +142,7 @@ int texture_load(texture *dest, char *path_to_file)
 	SDL_FreeSurface(surface);
 
 	if (!dest->ptr)
-		{
+	{
 		printf("texture_load Error: SDL_CreateTextureFromSurface failed, failed to create texture\n");
 		return FAIL;
 	}

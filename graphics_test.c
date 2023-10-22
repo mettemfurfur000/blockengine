@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 	texture test = {};
 	texture numbers = {};
 
-	texture_load(&test, "textures/est.png");
+	texture_load(&test, "textures/test.png");
 	texture_load(&numbers, "textures/numbers.png");
 
 	double i = 0;
