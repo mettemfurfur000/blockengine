@@ -19,14 +19,15 @@ typedef struct
 	data+1 to data+1+size - custom bytes for you. max 256 <3
 */
 
-block void_block = {0, 0};
+const block void_block = {0, 0};
 
 typedef struct
 {
 	byte activity;
-	// 0 - inactive, will unload
-	// 1 - active, stay
-	// 2+ - have constantly active blocks, newer auto-unload
+	// 0 - inactive, will be unloaded soon
+	// 1 - active, stay loaded for a while
+	// 2+ - have constantly active blocks, never unload
+	// can be changed in future
 
 	int width; // all chunks has square form
 	block **blocks;

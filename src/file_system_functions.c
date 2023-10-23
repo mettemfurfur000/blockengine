@@ -11,7 +11,7 @@
 
 struct stat st = {0};
 
-int make_full_chunk_path(char filename[256], world *w, int index, int x, int y)
+int make_full_chunk_path(char filename[256], const world *w, int index, int x, int y)
 {
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
@@ -40,7 +40,7 @@ int make_full_chunk_path(char filename[256], world *w, int index, int x, int y)
 	return SUCCESS;
 }
 
-int make_full_layer_path(char filename[256], world *w, int index)
+int make_full_layer_path(char filename[256], const world *w, int index)
 {
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
@@ -66,7 +66,7 @@ int make_full_layer_path(char filename[256], world *w, int index)
 	return SUCCESS;
 }
 
-int make_full_world_path(char filename[256], world *w)
+int make_full_world_path(char filename[256], const world *w)
 {
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
@@ -89,7 +89,7 @@ int make_full_world_path(char filename[256], world *w)
 	return SUCCESS;
 }
 
-int fwrite_endianless(void *data, const int size, FILE *f)
+int fwrite_endianless(const void *data, const int size, FILE *f)
 {
 	byte buffer[size];
 	memcpy(&buffer, data, size);
@@ -152,7 +152,7 @@ void read_block(block *b, FILE *f)
 	}
 }
 
-int write_chunk(layer_chunk *c, const char *filename)
+int write_chunk(const layer_chunk *c, const char *filename)
 {
 	if (!c)
 		return FAIL;
@@ -202,7 +202,7 @@ int read_chunk(layer_chunk *c, const char *filename)
 	return SUCCESS;
 }
 
-int write_layer(world_layer *wl, const char *filename)
+int write_layer(const world_layer *wl, const char *filename)
 {
 	if (!wl)
 		return FAIL;
@@ -237,7 +237,7 @@ int read_layer(world_layer *wl, const char *filename)
 	return SUCCESS;
 }
 
-int write_world(world *w, const char *filename)
+int write_world(const world *w, const char *filename)
 {
 	if (!w)
 		return FAIL;
@@ -272,21 +272,21 @@ int read_world(world *w, const char *filename)
 /*load/save fucntions*/
 // unload means save to file and then free memory
 
-int chunk_save(world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
+int chunk_save(const world *w, int index, int chunk_x, int chunk_y, const layer_chunk *c)
 {
 	char filename[256];
 	make_full_chunk_path(filename, w, index, chunk_x, chunk_y);
 	return write_chunk(c, filename);
 }
 
-int chunk_load(world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
+int chunk_load(const world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
 {
 	char filename[256];
 	make_full_chunk_path(filename, w, index, chunk_x, chunk_y);
 	return read_chunk(c, filename);
 }
 
-int chunk_unload(world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
+int chunk_unload(const world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
 {
 	int ret;
 	char filename[256];
@@ -299,7 +299,7 @@ int chunk_unload(world *w, int index, int chunk_x, int chunk_y, layer_chunk *c)
 	return ret;
 }
 
-void layer_save(world *w, world_layer *wl)
+void layer_save(const world *w, const world_layer *wl)
 {
 	char filename[256];
 	make_full_layer_path(filename, w, wl->index);
@@ -315,7 +315,7 @@ void layer_save(world *w, world_layer *wl)
 	}
 }
 
-void layer_load(world *w, world_layer *wl, int index)
+void layer_load(const world *w, world_layer *wl, int index)
 {
 	char filename[256];
 	make_full_layer_path(filename, w, index);

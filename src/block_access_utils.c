@@ -3,17 +3,18 @@
 
 #include "file_system_functions.c"
 
-int get_block_access(world *w, int index, int x, int y, block *ptr)
+block *get_block_access(const world *w, const int index, const int x, const int y)
 {
-	world_layer *wl;
+	if (!w)
+		return FAIL;
 
 	if (index >= w->depth)
 		return FAIL;
 
-	wl = &w->layers[index];
+	world_layer *wl = &w->layers[index];
 
-	int chunk_x = x / wl->chunk_width;
-	int chunk_y = y / wl->chunk_width;
+	const int chunk_x = x / wl->chunk_width;
+	const int chunk_y = y / wl->chunk_width;
 
 	if (wl->chunks[chunk_x][chunk_y] == 0)
 	{
@@ -21,28 +22,26 @@ int get_block_access(world *w, int index, int x, int y, block *ptr)
 			return FAIL;
 	}
 
-	int local_x = x % wl->chunk_width;
-	int local_y = y % wl->chunk_width;
+	const int local_x = x % wl->chunk_width;
+	const int local_y = y % wl->chunk_width;
 
-	ptr = &wl->chunks[chunk_x][chunk_y]->blocks[local_x][local_y];
-
-	return SUCCESS;
+	return &wl->chunks[chunk_x][chunk_y]->blocks[local_x][local_y];
 }
 
-int set_block(world *w, int index, int x, int y, block *b)
+int set_block(const world *w, const int index, const int x, const int y, const block *b)
 {
-	block *blk;
-	if (!get_block_access(w, index, x, y, blk))
+	block *blk = get_block_access(w, index, x, y);
+	if (!blk)
 		return FAIL;
 
 	block_copy(blk, b);
 	return SUCCESS;
 }
 
-int clean_block(world *w, int index, int x, int y)
+int clean_block(const world *w, int index, const int x, const int y)
 {
-	block *blk;
-	if (!get_block_access(w, index, x, y, blk))
+	block *blk = get_block_access(w, index, x, y);
+	if (!blk)
 		return FAIL;
 
 	block_data_free(blk);
@@ -51,51 +50,72 @@ int clean_block(world *w, int index, int x, int y)
 	return SUCCESS;
 }
 
-int move_block_gently(world *w, int index_from, int index_to, int x, int y, int vx, int vy)
+int is_move_possible(const block *destination, const block *source)
 {
-	block *source;
-	block *destination;
-
-	if (get_block_access(w, index_from, x, y, source) && get_block_access(w, index_to, x + vx, y + vy, destination))
+	if (!source || !destination) // no pointers == no move
 		return FAIL;
 
-	if (is_block_void(destination))
+	if (source == destination) // move to intself == already moved
 		return FAIL;
 
-	block_teleport(source, destination);
+	if (is_block_void(source) && is_block_void(destination)) // no need to move void
+		return FAIL;
 
 	return SUCCESS;
 }
 
-int move_block_rough(world *w, int index_from, int index_to, int x, int y, int vx, int vy)
+int move_block_gently(const world *w, const int layer_index, const int x, const int y, const int vx, const int vy)
 {
-	block *source;
-	block *destination;
+	block *source = get_block_access(w, layer_index, x, y);
+	block *destination = get_block_access(w, layer_index, x + vx, y + vy);
 
-	if (!get_block_access(w, index_from, x, y, source) && get_block_access(w, index_to, x + vx, y + vy, destination))
+	if (!is_move_possible(destination, source))
 		return FAIL;
 
-	block_teleport(source, destination);
+	if (!is_block_void(destination))
+		return FAIL;
+
+	block_teleport(destination, source);
 
 	return SUCCESS;
 }
 
-int move_block_recursive(world *w, int index_from, int index_to, int x, int y, int vx, int vy, int limit_inclusive)
+int move_block_rough(const world *w, const int layer_index, const int x, const int y, const int vx, const int vy)
+{
+	block *source = get_block_access(w, layer_index, x, y);
+	block *destination = get_block_access(w, layer_index, x + vx, y + vy);
+
+	if (!is_move_possible(destination, source))
+		return FAIL;
+
+	block_teleport(destination, source);
+
+	return SUCCESS;
+}
+
+int move_block_recursive(const world *w, const int layer_index, const int x, const int y, const int vx, const int vy, const int limit_inclusive)
 {
 	if (limit_inclusive == 0)
 		return FAIL;
 
-	block *source;
-	block *destination;
+	block *source = get_block_access(w, layer_index, x, y);
+	block *destination = get_block_access(w, layer_index, x + vx, y + vy);
 
-	if (!(get_block_access(w, index_from, x, y, source) && get_block_access(w, index_to, x + vx, y + vy, destination)))
+	if (!is_move_possible(destination, source))
 		return FAIL;
 
 	if (!is_block_void(destination))
-		if (!move_block_recursive(w, index_to, index_to, x + vx, y + vy, vx > 0 ? 1 : -1, vy > 0 ? 1 : -1, limit_inclusive - 1))
+	{
+		if (!move_block_recursive(w, layer_index, x + vx, y + vy,
+								  vx == 0 ? 0 : vx > 0 ? 1
+													   : -1,
+								  vy == 0 || vx != 0 ? 0 : vy > 0 ? 1
+																  : -1,
+								  limit_inclusive - 1))
 			return FAIL;
+	}
 
-	block_teleport(source, destination);
+	block_teleport(destination, source);
 
 	return SUCCESS;
 }

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int is_data_equal(block *a, block *b)
+int is_data_equal(const block *a, const block *b)
 {
 	if (!a->data && !b->data)
 		return SUCCESS;
@@ -29,17 +29,17 @@ int is_data_equal(block *a, block *b)
 	return SUCCESS;
 }
 
-int is_block_void(block *b)
+int is_block_void(const block *b)
 {
 	return !(b->id || b->data);
 }
 
-int is_block_equal(block *a, block *b)
+int is_block_equal(const block *a, const block *b)
 {
 	return a->id == b->id && is_data_equal(a, b);
 }
 
-int is_chunk_equal(layer_chunk *a, layer_chunk *b)
+int is_chunk_equal(const layer_chunk *a, const layer_chunk *b)
 {
 	if (a->width != b->width)
 		return FAIL;
@@ -95,18 +95,21 @@ void block_erase(block *b)
 	*b = void_block;
 }
 
-void block_copy(block *dest, block *src)
+void block_copy(block *dest, const block *src)
 {
 	block_data_free(dest);
 	// copy fields
 	memcpy(dest, src, sizeof(block));
 	// copy data itself
 	dest->data = 0;
+	if (!src->data)
+		return;
+
 	block_data_alloc(dest, src->data[0]);
 	memcpy(dest->data + 1, src->data + 1, src->data[0]);
 }
 
-void block_init(block *b, int id, int data_size, const char *data)
+void block_init(block *b, const int id, const int data_size, const char *data)
 {
 	b->id = id;
 	block_data_alloc(b, data_size);
@@ -126,7 +129,7 @@ void block_swap(block *a, block *b)
 {
 	block tmp;
 
-	memcpy(&tmp, a, sizeof(block));
+	memcpy(&tmp, a, sizeof(block)); // why not block_copy? we dont want to realloc things, just swap all fields and thats it
 
 	memcpy(a, b, sizeof(block));
 
@@ -152,7 +155,7 @@ void chunk_free(layer_chunk *l)
 	l->width = 0;
 }
 
-void chunk_alloc(layer_chunk *l, int width)
+void chunk_alloc(layer_chunk *l, const int width)
 {
 	chunk_free(l);
 
@@ -189,7 +192,7 @@ void world_layer_free(world_layer *wl)
 	wl->chunk_width = 0;
 }
 
-void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width, int index)
+void world_layer_alloc(world_layer *wl, const int size_x, const int size_y, const int chunk_width, const int index)
 {
 	world_layer_free(wl);
 
@@ -210,7 +213,7 @@ void world_layer_alloc(world_layer *wl, int size_x, int size_y, int chunk_width,
 	wl->index = index;
 }
 
-world *world_make(int depth, char *name_to_copy_from)
+world *world_make(const int depth, const char *name_to_copy_from)
 {
 	world *w = (world *)calloc(1, sizeof(world));
 
@@ -252,18 +255,14 @@ void block_set_random(block *b)
 	}
 }
 
-void chunk_random_fill(layer_chunk *l, unsigned int seed)
+void chunk_random_fill(layer_chunk *l, const unsigned int seed)
 {
 	if (seed)
 		srand(seed);
 
 	for (int i = 0; i < l->width; i++)
-	{
 		for (int j = 0; j < l->width; j++)
-		{
 			block_set_random(&l->blocks[i][j]);
-		}
-	}
 }
 
 #endif
