@@ -9,12 +9,12 @@ int test_read_from_string()
 	byte data_must_be[] = {36, // size byte
 						   'a', 1, 0x1e,
 						   'i', 4, 0x00, 0x04, 0x00, 0x00,
-						   'd', 2, 0x9a, 0x02,					//digit is folded to minimal possible size
+						   'd', 2, 0x9a, 0x02,					  // digit is folded to minimal possible size
 						   '@', 21, 'H', 'e', 'l', 'l', 'o', ' ', // strings is just strings
 						   'g', 'o', 'r', 'd', 'o', 'n', ' ',
 						   'f', 'r', 'e', 'e', 'm', 'a', 'n', '!'};
-	
-	//actually my cool data type is just pascal strings, sad.
+
+	// actually my cool data type is just pascal strings, sad.
 
 	status = make_block_data_from_string(test_string, &data_out);
 
@@ -26,41 +26,26 @@ int test_read_from_string()
 int test_parse_from_file()
 {
 	int status = SUCCESS;
-	block b = void_block;
+	block_resources br = {0};
 
-	status = parse_block_from_file("resources/blocks/test.blk", &b);
+	status = parse_block_resources_from_file("resources/blocks/test.blk", &br);
 
-	return status;
-}
+	printf("block: %d, %.*s\n", br.block_sample.id,
+		   br.block_sample.data[0],
+		   br.block_sample.data + 1);
 
-int test_add_to_vector()
-{
-	int status = SUCCESS;
-
-	status &= init_graphics();
-
-	texture_vec_t test_textures;
-	vec_init(&test_textures);
-
-	status &= load_textures_from_folder("resources/textures", &test_textures, 0);
-
-	for (int i = 0; i < test_textures.length; i++)
-	{
-		texture t = test_textures.data[i];
-		printf("		info texture %i: %s, %dx%d with %d frames\n", i, t.filename, t.width, t.height, t.frames);
-	}
-
-	exit_graphics();
+	free_block_resources(&br);
 
 	return status;
 }
 
 int test_all_registry()
 {
+	init_graphics();
 	printf("test_all_registry:\n");
 	RUN_TEST(test_read_from_string)
 	RUN_TEST(test_parse_from_file)
-	RUN_TEST(test_add_to_vector)
-	
+
+	exit_graphics();
 	return SUCCESS;
 }

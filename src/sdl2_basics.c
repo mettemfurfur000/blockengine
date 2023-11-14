@@ -137,13 +137,20 @@ int texture_load(texture *dest, char *path_to_file)
 
 	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(image_data, dest->width, dest->height, 32, dest->width * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
 
+	if (!surface)
+	{
+		printf("texture_load Error: SDL_CreateRGBSurfaceFrom failed\n");
+		return FAIL;
+	}
+
 	dest->ptr = SDL_CreateTextureFromSurface(g_renderer, surface);
 
 	SDL_FreeSurface(surface);
 
 	if (!dest->ptr)
 	{
-		printf("texture_load Error: SDL_CreateTextureFromSurface failed, failed to create texture\n");
+		printf("texture_load Error: SDL_CreateTextureFromSurface failed\n");
+		printf("%s\n",SDL_GetError());
 		return FAIL;
 	}
 
@@ -162,6 +169,20 @@ int texture_load(texture *dest, char *path_to_file)
 	strcpy(dest->filename, filename);
 
 	return SUCCESS;
+}
+
+void free_texture(texture *t)
+{
+	if (t->filename)
+	{
+		free(t->filename);
+		t->filename = 0;
+	}
+	if (t->ptr)
+	{
+		SDL_DestroyTexture(t->ptr);
+		t->ptr = 0;
+	}
 }
 
 int texture_render(texture *texture, int x, int y, float scale)

@@ -13,18 +13,16 @@
 #include "block_properties.c"
 #include "endianless.c"
 #include "game_types.h"
+#include "memory_control_functions.c"
 #include "../vec/src/vec.h"
 
 #define MAX_PATH_LENGTH 512
-
-// new type for vector of textures
-typedef vec_t(texture) texture_vec_t;
 
 typedef struct block_resources
 {
 	block block_sample;
 
-	texture_vec_t textures;
+	texture block_texture;
 } block_resources;
 
 typedef vec_t(block_resources) block_registry_t;
@@ -202,69 +200,114 @@ block_data_exit:
 	return SUCCESS;
 }
 
-int parse_block_from_file(char *file_path, block *dest)
+typedef struct
 {
-	hash_table **ht = alloc_table();
+	int (*function)(char *, block_resources *);
+	char *name;
+	byte is_critical;
+} resource_entry_handler;
 
-	if (!load_properties(file_path, ht))
+int block_res_id_handler(char *data, block_resources *dest)
+{
+	int id = atoi(data);
+	if (id == 0)
 		return FAIL;
-
-	char id_str[64] = {0};
-	strcpy(id_str, get_entry(ht, "id"));
-
-	char data_str[512] = {0};
-	strcpy(data_str, get_entry(ht, "data"));
-
-	free_table(ht);
-
-	dest->id = atoi(id_str);
-
-	make_block_data_from_string(data_str, &dest->data);
-
+	dest->block_sample.id = id;
 	return SUCCESS;
 }
 
-int load_textures_from_folder(char *folder_path, texture_vec_t *dest, int recursive)
+int block_res_data_handler(char *data, block_resources *dest)
 {
-	DIR *dir;
+	return make_block_data_from_string(data, &dest->block_sample.data);
+}
+
+int block_res_texture_handler(char *data, block_resources *dest)
+{
+	char texture_full_path[256];
+	snprintf(texture_full_path, sizeof(texture_full_path), "resources/textures/%s", data);
+
+	return texture_load(&dest->block_texture, texture_full_path);
+}
+
+int parse_block_resources_from_file(const char *file_path, block_resources *dest)
+{
+	hash_table **ht = alloc_table();
+	int status = SUCCESS;
+
+	if (!load_properties(file_path, ht))
+	{
+		printf("Error loading block resources: %s\n", file_path);
+		status = FAIL;
+		goto emergency_exit;
+	}
+
+	char *entry = 0;
+	#define TOTAL_HANDLERS 3
+	const resource_entry_handler res_handlers[TOTAL_HANDLERS] = {
+		{&block_res_id_handler, "id", 1},
+		{&block_res_data_handler, "data", 0},
+		{&block_res_texture_handler, "texture", 1}};
+
+	for (int i = 0; i < TOTAL_HANDLERS; i++)
+	{
+		entry = get_entry(ht, res_handlers[i].name);
+		if (entry == 0 && res_handlers[i].is_critical)
+		{
+			printf("Error: No \"%s\" entry in file %s\n", res_handlers[i].name, file_path);
+			status = FAIL;
+			break;
+		}
+		if (entry != 0 && res_handlers[i].function(entry, dest) == FAIL)
+		{
+			printf("Error occured after calling \"%s\" handler, recieved data: %s\n", res_handlers[i].name, entry);
+			status = FAIL;
+			break;
+		}
+	}
+emergency_exit:
+	free_table(ht);
+	return status;
+}
+#undef TOTAL_HANDLERS
+
+void free_block_resources(block_resources *b)
+{
+	block_data_free(&b->block_sample);
+	free_texture(&b->block_texture);
+}
+
+int read_block_registry(const char *folder, block_registry_t *reg)
+{
+	DIR *directory;
 	struct dirent *entry;
 
-	dir = opendir(folder_path);
-	if (dir == NULL)
+	directory = opendir(folder);
+
+	if (directory == NULL)
 	{
-		printf("Failed to open directory: %s\n", folder_path);
+		printf("Unable to open directory: %s\n", folder);
 		return FAIL;
 	}
 
-	while ((entry = readdir(dir)) != NULL)
+	while ((entry = readdir(directory)) != NULL)
 	{
-		if (entry->d_type == DT_DIR && recursive)
-		{
-			if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
-			{
-				char subfolder_path[MAX_PATH_LENGTH];
-				snprintf(subfolder_path, sizeof(subfolder_path) - 2, "%s/%s", folder_path, entry->d_name);
-				load_textures_from_folder(subfolder_path, dest, recursive);
-			}
-		}
-		else if (entry->d_type == DT_REG)
-		{
-			char file_path[MAX_PATH_LENGTH];
-			snprintf(file_path, sizeof(file_path) - 2, "%s/%s", folder_path, entry->d_name);
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+			continue;
 
-			texture t;
+		if (entry->d_type == DT_REG)
+		{
+			block_resources br = {};
+			char file_to_parse[300];
+			snprintf(file_to_parse, sizeof(file_to_parse), "%s/%s", folder, entry->d_name);
+			if (parse_block_resources_from_file(file_to_parse, &br) == FAIL)
+				free_block_resources(&br);
 
-			if (texture_load(&t, file_path))
-			{
-				if (vec_push(dest, t)) // if we have a problem
-					printf("Failed to push value to vector, path to file: %s\n", file_path);
-			}
-			else
-				printf("Failed to load texture: %s\n", file_path);
+			(void)vec_push(reg, br);
 		}
 	}
 
-	closedir(dir);
+	closedir(directory);
+
 	return SUCCESS;
 }
 

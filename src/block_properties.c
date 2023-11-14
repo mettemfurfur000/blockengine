@@ -49,7 +49,7 @@ int read_properties(FILE *f, char *key, char *value)
 	return !feof(f);
 }
 
-int load_properties(char *filename, hash_table **table)
+int load_properties(const char *filename, hash_table **table)
 {
 	FILE *f;
 	char key[256] = {0};
@@ -72,7 +72,7 @@ int load_properties(char *filename, hash_table **table)
 	return SUCCESS;
 }
 
-int save_properties(char *filename, hash_table **table)
+int save_properties(const char *filename, hash_table **table)
 {
 	FILE *f = fopen(filename, "wb");
 	hash_table *node;
