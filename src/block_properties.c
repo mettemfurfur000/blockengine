@@ -3,7 +3,7 @@
 
 #include "hash_table.c"
 
-char *strtok_take_all_line()
+char *strtok_take_whole_line()
 {
 	char *token = strtok(NULL, "\n"); // take everything until first newline character
 	if (!token)
@@ -39,7 +39,7 @@ int read_properties(FILE *f, char *key, char *value)
 		if (token)
 		{
 			strcpy(key, token);
-			token = strtok_take_all_line();
+			token = strtok_take_whole_line();
 			if (token)
 			{
 				strcpy(value, token);

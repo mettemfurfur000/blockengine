@@ -94,9 +94,10 @@ int get_length_to_alloc(long long value, int type)
 
 // format:
 
-// <character> <type> = <value>
-//  ...
-// <character> <type> = <value>
+// { <character> <type> = <value> 
+//   <character> <type> = <value> 
+//   ...
+//   <character> <type> = <value> }
 
 // acceptable types: digit, long, int, short, byte, string
 //
@@ -129,7 +130,7 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 	char *str = malloc(1 + strlen(str_to_cpy));
 	strcpy(str, str_to_cpy);
 
-	char *token = strtok(str, " \n"); // consume start
+	char *token = strtok(str, " \n"); // consume start token
 	if (strcmp(token, "{") != 0)
 		goto block_data_exit;
 
@@ -159,7 +160,7 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 		// special cases for strings or unknown types
 		if (type == STRING || type == UNKNOWN)
 		{
-			token = strtok_take_all_line();
+			token = strtok_take_whole_line();
 			value_length = strlen(token);
 			memcpy(data_buffer, token, value_length + 1);
 		}
@@ -189,6 +190,9 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 			goto block_data_exit;
 	}
 block_data_exit:
+	if(data_iterator == 1) // ok, no data
+		return SUCCESS;
+	
 	data_to_load[0] = data_iterator - 1; // writing size byte
 
 	*out_data_ptr = (byte *)malloc(data_iterator);
@@ -242,7 +246,7 @@ int parse_block_resources_from_file(const char *file_path, block_resources *dest
 	}
 
 	char *entry = 0;
-	#define TOTAL_HANDLERS 3
+#define TOTAL_HANDLERS 3
 	const resource_entry_handler res_handlers[TOTAL_HANDLERS] = {
 		{&block_res_id_handler, "id", 1},
 		{&block_res_data_handler, "data", 0},
@@ -286,6 +290,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 	if (directory == NULL)
 	{
 		printf("Unable to open directory: %s\n", folder);
+		closedir(directory);
 		return FAIL;
 	}
 
@@ -309,6 +314,13 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 	closedir(directory);
 
 	return SUCCESS;
+}
+
+void free_block_registry(block_registry_t *b_reg)
+{
+	for (int i = 0; i < b_reg->length; i++)
+		free_block_resources(&b_reg->data[i]);
+	vec_deinit(b_reg);
 }
 
 #endif

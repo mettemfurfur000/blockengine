@@ -30,11 +30,35 @@ int test_parse_from_file()
 
 	status = parse_block_resources_from_file("resources/blocks/test.blk", &br);
 
-	printf("block: %d, %.*s\n", br.block_sample.id,
+	if (!status)
+		return FAIL;
+
+	printf("\t\tblock: %d, %.*s\n", br.block_sample.id,
 		   br.block_sample.data[0],
 		   br.block_sample.data + 1);
 
 	free_block_resources(&br);
+
+	return status;
+}
+
+int test_parse_folder()
+{
+	int status = SUCCESS;
+	block_registry_t b_reg;
+	vec_init(&b_reg);
+
+	status = read_block_registry("resources/blocks", &b_reg);
+
+	for (int i = 0; i < b_reg.length; i++)
+	{
+		printf("\t\tblock: %d,", b_reg.data[i].block_sample.id);
+
+		b_reg.data[i].block_sample.data ? printf("%.*s\n", b_reg.data[i].block_sample.data[0], b_reg.data[i].block_sample.data + 1)
+										: printf("(no data)\n");
+	}
+
+	free_block_registry(&b_reg);
 
 	return status;
 }
@@ -45,6 +69,7 @@ int test_all_registry()
 	printf("test_all_registry:\n");
 	RUN_TEST(test_read_from_string)
 	RUN_TEST(test_parse_from_file)
+	RUN_TEST(test_parse_folder)
 
 	exit_graphics();
 	return SUCCESS;
