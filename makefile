@@ -27,6 +27,11 @@ test_lua:
 	gcc -o obj/lua_test.o -c lua_test.c -O0 -Wall
 	gcc -o build/lua_test obj/lua_test.o lua/src/liblua.a -lm
 
+.PHONY: networking
+networking:
+	gcc -o build/test_server network_test_server.c -Wall
+	gcc -o build/test_client network_test_client.c -Wall
+
 clean:
 	rm -rf build/*
 
