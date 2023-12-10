@@ -43,6 +43,7 @@ test: test.c resources vec
 graphic: graphics_test.c resources
 	gcc ${INCFLAGS} -o obj/g_test.o -c graphics_test.c ${CFLAGS}
 	gcc ${INCFLAGS} -o build/g_test obj/g_test.o ${CFLAGS} -lm -g
+	./build/g_test
 
 .PHONY: test_lua
 test_lua:
