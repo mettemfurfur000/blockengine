@@ -46,7 +46,7 @@ typedef struct
 
 typedef struct
 {
-	char *worldname;
+	char worldname[32];
 
 	int depth;
 	world_layer *layers;

@@ -4,7 +4,11 @@
 #include "memory_control_functions.c"
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN64
+#include <winsock.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 /*
 1 byte for size

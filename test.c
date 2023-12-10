@@ -6,8 +6,11 @@
 #include "tests/test_reg.c"
 #include "tests/test_acc.c"
 
-int main()
+// int main(int argc, char* argv[])
+// int main()
+int main(int argc, char *argv[])
 {
+	fprintf(stderr, "%s\n", "test thing");
 	printf("Big endian? %s\n", is_big_endian() ? "TRUE" : "FALSE");
 
 	test_block_all();

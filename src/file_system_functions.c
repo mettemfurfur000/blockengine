@@ -9,9 +9,55 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef _WIN64
+#define X_P_mkdir(folder_path) mkdir(folder_path)
+#else
+#define X_P_mkdir(folder_path) mkdir(folder_path, 0700)
+#endif
+
 struct stat st = {0};
 
-int make_full_chunk_path(char filename[256], const world *w, int index, int x, int y)
+#ifdef _WIN64 // why not
+const char *separator = "\\";
+#else
+const char *separator = "/";
+#endif
+
+const char *worlds_folder = "worlds";
+const char *layer_folder_template = "layer_%d";
+const char *chunk_folder_template = "chunk_%d_%d.bin";
+const char *world_info_str = "world_info.bin";
+const char *layer_info_str = "layer_info.bin";
+
+int make_full_world_path(char *filename, const world *w)
+{
+	char working_path[256] = {0};
+	char folder_path[512] = {0};
+
+	if (!getcwd(working_path, 256))
+		return FAIL;
+
+	strcat(folder_path, working_path); // assemble worlds folder path
+	strcat(folder_path, separator);
+	strcat(folder_path, worlds_folder);
+
+	if (stat(folder_path, &st) == -1)
+		X_P_mkdir(folder_path);
+
+	strcat(folder_path, separator);
+	strcat(folder_path, w->worldname);
+
+	if (stat(folder_path, &st) == -1)
+		X_P_mkdir(folder_path);
+
+	strcat(folder_path, separator);
+	strcat(folder_path, world_info_str);
+
+	strcpy(filename, folder_path);
+	return SUCCESS;
+}
+
+int make_full_layer_path(char *filename, const world *w, int index)
 {
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
@@ -20,27 +66,34 @@ int make_full_chunk_path(char filename[256], const world *w, int index, int x, i
 	if (!getcwd(working_path, 256))
 		return FAIL;
 
-	memset(filename, 0, 256);
-
-	sprintf(folder_path, "%s/world_%s", working_path, w->worldname);
+	strcat(folder_path, working_path); // assemble worlds folder path
+	strcat(folder_path, separator);
+	strcat(folder_path, worlds_folder);
 
 	if (stat(folder_path, &st) == -1)
-		mkdir(folder_path, 0700);
+		X_P_mkdir(folder_path);
 
-	sprintf(buffer, "/layer_%d", index);
+	strcat(folder_path, separator);
+	strcat(folder_path, w->worldname);
+
+	if (stat(folder_path, &st) == -1)
+		X_P_mkdir(folder_path);
+
+	strcat(folder_path, separator);
+	sprintf(buffer, layer_folder_template, index); // create layer folder path
 	strcat(folder_path, buffer);
 
 	if (stat(folder_path, &st) == -1)
-		mkdir(folder_path, 0700);
+		X_P_mkdir(folder_path);
 
-	sprintf(buffer, "/chunk_%d_%d.bin", x, y);
-	strcat(folder_path, buffer);
+	strcat(folder_path, separator);
+	strcat(folder_path, layer_info_str);
 	strcpy(filename, folder_path);
 
 	return SUCCESS;
 }
 
-int make_full_layer_path(char filename[256], const world *w, int index)
+int make_full_chunk_path(char *filename, const world *w, int index, int x, int y)
 {
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
@@ -49,43 +102,32 @@ int make_full_layer_path(char filename[256], const world *w, int index)
 	if (!getcwd(working_path, 256))
 		return FAIL;
 
-	memset(filename, 0, 256);
-	sprintf(folder_path, "%s/world_%s", working_path, w->worldname);
-	if (stat(folder_path, &st) == -1)
-		mkdir(folder_path, 0700);
+	strcat(folder_path, working_path); // assemble worlds folder path
+	strcat(folder_path, separator);
+	strcat(folder_path, worlds_folder);
 
-	sprintf(buffer, "/layer_%d", index);
+	if (stat(folder_path, &st) == -1) // if not created yet, create
+		X_P_mkdir(folder_path);
+
+	strcat(folder_path, separator); // assemble world folder path
+	strcat(folder_path, w->worldname);
+
+	if (stat(folder_path, &st) == -1) // if not created yet, create
+		X_P_mkdir(folder_path);
+
+	strcat(folder_path, separator);
+	sprintf(buffer, layer_folder_template, index); // create layer folder path
 	strcat(folder_path, buffer);
-	if (stat(folder_path, &st) == -1)
-		mkdir(folder_path, 0700);
 
-	sprintf(buffer, "/layer_info.bin");
-	strcat(folder_path, buffer);
-	strcpy(filename, folder_path);
+	if (stat(folder_path, &st) == -1) // create if not exist
+		X_P_mkdir(folder_path);
 
-	return SUCCESS;
-}
-
-int make_full_world_path(char filename[256], const world *w)
-{
-	char working_path[256] = {0};
-	char folder_path[512] = {0};
-	char buffer[256];
-
-	if (!getcwd(working_path, 256))
-		return FAIL;
-
-	memset(filename, 0, 256);
-
-	sprintf(folder_path, "%s/world_%s", working_path, w->worldname);
-
-	if (stat(folder_path, &st) == -1)
-		mkdir(folder_path, 0700);
-
-	sprintf(buffer, "/world_info.bin");
+	strcat(folder_path, separator);
+	sprintf(buffer, chunk_folder_template, x, y); // make chunk path
 	strcat(folder_path, buffer);
 
 	strcpy(filename, folder_path);
+
 	return SUCCESS;
 }
 
@@ -248,7 +290,7 @@ int write_world(const world *w, const char *filename)
 		return FAIL;
 
 	fwrite_endianless(&w->depth, sizeof(int), f);
-	fwrite(&w->worldname, sizeof(char), 64, f);
+	fwrite(w->worldname, sizeof(char), 32, f);
 
 	fclose(f);
 	return SUCCESS;
@@ -264,7 +306,7 @@ int read_world(world *w, const char *filename)
 		return FAIL;
 
 	fread_endianless(&w->depth, sizeof(int), f);
-	fread(&w->worldname, sizeof(char), 64, f);
+	fread(w->worldname, sizeof(char), 32, f);
 
 	fclose(f);
 	return SUCCESS;
@@ -362,7 +404,7 @@ void world_save(world *w)
 	}
 }
 
-void world_load(world *w, char *worldname)
+void world_load(world *w)
 {
 	char filename[256];
 	make_full_world_path(filename, w);

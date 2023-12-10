@@ -4,7 +4,7 @@
 // vscode itellisense wants this define so bad...
 #define _DEFAULT_SOURCE 1
 
-#include <dirent.h>
+#include "../dirent/include/dirent.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -29,14 +29,14 @@ typedef vec_t(block_resources) block_registry_t;
 
 enum block_data_types
 {
-	UNKNOWN,
-	DIGIT,
-	LONG,
-	INT,
-	SHORT,
-	BYTE,
-	STRING,
-};
+	T_UNKNOWN,
+	T_DIGIT,
+	T_LONG,
+	T_INT,
+	T_SHORT,
+	T_BYTE,
+	T_STRING,
+} types;
 
 int length(long long value)
 {
@@ -59,33 +59,33 @@ void strip_digit(byte *dest, long long value, int actual_length)
 int str_to_enum(char *type_str)
 {
 	if (!strcmp(type_str, "digit"))
-		return DIGIT;
+		return T_DIGIT;
 	if (!strcmp(type_str, "long"))
-		return LONG;
+		return T_LONG;
 	if (!strcmp(type_str, "int"))
-		return INT;
+		return T_INT;
 	if (!strcmp(type_str, "short"))
-		return SHORT;
+		return T_SHORT;
 	if (!strcmp(type_str, "byte"))
-		return BYTE;
+		return T_BYTE;
 	if (!strcmp(type_str, "string"))
-		return STRING;
-	return UNKNOWN;
+		return T_STRING;
+	return T_UNKNOWN;
 }
 
 int get_length_to_alloc(long long value, int type)
 {
 	switch (type)
 	{
-	case DIGIT:
+	case T_DIGIT:
 		return length(value);
-	case LONG:
+	case T_LONG:
 		return sizeof(long);
-	case INT:
+	case T_INT:
 		return sizeof(int);
-	case SHORT:
+	case T_SHORT:
 		return sizeof(short);
-	case BYTE:
+	case T_BYTE:
 		return sizeof(byte);
 	default:
 		return length(value);
@@ -158,7 +158,7 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 		value_length = 0;
 
 		// special cases for strings or unknown types
-		if (type == STRING || type == UNKNOWN)
+		if (type == T_STRING || type == T_UNKNOWN)
 		{
 			token = strtok_take_whole_line();
 			value_length = strlen(token);

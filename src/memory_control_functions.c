@@ -217,7 +217,6 @@ world *world_make(const int depth, const char *name_to_copy_from)
 {
 	world *w = (world *)calloc(1, sizeof(world));
 
-	w->worldname = (char *)calloc(1, strlen(name_to_copy_from) + 1);
 	strcpy(w->worldname, name_to_copy_from);
 
 	w->depth = depth;
@@ -228,7 +227,6 @@ world *world_make(const int depth, const char *name_to_copy_from)
 void world_free(world *w)
 {
 	free(w->layers);
-	free(w->worldname);
 	free(w);
 }
 

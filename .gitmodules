@@ -1,0 +1,6 @@
+[submodule "vec"]
+	path = vec
+	url = https://github.com/rxi/vec
+[submodule "dirent"]
+	path = dirent
+	url = https://github.com/tronkko/dirent.git

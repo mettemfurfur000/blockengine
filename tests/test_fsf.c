@@ -1,8 +1,9 @@
 #include "../src/file_system_functions.c"
 #include <unistd.h>
 #include "utils.h"
+#include <signal.h>
 
-char test_world[16] = "test_world\0";
+const char* test_world = "test_world\0";
 
 int test_world_init()
 {
@@ -60,13 +61,13 @@ int test_load_world()
 
 	world *tw = world_make(1, test_world);
 
-	world_layer_alloc(&tw->layers[0], 8, 8, 32, 0);
+	world_load(tw);
 
-	world_load(tw, test_world);
+	world_layer *wl = &tw->layers[0];
 
 	for (int i = 0; i < 8; i++)
 		for (int j = 0; j < 8; j++)
-			status &= tw->layers[0].chunks[i][j] != 0;
+			status &= wl->chunks[i][j] != 0;
 
 	world_layer_free(&tw->layers[0]);
 
@@ -104,7 +105,7 @@ int test_save_load_random()
 
 	world_layer_alloc(&tw->layers[0], w_width, w_width, 32, 0);
 
-	world_load(tw, rand_world);
+	world_load(tw);
 
 	chunk_alloc(t, ch_width);
 
