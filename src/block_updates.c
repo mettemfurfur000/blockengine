@@ -1,7 +1,15 @@
-#ifndef BLOCK_ACCESS_UTILS_H
-#define BLOCK_ACCESS_UTILS_H 1
+#ifndef BLOCK_UPDATES
+#define BLOCK_UPDATES 1
 
 #include "file_system_functions.c"
+
+int is_chunk_unloaded(const world_layer *wl, const int chunk_x, const int chunk_y)
+{
+	if (!wl)
+		return FAIL;
+
+	return wl->chunks[chunk_x][chunk_y] == 0;
+}
 
 block *get_block_access(const world *w, const int index, const int x, const int y)
 {
@@ -16,11 +24,9 @@ block *get_block_access(const world *w, const int index, const int x, const int 
 	const int chunk_x = x / wl->chunk_width;
 	const int chunk_y = y / wl->chunk_width;
 
-	if (wl->chunks[chunk_x][chunk_y] == 0)
-	{
+	if (is_chunk_unloaded(wl, chunk_x, chunk_y))
 		if (!chunk_load(w, index, chunk_x, chunk_y, wl->chunks[chunk_x][chunk_y]))
 			return FAIL;
-	}
 
 	const int local_x = x % wl->chunk_width;
 	const int local_y = y % wl->chunk_width;

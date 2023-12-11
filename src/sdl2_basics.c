@@ -150,7 +150,7 @@ int texture_load(texture *dest, char *path_to_file)
 	if (!dest->ptr)
 	{
 		printf("texture_load Error: SDL_CreateTextureFromSurface failed\n");
-		printf("%s\n",SDL_GetError());
+		printf("%s\n", SDL_GetError());
 		return FAIL;
 	}
 
@@ -189,6 +189,7 @@ int texture_render(texture *texture, int x, int y, float scale)
 {
 	SDL_Rect src = {0, 0, texture->frame_side_size, texture->frame_side_size};
 	SDL_Rect dest = {x, y, texture->frame_side_size * scale, texture->frame_side_size * scale};
+
 	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
 }
 
@@ -199,8 +200,8 @@ int texture_render_anim(texture *texture, int x, int y, int frame, float scale)
 	int frame_y = texture->frame_side_size * (frame / texture->frames_per_line);
 
 	SDL_Rect src = {frame_x, frame_y, texture->frame_side_size, texture->frame_side_size};
-
-	SDL_Rect dest = {x, y, texture->frame_side_size, texture->frame_side_size};
+	SDL_Rect dest = {x, y, texture->frame_side_size * scale, texture->frame_side_size * scale};
+	
 	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
 }
 
