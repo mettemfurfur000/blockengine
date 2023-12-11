@@ -4,6 +4,7 @@
 // vscode itellisense wants this define so bad...
 #define _DEFAULT_SOURCE 1
 
+#define __USE_MISC
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>

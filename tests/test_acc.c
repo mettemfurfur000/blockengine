@@ -1,4 +1,4 @@
-#include "../src/block_access_utils.c"
+#include "../src/block_updates.c"
 #include "utils.h"
 
 const char test_world_name[] = "test_world";

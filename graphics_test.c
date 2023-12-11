@@ -11,8 +11,11 @@ int main(int argc, char *argv[])
 	texture test = {};
 	texture numbers = {};
 
-	texture_load(&test, "textures/test.png");
-	texture_load(&numbers, "textures/numbers.png");
+	int texture_status = SUCCESS;
+	texture_status &= texture_load(&test, "resources/textures/test.png");
+	texture_status &= texture_load(&numbers, "resources/textures/numbers.png");
+	if (!texture_status)
+		return 1;
 
 	double i = 0;
 	int frame = 0;
@@ -22,12 +25,8 @@ int main(int argc, char *argv[])
 		SDL_RenderClear(g_renderer);
 
 		for (size_t j = 0; j < 32; j++)
-		{
 			for (size_t l = 0; l < 32; l++)
-			{
-				texture_render_anim(&numbers, j * numbers.frame_side_size, l * numbers.frame_side_size, frame / 15, 1.0);
-			}
-		}
+				texture_render_anim(&numbers, j * numbers.frame_side_size, l * numbers.frame_side_size, (j + l + frame) / 15, 1.0);
 
 		texture_render(&test, 64 + sin(i) * 64, 64 + cos(i) * 64, 1 + 0.5 * sin(i));
 
