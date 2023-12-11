@@ -4,7 +4,12 @@
 // vscode itellisense wants this define so bad...
 #define _DEFAULT_SOURCE 1
 
+#ifdef _WIN64
 #include "../dirent/include/dirent.h"
+#else
+#include <dirent.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>

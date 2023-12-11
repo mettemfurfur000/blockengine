@@ -1,12 +1,10 @@
-ifdef OS
-	INCFLAGS := -I./win_msys2_headers/
-else
+CFLAGS += -O0 -Wall -g
 
+ifeq ($(OS),Windows_NT)
+	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -LC:/msys64/mingw64/lib -lmingw32 -lws2_32 
 endif
 
-CFLAGS :=
-CFLAGS += -O0 -Wall -g
-CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -LC:/msys64/mingw64/lib -lmingw32 -lSDL2main -lSDL2
+CFLAGS += -lSDL2main -lSDL2
 
 # get shared libs here
 %.dll:
@@ -23,7 +21,7 @@ prep:
 #our vector library
 .PHONY: vec
 vec:
-	gcc -o obj/vec.o -c vec/src/vec.c -Wall -Wextra -Ivec/src ${INCFLAGS}
+	gcc -o obj/vec.o -c vec/src/vec.c -Wall -Wextra -Ivec/src
 
 #part with resources copy
 .PHONY: resources
@@ -36,24 +34,24 @@ resources: prep
 .PHONY: test
 test: test.c resources vec
 	mkdir -p build
-	gcc ${INCFLAGS} -o obj/test.o -c test.c ${CFLAGS}
-	gcc ${INCFLAGS} -o build/test obj/test.o obj/vec.o ${CFLAGS} -lm -lws2_32 
+	gcc -o obj/test.o -c test.c ${CFLAGS}
+	gcc -o build/test obj/test.o obj/vec.o ${CFLAGS} -lm
 
 .PHONY: graphic
 graphic: graphics_test.c resources
-	gcc ${INCFLAGS} -o obj/g_test.o -c graphics_test.c ${CFLAGS}
-	gcc ${INCFLAGS} -o build/g_test obj/g_test.o ${CFLAGS} -lm -g
+	gcc -o obj/g_test.o -c graphics_test.c ${CFLAGS}
+	gcc -o build/g_test obj/g_test.o ${CFLAGS} -lm -g
 	./build/g_test
 
 .PHONY: test_lua
 test_lua:
-	gcc ${INCFLAGS} -o obj/lua_test.o -c lua_test.c ${CFLAGS}
-	gcc ${INCFLAGS} -o build/lua_test obj/lua_test.o lua/src/liblua.a -lm
+	gcc -o obj/lua_test.o -c lua_test.c ${CFLAGS}
+	gcc -o build/lua_test obj/lua_test.o lua/src/liblua.a -lm
 
 .PHONY: networking
 networking:
-	gcc ${INCFLAGS} -o build/test_server network_test_server.c -Wall
-	gcc ${INCFLAGS} -o build/test_client network_test_client.c -Wall
+	gcc -o build/test_server network_test_server.c -Wall
+	gcc -o build/test_client network_test_client.c -Wall
 
 clean:
 	rm -rf build/*
