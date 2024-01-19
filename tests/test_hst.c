@@ -14,7 +14,7 @@ int test_rand_fill_and_remove()
     for (int i = 1; i < 100000; i++)
     {
         if (i % 20000 == 0)
-            printf("        Size of table: %d\n", appr_size_of(table));
+            printf("        Size of table: %d\n", actual_size_of_table(table));
 
         rand_val = rand() % 555;
 

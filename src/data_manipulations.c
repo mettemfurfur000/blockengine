@@ -1,5 +1,5 @@
-#ifndef DATA_MANIP_H
-#define DATA_MANIP_H 1
+#ifndef DATA_MANIPULATIONS
+#define DATA_MANIPULATIONS
 
 #include "memory_control_functions.c"
 #include <stdlib.h>

@@ -1,0 +1,3 @@
+id = 4
+data = { byte v = 1 }
+texture = numbers.png

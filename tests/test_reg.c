@@ -42,6 +42,18 @@ int test_parse_from_file()
 	return status;
 }
 
+void print_registry(block_registry_t br)
+{
+	for (int i = 0; i < br.length; i++)
+	{
+		printf("\t\tblock: %d,", br.data[i].block_sample.id);
+
+		br.data[i].block_sample.data ? printf("%.*s\n", br.data[i].block_sample.data[0],
+											  br.data[i].block_sample.data + 1)
+									 : printf("(no data)\n");
+	}
+}
+
 int test_parse_folder()
 {
 	int status = SUCCESS;
@@ -50,13 +62,26 @@ int test_parse_folder()
 
 	status = read_block_registry("resources/blocks", &b_reg);
 
-	for (int i = 0; i < b_reg.length; i++)
-	{
-		printf("\t\tblock: %d,", b_reg.data[i].block_sample.id);
+	print_registry(b_reg);
 
-		b_reg.data[i].block_sample.data ? printf("%.*s\n", b_reg.data[i].block_sample.data[0], b_reg.data[i].block_sample.data + 1)
-										: printf("(no data)\n");
-	}
+	free_block_registry(&b_reg);
+
+	return status;
+}
+
+int test_sort()
+{
+	int status = SUCCESS;
+	block_registry_t b_reg;
+	vec_init(&b_reg);
+
+	status = read_block_registry("resources/blocks", &b_reg);
+
+	print_registry(b_reg);
+
+	sort_by_id(&b_reg);
+
+	print_registry(b_reg);
 
 	free_block_registry(&b_reg);
 
@@ -70,6 +95,7 @@ int test_all_registry()
 	RUN_TEST(test_read_from_string)
 	RUN_TEST(test_parse_from_file)
 	RUN_TEST(test_parse_folder)
+	RUN_TEST(test_sort);
 
 	exit_graphics();
 	return SUCCESS;

@@ -55,5 +55,6 @@ networking:
 
 clean:
 	rm -rf build/*
+	rm -rf obj/*
 
 all: test graphic test_lua

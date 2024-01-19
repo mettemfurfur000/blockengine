@@ -1,5 +1,5 @@
-#ifndef BLOCK_REGISTRY_H
-#define BLOCK_REGISTRY_H 1
+#ifndef BLOCK_REGISTRY
+#define BLOCK_REGISTRY 1
 
 // vscode itellisense wants this define so bad...
 #define _DEFAULT_SOURCE 1
@@ -99,8 +99,8 @@ int get_length_to_alloc(long long value, int type)
 
 // format:
 
-// { <character> <type> = <value> 
-//   <character> <type> = <value> 
+// { <character> <type> = <value>
+//   <character> <type> = <value>
 //   ...
 //   <character> <type> = <value> }
 
@@ -195,9 +195,9 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
 			goto block_data_exit;
 	}
 block_data_exit:
-	if(data_iterator == 1) // ok, no data
+	if (data_iterator == 1) // ok, no data
 		return SUCCESS;
-	
+
 	data_to_load[0] = data_iterator - 1; // writing size byte
 
 	*out_data_ptr = (byte *)malloc(data_iterator);
@@ -251,11 +251,12 @@ int parse_block_resources_from_file(const char *file_path, block_resources *dest
 	}
 
 	char *entry = 0;
-#define TOTAL_HANDLERS 3
-	const resource_entry_handler res_handlers[TOTAL_HANDLERS] = {
+	const resource_entry_handler res_handlers[] = {
 		{&block_res_id_handler, "id", 1},
 		{&block_res_data_handler, "data", 0},
 		{&block_res_texture_handler, "texture", 1}};
+
+	const int TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
 	for (int i = 0; i < TOTAL_HANDLERS; i++)
 	{
@@ -277,12 +278,20 @@ emergency_exit:
 	free_table(ht);
 	return status;
 }
-#undef TOTAL_HANDLERS
 
 void free_block_resources(block_resources *b)
 {
 	block_data_free(&b->block_sample);
 	free_texture(&b->block_texture);
+}
+
+int is_already_in_registry(block_registry_t *reg, block_resources *br)
+{
+	for (int i = 0; i < reg->length; i++)
+		if (br->block_sample.id == reg->data[i].block_sample.id)
+			return SUCCESS;
+
+	return FAIL;
 }
 
 int read_block_registry(const char *folder, block_registry_t *reg)
@@ -312,6 +321,9 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 			if (parse_block_resources_from_file(file_to_parse, &br) == FAIL)
 				free_block_resources(&br);
 
+			if (is_already_in_registry(reg, &br))
+				continue;
+
 			(void)vec_push(reg, br);
 		}
 	}
@@ -319,6 +331,16 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 	closedir(directory);
 
 	return SUCCESS;
+}
+
+int __b_cmp(const void *a, const void *b)
+{
+	return ((block_resources *)a)->block_sample.id < ((block_resources *)b)->block_sample.id;
+}
+
+void sort_by_id(block_registry_t *b_reg)
+{
+	qsort(b_reg->data, b_reg->length, sizeof(*b_reg->data), __b_cmp);
 }
 
 void free_block_registry(block_registry_t *b_reg)

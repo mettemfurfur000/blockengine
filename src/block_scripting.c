@@ -1,3 +1,6 @@
+#ifndef BLOCK_SCRIPTING
+#define BLOCK_SCRIPTING
+
 #include "game_types.h"
 #include "block_updates.c"
 
@@ -26,6 +29,10 @@ int scripting_load_file(const char* filename)
 	if (error)
 	{
 		fprintf(stderr, "%s", lua_tostring(g_L, -1));
+		return FAIL;
 	}
 	lua_pop(g_L, 1); /* pop error message from the stack */
+	return SUCCESS;
 }
+
+#endif

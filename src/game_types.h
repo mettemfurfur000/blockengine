@@ -1,5 +1,5 @@
 #ifndef GAME_TYPES
-#define GAME_TYPES 1
+#define GAME_TYPES
 
 typedef unsigned char byte;
 

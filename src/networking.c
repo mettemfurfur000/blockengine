@@ -1,3 +1,6 @@
+#ifndef NETWORKING
+#define NETWORKING
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,3 +95,5 @@ int client_print_message(int socket, struct sockaddr_in *clientaddr)
 
 	return SUCCESS;
 }
+
+#endif

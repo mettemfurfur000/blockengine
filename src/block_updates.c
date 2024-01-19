@@ -56,7 +56,7 @@ int clean_block(const world *w, int index, const int x, const int y)
 	return SUCCESS;
 }
 
-int is_move_possible(const block *destination, const block *source)
+int is_move_needed(const block *destination, const block *source)
 {
 	if (!source || !destination) // no pointers == no move
 		return FAIL;
@@ -75,7 +75,7 @@ int move_block_gently(const world *w, const int layer_index, const int x, const 
 	block *source = get_block_access(w, layer_index, x, y);
 	block *destination = get_block_access(w, layer_index, x + vx, y + vy);
 
-	if (!is_move_possible(destination, source))
+	if (!is_move_needed(destination, source))
 		return FAIL;
 
 	if (!is_block_void(destination))
@@ -91,7 +91,7 @@ int move_block_rough(const world *w, const int layer_index, const int x, const i
 	block *source = get_block_access(w, layer_index, x, y);
 	block *destination = get_block_access(w, layer_index, x + vx, y + vy);
 
-	if (!is_move_possible(destination, source))
+	if (!is_move_needed(destination, source))
 		return FAIL;
 
 	block_teleport(destination, source);
@@ -107,7 +107,7 @@ int move_block_recursive(const world *w, const int layer_index, const int x, con
 	block *source = get_block_access(w, layer_index, x, y);
 	block *destination = get_block_access(w, layer_index, x + vx, y + vy);
 
-	if (!is_move_possible(destination, source))
+	if (!is_move_needed(destination, source))
 		return FAIL;
 
 	if (!is_block_void(destination))

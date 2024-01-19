@@ -1,3 +1,6 @@
+#ifndef LAYER_DRAW_2D
+#define LAYER_DRAW_2D
+
 #include "sdl2_basics.c"
 #include "block_registry.c"
 #include "block_updates.c"
@@ -87,3 +90,5 @@ calculate graphic delta:
 6) exit
 
 */
+
+#endif

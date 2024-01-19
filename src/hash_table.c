@@ -1,5 +1,5 @@
-#ifndef HASH_TABLE_H
-#define HASH_TABLE_H 1
+#ifndef HASH_TABLE
+#define HASH_TABLE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -124,7 +124,6 @@ void put_entry(hash_table **table, char *key, char *value)
 	}
 }
 
-// returns only pointer to string, so you can read from it.
 char *get_entry(hash_table **table, char *key)
 {
 	// thanks https://t.me/codemaniacbot
@@ -173,41 +172,32 @@ int remove_entry(hash_table **table, char *key)
 	}
 
 	if (node == NULL)
-	{
 		return FAIL;
-	}
 
 	if (prev == NULL)
-	{
 		table[hash] = node->next;
-	}
 	else
-	{
 		prev->next = node->next;
-	}
 
 	free_node(node);
 
 	return SUCCESS;
 }
 
-int appr_size_of(hash_table **table)
+int actual_size_of_table(hash_table **table)
 {
 	int size = 0;
 	hash_table *node;
-	hash_table *next_node;
 
-	for (int i = 0; i < TABLE_SIZE; ++i)
+	for (int i = 0; i < TABLE_SIZE; ++i) // goes wide
 	{
 		node = table[i];
 
 		while (node != NULL)
 		{
-			next_node = node->next;
-
 			size += 1;
 
-			node = next_node;
+			node = node->next;
 		}
 	}
 	return size;

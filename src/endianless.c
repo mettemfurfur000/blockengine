@@ -1,5 +1,5 @@
-#ifndef ENDIANLESS_H
-#define ENDIANLESS_H
+#ifndef ENDIANLESS
+#define ENDIANLESS
 
 #include "game_types.h"
 

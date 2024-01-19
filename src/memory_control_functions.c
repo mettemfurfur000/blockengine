@@ -1,5 +1,5 @@
-#ifndef MEMORY_CONTROL_FUNCTIONS_H
-#define MEMORY_CONTROL_FUNCTIONS_H 1
+#ifndef MEMORY_CONTROL_FUNCTIONS
+#define MEMORY_CONTROL_FUNCTIONS
 
 #include "game_types.h"
 #include <stdlib.h>
@@ -8,21 +8,13 @@
 int is_data_equal(const block *a, const block *b)
 {
 	if (!a->data && !b->data)
-		return SUCCESS;
+		return SUCCESS; // both blocks have no data, so data is equal...
 	if (!a->data || !b->data)
 		return FAIL;
-
-	int real_size_a = strlen((const char *)(a->data + 1));
-	int real_size_b = strlen((const char *)(b->data + 1));
-
-	// strlen can make mistakes
-	real_size_a = real_size_a > a->data[0] ? a->data[0] : real_size_a;
-	real_size_b = real_size_b > b->data[0] ? b->data[0] : real_size_b;
-
-	if (real_size_a != real_size_b)
+	if (a->data[0] != b->data[0])
 		return FAIL;
 
-	for (int i = 1; i < real_size_a + 1; i++)
+	for (int i = 1, size = a->data[0] + 1; i < size; i++)
 		if (a->data[i] != b->data[i])
 			return FAIL;
 

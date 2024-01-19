@@ -1,5 +1,5 @@
-#ifndef SDL2_BASICS_H
-#define SDL2_BASICS_H 1
+#ifndef SDL2_BASICS
+#define SDL2_BASICS
 
 #include <SDL2/SDL.h>
 #include "game_types.h"
@@ -11,8 +11,6 @@ const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
 const char *window_name = "Block Engine";
-
-// g_ == Global, rember?
 
 SDL_Window *g_window = NULL;
 

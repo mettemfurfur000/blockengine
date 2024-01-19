@@ -1,5 +1,5 @@
-#ifndef FILE_SYSTEM_FUNCTIONS_H
-#define FILE_SYSTEM_FUNCTIONS_H 1
+#ifndef FILE_SYSTEM_FUNCTIONS
+#define FILE_SYSTEM_FUNCTIONS
 
 #include "memory_control_functions.c"
 #include "endianless.c"
