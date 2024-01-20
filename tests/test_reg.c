@@ -44,6 +44,8 @@ int test_parse_from_file()
 
 void print_registry(block_registry_t br)
 {
+	printf("printing registry with size %d:\n", br.length);
+
 	for (int i = 0; i < br.length; i++)
 	{
 		printf("\t\tblock: %d,", br.data[i].block_sample.id);

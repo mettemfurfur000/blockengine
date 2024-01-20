@@ -335,7 +335,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 
 int __b_cmp(const void *a, const void *b)
 {
-	return ((block_resources *)a)->block_sample.id < ((block_resources *)b)->block_sample.id;
+	return ((block_resources *)a)->block_sample.id > ((block_resources *)b)->block_sample.id;
 }
 
 void sort_by_id(block_registry_t *b_reg)

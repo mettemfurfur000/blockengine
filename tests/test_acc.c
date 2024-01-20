@@ -234,10 +234,10 @@ int test_block_move_recursive()
 	status &= move_block_recursive(t_w, 0, 2, 0, 0, 1, 3);
 	status &= move_block_recursive(t_w, 0, 3, 0, 0, 1, 3) == FAIL; // must fail, max 2 blocks ahead to push
 
-	for(int i = 0;i < 3;i ++)
+	for (int i = 0; i < 3; i++)
 		status &= is_block_equal(get_block_access(t_w, 0, i, 0), &void_block);
 	status &= is_block_equal(get_block_access(t_w, 0, 3, 0), &other_block);
-	
+
 	// printf("after:\n");
 	// print_layer(t_w, 0, 0, 0, 4, 4);
 

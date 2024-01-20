@@ -119,6 +119,6 @@ int test_block_all()
 	RUN_TEST(test_block_copy)
 	RUN_TEST(test_block_teleport)
 	RUN_TEST(test_block_swap)
-	
+
 	return SUCCESS;
 }

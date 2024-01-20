@@ -3,7 +3,7 @@
 #include "utils.h"
 #include <signal.h>
 
-const char* test_world = "test_world\0";
+const char *test_world = "test_world\0";
 
 int test_world_init()
 {
