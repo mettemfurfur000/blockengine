@@ -30,6 +30,9 @@ typedef struct texture
 	int frames;
 } texture;
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define KEEPINLIMITS(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
+
 int greatest_common_divisor(int a, int b)
 {
 	int temp;
@@ -199,7 +202,7 @@ int texture_render_anim(texture *texture, int x, int y, int frame, float scale)
 
 	SDL_Rect src = {frame_x, frame_y, texture->frame_side_size, texture->frame_side_size};
 	SDL_Rect dest = {x, y, texture->frame_side_size * scale, texture->frame_side_size * scale};
-	
+
 	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
 }
 

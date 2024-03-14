@@ -48,6 +48,11 @@ test_lua:
 	gcc -o obj/lua_test.o -c lua_test.c ${CFLAGS}
 	gcc -o build/lua_test obj/lua_test.o lua/src/liblua.a -lm
 
+.PHONY: client_app
+client_app: client.c resources vec
+	gcc -o build/client client.c obj/vec.o -Wall ${CFLAGS} -lm -g
+	./build/client
+
 .PHONY: networking
 networking:
 	gcc -o build/test_server network_test_server.c -Wall
@@ -57,4 +62,4 @@ clean:
 	rm -rf build/*
 	rm -rf obj/*
 
-all: test graphic test_lua
+all: test graphic test_lua client_app networking

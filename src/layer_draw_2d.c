@@ -5,90 +5,126 @@
 #include "block_registry.c"
 #include "block_updates.c"
 
-// view point relative to
-SDL_Point view_point = {0, 0};
 const int block_size = 16;
 
-// renders layer of the world. smart enough to not render what player doesnt see
-void layer_render(const world *w, const int layer_index, const block_resources *b_res, const float scale, const int frame_number)
+typedef struct client_view_point
 {
-	const float scaled_block_size = (block_size * scale);
-	const int block_begin_x = (int)(view_point.x - SCREEN_WIDTH / 2) / scaled_block_size - 1;  // adding and substracting block
-	const int block_begin_y = (int)(view_point.y - SCREEN_HEIGHT / 2) / scaled_block_size - 1; // coordinates to render
-	const int block_end_x = (int)(view_point.x + SCREEN_WIDTH / 2) / scaled_block_size + 1;	   // extra blocks at the corners
-	const int block_end_y = (int)(view_point.y + SCREEN_HEIGHT / 2) / scaled_block_size + 1;
+	int screen_width, screen_height;
 
-	float dest_x = 0;
-	texture *block_texture;
+	int x, y;
+	float scale;
+
+	vec_int_t draw_order;
+} client_view_point;
+
+// renders layer of the world. smart enough to not render what player doesnt see
+void layer_render(const world *w, const int layer_index, block_resources *b_res,
+				  const int frame_number,
+				  const int width, const int height,
+				  const float scaled_block_size,
+				  const client_view_point view)
+{	
+	if (!w || !b_res)
+		return;
+	if (layer_index < 0 || layer_index >= w->depth)
+		return;
+	if (width < 0 || height < 0)
+		return;
+	if (scaled_block_size <= 0)
+		return;
+
+	texture *texture;
 	block *b;
-	for (int i = block_begin_x; i < block_end_x; i++, dest_x += scaled_block_size)
-	{
-		float dest_y = 0;
-		for (int j = block_begin_y; j < block_end_y; j++, dest_y += scaled_block_size)
-		{
-			if (!(b = get_block_access(w, layer_index, i, j))) // no blocks? fine
-			{
-				j += j % w->layers[layer_index].chunk_width - 1;
-				continue;
-			}
-			if (b->id == 0) // void block? fine
-				continue;
-			if (!(block_texture = &b_res[b->id].block_texture)) // unlikely, but no texture? fine...
-				continue;
+	SDL_Rect src_rect;
+	SDL_Rect dest_rect = {0, 0, scaled_block_size, scaled_block_size};
 
-			int frame_x = 0, frame_y = 0;
-			// if 1 frame, just render as it is
-			if (block_texture->frames > 1)
+	const int scaled_view_width = view.screen_width / view.scale;
+	const int scaled_view_height = view.screen_height / view.scale;
+
+	const int start_block_x = (int) (((view.x - scaled_view_width / 2) / scaled_block_size) - 1);
+	const int start_block_y = (int) (((view.y - scaled_view_height / 2) / scaled_block_size) - 1);
+
+	const int end_block_x = start_block_x + width + 1;
+	const int end_block_y = start_block_y + height + 1;
+
+	int frame_x = 0, frame_y = 0;
+
+	// loop over blocks
+
+	// calculate x coordinate of block on screen
+	dest_rect.x = start_block_x * scaled_block_size + scaled_view_width / 2 - view.x;
+
+	for (int i = start_block_x; i < end_block_x; i++)
+	{
+		dest_rect.x += scaled_block_size;
+		dest_rect.y = start_block_y * scaled_block_size + scaled_view_height / 2 - view.y;
+
+		for (int j = start_block_y; j < end_block_y; j++)
+		{
+			dest_rect.y += scaled_block_size;
+			// calculate y coordinate of block on screen
+
+			// get block
+			if (!(b = get_block_access(w, layer_index, i, j)))
+				continue;
+			// check if block is not void
+			if (b->id == 0)
+				continue;
+			// check if block is not from the same registry
+			if (b->id != b_res[b->id].block_sample.id)
+				continue;
+			// get texture
+			if (!(texture = &b_res[b->id].block_texture))
+				continue;
+			// get frame
+			frame_x = frame_y = 0;
+			if (texture->frames > 1)
 			{
-				int frame = frame_number % block_texture->frames;
-				frame_x = block_texture->frame_side_size * (frame % block_texture->frames_per_line);
-				frame_y = block_texture->frame_side_size * (frame / block_texture->frames_per_line);
+				int frame = frame_number % texture->frames;
+				frame_x = texture->frame_side_size * (frame % texture->frames_per_line);
+				frame_y = texture->frame_side_size * (frame / texture->frames_per_line);
 			}
 			// source is for from what part of texture render
-			SDL_Rect src = {frame_x, frame_y, block_texture->frame_side_size, block_texture->frame_side_size};
-			// and dest is for where on window render it
-			SDL_Rect dest = {(int)dest_x, (int)dest_y, (int)scaled_block_size, (int)scaled_block_size};
+			src_rect.x = frame_x;
+			src_rect.y = frame_y;
+			src_rect.h = texture->frame_side_size;
+			src_rect.w = texture->frame_side_size;
+			// and dest_rect is for where on window render it
+			// SDL_Rect dest_rect = {(int)dest_x, (int)dest_y, (int)scaled_block_size, (int)scaled_block_size};
 			// no camera rotating, yet...
-			SDL_RenderCopy(g_renderer, block_texture->ptr, &src, &dest);
+			SDL_RenderCopy(g_renderer, texture->ptr, &src_rect, &dest_rect);
+			// printf("rendering block %d at %d, %d\n", b->id, i, j);
 		}
 	}
+	// also draw red square around block at camera position
+	SDL_SetRenderDrawColor(g_renderer, 255, 0, 0, 255);
+	SDL_Rect rect = {
+		view.screen_width / 2 + scaled_block_size / 2,
+		view.screen_height / 2 + scaled_block_size / 2,
+		scaled_block_size,
+		scaled_block_size};
+	SDL_RenderDrawRect(g_renderer, &rect);
+	SDL_SetRenderDrawColor(g_renderer, 255, 255, 255, 255);
 }
 
-/*
+// renders single frame of the world.
+void client_render(const world *w, block_resources *b_res, client_view_point view_point, const int frame_number)
+{
+	// size of single block in pixels
+	const float scaled_block_size = (block_size * view_point.scale);
+	// calculate how much blocks to render
+	const int blocks_to_render_width = view_point.screen_width / scaled_block_size + 2;
+	const int block_to_render_height = view_point.screen_height / scaled_block_size + 2;
 
-plan for rendering just 1 frame
+	for (int i = 0; i < view_point.draw_order.length; i++)
+		layer_render(w, view_point.draw_order.data[i], b_res, frame_number,
+					 blocks_to_render_width,
+					 block_to_render_height,
+					 scaled_block_size,
+					 view_point);
+}
 
-1) update world and save changes
-2) re-render blocks that changed
-3) re-render blocks with animation (if needed)
-4)
-
-???
-
-
-
-
-
-???
-calculate graphic delta:
-	1) take layer data
-	2) take block registry vector
-	3) take view point
-	4) take previous layer block map
-
-	5) calculate, which block needs rerender
-	6)
-
-
-
-
-1) take layer data
-2) take block registry vector
-3) take view point, {x, y, scale}
-4) calculate rectangle with blocks that player can see
-5) draw every block with coresponding block_texture and animtion rules (if block have any) in that rectangle
-6) exit
-
-*/
+// TODO: after handling block updates from server, make sure to write function that rerenders only changed parts of the world.
+// until then, just rerender everything.
 
 #endif

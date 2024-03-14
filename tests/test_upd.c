@@ -247,9 +247,9 @@ int test_block_move_recursive()
 	return status;
 }
 
-int test_block_access_all()
+int test_block_updates_all()
 {
-	printf("test_block_access_all:\n");
+	printf("test_block_updates_all:\n");
 	t_w = make_test_world();
 
 	RUN_TEST(test_block_set)

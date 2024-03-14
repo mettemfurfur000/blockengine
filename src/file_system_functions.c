@@ -15,8 +15,6 @@
 #define X_P_mkdir(folder_path) mkdir(folder_path, 0700)
 #endif
 
-struct stat st = {0};
-
 #ifdef _WIN64 // why not
 const char *separator = "\\";
 #else
@@ -31,6 +29,7 @@ const char *layer_info_str = "layer_info.bin";
 
 int make_full_world_path(char *filename, const world *w)
 {
+	struct stat st = {0};
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
 
@@ -59,6 +58,7 @@ int make_full_world_path(char *filename, const world *w)
 
 int make_full_layer_path(char *filename, const world *w, int index)
 {
+	struct stat st = {0};
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
 	char buffer[256];
@@ -95,6 +95,7 @@ int make_full_layer_path(char *filename, const world *w, int index)
 
 int make_full_chunk_path(char *filename, const world *w, int index, int x, int y)
 {
+	struct stat st = {0};
 	char working_path[256] = {0};
 	char folder_path[512] = {0};
 	char buffer[256];

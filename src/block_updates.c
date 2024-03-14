@@ -21,8 +21,15 @@ block *get_block_access(const world *w, const int index, const int x, const int 
 
 	world_layer *wl = &w->layers[index];
 
+	if (x < 0 || y < 0)
+		return FAIL;
+
 	const int chunk_x = x / wl->chunk_width;
 	const int chunk_y = y / wl->chunk_width;
+
+	if (chunk_x >= wl->size_x ||
+		chunk_y >= wl->size_y)
+		return FAIL;
 
 	if (is_chunk_unloaded(wl, chunk_x, chunk_y))
 		if (!chunk_load(w, index, chunk_x, chunk_y, wl->chunks[chunk_x][chunk_y]))
