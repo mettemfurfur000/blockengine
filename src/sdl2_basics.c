@@ -108,6 +108,22 @@ int handle_events()
 	{
 		if (e.type == SDL_QUIT)
 			return FAIL;
+		if (e.type == SDL_WINDOWEVENT)
+		{
+			switch (e.window.event)
+			{
+			case SDL_WINDOWEVENT_MOVED:
+				SDL_Log("Window %d moved to %d,%d",
+						e.window.windowID, e.window.data1,
+						e.window.data2);
+				break;
+			case SDL_WINDOWEVENT_RESIZED:
+				SDL_Log("Window %d resized to %dx%d",
+						e.window.windowID, e.window.data1,
+						e.window.data2);
+			}
+			break;
+		}
 	}
 
 	return SUCCESS;

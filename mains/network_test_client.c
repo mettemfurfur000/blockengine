@@ -1,4 +1,4 @@
-#include "src/networking.c"
+#include "../src/networking.c"
 
 int main(int argc, char *argv[])
 {

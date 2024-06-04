@@ -1,4 +1,4 @@
-#include "src/sdl2_basics.c"
+#include "../src/sdl2_basics.c"
 #include <stdio.h>
 
 int main(int argc, char *argv[])
@@ -26,13 +26,11 @@ int main(int argc, char *argv[])
 	{
 		SDL_RenderClear(g_renderer);
 
-		for (size_t j = 0; j < 32; j++)
-			for (size_t l = 0; l < 32; l++)
-				texture_render_anim(&numbers, j * numbers.frame_side_size, l * numbers.frame_side_size, (j + l + frame) / 15, 1.0);
+		number_states[rand() % 32][rand() % 32]++;
 
 		for (size_t j = 0; j < 32; j++)
 			for (size_t l = 0; l < 32; l++)
-					texture_render_anim(&numbers, j * numbers.frame_side_size, l * numbers.frame_side_size, number_states[l][j], 1.0);
+				texture_render_anim(&numbers, j * numbers.frame_side_size, l * numbers.frame_side_size, number_states[l][j], 1.0);
 
 		texture_render(&test, 128 + sin(i) * 32, 16 + cos(i) * 8, 1 + 0.5 * sin(i) - 0.2 * cos(i + 1));
 

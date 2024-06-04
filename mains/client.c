@@ -1,6 +1,6 @@
-#include "src/block_updates.c"
-#include "src/block_registry.c"
-#include "src/layer_draw_2d.c"
+#include "../src/block_updates.c"
+#include "../src/block_registry.c"
+#include "../src/layer_draw_2d.c"
 
 void free_world(world *w)
 {

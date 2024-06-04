@@ -31,7 +31,6 @@ void write_properties(FILE *f, char *key, char *value)
 
 int read_properties(FILE *f, char *key, char *value)
 {
-	// thanks https://t.me/codemaniacbot
 	char buffer[512] = {0};
 	if (fgets(buffer, sizeof(buffer), f))
 	{

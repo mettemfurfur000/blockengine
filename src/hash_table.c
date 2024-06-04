@@ -35,8 +35,12 @@ hash_table *alloc_node()
 
 void free_node(hash_table *node)
 {
-	free(node->key);
-	free(node->value);
+	if (!node)
+		return;
+	if (node->key)
+		free(node->key);
+	if (node->value)
+		free(node->value);
 	free(node);
 }
 
@@ -45,7 +49,7 @@ void copy_key(hash_table *node, char *key)
 	if (node->key)
 		free(node->key);
 
-	node->key = (char *)calloc(strlen(key), 1);
+	node->key = (char *)calloc(strlen(key) + 1, 1);
 	strcpy(node->key, key);
 }
 
@@ -54,7 +58,7 @@ void copy_value(hash_table *node, char *value)
 	if (node->value)
 		free(node->value);
 
-	node->value = (char *)calloc(strlen(value), 1);
+	node->value = (char *)calloc(strlen(value) + 1, 1);
 	strcpy(node->value, value);
 }
 
@@ -63,13 +67,13 @@ void copy_all(hash_table *node, char *key, char *value)
 	if (node->key)
 		free(node->key);
 
-	node->key = (char *)calloc(strlen(key), 1);
+	node->key = (char *)calloc(strlen(key) + 1, 1);
 	strcpy(node->key, key);
 
 	if (node->value)
 		free(node->value);
 
-	node->value = (char *)calloc(strlen(value), 1);
+	node->value = (char *)calloc(strlen(value) + 1, 1);
 	strcpy(node->value, value);
 }
 
@@ -97,9 +101,9 @@ void free_table(hash_table **table)
 
 void put_entry(hash_table **table, char *key, char *value)
 {
-	// thanks https://t.me/codemaniacbot
 	unsigned long hash = hash_function(key);
 	hash_table *node = table[hash];
+
 	if (node == NULL)
 	{
 		node = alloc_node();
@@ -107,6 +111,7 @@ void put_entry(hash_table **table, char *key, char *value)
 		table[hash] = node;
 		return;
 	}
+
 	while (node != NULL)
 	{
 		if (strcmp(node->key, key) == 0)
@@ -114,12 +119,14 @@ void put_entry(hash_table **table, char *key, char *value)
 			copy_value(node, value);
 			return;
 		}
+
 		if (node->next == NULL)
 		{
 			node->next = alloc_node();
 			copy_all(node->next, key, value);
 			return;
 		}
+
 		node = node->next;
 	}
 }
@@ -133,9 +140,7 @@ char *get_entry(hash_table **table, char *key)
 	while (node != NULL)
 	{
 		if (strcmp(node->key, key) == 0)
-		{
 			return node->value;
-		}
 
 		node = node->next;
 	}
@@ -203,16 +208,14 @@ int actual_size_of_table(hash_table **table)
 	return size;
 }
 
-void fill_test_data(char *str, int iskey, int num)
+void fill_test_key(char *key, int num)
 {
-	if (iskey)
-	{
-		sprintf(str, "testkey_%d", num);
-	}
-	else
-	{
-		sprintf(str, "%d_aboba_%d", num, rand() % 5555);
-	}
+	sprintf(key, "testkey_%d", num);
+}
+
+void fill_test_val(char *val, int num)
+{
+	sprintf(val, "%d_aboba_%d", num, rand() % 5555);
 }
 
 void put_random_entry(hash_table **table, int seed)

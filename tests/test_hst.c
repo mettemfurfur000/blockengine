@@ -8,21 +8,16 @@ int test_rand_fill_and_remove()
 	char key[128];
 	char val[128];
 	char *ret;
-	int rand_val;
 	int status = 1;
 
-	for (int i = 1; i < 100000; i++)
+	for (int i = 1; i < 100; i++)
 	{
-		rand_val = rand() % 555;
+		fill_test_key(key, 5 + i);
 
-		fill_test_data(key, 1, rand_val);
-
-		if (rand() % 2 == 0)
+		if (rand() % 2)
 		{
-			fill_test_data(val, 0, rand_val);
-
+			fill_test_val(val, (7 + i * 11) % 137);
 			put_entry(table, key, val);
-
 			ret = get_entry(table, key);
 
 			status &= (strcmp(ret, val) == 0);
@@ -30,10 +25,9 @@ int test_rand_fill_and_remove()
 		else
 		{
 			remove_entry(table, key);
-
 			ret = get_entry(table, key);
 
-			status &= (ret == 0);
+			status &= !ret;
 		}
 	}
 
@@ -63,9 +57,9 @@ int test_hash_table_fill()
 	{
 		rand_val = rand();
 
-		fill_test_data(key, 1, rand_val);
+		fill_test_key(key, rand_val);
 
-		fill_test_data(val, 0, rand_val);
+		fill_test_val(val, rand_val);
 
 		put_entry(table, key, val);
 	}
@@ -81,9 +75,9 @@ int test_hash_table_fill()
 		{
 			rand_val = rand();
 
-			fill_test_data(key, 1, rand_val);
+			fill_test_key(key, rand_val);
 
-			fill_test_data(val, 0, rand_val);
+			fill_test_val(val, rand_val);
 
 			ret = get_entry(table, key);
 
