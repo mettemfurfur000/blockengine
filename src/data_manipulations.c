@@ -1,14 +1,4 @@
-#ifndef DATA_MANIPULATIONS
-#define DATA_MANIPULATIONS
-
-#include "memory_control_functions.c"
-#include <stdlib.h>
-#include <string.h>
-#ifdef _WIN64
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
+#include "include/data_manipulations.h"
 
 /*
 1 byte for size
@@ -259,5 +249,3 @@ int data_get_b(byte *data, char letter, byte *dest)
 
 	return SUCCESS;
 }
-
-#endif

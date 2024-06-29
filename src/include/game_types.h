@@ -18,9 +18,6 @@ typedef struct
 	fist byte - size
 	data+1 to data+1+size - custom bytes for you. max 256 <3
 */
-
-const block void_block = {0, 0};
-
 typedef struct
 {
 	byte activity;

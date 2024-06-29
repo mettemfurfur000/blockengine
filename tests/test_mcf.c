@@ -1,10 +1,10 @@
-#include "../src/memory_control_functions.c"
+#include "../src/include/memory_control_functions.h"
 #include <stdio.h>
 #include "utils.h"
 
 int test_block_init()
 {
-	block t1 = void_block;
+	block t1 = {0, 0};
 
 	block_init(&t1, 10, 32, "example");
 
@@ -17,7 +17,7 @@ int test_block_init()
 
 int test_block_data_resize()
 {
-	block t1 = void_block;
+	block t1 = {0, 0};
 
 	block_init(&t1, 10, 32, "example");
 
@@ -32,7 +32,7 @@ int test_block_data_resize()
 
 int test_block_erase()
 {
-	block t1 = void_block;
+	block t1 = {0, 0};
 
 	block_init(&t1, 10, 32, "example");
 
@@ -47,8 +47,8 @@ int test_block_erase()
 
 int test_block_copy()
 {
-	block t1 = void_block;
-	block t2 = void_block;
+	block t1 = {0, 0};
+	block t2 = {0, 0};
 
 	block_init(&t1, 10, 32, "abcdetest123\0");
 
@@ -64,10 +64,10 @@ int test_block_copy()
 
 int test_block_teleport()
 {
-	block t1 = void_block;
-	block t2 = void_block;
+	block t1 = {0, 0};
+	block t2 = {0, 0};
 
-	block t1_copy = void_block;
+	block t1_copy = {0, 0};
 
 	block_init(&t1, 10, 32, "abcdetest123\0");
 
@@ -86,11 +86,11 @@ int test_block_teleport()
 
 int test_block_swap()
 {
-	block t1 = void_block;
-	block t2 = void_block;
+	block t1 = {0, 0};
+	block t2 = {0, 0};
 
-	block t1_copy = void_block;
-	block t2_copy = void_block;
+	block t1_copy = {0, 0};
+	block t2_copy = {0, 0};
 
 	block_init(&t1, 10, 32, "abcdetest123\0");
 	block_init(&t2, 25, 44, "ajshgajhsgsaj\0");

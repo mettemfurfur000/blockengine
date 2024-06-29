@@ -1,11 +1,11 @@
-#include "../src/data_manipulations.c"
+#include "../src/include/data_manipulations.h"
 #include "utils.h"
 
 int test_basic_data_manip()
 {
 	int status = SUCCESS;
 
-	block t = void_block;
+	block t = {0, 0};
 
 	int src = 55555;
 	int dest = 0;
@@ -27,7 +27,7 @@ int test_array_data()
 {
 	int status = SUCCESS;
 
-	block t = void_block;
+	block t = {0, 0};
 
 	char cool_string[66] = "wholter put yure d away waltr...";
 	char not_cool_string[66] = "aah?";
@@ -53,6 +53,8 @@ void fillrand(char *b, int size)
 int test_random_data()
 {
 	int status = SUCCESS;
+
+	const block void_block = {0, 0};
 
 	block t = void_block;
 

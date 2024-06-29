@@ -1,5 +1,5 @@
-#include "../src/hash_table.c"
-#include "../src/benchmarking.c"
+#include "../src/include/hash_table.h"
+#include "../src/include/benchmarking.h"
 #include "utils.h"
 
 int test_rand_fill_and_remove()

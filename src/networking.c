@@ -1,27 +1,4 @@
-#ifndef NETWORKING
-#define NETWORKING
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#ifdef __MINGW32__
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#endif
-
-#include "game_types.h"
-#include <stdint.h>
-
-#define MAXRCVLEN 500
-#define PORTNUM 2300
-
+#include "include/networking.h"
 // returns sockaddr, pointing to server machine (used only on client machine)
 struct sockaddr_in make_sockaddr(int port_number, uint32_t inaddr)
 {
@@ -43,8 +20,37 @@ int recvstr(int socket, char *dest, const size_t maxlen, int flags)
 	return len;
 }
 
+int winsockinit()
+{
+	WORD wVersionRequested;
+	WSADATA wsaData;
+	int err;
+
+	wVersionRequested = MAKEWORD(2, 2);
+
+	err = WSAStartup(wVersionRequested, &wsaData);
+	if (err != 0)
+	{
+		printf("WSAStartup failed with error: %d\n", err);
+		return FAIL;
+	}
+	if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2)
+	{
+		printf("Could not find a usable version of Winsock.dll\n");
+		WSACleanup();
+		return FAIL;
+	}
+	else
+		printf("The Winsock 2.2 dll was found okay\n");
+
+	return SUCCESS;
+}
+
 int init_client(int *socket_dest, struct sockaddr_in *servaddr_dest)
 {
+	if (!winsockinit())
+		return FAIL;
+
 	*socket_dest = socket(AF_INET, SOCK_STREAM, 0);
 	*servaddr_dest = make_sockaddr(PORTNUM, INADDR_LOOPBACK);
 
@@ -55,6 +61,9 @@ int init_client(int *socket_dest, struct sockaddr_in *servaddr_dest)
 
 int init_server(int *socket_dest, struct sockaddr_in *servaddr_dest)
 {
+	if (!winsockinit())
+		return FAIL;
+
 	*socket_dest = socket(AF_INET, SOCK_STREAM, 0);
 	*servaddr_dest = make_sockaddr(PORTNUM, INADDR_LOOPBACK);
 
@@ -100,4 +109,7 @@ int client_print_message(int socket, struct sockaddr_in *clientaddr)
 	return SUCCESS;
 }
 
-#endif
+void finish_networking()
+{
+	WSACleanup();
+}

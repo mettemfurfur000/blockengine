@@ -1,4 +1,4 @@
-#include "../src/block_registry.c"
+#include "../src/include/block_registry.h"
 #include "utils.h"
 
 int test_read_from_string()

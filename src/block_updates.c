@@ -1,7 +1,4 @@
-#ifndef BLOCK_UPDATES
-#define BLOCK_UPDATES 1
-
-#include "file_system_functions.c"
+#include "include/block_updates.h"
 
 int is_chunk_unloaded(const world_layer *wl, const int chunk_x, const int chunk_y)
 {
@@ -58,7 +55,7 @@ int clean_block(const world *w, int index, const int x, const int y)
 		return FAIL;
 
 	block_data_free(blk);
-	*blk = void_block;
+	make_void_block(blk);
 
 	return SUCCESS;
 }
@@ -132,5 +129,3 @@ int move_block_recursive(const world *w, const int layer_index, const int x, con
 
 	return SUCCESS;
 }
-
-#endif

@@ -1,10 +1,12 @@
 CFLAGS += -O0 -Wall -g
+LDFLAGS += -lm
 
 ifeq ($(OS),Windows_NT)
-	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -LC:/msys64/mingw64/lib -lmingw32 -lws2_32 
+	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main
+	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32
 endif
 
-CFLAGS += -lSDL2main -lSDL2
+LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf
 
 # get shared libs here
 ifeq ($(OS),Windows_NT)
@@ -12,37 +14,46 @@ ifeq ($(OS),Windows_NT)
 	cp C:/msys64/mingw64/bin/$@ build/
 endif
 
+sources := $(shell cd src;echo *.c)
+objects := $(patsubst %.c,obj/%.o,$(sources))
+headers := $(shell cd src/include;echo *.h)
+
 .PHONY: win_get_libs
 win_get_libs: SDL2.dll libwinpthread-1.dll
-
-# preparations
-.PHONY: prepare
-prepare:
-	mkdir -p build
-	mkdir -p obj
 
 #our vector library
 .PHONY: vec
 vec:
 	gcc -o obj/vec.o -c vec/src/vec.c -Wall -Wextra -Ivec/src
 
+.PHONY: make_folders
+make_folders:
+	mkdir -p obj
+	mkdir -p build
+
 #part with resources copy
 .PHONY: resources
-resources: prepare
+resources: make_folders
 	mkdir -p build/resources
 	mkdir -p build/resources/textures
 	mkdir -p build/resources/blocks
 	cp -r resources/* build/resources
 
+obj/%.o : src/%.c
+	gcc $(CFLAGS) -c $^ -o $@
+
+# $(executable): $(objects)
+# 	gcc $(CFLAGS) -o build/$@ $^ $(LDFLAGS)
+
 .PHONY: test
-test: mains/test.c resources vec
+test: mains/test.c resources vec $(objects)
 	gcc -o obj/test.o -c mains/test.c ${CFLAGS}
-	gcc -o build/test obj/test.o obj/vec.o ${CFLAGS} -lm
+	gcc ${CFLAGS} -o build/test obj/test.o obj/vec.o $(objects) $(LDFLAGS)
 
 .PHONY: graphic
-graphic: mains/graphics_test.c resources
+graphic: mains/graphics_test.c resources vec $(objects)
 	gcc -o obj/g_test.o -c mains/graphics_test.c ${CFLAGS}
-	gcc -o build/g_test obj/g_test.o ${CFLAGS} -lm -g
+	gcc ${CFLAGS} -o build/g_test obj/g_test.o obj/vec.o $(objects) $(LDFLAGS)
 	./build/g_test
 
 .PHONY: test_lua
@@ -55,8 +66,9 @@ else
 endif
 
 .PHONY: client_app
-client_app: mains/client.c resources vec
-	gcc -o build/client mains/client.c obj/vec.o -Wall ${CFLAGS} -lm -g
+client_app: mains/client.c resources vec $(objects)
+	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
+	gcc ${CFLAGS} -o build/client mains/client.c obj/vec.o $(objects) $(LDFLAGS)
 ifeq ($(OS),Windows_NT)
 	./build/client.exe
 else
@@ -64,16 +76,17 @@ else
 endif
 
 .PHONY: networking
-networking:
+networking: mains/network_test_server.c mains/network_test_client.c vec $(objects)
 ifeq ($(OS),Windows_NT)
-	gcc -o build/test_server mains/network_test_server.c -Wall -lmingw32 -lws2_32 
-	gcc -o build/test_client mains/network_test_client.c -Wall -lmingw32 -lws2_32 
+	gcc -o obj/network_test_server.o -c mains/network_test_server.c ${CFLAGS}
+	gcc -o obj/network_test_client.o -c mains/network_test_client.c ${CFLAGS}
+	gcc ${CFLAGS} -o build/test_server obj/network_test_server.o obj/vec.o $(objects) $(LDFLAGS)
+	gcc ${CFLAGS} -o build/test_client obj/network_test_client.o obj/vec.o $(objects) $(LDFLAGS)
 else
 	gcc -o build/test_server mains/network_test_server.c -Wall
 	gcc -o build/test_client mains/network_test_client.c -Wall
 endif
 	
-
 clean:
 	rm -rf build/*
 	rm -rf obj/*

@@ -1,4 +1,4 @@
-#include "../src/sdl2_basics.c"
+#include "../src/include/sdl2_basics.h"
 #include <stdio.h>
 
 int main(int argc, char *argv[])

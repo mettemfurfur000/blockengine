@@ -1,20 +1,4 @@
-#ifndef HASH_TABLE
-#define HASH_TABLE
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include "game_types.h"
-
-#define TABLE_SIZE 113
-
-typedef struct hash_table
-{
-	char *key;
-	char *value;
-	struct hash_table *next;
-} hash_table;
+#include "include/hash_table.h"
 
 unsigned long hash_function(char *key)
 {
@@ -264,5 +248,3 @@ int verify_random_entry(hash_table **table, int seed)
 		return strcmp(value, ret_value) == 0;
 	return FAIL;
 }
-
-#endif

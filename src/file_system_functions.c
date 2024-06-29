@@ -1,19 +1,4 @@
-#ifndef FILE_SYSTEM_FUNCTIONS
-#define FILE_SYSTEM_FUNCTIONS
-
-#include "memory_control_functions.c"
-#include "endianless.c"
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#ifdef _WIN64
-#define X_P_mkdir(folder_path) mkdir(folder_path)
-#else
-#define X_P_mkdir(folder_path) mkdir(folder_path, 0700)
-#endif
+#include "include/file_system_functions.h"
 
 #ifdef _WIN64 // why not
 const char *separator = "\\";
@@ -428,5 +413,3 @@ void world_unload(world *w)
 		layer_unload(w, &w->layers[i]);
 	}
 }
-
-#endif

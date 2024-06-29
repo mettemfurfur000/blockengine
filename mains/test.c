@@ -1,10 +1,12 @@
 #include "../tests/test_mcf.c"
+#include "../tests/test_upd.c"
 #include "../tests/test_fsf.c"
 #include "../tests/test_hst.c"
 #include "../tests/test_bps.c"
 #include "../tests/test_dmp.c"
 #include "../tests/test_reg.c"
-#include "../tests/test_upd.c"
+
+#include "../src/include/endianless.h"
 
 // int main(int argc, char* argv[])
 // int main()

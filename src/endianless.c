@@ -1,7 +1,4 @@
-#ifndef ENDIANLESS
-#define ENDIANLESS
-
-#include "game_types.h"
+#include "include/endianless.h"
 
 volatile byte is_big_endian(void)
 {
@@ -86,5 +83,3 @@ int make_endianless(byte *bytes, int size)
 		return flip_bytes_in_place(bytes, size);
 	return SUCCESS;
 }
-
-#endif

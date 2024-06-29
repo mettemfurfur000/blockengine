@@ -2,10 +2,11 @@
 #define SDL2_BASICS
 
 #include <SDL2/SDL.h>
-#include "game_types.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb/stb_image.h"
+
+#include "include/game_types.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;

@@ -1,21 +1,10 @@
-#ifndef LAYER_DRAW_2D
-#define LAYER_DRAW_2D
+#include "include/layer_draw_2d.h"
 
-#include "sdl2_basics.c"
-#include "block_registry.c"
-#include "block_updates.c"
+extern SDL_Window *g_window;
+
+extern SDL_Renderer *g_renderer;
 
 const int block_size = 16;
-
-typedef struct client_view_point
-{
-	int screen_width, screen_height;
-
-	int x, y;
-	float scale;
-
-	vec_int_t draw_order;
-} client_view_point;
 
 // renders layer of the world. smart enough to not render what player doesnt see
 void layer_render(const world *w, const int layer_index, block_resources *b_res,
@@ -23,7 +12,7 @@ void layer_render(const world *w, const int layer_index, block_resources *b_res,
 				  const int width, const int height,
 				  const float scaled_block_size,
 				  const client_view_point view)
-{	
+{
 	if (!w || !b_res)
 		return;
 	if (layer_index < 0 || layer_index >= w->depth)
@@ -41,8 +30,8 @@ void layer_render(const world *w, const int layer_index, block_resources *b_res,
 	const int scaled_view_width = view.screen_width / view.scale;
 	const int scaled_view_height = view.screen_height / view.scale;
 
-	const int start_block_x = (int) (((view.x - scaled_view_width / 2) / scaled_block_size) - 1);
-	const int start_block_y = (int) (((view.y - scaled_view_height / 2) / scaled_block_size) - 1);
+	const int start_block_x = (int)(((view.x - scaled_view_width / 2) / scaled_block_size) - 1);
+	const int start_block_y = (int)(((view.y - scaled_view_height / 2) / scaled_block_size) - 1);
 
 	const int end_block_x = start_block_x + width + 1;
 	const int end_block_y = start_block_y + height + 1;
@@ -126,5 +115,3 @@ void client_render(const world *w, block_resources *b_res, client_view_point vie
 
 // TODO: after handling block updates from server, make sure to write function that rerenders only changed parts of the world.
 // until then, just rerender everything.
-
-#endif

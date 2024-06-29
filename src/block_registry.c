@@ -1,47 +1,4 @@
-#ifndef BLOCK_REGISTRY
-#define BLOCK_REGISTRY 1
-
-// vscode itellisense wants this define so bad...
-#define _DEFAULT_SOURCE 1
-
-#ifdef _WIN64
-#include "../dirent/include/dirent.h"
-#else
-#include <dirent.h>
-#endif
-
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
-#include "sdl2_basics.c"
-#include "block_properties.c"
-#include "endianless.c"
-#include "game_types.h"
-#include "memory_control_functions.c"
-#include "../vec/src/vec.h"
-
-#define MAX_PATH_LENGTH 512
-
-typedef struct block_resources
-{
-	block block_sample;
-
-	texture block_texture;
-} block_resources;
-
-typedef vec_t(block_resources) block_registry_t;
-
-enum block_data_types
-{
-	T_UNKNOWN,
-	T_DIGIT,
-	T_LONG,
-	T_INT,
-	T_SHORT,
-	T_BYTE,
-	T_STRING,
-} types;
+#include "include/block_registry.h"
 
 int length(long long value)
 {
@@ -209,13 +166,6 @@ block_data_exit:
 	return SUCCESS;
 }
 
-typedef struct
-{
-	int (*function)(char *, block_resources *);
-	char *name;
-	byte is_critical;
-} resource_entry_handler;
-
 int block_res_id_handler(char *data, block_resources *dest)
 {
 	int id = atoi(data);
@@ -349,5 +299,3 @@ void free_block_registry(block_registry_t *b_reg)
 		free_block_resources(&b_reg->data[i]);
 	vec_deinit(b_reg);
 }
-
-#endif

@@ -1,4 +1,4 @@
-#include "../src/block_updates.c"
+#include "../src/include/block_updates.h"
 #include "utils.h"
 
 const char test_world_name[] = "test_world";
@@ -52,6 +52,8 @@ int test_block_clean()
 {
 	int status = SUCCESS;
 
+	const block void_block = {0, 0};
+
 	world *t_w = make_test_world();
 
 	block test_block = {0};
@@ -75,6 +77,8 @@ int test_block_move_gently()
 	int status = SUCCESS;
 
 	world *t_w = make_test_world();
+
+	const block void_block = {0, 0};
 
 	block test_block = {0};
 	block other_block = {0};
@@ -138,6 +142,8 @@ int test_block_move_rough()
 
 	world *t_w = make_test_world();
 
+	const block void_block = {0, 0};
+
 	block test_block = {0};
 	block other_block = {0};
 	block_set_random(&test_block);
@@ -191,6 +197,8 @@ int test_block_move_recursive()
 	int status = SUCCESS;
 
 	world *t_w = make_test_world();
+
+	const block void_block = {0, 0};
 
 	block test_block = {0};
 	block other_block = {0};

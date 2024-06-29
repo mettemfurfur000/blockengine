@@ -1,4 +1,4 @@
-#include "../src/block_properties.c"
+#include "../src/include/block_properties.h"
 #include "utils.h"
 
 int test_basic_io()

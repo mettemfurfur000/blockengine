@@ -1,7 +1,4 @@
-#ifndef BLOCK_PROPS
-#define BLOCK_PROPS 1
-
-#include "hash_table.c"
+#include "include/hash_table.h"
 
 char *strtok_take_whole_line()
 {
@@ -98,5 +95,3 @@ int save_properties(const char *filename, hash_table **table)
 
 	return SUCCESS;
 }
-
-#endif

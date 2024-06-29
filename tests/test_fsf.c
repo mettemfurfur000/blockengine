@@ -1,4 +1,4 @@
-#include "../src/file_system_functions.c"
+#include "../src/include/file_system_functions.h"
 #include <unistd.h>
 #include "utils.h"
 #include <signal.h>

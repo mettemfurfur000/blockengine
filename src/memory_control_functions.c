@@ -1,9 +1,10 @@
-#ifndef MEMORY_CONTROL_FUNCTIONS
-#define MEMORY_CONTROL_FUNCTIONS
+#include "include/memory_control_functions.h"
 
-#include "game_types.h"
-#include <stdlib.h>
-#include <string.h>
+void make_void_block(block *b)
+{
+	b->id = 0;
+	b->data = 0;
+}
 
 int is_data_equal(const block *a, const block *b)
 {
@@ -84,7 +85,7 @@ void block_data_resize(block *b, int change)
 void block_erase(block *b)
 {
 	block_data_free(b);
-	*b = void_block;
+	make_void_block(b);
 }
 
 void block_copy(block *dest, const block *src)
@@ -254,5 +255,3 @@ void chunk_random_fill(layer_chunk *l, const unsigned int seed)
 		for (int j = 0; j < l->width; j++)
 			block_set_random(&l->blocks[i][j]);
 }
-
-#endif
