@@ -1,5 +1,5 @@
-#ifndef FILE_SYSTEM_FUNCTIONS
-#define FILE_SYSTEM_FUNCTIONS
+#ifndef WORLD_FS
+#define WORLD_FS
 
 #include <stdio.h>
 #include <unistd.h>
@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "memory_control_functions.h"
+#include "block_memory_control.h"
 #include "endianless.h"
 
 #ifdef _WIN64
@@ -49,5 +49,7 @@ void layer_unload(world *w, world_layer *wl);
 void world_save(world *w);
 void world_load(world *w);
 void world_unload(world *w);
+
+// i should rename this file from world_fs.h to file_system.h
 
 #endif

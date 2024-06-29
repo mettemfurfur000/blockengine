@@ -1,4 +1,4 @@
-#include "../src/include/memory_control_functions.h"
+#include "../src/include/block_memory_control.h"
 #include <stdio.h>
 #include "utils.h"
 

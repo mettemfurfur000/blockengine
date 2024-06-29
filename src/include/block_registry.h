@@ -18,7 +18,7 @@
 #include "block_properties.h"
 #include "endianless.h"
 #include "game_types.h"
-#include "memory_control_functions.h"
+#include "block_memory_control.h"
 #include "../../vec/src/vec.h"
 
 #define MAX_PATH_LENGTH 512

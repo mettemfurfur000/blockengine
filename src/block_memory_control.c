@@ -1,4 +1,4 @@
-#include "include/memory_control_functions.h"
+#include "include/block_memory_control.h"
 
 void make_void_block(block *b)
 {

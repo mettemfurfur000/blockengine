@@ -1,4 +1,4 @@
-#include "include/block_updates.h"
+#include "include/block_operations.h"
 
 int is_chunk_unloaded(const world_layer *wl, const int chunk_x, const int chunk_y)
 {

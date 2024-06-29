@@ -1,5 +1,5 @@
-#ifndef BLOCK_SCRIPTING
-#define BLOCK_SCRIPTING
+#ifndef LUA_INTEGRATION
+#define LUA_INTEGRATION
 
 #include <stdio.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 #include <lualib.h>
 
 #include "game_types.h"
-#include "block_updates.h"
+#include "block_operations.h"
 
 extern lua_State *g_L;
 

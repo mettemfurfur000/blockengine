@@ -3,7 +3,7 @@
 
 #include "sdl2_basics.h"
 #include "block_registry.h"
-#include "block_updates.h"
+#include "block_operations.h"
 
 typedef struct client_view_point
 {

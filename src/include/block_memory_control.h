@@ -1,5 +1,5 @@
-#ifndef MEMORY_CONTROL_FUNCTIONS
-#define MEMORY_CONTROL_FUNCTIONS
+#ifndef BLOCK_MEMORY_CONTROL
+#define BLOCK_MEMORY_CONTROL
 
 #include <stdlib.h>
 #include <string.h>

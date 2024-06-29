@@ -1,7 +1,7 @@
-#ifndef BLOCK_UPDATES
-#define BLOCK_UPDATES
+#ifndef BLOCK_OPERATIONS
+#define BLOCK_OPERATIONS
 
-#include "file_system_functions.h"
+#include "world_fs.h"
 
 int is_chunk_unloaded(const world_layer *wl, const int chunk_x, const int chunk_y);
 block *get_block_access(const world *w, const int index, const int x, const int y);

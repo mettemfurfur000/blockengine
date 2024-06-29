@@ -1,4 +1,4 @@
-#include "../src/include/block_updates.h"
+#include "../src/include/block_operations.h"
 #include "utils.h"
 
 const char test_world_name[] = "test_world";
@@ -255,9 +255,9 @@ int test_block_move_recursive()
 	return status;
 }
 
-int test_block_updates_all()
+int test_block_operations_all()
 {
-	printf("test_block_updates_all:\n");
+	printf("test_block_operations_all:\n");
 	t_w = make_test_world();
 
 	RUN_TEST(test_block_set)

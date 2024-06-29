@@ -1,4 +1,4 @@
-#include "include/block_scripting.h"
+#include "include/lua_integration.h"
 
 lua_State *g_L = 0;
 

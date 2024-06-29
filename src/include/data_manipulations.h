@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 #endif
 
-#include "memory_control_functions.h"
+#include "block_memory_control.h"
 
 /*
 1 byte for size
