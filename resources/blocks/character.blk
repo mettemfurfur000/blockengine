@@ -1,3 +1,4 @@
 id = 4
 data = { byte v = 32 }
 texture = character.png
+ctrl_var = v

@@ -58,10 +58,13 @@ int load_properties(const char *filename, hash_table **table)
 		return FAIL;
 	}
 
-	while (read_properties(f, key, value))
+	int status = 1;
+
+	do
 	{
+		status = read_properties(f, key, value);
 		put_entry(table, key, value);
-	}
+	} while (status);
 
 	fclose(f);
 

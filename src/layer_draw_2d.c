@@ -1,4 +1,5 @@
 #include "include/layer_draw_2d.h"
+#include "include/data_manipulations.h"
 
 // renders layer of the world. smart enough to not render what player doesnt see
 void layer_render(const world *w, const int layer_index, block_registry_t *b_reg,
@@ -33,8 +34,6 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	const int block_x_offset = (view.x - scaled_view_width / 2) % g_block_size; /* offset in pixels for smooth rendering of blocks */
 	const int block_y_offset = (view.y - scaled_view_height / 2) % g_block_size;
 
-	printf("block_offsets: %d %d\n", block_x_offset, block_y_offset);
-
 	// dest_rect.x = start_block_x * scaled_block_size + (scaled_view_width / 2 - view.x) - block_x_offset;
 
 	float dest_x, dest_y;
@@ -58,27 +57,36 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 			// check if block is not void
 			if (b->id == 0)
 				continue;
-			// check if block is not from the same registry
-			if (b->id != b_reg->data[b->id].block_sample.id)
-				continue;
 			// check if block could exist in registry
 			if (b->id >= b_reg->length)
 				continue;
+
+			block_resources br = b_reg->data[b->id];
+
 			// get texture
-			texture = &b_reg->data[b->id].block_texture;
+			texture = &br.block_texture;
 			if (!texture)
 				continue;
 			// get frame
-			if (texture->frames > 1)
+			src_rect.x = 0;
+			src_rect.y = 0;
+			if (br.anim_controller != 0)
 			{
-				int frame = frame_number % texture->frames;
+				byte frame = 0;
+				if (data_get_b(b->data, br.anim_controller, &frame) == SUCCESS)
+				{
+					src_rect.x = texture->frame_side_size * (frame % texture->frames_per_line);
+					src_rect.y = texture->frame_side_size * (frame / texture->frames_per_line);
+				}
+			}
+			else if (br.is_animated && texture->frames > 1)
+			{
+				float seconds_since_start = SDL_GetTicks() / 1000.0f;
+				int fps = br.frames_per_second;
+				int frame = (int)(seconds_since_start * fps) % texture->frames;
+
 				src_rect.x = texture->frame_side_size * (frame % texture->frames_per_line);
 				src_rect.y = texture->frame_side_size * (frame / texture->frames_per_line);
-			}
-			else
-			{
-				src_rect.x = 0;
-				src_rect.y = 0;
 			}
 			// source is for from what part of texture render
 			src_rect.h = texture->frame_side_size;

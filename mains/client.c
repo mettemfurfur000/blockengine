@@ -93,6 +93,7 @@ void bprintf(world *w, block_registry_t *reg, int layer, int orig_x, int orig_y,
 		block *dest = get_block_access(w, layer, x, y);
 
 		block_copy(dest, &reg->data[b.id].block_sample);
+		data_create_element(&dest->data, 'v', 1);
 		data_set_b(dest->data, 'v', *ptr);
 		switch (*ptr)
 		{
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
 	block_registry_t b_reg;
 	vec_init(&b_reg);
 
-	client_view_point view = {SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1.5f, {}};
+	client_view_point view = {SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1.0f, {}};
 	vec_init(&view.draw_order);
 	(void)vec_push(&view.draw_order, 0);
 
@@ -149,9 +150,13 @@ int main(int argc, char *argv[])
 	// info about textures
 	for (int i = 0; i < b_reg.length; i++)
 	{
-		printf("block id = %d\n", b_reg.data[i].block_sample.id);
-		printf("texture name = %s\n", b_reg.data[i].block_texture.filename);
-		printf("texture ptr = %p\n", (void *)b_reg.data[i].block_texture.ptr);
+		block_resources br = b_reg.data[i];
+		printf("block id = %d\n", br.block_sample.id);
+		printf("texture name = %s\n", br.block_texture.filename);
+		printf("texture ptr = %p\n", (void *)br.block_texture.ptr);
+		printf("is animated = %d\n", br.is_animated);
+		printf("frames per second = %d\n", br.frames_per_second);
+		printf("anim controller = %c\n", br.anim_controller);
 	}
 
 	// debug_print_world(test_world);
@@ -161,7 +166,7 @@ int main(int argc, char *argv[])
 
 	unsigned int last_move_press_time = 0;
 
-	SDL_Point target_pos = {0, 0};
+	float target_x = 0, target_y = 0;
 	SDL_Event e;
 
 	for (;;)
@@ -180,6 +185,7 @@ int main(int argc, char *argv[])
 					break;
 				case SDLK_SPACE:
 					world_layer_fill_randomly(test_world, 0, &b_reg, frame);
+					bprintf(test_world, &b_reg, 0, 0, 0, 32, "Hello from bprintf!\nNumber of frames since start: %d", frame);
 					break;
 				default:
 					break;
@@ -198,15 +204,15 @@ int main(int argc, char *argv[])
 		{
 			if (SDL_GetTicks() - last_move_press_time > 17)
 			{
-				target_pos.x += (keystate[SDL_SCANCODE_D] - keystate[SDL_SCANCODE_A]) * g_block_size;
-				target_pos.y += (keystate[SDL_SCANCODE_S] - keystate[SDL_SCANCODE_W]) * g_block_size;
+				target_x += (keystate[SDL_SCANCODE_D] - keystate[SDL_SCANCODE_A]) * g_block_size;
+				target_y += (keystate[SDL_SCANCODE_S] - keystate[SDL_SCANCODE_W]) * g_block_size;
 
 				last_move_press_time = SDL_GetTicks();
 			}
 		}
 
-		view.x = lerp(view.x, target_pos.x, 0.015f);
-		view.y = lerp(view.y, target_pos.y, 0.015f);
+		view.x = lerp(view.x, target_x, 0.015f);
+		view.y = lerp(view.y, target_y, 0.015f);
 
 		view.scale += (keystate[SDL_SCANCODE_LSHIFT] - keystate[SDL_SCANCODE_LCTRL]) * 0.1f;
 		view.scale = MAX(view.scale, 0.8f);

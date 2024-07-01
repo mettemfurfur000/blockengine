@@ -188,6 +188,41 @@ int block_res_texture_handler(char *data, block_resources *dest)
 	return texture_load(&dest->block_texture, texture_full_path);
 }
 
+int block_res_anim_toggle_handler(char *data, block_resources *dest)
+{
+	if (strcmp(data, "true") == 0)
+	{
+		dest->is_animated = 1;
+		return SUCCESS;
+	}
+	if (strcmp(data, "false") == 0)
+	{
+		dest->is_animated = 0;
+		return SUCCESS;
+	}
+
+	return FAIL;
+}
+
+int block_res_anim_fps_handler(char *data, block_resources *dest)
+{
+	int fps = atoi(data);
+	if (fps == 0)
+	{
+		dest->is_animated = 0;
+		return SUCCESS;
+	}
+	dest->frames_per_second = fps;
+	return SUCCESS;
+}
+
+int block_res_anim_controller_handler(char *data, block_resources *dest)
+{
+	printf("anim controller: [%s]\n", data);
+	dest->anim_controller = data[0];
+	return SUCCESS;
+}
+
 int parse_block_resources_from_file(const char *file_path, block_resources *dest)
 {
 	hash_table **ht = alloc_table();
@@ -202,9 +237,12 @@ int parse_block_resources_from_file(const char *file_path, block_resources *dest
 
 	char *entry = 0;
 	const resource_entry_handler res_handlers[] = {
-		{&block_res_id_handler, "id", 1},
-		{&block_res_data_handler, "data", 0},
-		{&block_res_texture_handler, "texture", 1}};
+		{&block_res_id_handler, "id", REQUIRED},
+		{&block_res_data_handler, "data", NOT_REQUIRED},
+		{&block_res_texture_handler, "texture", REQUIRED},
+		{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED},
+		{&block_res_anim_fps_handler, "fps", NOT_REQUIRED},
+		{&block_res_anim_controller_handler, "ctrl_var", NOT_REQUIRED}};
 
 	const int TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
@@ -265,14 +303,17 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 
 		if (entry->d_type == DT_REG)
 		{
-			block_resources br = {};
+			block_resources br = {.is_animated = 0, .frames_per_second = 0, .anim_controller = 0};
 			char file_to_parse[300];
 			snprintf(file_to_parse, sizeof(file_to_parse), "%s/%s", folder, entry->d_name);
 			if (parse_block_resources_from_file(file_to_parse, &br) == FAIL)
 				free_block_resources(&br);
 
 			if (is_already_in_registry(reg, &br))
+			{
+				free_block_resources(&br);
 				continue;
+			}
 
 			(void)vec_push(reg, br);
 		}

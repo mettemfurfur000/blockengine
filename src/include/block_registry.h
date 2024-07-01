@@ -28,6 +28,10 @@ typedef struct block_resources
 	block block_sample;
 
 	texture block_texture;
+
+	byte is_animated;
+	byte frames_per_second;
+	char anim_controller; // controls which character inside of block controls current animation mode of block
 } block_resources;
 
 typedef vec_t(block_resources) block_registry_t;
@@ -64,16 +68,16 @@ int get_length_to_alloc(long long value, int type);
 // other numerical types will save their length in bytes, even if you pass it with value of 0
 int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr);
 
+#define NOT_REQUIRED 0
+#define REQUIRED 1
+
 typedef struct
 {
 	int (*function)(char *, block_resources *);
-	char *name;
+	char *name; // TODO: add depends for resource handlers
 	byte is_critical;
 } resource_entry_handler;
 
-int block_res_id_handler(char *data, block_resources *dest);
-int block_res_data_handler(char *data, block_resources *dest);
-int block_res_texture_handler(char *data, block_resources *dest);
 int parse_block_resources_from_file(const char *file_path, block_resources *dest);
 void free_block_resources(block_resources *b);
 
