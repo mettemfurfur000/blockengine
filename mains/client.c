@@ -1,6 +1,7 @@
 #include "../src/include/block_operations.h"
 #include "../src/include/block_registry.h"
 #include "../src/include/layer_draw_2d.h"
+#include "../src/include/data_manipulations.h"
 
 void free_world(world *w)
 {
@@ -69,8 +70,59 @@ void debug_print_world(world *w)
 	}
 }
 
+float lerp(float a, float b, float t)
+{
+	return a + t * (b - a);
+}
+
+// turns string into formatted block chain
+void bprintf(world *w, block_registry_t *reg, int layer, int orig_x, int orig_y, int length_limit, const char *format, ...)
+{
+	char buffer[1024] = {};
+	va_list args;
+	va_start(args, format);
+	vsprintf(buffer, format, args);
+
+	char *ptr = buffer;
+	int x = orig_x;
+	int y = orig_y;
+
+	while (*ptr != 0)
+	{
+		block b = {.id = 4};
+		block *dest = get_block_access(w, layer, x, y);
+
+		block_copy(dest, &reg->data[b.id].block_sample);
+		data_set_b(dest->data, 'v', *ptr);
+		switch (*ptr)
+		{
+		case '\n':
+			x = orig_x;
+			y++;
+			break;
+		case '\t':
+			x += 4;
+			break;
+		default:
+			x++;
+		}
+
+		if (x > length_limit)
+		{
+			x = orig_x;
+			y++;
+		}
+
+		ptr++;
+	}
+
+	va_end(args);
+}
+
 int main(int argc, char *argv[])
 {
+	g_block_size = 16;
+
 	if (!init_graphics())
 		return 1;
 
@@ -107,8 +159,11 @@ int main(int argc, char *argv[])
 	// main loop?
 	unsigned long frame = 0;
 
-	// handling some general events
+	unsigned int last_move_press_time = 0;
+
+	SDL_Point target_pos = {0, 0};
 	SDL_Event e;
+
 	for (;;)
 	{
 		// handle events
@@ -139,10 +194,19 @@ int main(int argc, char *argv[])
 		// handling keyboard state
 		const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
-		view.x += (keystate[SDL_SCANCODE_D] - keystate[SDL_SCANCODE_A]) * 4;
-		view.x = MAX(view.x, 0);
-		view.y += (keystate[SDL_SCANCODE_S] - keystate[SDL_SCANCODE_W]) * 4;
-		view.y = MAX(view.y, 0);
+		if (keystate[SDL_SCANCODE_D] || keystate[SDL_SCANCODE_A] || keystate[SDL_SCANCODE_S] || keystate[SDL_SCANCODE_W])
+		{
+			if (SDL_GetTicks() - last_move_press_time > 17)
+			{
+				target_pos.x += (keystate[SDL_SCANCODE_D] - keystate[SDL_SCANCODE_A]) * g_block_size;
+				target_pos.y += (keystate[SDL_SCANCODE_S] - keystate[SDL_SCANCODE_W]) * g_block_size;
+
+				last_move_press_time = SDL_GetTicks();
+			}
+		}
+
+		view.x = lerp(view.x, target_pos.x, 0.015f);
+		view.y = lerp(view.y, target_pos.y, 0.015f);
 
 		view.scale += (keystate[SDL_SCANCODE_LSHIFT] - keystate[SDL_SCANCODE_LCTRL]) * 0.1f;
 		view.scale = MAX(view.scale, 0.8f);
@@ -150,7 +214,7 @@ int main(int argc, char *argv[])
 		SDL_RenderClear(g_renderer);
 
 		// render world
-		client_render(test_world, b_reg.data, view, frame / 100);
+		client_render(test_world, &b_reg, view, frame / 100);
 
 		SDL_RenderPresent(g_renderer);
 		SDL_Delay(16);

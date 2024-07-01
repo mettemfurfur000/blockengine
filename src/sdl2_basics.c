@@ -1,35 +1,18 @@
-#ifndef SDL2_BASICS
-#define SDL2_BASICS
-
-#include <SDL2/SDL.h>
+#include "include/sdl2_basics.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb/stb_image.h"
 
 #include "include/game_types.h"
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
-
-const char *window_name = "Block Engine";
+int SCREEN_WIDTH = 640;
+int SCREEN_HEIGHT = 480;
+char *window_name = "Block Engine";
 
 SDL_Window *g_window = NULL;
-
 SDL_Renderer *g_renderer = NULL;
 
-typedef struct texture
-{
-	SDL_Texture *ptr;
-	char *filename;
-
-	int width;
-	int height;
-
-	int frame_side_size;
-
-	int frames_per_line;
-	int frames;
-} texture;
+int g_block_size = 16;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define KEEPINLIMITS(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
@@ -174,7 +157,8 @@ int texture_load(texture *dest, char *path_to_file)
 
 	// animation data calculations
 
-	dest->frame_side_size = greatest_common_divisor(dest->height, dest->width);
+	// dest->frame_side_size = greatest_common_divisor(dest->height, dest->width);
+	dest->frame_side_size = g_block_size;
 	dest->frames_per_line = dest->width / dest->frame_side_size;
 	dest->frames = dest->frames_per_line * (dest->height / dest->frame_side_size);
 
@@ -222,5 +206,3 @@ int texture_render_anim(texture *texture, int x, int y, int frame, float scale)
 
 	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
 }
-
-#endif
