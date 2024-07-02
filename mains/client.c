@@ -2,6 +2,7 @@
 #include "../src/include/block_registry.h"
 #include "../src/include/layer_draw_2d.h"
 #include "../src/include/data_manipulations.h"
+#include "../src/include/world_utils.h"
 
 void free_world(world *w)
 {
@@ -75,51 +76,6 @@ float lerp(float a, float b, float t)
 	return a + t * (b - a);
 }
 
-// turns string into formatted block chain
-void bprintf(world *w, block_registry_t *reg, int layer, int orig_x, int orig_y, int length_limit, const char *format, ...)
-{
-	char buffer[1024] = {};
-	va_list args;
-	va_start(args, format);
-	vsprintf(buffer, format, args);
-
-	char *ptr = buffer;
-	int x = orig_x;
-	int y = orig_y;
-
-	while (*ptr != 0)
-	{
-		block b = {.id = 4};
-		block *dest = get_block_access(w, layer, x, y);
-
-		block_copy(dest, &reg->data[b.id].block_sample);
-		data_create_element(&dest->data, 'v', 1);
-		data_set_b(dest->data, 'v', *ptr);
-		switch (*ptr)
-		{
-		case '\n':
-			x = orig_x;
-			y++;
-			break;
-		case '\t':
-			x += 4;
-			break;
-		default:
-			x++;
-		}
-
-		if (x > length_limit)
-		{
-			x = orig_x;
-			y++;
-		}
-
-		ptr++;
-	}
-
-	va_end(args);
-}
-
 int main(int argc, char *argv[])
 {
 	g_block_size = 16;
@@ -130,9 +86,19 @@ int main(int argc, char *argv[])
 	block_registry_t b_reg;
 	vec_init(&b_reg);
 
-	client_view_point view = {SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1.0f, {}};
-	vec_init(&view.draw_order);
-	(void)vec_push(&view.draw_order, 0);
+	client_render_rules rules = {SCREEN_WIDTH, SCREEN_HEIGHT, {}, {}};
+	vec_init(&rules.draw_order);
+	vec_init(&rules.slices);
+
+	(void)vec_push(&rules.draw_order, 1);
+	(void)vec_push(&rules.draw_order, 0);
+
+	layer_slice t = {0, 0, rules.screen_width, rules.screen_height, 1.0f};
+	(void)vec_push(&rules.slices, t);
+	(void)vec_push(&rules.slices, t);
+
+	const int floor_layer_id = 1;
+	const int debug_layer_id = 0;
 
 	if (!read_block_registry("resources/blocks", &b_reg))
 		goto fire_exit;
@@ -140,12 +106,14 @@ int main(int argc, char *argv[])
 
 	// make a world with one layer and one chunk
 	const char *world_name = "test_world";
-	world *test_world = world_make(1, world_name);
+	world *test_world = world_make(2, world_name);
 	if (!test_world)
 		goto world_free_exit;
 
-	world_layer_alloc(&test_world->layers[0], 2, 2, 32, 0);
-	chunk_fill_randomly_from_registry(test_world->layers[0].chunks[0][0], &b_reg, 0);
+	for (int i = 0; i < test_world->depth; i++)
+		world_layer_alloc(&test_world->layers[i], 2, 2, 32, i);
+
+	chunk_fill_randomly_from_registry(test_world->layers[floor_layer_id].chunks[0][0], &b_reg, 69);
 
 	// info about textures
 	for (int i = 0; i < b_reg.length; i++)
@@ -169,6 +137,9 @@ int main(int argc, char *argv[])
 	float target_x = 0, target_y = 0;
 	SDL_Event e;
 
+	// layer_slice *debug_layer = &rules.slices.data[debug_layer_id];
+	layer_slice *floor = &rules.slices.data[floor_layer_id];
+
 	for (;;)
 	{
 		// handle events
@@ -184,8 +155,8 @@ int main(int argc, char *argv[])
 					goto world_free_exit;
 					break;
 				case SDLK_SPACE:
-					world_layer_fill_randomly(test_world, 0, &b_reg, frame);
-					bprintf(test_world, &b_reg, 0, 0, 0, 32, "Hello from bprintf!\nNumber of frames since start: %d", frame);
+					world_layer_fill_randomly(test_world, floor_layer_id, &b_reg, frame);
+					// bprintf(test_world, &b_reg, 0, 0, 0, 32, "Hello world from the client! 0w0");
 					break;
 				default:
 					break;
@@ -211,16 +182,16 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		view.x = lerp(view.x, target_x, 0.015f);
-		view.y = lerp(view.y, target_y, 0.015f);
+		floor->x = lerp(floor->x, target_x, 0.015f);
+		floor->y = lerp(floor->y, target_y, 0.015f);
 
-		view.scale += (keystate[SDL_SCANCODE_LSHIFT] - keystate[SDL_SCANCODE_LCTRL]) * 0.1f;
-		view.scale = MAX(view.scale, 0.8f);
+		floor->scale += (keystate[SDL_SCANCODE_LSHIFT] - keystate[SDL_SCANCODE_LCTRL]) * 0.1f;
+		floor->scale = MAX(floor->scale, 0.8f);
 
 		SDL_RenderClear(g_renderer);
 
 		// render world
-		client_render(test_world, &b_reg, view, frame / 100);
+		client_render(test_world, &b_reg, rules, frame / 100);
 
 		SDL_RenderPresent(g_renderer);
 		SDL_Delay(16);

@@ -1,3 +1,4 @@
 id = 2
-data = { byte v = 1 }
 texture = numbers.png
+is_animated = true
+fps = 4

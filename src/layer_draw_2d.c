@@ -1,50 +1,52 @@
 #include "include/layer_draw_2d.h"
 #include "include/data_manipulations.h"
+#include "include/world_utils.h"
 
 // renders layer of the world. smart enough to not render what player doesnt see
 void layer_render(const world *w, const int layer_index, block_registry_t *b_reg,
 				  const int frame_number,
-				  const int width, const int height,
-				  const client_view_point view)
+				  const layer_slice slice)
 {
 	if (!w || !b_reg)
 		return;
 	if (layer_index < 0 || layer_index >= w->depth)
 		return;
-	if (width < 0 || height < 0)
-		return;
+
+	const int width = slice.w / g_block_size; // exact amowunt of lboks to render o nscren
+	const int height = slice.h / g_block_size;
 
 	texture *texture;
 	block *b;
 	SDL_Rect src_rect;
 	SDL_Rect dest_rect = {0, 0, g_block_size, g_block_size};
+	const int start_block_x = ((slice.x / g_block_size) - 1);
+	const int start_block_y = ((slice.y / g_block_size) - 1);
 
-	const int scaled_view_width = view.screen_width / view.scale;
-	const int scaled_view_height = view.screen_height / view.scale;
-
-	const int start_block_x = (int)(((view.x - scaled_view_width / 2) / g_block_size) - 1);
-	const int start_block_y = (int)(((view.y - scaled_view_height / 2) / g_block_size) - 1);
+	if (layer_index == 0)
+	{
+		bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
+		bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
+	}
 
 	const int end_block_x = start_block_x + width + 1;
 	const int end_block_y = start_block_y + height + 1;
-
-	// loop over blocks
-
 	// calculate x coordinate of block on screen
-	const int block_x_offset = (view.x - scaled_view_width / 2) % g_block_size; /* offset in pixels for smooth rendering of blocks */
-	const int block_y_offset = (view.y - scaled_view_height / 2) % g_block_size;
 
-	// dest_rect.x = start_block_x * scaled_block_size + (scaled_view_width / 2 - view.x) - block_x_offset;
+	const int block_x_offset = slice.x % g_block_size; /* offset in pixels for smooth rendering of blocks */
+	const int block_y_offset = slice.y % g_block_size;
 
 	float dest_x, dest_y;
+	dest_x = -block_x_offset - g_block_size * 2; // also minus 1 full block back to fill the gap
 
-	dest_x = -block_x_offset;
+	if (layer_index == 0)
+	{
+		bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_size, -block_y_offset - g_block_size);
+	}
 
 	for (int i = start_block_x; i < end_block_x; i++)
 	{
 		dest_x += g_block_size;
-		// dest_rect.y = start_block_y * scaled_block_size + (scaled_view_height / 2 - view.y) - block_y_offset;
-		dest_y = -block_y_offset;
+		dest_y = -block_y_offset - g_block_size * 2;
 
 		for (int j = start_block_y; j < end_block_y; j++)
 		{
@@ -101,17 +103,14 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 }
 
 // renders single frame of the world.
-void client_render(const world *w, block_registry_t *b_reg, client_view_point view_point, const int frame_number)
+void client_render(const world *w, block_registry_t *b_reg, client_render_rules render_rules, const int frame_number)
 {
-	// calculate how much blocks to render
-	const int blocks_to_render_width = view_point.screen_width / g_block_size + 2;
-	const int block_to_render_height = view_point.screen_height / g_block_size + 2;
-
-	for (int i = 0; i < view_point.draw_order.length; i++)
-		layer_render(w, view_point.draw_order.data[i], b_reg, frame_number,
-					 blocks_to_render_width,
-					 block_to_render_height,
-					 view_point);
+	for (int i = 0; i < render_rules.draw_order.length; i++)
+	{
+		int layer_id = render_rules.draw_order.data[i];
+		layer_render(w, layer_id, b_reg, frame_number,
+					 render_rules.slices.data[layer_id]);
+	}
 }
 
 // TODO: after handling block updates from server, make sure to write function that rerenders only changed parts of the world.
