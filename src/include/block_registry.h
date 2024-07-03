@@ -74,8 +74,10 @@ int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr);
 typedef struct
 {
 	int (*function)(char *, block_resources *);
-	char *name; // TODO: add depends for resource handlers
+	char *name;
 	byte is_critical;
+	char *dependencies[4];
+	char *incompabilities[4];
 } resource_entry_handler;
 
 int parse_block_resources_from_file(const char *file_path, block_resources *dest);

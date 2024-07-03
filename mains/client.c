@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	(void)vec_push(&rules.slices, t);
 
 	const int floor_layer_id = 1;
-	const int debug_layer_id = 0;
+	// const int debug_layer_id = 0;
 
 	if (!read_block_registry("resources/blocks", &b_reg))
 		goto fire_exit;
@@ -115,17 +115,17 @@ int main(int argc, char *argv[])
 
 	chunk_fill_randomly_from_registry(test_world->layers[floor_layer_id].chunks[0][0], &b_reg, 69);
 
-	// info about textures
-	for (int i = 0; i < b_reg.length; i++)
-	{
-		block_resources br = b_reg.data[i];
-		printf("block id = %d\n", br.block_sample.id);
-		printf("texture name = %s\n", br.block_texture.filename);
-		printf("texture ptr = %p\n", (void *)br.block_texture.ptr);
-		printf("is animated = %d\n", br.is_animated);
-		printf("frames per second = %d\n", br.frames_per_second);
-		printf("anim controller = %c\n", br.anim_controller);
-	}
+	// info about all loaded blocks
+	// for (int i = 0; i < b_reg.length; i++)
+	// {
+	// 	block_resources br = b_reg.data[i];
+	// 	printf("block id = %d\n", br.block_sample.id);
+	// 	printf("texture name = %s\n", br.block_texture.filename);
+	// 	printf("texture ptr = %p\n", (void *)br.block_texture.ptr);
+	// 	printf("is animated = %d\n", br.is_animated);
+	// 	printf("frames per second = %d\n", br.frames_per_second);
+	// 	printf("anim controller = %c\n", br.anim_controller);
+	// }
 
 	// debug_print_world(test_world);
 

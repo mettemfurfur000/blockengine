@@ -218,17 +218,16 @@ int block_res_anim_fps_handler(char *data, block_resources *dest)
 
 int block_res_anim_controller_handler(char *data, block_resources *dest)
 {
-	printf("anim controller: [%s]\n", data);
 	dest->anim_controller = data[0];
 	return SUCCESS;
 }
 
 int parse_block_resources_from_file(const char *file_path, block_resources *dest)
 {
-	hash_table **ht = alloc_table();
+	hash_table **properties = alloc_table();
 	int status = SUCCESS;
 
-	if (!load_properties(file_path, ht))
+	if (!load_properties(file_path, properties))
 	{
 		printf("Error loading block resources: %s\n", file_path);
 		status = FAIL;
@@ -238,32 +237,93 @@ int parse_block_resources_from_file(const char *file_path, block_resources *dest
 	char *entry = 0;
 	const resource_entry_handler res_handlers[] = {
 		{&block_res_id_handler, "id", REQUIRED},
-		{&block_res_data_handler, "data", NOT_REQUIRED},
 		{&block_res_texture_handler, "texture", REQUIRED},
-		{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED},
-		{&block_res_anim_fps_handler, "fps", NOT_REQUIRED},
-		{&block_res_anim_controller_handler, "ctrl_var", NOT_REQUIRED}};
+
+		{&block_res_data_handler, "data", NOT_REQUIRED},
+
+		{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED, {}, {"ctrl_var"}},
+		{&block_res_anim_fps_handler, "fps", NOT_REQUIRED, {"is_animated"}, {"ctrl_var"}},
+
+		{&block_res_anim_controller_handler, "ctrl_var", NOT_REQUIRED, {}, {"is_animated", "fps"}}
+
+	};
+
+	vec_str_t seen_entries;
+	vec_init(&seen_entries);
 
 	const int TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
 	for (int i = 0; i < TOTAL_HANDLERS; i++)
 	{
-		entry = get_entry(ht, res_handlers[i].name);
-		if (entry == 0 && res_handlers[i].is_critical)
+		entry = get_entry(properties, res_handlers[i].name);
+
+		if (!entry)
 		{
-			printf("Error: No \"%s\" entry in file %s\n", res_handlers[i].name, file_path);
+			if (res_handlers[i].is_critical)
+			{
+				printf("Error in \"%s\" : No \"%s\" entry\n", file_path, res_handlers[i].name);
+				status = FAIL;
+				break;
+			}
+			continue;
+		}
+		// check for dependencies
+		for (int j = 0; j < sizeof(res_handlers[i].dependencies) / sizeof(void *); j++)
+		{
+			char *dep = res_handlers[i].dependencies[j];
+			if (!dep)
+				continue;
+
+			if (seen_entries.length == 0)
+			{
+				printf("Error in \"%s\": \"%s\" is dependent on \"%s\", but seen entries array is empty\n", file_path, res_handlers[i].name, dep);
+				status = FAIL;
+				break;
+			}
+			int k = 0;
+			vec_find(&seen_entries, dep, k);
+			if (k == -1)
+			{
+				printf("Error in \"%s\": \"%s\" is dependent on \"%s\"\n", file_path, res_handlers[i].name, dep);
+				status = FAIL;
+				break;
+			}
+
+			// printf("Debug message \"%s\": Dependency \"%s\" is found for \"%s\"\n", file_path, dep, res_handlers[i].name);
+		}
+
+		// check for incompatibilities
+		// basicly same as incompatibilities but instead of requiring certain fields it skips them
+		for (int j = 0; j < sizeof(res_handlers[i].incompabilities) / sizeof(void *); j++)
+		{
+			char *inc = res_handlers[i].incompabilities[j];
+			if (!inc)
+				continue;
+
+			if (seen_entries.length == 0)
+				continue;
+
+			int k = 0;
+			vec_find(&seen_entries, inc, k);
+			if (k == -1)
+				continue;
+
+			printf("Error in \"%s\": \"%s\" is incompatible with \"%s\"\n", file_path, res_handlers[i].name, inc);
 			status = FAIL;
 			break;
 		}
-		if (entry != 0 && res_handlers[i].function(entry, dest) == FAIL)
+
+		if (res_handlers[i].function(entry, dest) == FAIL)
 		{
-			printf("Error occured after calling \"%s\" handler, recieved data: %s\n", res_handlers[i].name, entry);
+			printf("Error in \"%s\": handler \"%s\" failed to process this data: %s\n", file_path, res_handlers[i].name, entry);
 			status = FAIL;
 			break;
 		}
+		else
+			(void)vec_push(&seen_entries, res_handlers[i].name);
 	}
 emergency_exit:
-	free_table(ht);
+	free_table(properties);
 	return status;
 }
 
@@ -295,6 +355,10 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 		closedir(directory);
 		return FAIL;
 	}
+
+	// push default void block with id 0
+	block_resources void_block = {.block_sample = {.id = 0, .data = 0}, .is_animated = 0, .frames_per_second = 0, .anim_controller = 0};
+	(void)vec_push(reg, void_block);
 
 	while ((entry = readdir(directory)) != NULL)
 	{
