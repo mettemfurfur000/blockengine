@@ -8,14 +8,14 @@ world *make_test_world()
 {
 	world *w = world_make(1, test_world_name);
 
-	world_layer_alloc(&w->layers[0], 2, 2, 32, 0);
+	world_layer_alloc(&w->layers.data[0], 2, 2, 32, 0);
 
 	return w;
 }
 
 void free_test_world(world *w)
 {
-	world_layer_free(&w->layers[0]);
+	world_layer_free(&w->layers.data[0]);
 
 	world_free(w);
 }

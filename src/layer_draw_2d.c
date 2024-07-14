@@ -9,7 +9,7 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 {
 	if (!w || !b_reg)
 		return;
-	if (layer_index < 0 || layer_index >= w->depth)
+	if (layer_index < 0 || layer_index >= w->layers.length)
 		return;
 
 	const int width = slice.w / g_block_size; // exact amowunt of lboks to render o nscren

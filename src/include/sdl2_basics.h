@@ -16,6 +16,9 @@ extern SDL_Renderer *g_renderer;
 
 extern int g_block_size;
 
+#define TEXTURE_TYPE_REGULAR 1
+#define TEXTURE_TYPE_CONNECTED 2
+
 typedef struct texture
 {
 	SDL_Texture *ptr;
@@ -24,10 +27,12 @@ typedef struct texture
 	int width;
 	int height;
 
-	int frame_side_size;
+	unsigned short frame_side_size;
 
-	int frames_per_line;
-	int frames;
+	unsigned short frames_per_line;
+	unsigned short frames;
+
+	byte type;
 } texture;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))

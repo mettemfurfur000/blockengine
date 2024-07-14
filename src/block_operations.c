@@ -13,10 +13,10 @@ block *get_block_access(const world *w, const int index, const int x, const int 
 	if (!w)
 		return FAIL;
 
-	if (index >= w->depth)
+	if (index >= w->layers.length)
 		return FAIL;
 
-	world_layer *wl = &w->layers[index];
+	world_layer *wl = &w->layers.data[index];
 
 	if (x < 0 || y < 0)
 		return FAIL;
@@ -35,8 +35,11 @@ block *get_block_access(const world *w, const int index, const int x, const int 
 	const int local_x = x % wl->chunk_width;
 	const int local_y = y % wl->chunk_width;
 
-	return &wl->chunks[chunk_x][chunk_y]->blocks[local_x][local_y];
+	return BLOCK_FROM_CHUNK(wl->chunks[chunk_x][chunk_y], local_x, local_y);
 }
+
+// TODO: add chunk access function so caller have more control over chunk blocks
+// maybe even chunk section to have more control over region x,y by h,w (in blocks)
 
 int set_block(const world *w, const int index, const int x, const int y, const block *b)
 {

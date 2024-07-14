@@ -9,7 +9,7 @@ int test_world_init()
 {
 	world *tw = world_make(2, test_world);
 
-	int status = tw->depth == 2 && strcmp(tw->worldname, test_world) == 0;
+	int status = tw->layers.length == 2 && strcmp(tw->worldname, test_world) == 0;
 
 	world_free(tw);
 	return status;
@@ -19,11 +19,14 @@ int test_layer_init()
 {
 	world *tw = world_make(1, test_world);
 
-	world_layer_alloc(&tw->layers[0], 4, 4, 16, 0);
+	world_layer_alloc(LAYER_FROM_WORLD(tw, 0), 4, 4, 16, 0);
 
-	int status = tw->layers[0].index == 0 && tw->layers[0].chunk_width == 16 && (*tw->layers[0].chunks[1][2]).width == 16 && is_block_void(&(*tw->layers[0].chunks[1][2]).blocks[5][8]);
+	int status = LAYER_FROM_WORLD(tw, 0)->index == 0 &&
+				 LAYER_FROM_WORLD(tw, 0)->chunk_width == 16 &&
+				 CHUNK_FROM_LAYER(LAYER_FROM_WORLD(tw, 0), 1, 2)->width == 16 &&
+				 is_block_void(BLOCK_FROM_CHUNK(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(tw, 0), 1, 2), 5, 8));
 
-	world_layer_free(&tw->layers[0]);
+	world_layer_free(LAYER_FROM_WORLD(tw, 0));
 
 	world_free(tw);
 
@@ -37,7 +40,7 @@ int test_save_world()
 
 	world *tw = world_make(1, test_world);
 
-	world_layer_alloc(&tw->layers[0], 8, 8, 32, 0);
+	world_layer_alloc(LAYER_FROM_WORLD(tw, 0), 8, 8, 32, 0);
 
 	world_save(tw);
 
@@ -48,7 +51,7 @@ int test_save_world()
 			status &= (access(filename, F_OK) == 0);
 		}
 
-	world_layer_free(&tw->layers[0]);
+	world_layer_free(LAYER_FROM_WORLD(tw, 0));
 
 	world_free(tw);
 
@@ -63,13 +66,13 @@ int test_load_world()
 
 	world_load(tw);
 
-	world_layer *wl = &tw->layers[0];
+	world_layer *wl = LAYER_FROM_WORLD(tw, 0);
 
 	for (int i = 0; i < 8; i++)
 		for (int j = 0; j < 8; j++)
 			status &= wl->chunks[i][j] != 0;
 
-	world_layer_free(&tw->layers[0]);
+	world_layer_free(LAYER_FROM_WORLD(tw, 0));
 
 	world_free(tw);
 
@@ -87,15 +90,15 @@ int test_save_load_random()
 
 	world *tw = world_make(1, rand_world);
 
-	world_layer_alloc(&tw->layers[0], w_width, w_width, ch_width, 0);
+	world_layer_alloc(LAYER_FROM_WORLD(tw, 0), w_width, w_width, ch_width, 0);
 
 	for (int i = 0; i < w_width; i++)
 		for (int j = 0; j < w_width; j++)
-			chunk_random_fill(tw->layers[0].chunks[i][j], 1 + j + w_width * i);
+			chunk_random_fill(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(tw, 0), i, j), 1 + j + w_width * i);
 
 	world_save(tw);
 
-	world_layer_free(&tw->layers[0]);
+	world_layer_free(LAYER_FROM_WORLD(tw, 0));
 
 	world_free(tw);
 
@@ -103,7 +106,7 @@ int test_save_load_random()
 
 	tw = world_make(1, rand_world);
 
-	world_layer_alloc(&tw->layers[0], w_width, w_width, 32, 0);
+	world_layer_alloc(LAYER_FROM_WORLD(tw, 0), w_width, w_width, 32, 0);
 
 	world_load(tw);
 
@@ -114,11 +117,11 @@ int test_save_load_random()
 		for (int j = 0; j < w_width; j++)
 		{
 			chunk_random_fill(t, 1 + j + w_width * i);
-			status &= is_chunk_equal(tw->layers[0].chunks[i][j], t);
+			status &= is_chunk_equal(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(tw, 0), i, j), t);
 		}
 	}
 
-	world_layer_free(&tw->layers[0]);
+	world_layer_free(LAYER_FROM_WORLD(tw, 0));
 
 	world_free(tw);
 

@@ -156,6 +156,7 @@ int texture_load(texture *dest, char *path_to_file)
 	}
 
 	// animation data calculations
+	dest->type = dest->width == g_block_size && dest->height == (g_block_size * 3) / 4 ? TEXTURE_TYPE_CONNECTED : TEXTURE_TYPE_REGULAR;
 
 	// dest->frame_side_size = greatest_common_divisor(dest->height, dest->width);
 	dest->frame_side_size = g_block_size;
@@ -205,4 +206,72 @@ int texture_render_anim(texture *texture, int x, int y, int frame, float scale)
 	SDL_Rect dest = {x, y, texture->frame_side_size * scale, texture->frame_side_size * scale};
 
 	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
+}
+
+// TODO:
+
+/*
+neighbours_mask expected layout, bit by bit:
+ 0 1 2
+ 3 X 4
+ 5 6 7
+
+ X is block being rendered
+ if bit is 1, then neighbour have same block id
+*/
+
+int block_render_connected(texture *texture, int x, int y, byte neighbours_mask)
+{
+	const byte half_w = g_block_size / 2;
+	const byte quart_w = g_block_size / 4;
+	const byte three_quarts_w = half_w + quart_w;
+
+	SDL_Rect src = {0, 0, half_w, half_w};
+	SDL_Rect dest = {x + quart_w, y + quart_w, half_w, half_w};
+	SDL_Point rotation_center = {0, 0};
+
+	SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
+
+	for (int i = 1; i < 7; i += 2)
+	{
+		if (i == 5)
+			i--;
+
+		double angle;
+
+		switch (i)
+		{
+		case 1:
+			angle = 90;
+			break;
+		case 3:
+			angle = 180;
+			break;
+		case 4:
+			angle = 0;
+			break;
+		case 6:
+			angle = 270;
+			break;
+		}
+
+		src.x = (neighbours_mask & (0b10000000 >> i)) ? half_w : half_w + quart_w;
+		src.y = 0;
+		src.h = half_w;
+		src.w = quart_w;
+
+		dest.x = x + (i == 1 || i == 6 ? quart_w
+					  : i == 4		   ? three_quarts_w
+									   : 0);
+		dest.y = y + (i == 1   ? 0
+					  : i == 6 ? three_quarts_w
+							   : quart_w);
+		dest.h = half_w;
+		dest.w = quart_w;
+
+		rotation_center.x = 0;
+		rotation_center.y = 0;
+
+		SDL_RenderCopyEx(g_renderer, texture->ptr, &src, &dest, angle, &rotation_center, SDL_FLIP_NONE);
+	}
 }

@@ -134,6 +134,19 @@ int fread_endianless(void *data, const int size, FILE *f)
 	return readed == size;
 }
 
+// #define write_vector(v, f)                               \
+// 	fwrite_endianless(&v->length, sizeof(v->length), f); \
+// 	for (int i = 0; i < v->length; i++)                  \
+// 		fwrite_endianless(&v->data[i], sizeof(v->data[i]), f);
+
+// #define read_vector(v, f)                               \
+// 	fread_endianless(&v->length, sizeof(v->length), f); \
+// 	vec_init(v);                                        \
+// 	vec_reserve(v, v->length);                          \
+// 	v->length =  \
+// 	for (int i = 0; i < v->length; i++)                 \
+// 		fread_endianless(&v->data[i], sizeof(v->data[i]), f);
+
 /* write/read functions */
 void write_block(block *b, FILE *f)
 {
@@ -147,13 +160,13 @@ void write_block(block *b, FILE *f)
 		fputc(0xEE, f);
 	}
 
-	if (b->data)
+	if (b->data) // write all data of the block
 	{
 		size = b->data[0] + 1;
 		fwrite(b->data, sizeof(byte), size, f);
 		return;
 	}
-
+	// or just 0 to mark that there is no data
 	fputc(0, f);
 }
 
@@ -165,13 +178,11 @@ void read_block(block *b, FILE *f)
 		b->id = 0xEEEEEEEE;
 
 	byte size;
-	if (!fread(&size, sizeof(size), 1, f))
-	{
-		b->data = 0;
-		return;
-	}
+	fread(&size, sizeof(size), 1, f); // read size byte
 
-	if (size)
+	if (!size)
+		b->data = 0;
+	else
 	{
 		b->data = (byte *)calloc(size + 1, sizeof(byte));
 		b->data[0] = size;
@@ -189,15 +200,11 @@ int write_chunk(const layer_chunk *c, const char *filename)
 	if (!f)
 		return FAIL;
 
-	fwrite_endianless(&c->width, sizeof(int), f);
+	fwrite_endianless(&c->width, sizeof(c->width), f);
 
-	for (int i = 0; i < c->width; i++)
-	{
-		for (int j = 0; j < c->width; j++)
-		{
-			write_block(&c->blocks[i][j], f);
-		}
-	}
+	FOREACH_BLOCK_FROM_CHUNK(c, blk, {
+		write_block(blk, f);
+	})
 
 	fclose(f);
 	return SUCCESS;
@@ -215,17 +222,14 @@ int read_chunk(layer_chunk *c, const char *filename)
 
 	chunk_free(c);
 
-	fread_endianless(&c->width, sizeof(int), f);
+	fread_endianless(&c->width, sizeof(c->width), f);
 
 	chunk_alloc(c, c->width);
 
-	for (int i = 0; i < c->width; i++)
-	{
-		for (int j = 0; j < c->width; j++)
-		{
-			read_block(&c->blocks[i][j], f);
-		}
-	}
+	FOREACH_BLOCK_FROM_CHUNK(c, blk, {
+		read_block(blk, f);
+	})
+
 	fclose(f);
 	return SUCCESS;
 }
@@ -238,10 +242,10 @@ int write_layer(const world_layer *wl, const char *filename)
 	if (!f)
 		return FAIL;
 
-	fwrite(&wl->index, sizeof(char), 1, f);
-	fwrite_endianless(&wl->chunk_width, sizeof(int), f);
-	fwrite_endianless(&wl->size_x, sizeof(int), f);
-	fwrite_endianless(&wl->size_y, sizeof(int), f);
+	fwrite_endianless(&wl->index, sizeof(wl->index), f);
+	fwrite_endianless(&wl->chunk_width, sizeof(wl->chunk_width), f);
+	fwrite_endianless(&wl->size_x, sizeof(wl->size_x), f);
+	fwrite_endianless(&wl->size_y, sizeof(wl->size_y), f);
 
 	fclose(f);
 	return SUCCESS;
@@ -256,10 +260,10 @@ int read_layer(world_layer *wl, const char *filename)
 	if (!f)
 		return FAIL;
 
-	fread(&wl->index, sizeof(char), 1, f);
-	fread_endianless(&wl->chunk_width, sizeof(int), f);
-	fread_endianless(&wl->size_x, sizeof(int), f);
-	fread_endianless(&wl->size_y, sizeof(int), f);
+	fread_endianless(&wl->index, sizeof(wl->index), f);
+	fread_endianless(&wl->chunk_width, sizeof(wl->chunk_width), f);
+	fread_endianless(&wl->size_x, sizeof(wl->size_x), f);
+	fread_endianless(&wl->size_y, sizeof(wl->size_y), f);
 
 	fclose(f);
 	return SUCCESS;
@@ -275,8 +279,8 @@ int write_world(const world *w, const char *filename)
 	if (!f)
 		return FAIL;
 
-	fwrite_endianless(&w->depth, sizeof(int), f);
-	fwrite(w->worldname, sizeof(char), 32, f);
+	fwrite_endianless(&w->layers.length, sizeof(w->layers.length), f);
+	fwrite(w->worldname, sizeof(char), sizeof(w->worldname), f);
 
 	fclose(f);
 	return SUCCESS;
@@ -291,8 +295,8 @@ int read_world(world *w, const char *filename)
 	if (!f)
 		return FAIL;
 
-	fread_endianless(&w->depth, sizeof(int), f);
-	fread(w->worldname, sizeof(char), 32, f);
+	fread_endianless(&w->layers.length, sizeof(w->layers.length), f);
+	fread(w->worldname, sizeof(char), sizeof(w->worldname), f);
 
 	fclose(f);
 	return SUCCESS;
@@ -334,13 +338,9 @@ void layer_save(const world *w, const world_layer *wl)
 	write_layer(wl, filename);
 
 	for (int i = 0; i < wl->size_x; i++)
-	{
 		for (int j = 0; j < wl->size_y; j++)
-		{
 			if (wl->chunks[i][j])
 				chunk_save(w, wl->index, i, j, wl->chunks[i][j]);
-		}
-	}
 }
 
 void layer_load(const world *w, world_layer *wl, int index)
@@ -352,12 +352,8 @@ void layer_load(const world *w, world_layer *wl, int index)
 	world_layer_alloc(wl, wl->size_x, wl->size_y, wl->chunk_width, index);
 
 	for (int i = 0; i < wl->size_x; i++)
-	{
 		for (int j = 0; j < wl->size_y; j++)
-		{
 			chunk_load(w, wl->index, i, j, wl->chunks[i][j]);
-		}
-	}
 }
 
 void layer_unload(world *w, world_layer *wl)
@@ -367,13 +363,9 @@ void layer_unload(world *w, world_layer *wl)
 	write_layer(wl, filename);
 
 	for (int i = 0; i < wl->size_x; i++)
-	{
 		for (int j = 0; j < wl->size_y; j++)
-		{
 			if (wl->chunks[i][j])
 				chunk_unload(w, wl->index, i, j, wl->chunks[i][j]);
-		}
-	}
 
 	world_layer_free(wl);
 }
@@ -384,10 +376,8 @@ void world_save(world *w)
 	make_full_world_path(filename, w);
 	write_world(w, filename);
 
-	for (int i = 0; i < w->depth; i++)
-	{
-		layer_save(w, &w->layers[i]);
-	}
+	for (int i = 0; i < w->layers.length; i++)
+		layer_save(w, &w->layers.data[i]);
 }
 
 void world_load(world *w)
@@ -396,10 +386,8 @@ void world_load(world *w)
 	make_full_world_path(filename, w);
 	read_world(w, filename);
 
-	for (int i = 0; i < w->depth; i++)
-	{
-		layer_load(w, &w->layers[i], i);
-	}
+	for (int i = 0; i < w->layers.length; i++)
+		layer_load(w, &w->layers.data[i], i);
 }
 
 void world_unload(world *w)
@@ -408,8 +396,6 @@ void world_unload(world *w)
 	make_full_world_path(filename, w);
 	write_world(w, filename);
 
-	for (int i = 0; i < w->depth; i++)
-	{
-		layer_unload(w, &w->layers[i]);
-	}
+	for (int i = 0; i < w->layers.length; i++)
+		layer_unload(w, &w->layers.data[i]);
 }

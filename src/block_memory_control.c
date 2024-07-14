@@ -38,13 +38,10 @@ int is_chunk_equal(const layer_chunk *a, const layer_chunk *b)
 		return FAIL;
 
 	int status = 1;
-	for (int i = 0; i < a->width; i++)
-	{
-		for (int j = 0; j < a->width; j++)
-		{
-			status &= is_block_equal(&a->blocks[i][j], &b->blocks[i][j]);
-		}
-	}
+	FOREACH_BLOCK_FROM_CHUNK(a, blk, {
+		status &= is_block_equal(blk, BLOCK_FROM_CHUNK(b, x, y));
+	})
+
 	return status;
 }
 
@@ -129,37 +126,29 @@ void block_swap(block *a, block *b)
 	memcpy(b, &tmp, sizeof(block));
 }
 
-void chunk_free(layer_chunk *l)
+void chunk_free(layer_chunk *chnk)
 {
-	if (!l->blocks)
+	if (chnk->blocks.length == 0)
 		return;
 
-	for (int i = 0; i < l->width; i++)
-	{
-		for (int j = 0; j < l->width; j++)
-		{
-			block_erase(&l->blocks[i][j]);
-		}
-		free(l->blocks[i]);
-	}
-	free(l->blocks);
+	FOREACH_BLOCK_FROM_CHUNK(chnk, blk, {
+		block_erase(blk);
+	})
 
-	l->blocks = 0;
-	l->width = 0;
+	vec_deinit(&chnk->blocks);
+
+	chnk->width = 0;
 }
 
 void chunk_alloc(layer_chunk *l, const int width)
 {
 	chunk_free(l);
 
-	l->blocks = (block **)calloc(width, sizeof(block *));
-
-	for (int i = 0; i < width; i++)
-	{
-		l->blocks[i] = (block *)calloc(width, sizeof(block));
-	}
-
+	vec_init(&l->blocks);
+	vec_reserve(&l->blocks, width * width);
+	l->blocks.length = width * width;
 	l->width = width;
+	memset(l->blocks.data, 0, l->blocks.length * sizeof(block));
 }
 
 void world_layer_free(world_layer *wl)
@@ -212,14 +201,19 @@ world *world_make(const int depth, const char *name_to_copy_from)
 
 	strcpy(w->worldname, name_to_copy_from);
 
-	w->depth = depth;
-	w->layers = (world_layer *)calloc(depth, sizeof(world_layer));
+	vec_init(&w->layers);
+	vec_reserve(&w->layers, depth);
+	for (int i = 0; i < depth; i++)
+		memset(&w->layers.data[i], 0, sizeof(world_layer));
+
+	w->layers.length = depth;
+
 	return w;
 }
 
 void world_free(world *w)
 {
-	free(w->layers);
+	vec_deinit(&w->layers);
 	free(w);
 }
 
@@ -251,7 +245,7 @@ void chunk_random_fill(layer_chunk *l, const unsigned int seed)
 	if (seed)
 		srand(seed);
 
-	for (int i = 0; i < l->width; i++)
-		for (int j = 0; j < l->width; j++)
-			block_set_random(&l->blocks[i][j]);
+	FOREACH_BLOCK_FROM_CHUNK(l, blk, {
+		block_set_random(blk);
+	})
 }
