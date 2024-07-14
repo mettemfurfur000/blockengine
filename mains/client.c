@@ -6,14 +6,16 @@
 
 void free_world(world *w)
 {
-	for (int i = 0; i < w->depth; i++)
-	{
-		for (int j = 0; j < w->layers[i].size_x; j++)
-			for (int k = 0; k < w->layers[i].size_y; k++)
-				chunk_free(w->layers[i].chunks[j][k]);
-		free(w->layers[i].chunks);
-	}
-	free(w->layers);
+	// for (int i = 0; i < w->layers.length; i++)
+	// {
+	// for (int j = 0; j < w->layers.data[i].size_x; j++)
+	// 	for (int k = 0; k < w->layers.data[i].size_y; k++)
+	// 		chunk_free(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(w, i), j, k));
+	// free(w->layers[i].chunks);
+	// }
+	for (int i = 0; i < w->layers.length; i++)
+		world_layer_free(LAYER_FROM_WORLD(w, i));
+	vec_deinit(&w->layers);
 	free(w);
 }
 
@@ -29,19 +31,20 @@ void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *b
 			if (!b_reg->data[choosen_block_index].block_sample.id)
 				continue;
 
-			block_copy(&c->blocks[i][j], &b_reg->data[choosen_block_index].block_sample);
+			block_copy(BLOCK_FROM_CHUNK(c, i, j), &b_reg->data[choosen_block_index].block_sample);
 		}
 }
 
 void world_layer_fill_randomly(world *w, const int layer_index, const block_registry_t *b_reg, const int seed)
 {
 	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
-	const int size_x = w->layers[layer_index].size_x;
-	const int size_y = w->layers[layer_index].size_y;
+	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
+	const int size_x = layer->size_x;
+	const int size_y = layer->size_y;
 
 	for (int i = 0; i < size_x; i++)
 		for (int j = 0; j < size_y; j++)
-			chunk_fill_randomly_from_registry(w->layers[layer_index].chunks[i][j], b_reg, seed ^ (i * size_y + j));
+			chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(layer, i, j), b_reg, seed ^ (i * size_y + j));
 
 	// for (int i = 0; i < TOTAL_CHUNKS; i++)
 	// 	chunk_update_neighbors(w->layers[layer_index].chunks[i / size_y][i % size_y]);
@@ -49,20 +52,23 @@ void world_layer_fill_randomly(world *w, const int layer_index, const block_regi
 
 void debug_print_world(world *w)
 {
-	for (int i = 0; i < w->depth; i++)
+	for (int i = 0; i < w->layers.length; i++)
 	{
 		printf("layer %d\n", i);
-		for (int j = 0; j < w->layers[i].size_x; j++)
+		const world_layer *layer = LAYER_FROM_WORLD(w, i);
+
+		for (int j = 0; j < layer->size_x; j++)
 		{
-			for (int k = 0; k < w->layers[i].size_y; k++)
+			for (int k = 0; k < layer->size_y; k++)
 			{
 				printf("chunk %d %d\n", j, k);
-				for (int l = 0; l < w->layers[i].chunks[j][k]->width; l++)
+				const layer_chunk *c = CHUNK_FROM_LAYER(layer, j, k);
+				for (int l = 0; l < layer->chunks[j][k]->width; l++)
 				{
-					for (int m = 0; m < w->layers[i].chunks[j][k]->width; m++)
+					for (int m = 0; m < layer->chunks[j][k]->width; m++)
 					{
-						block *b = &w->layers[i].chunks[j][k]->blocks[l][m];
-						printf("[%c]", b->id % 96 + 'A');
+						block *b = BLOCK_FROM_CHUNK(c, l, m);
+						printf("%c", b->id % 96 + 'A');
 					}
 					printf("\n");
 				}
@@ -110,10 +116,10 @@ int main(int argc, char *argv[])
 	if (!test_world)
 		goto world_free_exit;
 
-	for (int i = 0; i < test_world->depth; i++)
-		world_layer_alloc(&test_world->layers[i], 2, 2, 32, i);
+	for (int i = 0; i < test_world->layers.length; i++)
+		world_layer_alloc(LAYER_FROM_WORLD(test_world, i), 2, 2, 32, i);
 
-	chunk_fill_randomly_from_registry(test_world->layers[floor_layer_id].chunks[0][0], &b_reg, 69);
+	chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(test_world, floor_layer_id), 0, 0), &b_reg, 69);
 
 	// info about all loaded blocks
 	// for (int i = 0; i < b_reg.length; i++)
@@ -200,7 +206,8 @@ int main(int argc, char *argv[])
 	}
 
 world_free_exit:
-	world_layer_free(&test_world->layers[0]);
+	for (int i = 0; i < test_world->layers.length; i++)
+		world_layer_free(LAYER_FROM_WORLD(test_world, i));
 	world_free(test_world);
 fire_exit:
 	exit_graphics();
