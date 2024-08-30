@@ -72,8 +72,20 @@ int data_create_element(byte **data_ptr, char letter, byte size)
 	byte *data = *data_ptr;
 
 	if (data)
-		if (fdesp(data, letter))
-			return SUCCESS;
+	{
+		int pos = fdesp(data, letter);
+
+		if (pos)
+		{
+			if (data[pos + 1] == size)
+				return SUCCESS;
+
+			if (!data_delete_element(data_ptr, letter))
+				return FAIL;
+
+			data = *data_ptr;
+		}
+	}
 
 	int data_size = data ? data[0] : 0;
 

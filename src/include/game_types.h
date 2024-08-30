@@ -5,6 +5,8 @@
 
 typedef unsigned char byte;
 
+typedef vec_t(byte) vec_byte_t;
+
 #define SUCCESS 1
 #define FAIL 0
 
@@ -14,16 +16,45 @@ typedef struct
 	data format:
 	fist byte - size
 	data+1 to data+1+size - custom bytes for you. max 256 <3
+	if the field is null, there is no data
 	*/
 	byte *data;
 
 	int id;
 } block;
 
+// TOOD: limit chunk width to 180
+
+typedef struct
+{
+	unsigned short new_id;
+	short block_index; // points to block in chunk->blocks
+} block_update;
+
+typedef struct
+{
+	unsigned short data_index; // points to a data record in a snowball
+	byte size;				   // size of the data
+	char label;				   // label
+} data_update;
+
+typedef vec_t(block_update) vec_block_update_t;
+
+typedef vec_t(data_update) vec_data_update_t;
+
+// im not recomendink realocatink this strucctur...
+typedef struct
+{
+	vec_block_update_t block_updates;
+	vec_data_update_t data_updates;
+	vec_byte_t updated_data_snowball;
+} chunk_update;
+
 typedef vec_t(block) vec_block_t;
 
 typedef struct
 {
+	chunk_update updates;
 	vec_block_t blocks;
 	byte width;
 

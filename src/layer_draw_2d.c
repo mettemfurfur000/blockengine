@@ -38,6 +38,12 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	float dest_x, dest_y;
 	dest_x = -block_x_offset - g_block_size * 2; // also minus 1 full block back to fill the gap
 
+	access_context c = {0};
+	if (get_access_context(&c, w, layer_index, start_block_x, start_block_y, width, height) == FAIL)
+	{
+		return;
+	}
+
 	if (layer_index == 0)
 	{
 		bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_size, -block_y_offset - g_block_size);
@@ -54,7 +60,7 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 			// calculate y coordinate of block on screen
 
 			// get block
-			if (!(b = get_block_access(w, layer_index, i, j)))
+			if (!(b = get_block_access_context(&c, i, j)))
 				continue;
 			// check if block is not void
 			if (b->id == 0)

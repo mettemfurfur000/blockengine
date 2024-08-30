@@ -117,23 +117,9 @@ int main(int argc, char *argv[])
 		goto world_free_exit;
 
 	for (int i = 0; i < test_world->layers.length; i++)
-		world_layer_alloc(LAYER_FROM_WORLD(test_world, i), 2, 2, 32, i);
+		world_layer_alloc(LAYER_FROM_WORLD(test_world, i), 4, 4, 16, i);
 
 	chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(test_world, floor_layer_id), 0, 0), &b_reg, 69);
-
-	// info about all loaded blocks
-	// for (int i = 0; i < b_reg.length; i++)
-	// {
-	// 	block_resources br = b_reg.data[i];
-	// 	printf("block id = %d\n", br.block_sample.id);
-	// 	printf("texture name = %s\n", br.block_texture.filename);
-	// 	printf("texture ptr = %p\n", (void *)br.block_texture.ptr);
-	// 	printf("is animated = %d\n", br.is_animated);
-	// 	printf("frames per second = %d\n", br.frames_per_second);
-	// 	printf("anim controller = %c\n", br.anim_controller);
-	// }
-
-	// debug_print_world(test_world);
 
 	// main loop?
 	unsigned long frame = 0;
@@ -197,7 +183,7 @@ int main(int argc, char *argv[])
 		SDL_RenderClear(g_renderer);
 
 		// render world
-		client_render(test_world, &b_reg, rules, frame / 100);
+		client_render(test_world, &b_reg, rules, frame);
 
 		SDL_RenderPresent(g_renderer);
 		SDL_Delay(16);

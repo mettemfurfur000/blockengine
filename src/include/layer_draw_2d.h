@@ -4,6 +4,8 @@
 #include "sdl2_basics.h"
 #include "block_registry.h"
 #include "block_operations.h"
+#include "data_manipulations.h"
+#include "world_utils.h"
 
 typedef struct layer_slice
 {
