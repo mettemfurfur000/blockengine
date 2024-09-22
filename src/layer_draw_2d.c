@@ -22,15 +22,26 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	const int start_block_x = ((slice.x / g_block_size) - 1);
 	const int start_block_y = ((slice.y / g_block_size) - 1);
 
+	const int end_block_x = start_block_x + width + 2;
+	const int end_block_y = start_block_y + height + 2;
+	// create a chunk segment
+
+	const int chunk_width = w->layers.data[layer_index].chunk_width;
+
+	chunk_segment cs = chunk_segment_create(w, layer_index,
+											start_block_x / chunk_width,
+											start_block_y / chunk_width,
+											1 + end_block_x / chunk_width,
+											1 + end_block_y / chunk_width);
+
 	if (layer_index == 0)
 	{
 		bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
+		bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
 		bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
+		bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
+		bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
 	}
-
-	const int end_block_x = start_block_x + width + 1;
-	const int end_block_y = start_block_y + height + 1;
-	// calculate x coordinate of block on screen
 
 	const int block_x_offset = slice.x % g_block_size; /* offset in pixels for smooth rendering of blocks */
 	const int block_y_offset = slice.y % g_block_size;
@@ -54,7 +65,7 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 			// calculate y coordinate of block on screen
 
 			// get block
-			if (!(b = get_block_access(w, layer_index, i, j)))
+			if (!(b = chunk_segment_get_block_access(cs, i, j)))
 				continue;
 			// check if block is not void
 			if (b->id == 0)
@@ -100,6 +111,8 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 			SDL_RenderCopy(g_renderer, texture->ptr, &src_rect, &dest_rect);
 		}
 	}
+
+	chunk_segment_free(&cs);
 }
 
 // renders single frame of the world.

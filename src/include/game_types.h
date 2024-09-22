@@ -36,7 +36,7 @@ typedef struct
 
 #define LAYER_FROM_WORLD(__w, __layer) (&__w->layers.data[__layer])
 #define CHUNK_FROM_LAYER(__layer, layer_x, layer_y) __layer->chunks[layer_x][layer_y]
-#define BLOCK_FROM_CHUNK(__chunk, x, y) __chunk->blocks.data + (y * __chunk->width) + x
+#define BLOCK_FROM_CHUNK(__chunk, x, y) __chunk->blocks.data + ((y) * __chunk->width) + (x)
 
 #define FOREACH_BLOCK_FROM_CHUNK(__chunk, __blk, __action_block) \
 	for (int y = 0; y < __chunk->width; y++)                     \

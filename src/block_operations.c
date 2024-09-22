@@ -132,3 +132,69 @@ int move_block_recursive(const world *w, const int layer_index, const int x, con
 
 	return SUCCESS;
 }
+
+#define KEEP_IN_RANGE(x, min, max) (x < min ? min : (x > max ? max : x))
+
+chunk_segment chunk_segment_create(const world *w, const int index, int chunk_x, int chunk_y, int width, int height)
+{
+	chunk_segment cs = {0};
+
+	if (!w)
+		return cs;
+
+	if (index >= w->layers.length)
+		return cs;
+
+	world_layer *wl = &w->layers.data[index];
+	// fix chunk_x and chunk_y to be within the world
+	chunk_x = KEEP_IN_RANGE(chunk_x, 0, wl->size_x - 1);
+	chunk_y = KEEP_IN_RANGE(chunk_y, 0, wl->size_y - 1);
+	// fix width and height to be within the world, and also contain at least 1 chunk
+	width = KEEP_IN_RANGE(width, 1, wl->size_x - chunk_x);
+	height = KEEP_IN_RANGE(height, 1, wl->size_y - chunk_y);
+
+	cs.x = chunk_x;
+	cs.y = chunk_y;
+
+	cs.w = width;
+	cs.h = height;
+
+	cs.chunks = malloc(sizeof(void *) * (width * height));
+
+	// copy needed chunk pointers to the chunks array, even if they are not loaded
+	for (int i = 0; i < width; i++)
+		for (int j = 0; j < height; j++)
+			cs.chunks[j * width + i] = wl->chunks[chunk_x + i][chunk_y + j];
+
+	return cs;
+}
+
+void chunk_segment_free(chunk_segment *cs)
+{
+	if (!cs)
+		return;
+	free(cs->chunks);
+}
+
+block *chunk_segment_get_block_access(const chunk_segment cs, const int block_x, const int block_y)
+{
+	if (block_x < 0 || block_y < 0)
+		return NULL;
+
+	const int chunk_width = cs.chunks[0]->width;
+
+	const int chunk_x = block_x / chunk_width;
+	const int chunk_y = block_y / chunk_width;
+
+	if (chunk_x < cs.x || chunk_y < cs.y || chunk_x >= cs.x + cs.w || chunk_y >= cs.y + cs.h) // check if chunk is in segment
+		return NULL;
+
+	const int segment_chunk_x = chunk_x - cs.x;
+	const int segment_chunk_y = chunk_y - cs.y;
+
+	layer_chunk *chunk = cs.chunks[segment_chunk_x + segment_chunk_y * cs.w];
+
+	block *b = BLOCK_FROM_CHUNK(chunk, block_x % chunk_width, block_y % chunk_width);
+
+	return b;
+}

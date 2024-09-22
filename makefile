@@ -1,5 +1,5 @@
-CFLAGS += -O0 -Wall -g
-LDFLAGS += -lm
+CFLAGS += -O3 -Wall # -pg -no-pie
+LDFLAGS += -lm # -pg
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main
