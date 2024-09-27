@@ -3,6 +3,7 @@
 #include "../src/include/layer_draw_2d.h"
 #include "../src/include/data_manipulations.h"
 #include "../src/include/world_utils.h"
+#include "../src/include/lua_integration.h"
 
 void free_world(world *w)
 {
@@ -89,10 +90,13 @@ int main(int argc, char *argv[])
 	if (!init_graphics())
 		return 1;
 
+	scripting_init();
+
 	block_registry_t b_reg;
 	vec_init(&b_reg);
 
 	client_render_rules rules = {SCREEN_WIDTH, SCREEN_HEIGHT, {}, {}};
+
 	vec_init(&rules.draw_order);
 	vec_init(&rules.slices);
 
@@ -100,6 +104,7 @@ int main(int argc, char *argv[])
 	(void)vec_push(&rules.draw_order, 0);
 
 	layer_slice t = {0, 0, rules.screen_width, rules.screen_height, 1.0f};
+
 	(void)vec_push(&rules.slices, t);
 	(void)vec_push(&rules.slices, t);
 
@@ -108,7 +113,9 @@ int main(int argc, char *argv[])
 
 	if (!read_block_registry("resources/blocks", &b_reg))
 		goto fire_exit;
+
 	sort_by_id(&b_reg);
+	scripting_load_scripts(&b_reg);
 
 	// make a world with one layer and one chunk
 	const char *world_name = "test_world";
@@ -118,6 +125,8 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; i < test_world->layers.length; i++)
 		world_layer_alloc(LAYER_FROM_WORLD(test_world, i), 2, 2, 32, i);
+
+	scripting_define_global_variables(test_world);
 
 	chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(test_world, floor_layer_id), 0, 0), &b_reg, 69);
 
@@ -151,28 +160,18 @@ int main(int argc, char *argv[])
 		// handle events
 		while (SDL_PollEvent(&e))
 		{
-			if (e.type == SDL_QUIT)
-				goto world_free_exit;
-			else if (e.type == SDL_KEYDOWN)
+			switch (e.type)
 			{
-				switch (e.key.keysym.sym)
-				{
-				case SDLK_ESCAPE:
-					goto world_free_exit;
-					break;
-				case SDLK_SPACE:
-					world_layer_fill_randomly(test_world, floor_layer_id, &b_reg, frame);
-					// bprintf(test_world, &b_reg, 0, 0, 0, 32, "Hello world from the client! 0w0");
-					break;
-				default:
-					break;
-				}
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
+				scripting_handle_event(&e);
+				break;
+			case SDL_QUIT:
+				goto world_free_exit;
+				break;
 			}
-			// else if (e.type == SDL_MOUSEMOTION)
-			// {
-			// 	view.mouse_x = e.motion.x;
-			// 	view.mouse_y = e.motion.y;
-			// }
 		}
 		// handling keyboard state
 		const Uint8 *keystate = SDL_GetKeyboardState(NULL);
@@ -204,6 +203,8 @@ int main(int argc, char *argv[])
 
 		frame++;
 	}
+
+	scripting_close();
 
 world_free_exit:
 	for (int i = 0; i < test_world->layers.length; i++)

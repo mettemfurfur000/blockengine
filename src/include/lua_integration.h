@@ -11,6 +11,8 @@
 #include "block_operations.h"
 #include "block_registry.h"
 
+#include <SDL2/SDL_events.h>
+
 extern lua_State *g_L;
 
 /*
@@ -23,10 +25,22 @@ static int lua_(lua_State *L)
 }
 */
 
-void scripting_init();
+typedef vec_t(lua_CFunction) vec_CFunction_t;
 
+typedef struct
+{
+    int event_id;
+    vec_void_t functions;
+} event_handler;
+
+void scripting_init();
 void scripting_close();
 
+void scripting_register_event(lua_CFunction function, const int event_id);
+int scripting_handle_event(SDL_Event *event);
+
 int scripting_load_file(const char *filename);
+void scripting_load_scripts(block_registry_t *reg);
+void scripting_define_global_variables(const world *w);
 
 #endif

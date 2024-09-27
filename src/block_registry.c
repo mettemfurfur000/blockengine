@@ -71,7 +71,7 @@ int get_length_to_alloc(long long value, int type)
 //
 // other numerical types will save their length in bytes, even if you pass it with value of 0
 
-int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr)
+int make_block_data_from_string(const char *str_to_cpy, byte **out_data_ptr)
 {
 	if (!str_to_cpy)
 		return FAIL;
@@ -166,35 +166,82 @@ block_data_exit:
 	return SUCCESS;
 }
 
-int block_res_id_handler(char *data, block_resources *dest)
+/*
+all block resources handlers must return SUCCESS if they handled data
+
+if data contains a special clean token, handler will try to free/clear data from dest resource
+
+also handlers must return FAIL if they cant handle data or if data is invalid
+*/
+
+const static char clean_token[] = "??clean??";
+
+int block_res_id_handler(const char *data, block_resources *dest)
 {
-	int id = atoi(data);
-	if (id == 0)
+	if (!data)
 		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		dest->block_sample.id = 0;
+		return SUCCESS;
+	}
+
+	int id = atoi(data);
+
 	dest->block_sample.id = id;
+
 	return SUCCESS;
 }
 
-int block_res_data_handler(char *data, block_resources *dest)
+int block_res_data_handler(const char *data, block_resources *dest)
 {
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		block_data_free(&dest->block_sample);
+		return SUCCESS;
+	}
+
 	return make_block_data_from_string(data, &dest->block_sample.data);
 }
 
-int block_res_texture_handler(char *data, block_resources *dest)
+int block_res_texture_handler(const char *data, block_resources *dest)
 {
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		free_texture(&dest->block_texture);
+		return SUCCESS;
+	}
+
 	char texture_full_path[256];
 	snprintf(texture_full_path, sizeof(texture_full_path), "resources/textures/%s", data);
 
 	return texture_load(&dest->block_texture, texture_full_path);
 }
 
-int block_res_anim_toggle_handler(char *data, block_resources *dest)
+int block_res_anim_toggle_handler(const char *data, block_resources *dest)
 {
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		dest->is_animated = 0;
+		return SUCCESS;
+	}
+
 	if (strcmp(data, "true") == 0)
 	{
 		dest->is_animated = 1;
 		return SUCCESS;
 	}
+
 	if (strcmp(data, "false") == 0)
 	{
 		dest->is_animated = 0;
@@ -204,23 +251,81 @@ int block_res_anim_toggle_handler(char *data, block_resources *dest)
 	return FAIL;
 }
 
-int block_res_anim_fps_handler(char *data, block_resources *dest)
+int block_res_anim_fps_handler(const char *data, block_resources *dest)
 {
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		dest->is_animated = 0;
+		dest->frames_per_second = 0;
+		return SUCCESS;
+	}
+
 	int fps = atoi(data);
+
 	if (fps == 0)
 	{
 		dest->is_animated = 0;
 		return SUCCESS;
 	}
+
 	dest->frames_per_second = fps;
 	return SUCCESS;
 }
 
-int block_res_anim_controller_handler(char *data, block_resources *dest)
+int block_res_anim_controller_handler(const char *data, block_resources *dest)
 {
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		dest->anim_controller = 0;
+		return SUCCESS;
+	}
+
 	dest->anim_controller = data[0];
 	return SUCCESS;
 }
+
+int block_res_lua_script_handler(const char *data, block_resources *dest)
+{
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		free(dest->lua_script_filename);
+		return SUCCESS;
+	}
+
+	int len = strlen(data);
+	dest->lua_script_filename = malloc(len + 1);
+	memcpy(dest->lua_script_filename, data, len + 1);
+
+	return SUCCESS;
+}
+
+/* end of block resource handlers */
+
+const static resource_entry_handler res_handlers[] = {
+	{&block_res_id_handler, "id", REQUIRED},
+	{&block_res_texture_handler, "texture", REQUIRED},
+
+	{&block_res_data_handler, "data", NOT_REQUIRED},
+
+	{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED, {}, {"ctrl_var"}},
+	{&block_res_anim_fps_handler, "fps", NOT_REQUIRED, {"is_animated"}, {"ctrl_var"}},
+
+	{&block_res_anim_controller_handler, "ctrl_var", NOT_REQUIRED, {}, {"is_animated", "fps"}},
+
+	{&block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}}
+
+};
+
+const int TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
 int parse_block_resources_from_file(const char *file_path, block_resources *dest)
 {
@@ -235,23 +340,9 @@ int parse_block_resources_from_file(const char *file_path, block_resources *dest
 	}
 
 	char *entry = 0;
-	const resource_entry_handler res_handlers[] = {
-		{&block_res_id_handler, "id", REQUIRED},
-		{&block_res_texture_handler, "texture", REQUIRED},
-
-		{&block_res_data_handler, "data", NOT_REQUIRED},
-
-		{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED, {}, {"ctrl_var"}},
-		{&block_res_anim_fps_handler, "fps", NOT_REQUIRED, {"is_animated"}, {"ctrl_var"}},
-
-		{&block_res_anim_controller_handler, "ctrl_var", NOT_REQUIRED, {}, {"is_animated", "fps"}}
-
-	};
 
 	vec_str_t seen_entries;
 	vec_init(&seen_entries);
-
-	const int TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
 	for (int i = 0; i < TOTAL_HANDLERS; i++)
 	{
@@ -327,12 +418,6 @@ emergency_exit:
 	return status;
 }
 
-void free_block_resources(block_resources *b)
-{
-	block_data_free(&b->block_sample);
-	free_texture(&b->block_texture);
-}
-
 int is_already_in_registry(block_registry_t *reg, block_resources *br)
 {
 	for (int i = 0; i < reg->length; i++)
@@ -396,6 +481,13 @@ int __b_cmp(const void *a, const void *b)
 void sort_by_id(block_registry_t *b_reg)
 {
 	qsort(b_reg->data, b_reg->length, sizeof(*b_reg->data), __b_cmp);
+}
+
+void free_block_resources(block_resources *b)
+{
+	for (int i = 0; i < TOTAL_HANDLERS; i++)
+		if (res_handlers[i].function(clean_token, b) == FAIL)
+			printf("Error in \"%s\": handler \"%s\" failed to clean this data: %s\n", b->block_sample.data, res_handlers[i].name, clean_token);
 }
 
 void free_block_registry(block_registry_t *b_reg)

@@ -1,0 +1,2 @@
+[ ] - add proper logging system
+[ ] - code a normal client using openGL

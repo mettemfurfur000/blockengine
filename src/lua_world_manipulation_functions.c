@@ -1,6 +1,6 @@
 #include "include/lua_world_manipulation_functions.h"
 
-static int lua_access_block(lua_State *L)
+int lua_access_block(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -17,16 +17,14 @@ static int lua_access_block(lua_State *L)
     int y = lua_tonumber(L, 4);
     block *b = get_block_access(w, layer_index, x, y);
     if (b == NULL)
-    {
         lua_pushnil(L);
-        return 1; /* number of results */
-    }
-    lua_pushlightuserdata(L, b);
+    else
+        lua_pushlightuserdata(L, b);
 
     return 1; /* number of results */
 }
 
-static int lua_set_block(lua_State *L)
+int lua_set_block(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -47,7 +45,7 @@ static int lua_set_block(lua_State *L)
     return 1;
 }
 
-static int lua_clean_block(lua_State *L)
+int lua_clean_block(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -68,7 +66,7 @@ static int lua_clean_block(lua_State *L)
     return 1;
 }
 
-static int lua_move_block_gently(lua_State *L)
+int lua_move_block_gently(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -82,16 +80,16 @@ static int lua_move_block_gently(lua_State *L)
     int layer_index = lua_tonumber(L, 2);
     int x = lua_tonumber(L, 3);
     int y = lua_tonumber(L, 4);
-    int v2 = lua_tonumber(L, 5);
-    int v2 = lua_tonumber(L, 6);
+    int v_x = lua_tonumber(L, 5);
+    int v_y = lua_tonumber(L, 6);
 
-    int ret = move_block_gently(w, layer_index, x, y, v2, v2);
+    int ret = move_block_gently(w, layer_index, x, y, v_x, v_y);
 
     lua_pushboolean(L, ret);
     return 1;
 }
 
-static int lua_move_block_rough(lua_State *L)
+int lua_move_block_rough(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -105,16 +103,16 @@ static int lua_move_block_rough(lua_State *L)
     int layer_index = lua_tonumber(L, 2);
     int x = lua_tonumber(L, 3);
     int y = lua_tonumber(L, 4);
-    int v2 = lua_tonumber(L, 5);
-    int v2 = lua_tonumber(L, 6);
+    int v_x = lua_tonumber(L, 5);
+    int v_y = lua_tonumber(L, 6);
 
-    int ret = move_block_rough(w, layer_index, x, y, v2, v2);
+    int ret = move_block_rough(w, layer_index, x, y, v_x, v_y);
 
     lua_pushboolean(L, ret);
     return 1;
 }
 
-static int lua_move_block_recursive(lua_State *L)
+int lua_move_block_recursive(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -128,17 +126,17 @@ static int lua_move_block_recursive(lua_State *L)
     int layer_index = lua_tonumber(L, 2);
     int x = lua_tonumber(L, 3);
     int y = lua_tonumber(L, 4);
-    int v2 = lua_tonumber(L, 5);
-    int v2 = lua_tonumber(L, 6);
+    int v_x = lua_tonumber(L, 5);
+    int v_y = lua_tonumber(L, 6);
     int recursive_level = lua_tonumber(L, 7);
 
-    int ret = move_block_recursive(w, layer_index, x, y, v2, v2, recursive_level);
+    int ret = move_block_recursive(w, layer_index, x, y, v_x, v_y, recursive_level);
 
     lua_pushboolean(L, ret);
     return 1;
 }
 
-static int lua_is_data_equal(lua_State *L)
+int lua_is_data_equal(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
     int equal = SUCCESS;
@@ -159,7 +157,7 @@ static int lua_is_data_equal(lua_State *L)
     return 1; /* number of results */
 }
 
-static int lua_is_block_void(lua_State *L)
+int lua_is_block_void(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -173,7 +171,7 @@ static int lua_is_block_void(lua_State *L)
     return 1; /* number of results */
 }
 
-static int lua_is_block_equal(lua_State *L)
+int lua_is_block_equal(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -190,7 +188,7 @@ static int lua_is_block_equal(lua_State *L)
     return 1; /* number of results */
 }
 
-static int lua_is_chunk_equal(lua_State *L)
+int lua_is_chunk_equal(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -202,10 +200,11 @@ static int lua_is_chunk_equal(lua_State *L)
     layer_chunk *a = (layer_chunk *)lua_touserdata(L, 1);
     layer_chunk *b = (layer_chunk *)lua_touserdata(L, 2);
     lua_pushboolean(L, is_chunk_equal(a, b));
+
     return 1; /* number of results */
 }
 
-static int lua_block_data_free(lua_State *L)
+int lua_block_data_free(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -220,7 +219,7 @@ static int lua_block_data_free(lua_State *L)
     return 0; /* number of results */
 }
 
-static int lua_block_erase(lua_State *L)
+int lua_block_erase(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -235,7 +234,7 @@ static int lua_block_erase(lua_State *L)
     return 0; /* number of results */
 }
 
-static int lua_block_copy(lua_State *L)
+int lua_block_copy(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -249,7 +248,7 @@ static int lua_block_copy(lua_State *L)
     return 0; /* number of results */
 }
 
-static int lua_block_init(lua_State *L)
+int lua_block_init(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -259,27 +258,9 @@ static int lua_block_init(lua_State *L)
         3nd is formatted data string from block registry header
     */
 
-    if (n != 3)
+    if (n != 3 || !lua_isuserdata(L, 1) || !lua_isnumber(L, 2) || !lua_isstring(L, 3))
     {
-        lua_pushliteral(L, "expected 3 arguments");
-        lua_error(L);
-    }
-
-    if (!lua_isuserdata(L, 1))
-    {
-        lua_pushliteral(L, "expected block pointer");
-        lua_error(L);
-    }
-
-    if (!lua_isnumber(L, 2))
-    {
-        lua_pushliteral(L, "expected block id");
-        lua_error(L);
-    }
-
-    if (!lua_isstring(L, 3))
-    {
-        lua_pushliteral(L, "expected block data string");
+        lua_pushliteral(L, "expected 3 arguments: userdata block pointer, block id, and a formatted data string");
         lua_error(L);
     }
 
@@ -298,7 +279,7 @@ static int lua_block_init(lua_State *L)
     return 0; /* number of results */
 }
 
-static int lua_block_teleport(lua_State *L)
+int lua_block_teleport(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
@@ -312,7 +293,7 @@ static int lua_block_teleport(lua_State *L)
     return 0; /* number of results */
 }
 
-static int lua_block_swap(lua_State *L)
+int lua_block_swap(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 

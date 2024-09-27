@@ -32,6 +32,7 @@ typedef struct block_resources
 	byte is_animated;
 	byte frames_per_second;
 	char anim_controller; // controls which character inside of block controls current animation mode of block
+	char *lua_script_filename;
 } block_resources;
 
 typedef vec_t(block_resources) block_registry_t;
@@ -66,14 +67,14 @@ int get_length_to_alloc(long long value, int type);
 // digits will be stripped for saving space, keep it in mind
 //
 // other numerical types will save their length in bytes, even if you pass it with value of 0
-int make_block_data_from_string(char *str_to_cpy, byte **out_data_ptr);
+int make_block_data_from_string(const char *str_to_cpy, byte **out_data_ptr);
 
 #define NOT_REQUIRED 0
 #define REQUIRED 1
 
 typedef struct
 {
-	int (*function)(char *, block_resources *);
+	int (*function)(const char *, block_resources *);
 	char *name;
 	byte is_critical;
 	char *dependencies[4];

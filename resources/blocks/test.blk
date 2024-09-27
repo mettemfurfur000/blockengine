@@ -1,3 +1,4 @@
 id = 3
 data = { byte a = 1 byte b = 2 byte c = 7 digit g = 5565 }
 texture = test.png
+script = test.lua
