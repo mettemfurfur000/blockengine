@@ -2,7 +2,7 @@
 
 char *strtok_take_whole_line()
 {
-	char *token = strtok(NULL, "\n"); // take everything until first newline character
+	char *token = strtok(NULL, "\n\r"); // take everything until first newline character
 	if (!token)
 		return 0;
 
@@ -31,7 +31,7 @@ int read_properties(FILE *f, char *key, char *value)
 	char buffer[512] = {0};
 	if (fgets(buffer, sizeof(buffer), f))
 	{
-		char *token = strtok(buffer, "= \t\n");
+		char *token = strtok(buffer, "= \t\n\r");
 		if (token)
 		{
 			strcpy(key, token);

@@ -69,6 +69,7 @@ int data_create_element(byte **data_ptr, char letter, byte size)
 {
 	if (!data_ptr)
 		return FAIL;
+
 	byte *data = *data_ptr;
 
 	if (data)
@@ -160,13 +161,16 @@ int data_delete_element(byte **data_ptr, char letter)
 
 // set
 
-int data_set_str(byte *data, char letter, byte *src, int size)
+int data_set_str(byte *data, char letter, const byte *src, int size)
 {
 	byte *el_dest = data_get_ptr(data, letter);
 	if (!el_dest)
 		return FAIL;
 
-	memcpy(el_dest, src, size);
+	int data_size = el_dest ? el_dest[0] : 0;
+	int minsize = min(size, data_size);
+
+	memcpy(el_dest, src, minsize);
 
 	return SUCCESS;
 }
@@ -212,7 +216,11 @@ int data_get_str(byte *data, char letter, byte *dest, int size)
 	if (!el_src)
 		return FAIL;
 
-	memcpy(dest, el_src, size);
+	int data_size = el_src ? el_src[0] : 0;
+	int minsize = min(size, data_size);
+
+	memcpy(dest, el_src, minsize);
+	dest[minsize] = '\0';
 
 	return SUCCESS;
 }

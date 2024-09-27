@@ -1,2 +1,3 @@
 [ ] - add proper logging system
 [ ] - code a normal client using openGL
+[ ] - add a function to convert block data from raw to readable format and back (for lua)

@@ -93,9 +93,9 @@ int lua_move_block_rough(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
-    if (n != 6 || !lua_isuserdata(L, 1) || !lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4) || !lua_isnumber(L, 5) || !lua_isnumber(L, 6))
+    if (n != 6 || !lua_isuserdata(L, 1) || !lua_isinteger(L, 2) || !lua_isinteger(L, 3) || !lua_isinteger(L, 4) || !lua_isinteger(L, 5) || !lua_isinteger(L, 6))
     {
-        lua_pushliteral(L, "expected world, layer, x, y, v2, v2");
+        lua_pushliteral(L, "expected world, layer, x, y, vx, vy");
         lua_error(L);
     }
 

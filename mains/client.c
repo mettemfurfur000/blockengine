@@ -20,14 +20,16 @@ void free_world(world *w)
 	free(w);
 }
 
-void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *b_reg, const int seed)
+void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *b_reg, const int seed, const int range)
 {
 	srand(seed);
+
+	int minrange = min(range, b_reg->length);
 
 	for (int i = 0; i < c->width; i++)
 		for (int j = 0; j < c->width; j++)
 		{
-			int choosen_block_index = rand() % b_reg->length;
+			int choosen_block_index = rand() % minrange;
 
 			if (!b_reg->data[choosen_block_index].block_sample.id)
 				continue;
@@ -36,20 +38,20 @@ void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *b
 		}
 }
 
-void world_layer_fill_randomly(world *w, const int layer_index, const block_registry_t *b_reg, const int seed)
-{
-	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
-	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
-	const int size_x = layer->size_x;
-	const int size_y = layer->size_y;
+// void world_layer_fill_randomly(world *w, const int layer_index, const block_registry_t *b_reg, const int seed)
+// {
+// 	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
+// 	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
+// 	const int size_x = layer->size_x;
+// 	const int size_y = layer->size_y;
 
-	for (int i = 0; i < size_x; i++)
-		for (int j = 0; j < size_y; j++)
-			chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(layer, i, j), b_reg, seed ^ (i * size_y + j));
+// 	for (int i = 0; i < size_x; i++)
+// 		for (int j = 0; j < size_y; j++)
+// 			chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(layer, i, j), b_reg, seed ^ (i * size_y + j));
 
-	// for (int i = 0; i < TOTAL_CHUNKS; i++)
-	// 	chunk_update_neighbors(w->layers[layer_index].chunks[i / size_y][i % size_y]);
-}
+// 	// for (int i = 0; i < TOTAL_CHUNKS; i++)
+// 	// 	chunk_update_neighbors(w->layers[layer_index].chunks[i / size_y][i % size_y]);
+// }
 
 void debug_print_world(world *w)
 {
@@ -81,6 +83,16 @@ void debug_print_world(world *w)
 float lerp(float a, float b, float t)
 {
 	return a + t * (b - a);
+}
+
+block get_block_from_the_registry(block_registry_t *reg, int id)
+{
+	for (int i = 0; i < reg->length; i++)
+	{
+		if (reg->data[i].block_sample.id == id)
+			return reg->data[i].block_sample;
+	}
+	return (block){};
 }
 
 int main(int argc, char *argv[])
@@ -115,7 +127,6 @@ int main(int argc, char *argv[])
 		goto fire_exit;
 
 	sort_by_id(&b_reg);
-	scripting_load_scripts(&b_reg);
 
 	// make a world with one layer and one chunk
 	const char *world_name = "test_world";
@@ -128,7 +139,13 @@ int main(int argc, char *argv[])
 
 	scripting_define_global_variables(test_world);
 
-	chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(test_world, floor_layer_id), 0, 0), &b_reg, 69);
+	scripting_load_scripts(&b_reg);
+
+	chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(test_world, floor_layer_id), 0, 0), &b_reg, 69, 4);
+
+	const block bug_sample = get_block_from_the_registry(&b_reg, 5);
+
+	set_block(test_world, floor_layer_id, 5, 5, &bug_sample);
 
 	// info about all loaded blocks
 	// for (int i = 0; i < b_reg.length; i++)
@@ -187,8 +204,8 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		floor->x = lerp(floor->x, target_x, 0.015f);
-		floor->y = lerp(floor->y, target_y, 0.015f);
+		// floor->x = lerp(floor->x, target_x, 0.015f);
+		// floor->y = lerp(floor->y, target_y, 0.015f);
 
 		floor->scale += (keystate[SDL_SCANCODE_LSHIFT] - keystate[SDL_SCANCODE_LCTRL]) * 0.1f;
 		floor->scale = MAX(floor->scale, 0.8f);

@@ -1,6 +1,9 @@
 #include "include/lua_integration.h"
-#include "include/lua_world_manipulation_functions.h"
 #include "include/block_registry.h"
+
+#include "include/lua_world_manipulation_functions.h"
+#include "include/lua_block_data_functions.h"
+#include "include/lua_utils.h"
 
 lua_State *g_L = 0;
 
@@ -45,6 +48,20 @@ void scripting_register(lua_State *L)
 		{"block_init", lua_block_init},
 		{"block_teleport", lua_block_teleport},
 		{"block_swap", lua_block_swap},
+
+		{"blob_create", lua_blob_create},
+		{"blob_remove", lua_blob_remove},
+		{"blob_set_string", lua_blob_set_str},
+		{"blob_set_int", lua_blob_set_i},
+		{"blob_set_sshort", lua_blob_set_s},
+		{"blob_set_byte", lua_blob_set_b},
+		{"blob_get_string", lua_blob_get_str},
+		{"blob_get_int", lua_blob_get_i},
+		{"blob_get_short", lua_blob_get_s},
+		{"blob_get_byte", lua_blob_get_b},
+
+		{"block_unpack", block_unpack},
+
 		{NULL, NULL}
 
 	};
@@ -113,7 +130,8 @@ int scripting_handle_event(SDL_Event *event)
 	lua_pushnil(g_L);
 	while (lua_next(g_L, -2) != 0)
 	{
-		if (lua_type(g_L, -1) == LUA_TTABLE)
+		int id = lua_tonumber(g_L, -2);
+		if (lua_type(g_L, -1) == LUA_TTABLE && id == event_id)
 		{
 			lua_pushnil(g_L);
 			while (lua_next(g_L, -2) != 0)

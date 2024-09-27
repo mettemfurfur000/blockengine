@@ -46,7 +46,7 @@ int data_delete_element(byte **data_ptr, char letter);
 
 // set
 
-int data_set_str(byte *data, char letter, byte *src, int size);
+int data_set_str(byte *data, char letter, const byte *src, int size);
 int data_set_i(byte *data, char letter, int value);
 int data_set_s(byte *data, char letter, short value);
 int data_set_b(byte *data, char letter, byte value);
