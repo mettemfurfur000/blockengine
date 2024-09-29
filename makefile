@@ -1,4 +1,4 @@
-CFLAGS += -O3 -Wall -g # -pg -no-pie
+CFLAGS += -O3 -Wall -g  # -pg -no-pie
 LDFLAGS += -lm # -pg
 
 ifeq ($(OS),Windows_NT)

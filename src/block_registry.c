@@ -441,7 +441,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 		return FAIL;
 	}
 
-	// push default void block with id 0
+	// push a default void block with id 0
 	block_resources void_block = {.block_sample = {.id = 0, .data = 0}, .is_animated = 0, .frames_per_second = 0, .anim_controller = 0};
 	(void)vec_push(reg, void_block);
 
@@ -455,18 +455,37 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 			block_resources br = {.is_animated = 0, .frames_per_second = 0, .anim_controller = 0};
 			char file_to_parse[300];
 			snprintf(file_to_parse, sizeof(file_to_parse), "%s/%s", folder, entry->d_name);
+
 			if (parse_block_resources_from_file(file_to_parse, &br) == FAIL)
+			{
 				free_block_resources(&br);
+				continue;
+			}
 
 			if (is_already_in_registry(reg, &br))
 			{
-				free_block_resources(&br);
+				printf("Found duplicate resource: %s\n", file_to_parse);
 				continue;
 			}
 
 			(void)vec_push(reg, br);
 		}
 	}
+
+	void_block.is_filler = 1;
+
+	sort_by_id(reg);
+
+	for (int i = 1; i < reg->length; i++)
+	{
+		if (reg->data[i - 1].block_sample.id + 1 != reg->data[i].block_sample.id)
+		{
+			printf("Warning: Found a hole between %d and %d, filling with a filler block", i - 1, i);
+			(void)vec_push(reg, void_block);
+		}
+	}
+
+	sort_by_id(reg);
 
 	closedir(directory);
 
@@ -487,7 +506,7 @@ void free_block_resources(block_resources *b)
 {
 	for (int i = 0; i < TOTAL_HANDLERS; i++)
 		if (res_handlers[i].function(clean_token, b) == FAIL)
-			printf("Error in \"%s\": handler \"%s\" failed to clean this data: %s\n", b->block_sample.data, res_handlers[i].name, clean_token);
+			printf("Error in \"%s\": handler \"%s\" failed to free block resources\n", b->block_sample.data, res_handlers[i].name);
 }
 
 void free_block_registry(block_registry_t *b_reg)

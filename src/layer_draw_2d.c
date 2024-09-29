@@ -34,14 +34,14 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 											1 + end_block_x / chunk_width,
 											1 + end_block_y / chunk_width);
 
-	if (layer_index == 0)
-	{
-		bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
-		bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
-		bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
-		bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
-		bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
-	}
+	// if (layer_index == 0)
+	// {
+	// 	bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
+	// 	bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
+	// 	bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
+	// 	bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
+	// 	bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
+	// }
 
 	const int block_x_offset = slice.x % g_block_size; /* offset in pixels for smooth rendering of blocks */
 	const int block_y_offset = slice.y % g_block_size;
@@ -49,10 +49,10 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	float dest_x, dest_y;
 	dest_x = -block_x_offset - g_block_size * 2; // also minus 1 full block back to fill the gap
 
-	if (layer_index == 0)
-	{
-		bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_size, -block_y_offset - g_block_size);
-	}
+	// if (layer_index == 0)
+	// {
+	// 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_size, -block_y_offset - g_block_size);
+	// }
 
 	for (int i = start_block_x; i < end_block_x; i++)
 	{

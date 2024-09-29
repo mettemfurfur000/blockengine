@@ -5,53 +5,56 @@
 #include "../src/include/world_utils.h"
 #include "../src/include/lua_integration.h"
 
+#include <time.h>
+
+// #include <omp.h>
+
+world *g_world = 0;
+block_registry_t *g_reg = 0;
+
 void free_world(world *w)
 {
-	// for (int i = 0; i < w->layers.length; i++)
-	// {
-	// for (int j = 0; j < w->layers.data[i].size_x; j++)
-	// 	for (int k = 0; k < w->layers.data[i].size_y; k++)
-	// 		chunk_free(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(w, i), j, k));
-	// free(w->layers[i].chunks);
-	// }
 	for (int i = 0; i < w->layers.length; i++)
 		world_layer_free(LAYER_FROM_WORLD(w, i));
 	vec_deinit(&w->layers);
 	free(w);
 }
 
-void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *b_reg, const int seed, const int range)
+void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *reg, const int seed, const int range)
 {
 	srand(seed);
 
-	int minrange = min(range, b_reg->length);
+	int minrange = min(range, reg->length);
 
 	for (int i = 0; i < c->width; i++)
 		for (int j = 0; j < c->width; j++)
 		{
 			int choosen_block_index = rand() % minrange;
 
-			if (!b_reg->data[choosen_block_index].block_sample.id)
+			if (!reg->data[choosen_block_index].block_sample.id)
 				continue;
 
-			block_copy(BLOCK_FROM_CHUNK(c, i, j), &b_reg->data[choosen_block_index].block_sample);
+			if (reg->data[choosen_block_index].is_filler)
+				continue;
+
+			block_copy(BLOCK_FROM_CHUNK(c, i, j), &reg->data[choosen_block_index].block_sample);
 		}
 }
 
-// void world_layer_fill_randomly(world *w, const int layer_index, const block_registry_t *b_reg, const int seed)
-// {
-// 	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
-// 	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
-// 	const int size_x = layer->size_x;
-// 	const int size_y = layer->size_y;
+void world_layer_fill_randomly(world *w, const int layer_index, const block_registry_t *reg, const int seed, const int range)
+{
+	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
+	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
+	const int size_x = layer->size_x;
+	const int size_y = layer->size_y;
 
-// 	for (int i = 0; i < size_x; i++)
-// 		for (int j = 0; j < size_y; j++)
-// 			chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(layer, i, j), b_reg, seed ^ (i * size_y + j));
+	for (int i = 0; i < size_x; i++)
+		for (int j = 0; j < size_y; j++)
+			chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(layer, i, j), reg, seed ^ (i * size_y + j), range);
 
-// 	// for (int i = 0; i < TOTAL_CHUNKS; i++)
-// 	// 	chunk_update_neighbors(w->layers[layer_index].chunks[i / size_y][i % size_y]);
-// }
+	// for (int i = 0; i < TOTAL_CHUNKS; i++)
+	// 	chunk_update_neighbors(w->layers[layer_index].chunks[i / size_y][i % size_y]);
+}
 
 void debug_print_world(world *w)
 {
@@ -95,18 +98,40 @@ block get_block_from_the_registry(block_registry_t *reg, int id)
 	return (block){};
 }
 
-int main(int argc, char *argv[])
+int test_world_init(world **world, block_registry_t *reg)
 {
 	g_block_size = 16;
+	const int floor_layer_id = 1;
 
-	if (!init_graphics())
-		return 1;
+	// make a world with one layer and one chunk
+	const char *world_name = "test_world";
+	*world = world_make(2, world_name);
+	if (!*world)
+		return FAIL;
 
-	scripting_init();
+	for (int i = 0; i < (*world)->layers.length; i++)
+		world_layer_alloc(LAYER_FROM_WORLD((*world), i), 2, 2, 32, i);
 
-	block_registry_t b_reg;
-	vec_init(&b_reg);
+	chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(LAYER_FROM_WORLD((*world), floor_layer_id), 0, 0), (reg), 69, 4);
 
+	world_layer_fill_randomly(*world, floor_layer_id, (reg), time(NULL), 4);
+
+	const block bug_sample = get_block_from_the_registry(reg, 5);
+	set_block((*world), floor_layer_id, 5, 5, &bug_sample);
+
+	return SUCCESS;
+}
+
+void test_world_exit(world *world, block_registry_t *reg)
+{
+	for (int i = 0; i < world->layers.length; i++)
+		world_layer_free(LAYER_FROM_WORLD(world, i));
+
+	world_free(world);
+}
+
+client_render_rules prepare_rendering_rules()
+{
 	client_render_rules rules = {SCREEN_WIDTH, SCREEN_HEIGHT, {}, {}};
 
 	vec_init(&rules.draw_order);
@@ -120,61 +145,48 @@ int main(int argc, char *argv[])
 	(void)vec_push(&rules.slices, t);
 	(void)vec_push(&rules.slices, t);
 
-	const int floor_layer_id = 1;
-	// const int debug_layer_id = 0;
+	return rules;
+}
 
-	if (!read_block_registry("resources/blocks", &b_reg))
-		goto fire_exit;
+int main(int argc, char *argv[])
+{
+	block_registry_t reg;
+	vec_init(&reg);
 
-	sort_by_id(&b_reg);
+	g_reg = &reg;
 
-	// make a world with one layer and one chunk
-	const char *world_name = "test_world";
-	world *test_world = world_make(2, world_name);
-	if (!test_world)
-		goto world_free_exit;
+	if (!init_graphics())
+		return 1;
 
-	for (int i = 0; i < test_world->layers.length; i++)
-		world_layer_alloc(LAYER_FROM_WORLD(test_world, i), 2, 2, 32, i);
+	if (!read_block_registry("resources/blocks", g_reg))
+		return 1;
 
-	scripting_define_global_variables(test_world);
+	if (test_world_init(&g_world, g_reg) == FAIL)
+		return 1;
 
-	scripting_load_scripts(&b_reg);
+	scripting_init();
+	scripting_define_global_variables(g_world);
+	scripting_load_scripts(g_reg);
 
-	chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(LAYER_FROM_WORLD(test_world, floor_layer_id), 0, 0), &b_reg, 69, 4);
-
-	const block bug_sample = get_block_from_the_registry(&b_reg, 5);
-
-	set_block(test_world, floor_layer_id, 5, 5, &bug_sample);
-
-	// info about all loaded blocks
-	// for (int i = 0; i < b_reg.length; i++)
-	// {
-	// 	block_resources br = b_reg.data[i];
-	// 	printf("block id = %d\n", br.block_sample.id);
-	// 	printf("texture name = %s\n", br.block_texture.filename);
-	// 	printf("texture ptr = %p\n", (void *)br.block_texture.ptr);
-	// 	printf("is animated = %d\n", br.is_animated);
-	// 	printf("frames per second = %d\n", br.frames_per_second);
-	// 	printf("anim controller = %c\n", br.anim_controller);
-	// }
-
-	// debug_print_world(test_world);
-
-	// main loop?
 	unsigned long frame = 0;
 
-	unsigned int last_move_press_time = 0;
+	const int target_fps = 30;
+	const int ms_per_s = 1000 / target_fps;
 
-	float target_x = 0, target_y = 0;
+	const int target_tps = 10;
+	const int tick_period = 1000 / target_tps;
+
+	client_render_rules rules = prepare_rendering_rules();
+
 	SDL_Event e;
 
-	// layer_slice *debug_layer = &rules.slices.data[debug_layer_id];
-	layer_slice *floor = &rules.slices.data[floor_layer_id];
+	int latest_logic_tick = SDL_GetTicks();
+	scripting_handle_event(NULL, 2); // tick event
 
 	for (;;)
 	{
-		// handle events
+		int frame_begin_tick = SDL_GetTicks();
+
 		while (SDL_PollEvent(&e))
 		{
 			switch (e.type)
@@ -183,52 +195,43 @@ int main(int argc, char *argv[])
 			case SDL_KEYUP:
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
-				scripting_handle_event(&e);
+				scripting_handle_event(&e, 0);
 				break;
 			case SDL_QUIT:
-				goto world_free_exit;
+				goto logic_exit;
+				break;
+			case SDL_RENDER_TARGETS_RESET:
+				// g_renderer = SDL_CreateRenderer(g_window, -1, 0);
+				// printf("erm, reload textures?");
 				break;
 			}
 		}
-		// handling keyboard state
-		const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
-		if (keystate[SDL_SCANCODE_D] || keystate[SDL_SCANCODE_A] || keystate[SDL_SCANCODE_S] || keystate[SDL_SCANCODE_W])
+		if (latest_logic_tick + tick_period <= frame_begin_tick)
 		{
-			if (SDL_GetTicks() - last_move_press_time > 17)
-			{
-				target_x += (keystate[SDL_SCANCODE_D] - keystate[SDL_SCANCODE_A]) * g_block_size;
-				target_y += (keystate[SDL_SCANCODE_S] - keystate[SDL_SCANCODE_W]) * g_block_size;
-
-				last_move_press_time = SDL_GetTicks();
-			}
+			latest_logic_tick = SDL_GetTicks();
+			scripting_handle_event(NULL, 1); // tick event
 		}
 
-		// floor->x = lerp(floor->x, target_x, 0.015f);
-		// floor->y = lerp(floor->y, target_y, 0.015f);
-
-		floor->scale += (keystate[SDL_SCANCODE_LSHIFT] - keystate[SDL_SCANCODE_LCTRL]) * 0.1f;
-		floor->scale = MAX(floor->scale, 0.8f);
-
 		SDL_RenderClear(g_renderer);
-
-		// render world
-		client_render(test_world, &b_reg, rules, frame / 100);
+		client_render(g_world, g_reg, rules, frame / 100);
 
 		SDL_RenderPresent(g_renderer);
-		SDL_Delay(16);
+
+		int loop_took = SDL_GetTicks() - frame_begin_tick;
+		int chill_time = ms_per_s - loop_took;
+
+		SDL_Delay(max(1, chill_time));
 
 		frame++;
 	}
+logic_exit:
+
+	exit_graphics();
 
 	scripting_close();
 
-world_free_exit:
-	for (int i = 0; i < test_world->layers.length; i++)
-		world_layer_free(LAYER_FROM_WORLD(test_world, i));
-	world_free(test_world);
-fire_exit:
-	exit_graphics();
+	test_world_exit(g_world, &reg);
 
 	return 0;
 }

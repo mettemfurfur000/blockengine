@@ -8,6 +8,8 @@
 lua_State *g_L = 0;
 
 static int handlers[] = {
+	1,					 // tick event
+	2,					 // init event
 	SDL_KEYDOWN,		 // 768
 	SDL_KEYUP,			 // 769
 	SDL_MOUSEBUTTONDOWN, // 1025
@@ -61,6 +63,7 @@ void scripting_register(lua_State *L)
 		{"blob_get_byte", lua_blob_get_b},
 
 		{"block_unpack", block_unpack},
+		{"get_keyboard_state", get_keyboard_state},
 
 		{NULL, NULL}
 
@@ -100,6 +103,9 @@ void scripting_close()
 
 int push_event_args(SDL_Event *e, const int event_id)
 {
+	if (!e)
+		return 0;
+
 	switch (event_id)
 	{
 	case SDL_KEYDOWN:
@@ -121,9 +127,9 @@ int push_event_args(SDL_Event *e, const int event_id)
 	return 0;
 }
 
-int scripting_handle_event(SDL_Event *event)
+int scripting_handle_event(SDL_Event *event, const int override_id)
 {
-	const int event_id = event->type;
+	const int event_id = event ? event->type : override_id;
 
 	lua_getglobal(g_L, "event_handlers");
 

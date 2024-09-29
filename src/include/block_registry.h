@@ -29,10 +29,12 @@ typedef struct block_resources
 
 	texture block_texture;
 
+	char *lua_script_filename;
+
 	byte is_animated;
 	byte frames_per_second;
 	char anim_controller; // controls which character inside of block controls current animation mode of block
-	char *lua_script_filename;
+	byte is_filler;
 } block_resources;
 
 typedef vec_t(block_resources) block_registry_t;

@@ -37,7 +37,7 @@ void scripting_init();
 void scripting_close();
 
 void scripting_register_event(lua_CFunction function, const int event_id);
-int scripting_handle_event(SDL_Event *event);
+int scripting_handle_event(SDL_Event *event, const int override_id);
 
 int scripting_load_file(const char *filename);
 void scripting_load_scripts(block_registry_t *reg);
