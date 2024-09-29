@@ -34,9 +34,32 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [ ] Inactive chunks unloading from memory
    - [ ] World update and update rate setting
    - [ ] Test for everything above
-- [x] List of permanent block parameters
-- [x] Saving and loading permanent block parameters
+- [x] Block Registry
+   - [x] Saving and loading
+   - [x] Basic managment of duplicated/missing resources
 - [ ] Lua scripting for blocks
+   - [x] Basic passive scripts
+   - [x] Functions for simple operations on blocks
+   - [ ] Custom events for block interactions
+      - [ ] on_set, 
+            on_destroy,
+            on_load, 
+            on_unload, 
+            on_move, 
+            on_data_create,
+            on_data_remove,
+            on_signal
 - [ ] Graphics
+   - [x] Basic static textures
+   - [x] Animated textures
+      - [x] FPS setting
+   - [x] Data-driven texture selection for individual blocks
+   - [ ] Animation-compatible data-driven textures
+   - [ ] Particles
+   - [ ] Rotatable block textures, for turrets/cogs/valves
+   - [ ] Pseudorandom texture patterns based on block location
+   - [ ] Connectable textures
+   - [ ] Lightning?
+   
 
 That's the list I'm currently aiming for. Hope this helps!
