@@ -1,7 +1,7 @@
 #ifndef ENDIANLESS
 #define ENDIANLESS
 
-#include "game_types.h"
+#include "engine_types.h"
 
 volatile byte is_big_endian(void);
 volatile byte is_little_endian(void);

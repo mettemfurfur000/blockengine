@@ -7,7 +7,7 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
-#include "game_types.h"
+#include "engine_types.h"
 #include "block_operations.h"
 #include "block_registry.h"
 

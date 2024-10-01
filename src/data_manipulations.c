@@ -2,14 +2,14 @@
 
 /*
 1 byte for size
-the next 1-255 bytes for user data
+next 1-255 bytes for user data
 if the size is 0, we just don't allocate any data and keep the pointer equal to 0
 format for data: ...(letter)(length)[data](letter)(length)[data]...
 
 Find Data Element Start Position (nice naming)
-returns index of letter
+returns index of a letter
 
-example = "14  a  2  h  h  b  5  a  h  f  g  b  c  1  j " (not real values, just for example)
+example = "14  a  2  h  h  b  5  a  h  f  g  b  c  1  j " (not real values, just an example)
 indexes =  0   1  2  3  4  5  6  7  8  9  10 11 12 13 14
 		   ^   #  %  -  -  #  %  -  -  -  -  -  #  %  -
 
@@ -22,7 +22,7 @@ fdesp(example,'c') returns 12
 fdesp(example,'a') returns 1
 fdesp(example,'g') returns 0 (Failure)
 
-actual array size is 15, 1 byte for size byte and others for data (no \0 symbol, this is not string)
+actual array size is 15, 1 byte for size byte and others for data (no \0 symbol, this is not a string)
 */
 
 int fdesp(byte *data, char letter)
@@ -163,45 +163,51 @@ int data_delete_element(byte **data_ptr, char letter)
 
 int data_set_str(byte *data, char letter, const byte *src, int size)
 {
-	byte *el_dest = data_get_ptr(data, letter);
-	if (!el_dest)
+	if (!data || !src || size <= 0)
 		return FAIL;
 
-	int data_size = el_dest ? el_dest[0] : 0;
-	int minsize = min(size, data_size);
+	int var_pos = fdesp(data, letter);
+	byte *el_dest = data + var_pos + 2;
+	int data_size = el_dest[-1];
 
-	memcpy(el_dest, src, minsize);
+	memcpy(el_dest, src, min(size, data_size));
 
 	return SUCCESS;
 }
 
 int data_set_i(byte *data, char letter, int value)
 {
-	byte *el_dest = data_get_ptr(data, letter);
-	if (!el_dest)
+	if (!data)
 		return FAIL;
 
-	*(int *)el_dest = (int)htonl(value);
+	int var_pos = fdesp(data, letter);
+	byte *el_dest = data + var_pos + 2;
+
+	*((int *)el_dest) = (int)htonl(value);
 
 	return SUCCESS;
 }
 
 int data_set_s(byte *data, char letter, short value)
 {
-	byte *el_dest = data_get_ptr(data, letter);
-	if (!el_dest)
+	if (!data)
 		return FAIL;
 
-	*(short *)el_dest = (short)htons(value);
+	int var_pos = fdesp(data, letter);
+	byte *el_dest = data + var_pos + 2;
+
+	*((short *)el_dest) = (short)htons(value);
 
 	return SUCCESS;
 }
 
 int data_set_b(byte *data, char letter, byte value)
 {
-	byte *el_dest = data_get_ptr(data, letter);
-	if (!el_dest)
+	if (!data)
 		return FAIL;
+
+	int var_pos = fdesp(data, letter);
+	byte *el_dest = data + var_pos + 2;
 
 	*el_dest = value;
 
@@ -212,14 +218,16 @@ int data_set_b(byte *data, char letter, byte value)
 
 int data_get_str(byte *data, char letter, byte *dest, int size)
 {
-	byte *el_src = data_get_ptr(data, letter);
-	if (!el_src)
+	if (!data)
 		return FAIL;
 
-	int data_size = el_src ? el_src[0] : 0;
+	int var_pos = fdesp(data, letter);
+	byte *el_dest = data + var_pos + 2;
+	int data_size = el_dest[-1];
+
 	int minsize = min(size, data_size);
 
-	memcpy(dest, el_src, minsize);
+	memcpy(dest, el_dest, minsize);
 	dest[minsize] = '\0';
 
 	return SUCCESS;
@@ -227,31 +235,37 @@ int data_get_str(byte *data, char letter, byte *dest, int size)
 
 int data_get_i(byte *data, char letter, int *dest)
 {
-	byte *el_src = data_get_ptr(data, letter);
-	if (!el_src)
+	if (!data)
 		return FAIL;
 
-	*(int *)dest = ntohl(*(int *)el_src);
+	int var_pos = fdesp(data, letter);
+	byte *el_src = data + var_pos + 2;
+
+	*((int *)dest) = ntohl(*(int *)el_src);
 
 	return SUCCESS;
 }
 
 int data_get_s(byte *data, char letter, short *dest)
 {
-	byte *el_src = data_get_ptr(data, letter);
-	if (!el_src)
+	if (!data)
 		return FAIL;
 
-	*(short *)dest = ntohs(*(short *)el_src);
+	int var_pos = fdesp(data, letter);
+	byte *el_src = data + var_pos + 2;
+
+	*((short *)dest) = ntohs(*(short *)el_src);
 
 	return SUCCESS;
 }
 
 int data_get_b(byte *data, char letter, byte *dest)
 {
-	byte *el_src = data_get_ptr(data, letter);
-	if (!el_src)
+	if (!data)
 		return FAIL;
+
+	int var_pos = fdesp(data, letter);
+	byte *el_src = data + var_pos + 2;
 
 	*dest = *el_src;
 

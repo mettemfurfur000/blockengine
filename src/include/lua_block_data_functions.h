@@ -2,7 +2,7 @@
 #define LUA_BLOCK_DATA_FUNCTIONS_H
 
 #include "lua_integration.h"
-#include "game_types.h"
+#include "engine_types.h"
 
 #include "data_manipulations.h"
 

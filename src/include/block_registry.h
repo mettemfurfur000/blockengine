@@ -17,7 +17,7 @@
 #include "sdl2_basics.h"
 #include "block_properties.h"
 #include "endianless.h"
-#include "game_types.h"
+#include "engine_types.h"
 #include "block_memory_control.h"
 #include "../../vec/src/vec.h"
 

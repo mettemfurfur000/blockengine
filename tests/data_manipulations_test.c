@@ -58,16 +58,14 @@ int test_random_data()
 
 	block t = void_block;
 
-	char *rand_src;
-	char *rand_dest;
+	char rand_src[64] = {};
+	char rand_dest[64] = {};
 
 	block_init(&t, 16, 0, 0);
 
 	for (int i = 0; i < 1000; i++)
 	{
 		int rand_size = 1 + rand() % 50;
-		rand_src = (char *)calloc(rand_size, 1);
-		rand_dest = (char *)calloc(rand_size, 1);
 
 		fillrand(rand_src, rand_size);
 
@@ -81,9 +79,6 @@ int test_random_data()
 		status &= !strcmp(rand_src, rand_dest);
 
 		status &= data_delete_element(&t.data, 's');
-
-		free(rand_src);
-		free(rand_dest);
 	}
 
 	block_data_free(&t);

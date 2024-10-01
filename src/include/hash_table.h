@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "game_types.h"
+#include "engine_types.h"
 
 #define TABLE_SIZE 113
 

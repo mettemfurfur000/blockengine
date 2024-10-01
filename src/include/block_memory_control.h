@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "game_types.h"
+#include "engine_types.h"
 
 void make_void_block(block *b);
 

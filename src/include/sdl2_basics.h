@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 
-#include "game_types.h"
+#include "engine_types.h"
 
 #include "../../stb/stb_image.h"
 

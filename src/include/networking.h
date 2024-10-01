@@ -17,7 +17,7 @@
 #include <netinet/in.h>
 #endif
 
-#include "game_types.h"
+#include "engine_types.h"
 
 #define MAXRCVLEN 500
 #define PORTNUM 2300

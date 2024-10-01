@@ -3,7 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb/stb_image.h"
 
-#include "include/game_types.h"
+#include "include/engine_types.h"
 
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;

@@ -1,5 +1,5 @@
-#ifndef GAME_TYPES
-#define GAME_TYPES
+#ifndef ENGINE_TYPES
+#define ENGINE_TYPES
 
 #include "../../vec/src/vec.h"
 
