@@ -1,5 +1,5 @@
 #include "../src/include/block_operations.h"
-#include "utils.h"
+#include "test_utils.h"
 
 const char test_world_name[] = "test_world";
 world *t_w = 0;

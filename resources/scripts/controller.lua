@@ -307,18 +307,10 @@ table.insert(event_handlers[EVENT_IDS.TICK],
     function(sym, mod, state, rep)
         delta = { x = 0, y = 0 }
 
-        if g_states[SDL_SCANCODE.SDL_SCANCODE_W] then
-            delta.y = -1
-        end
-        if g_states[SDL_SCANCODE.SDL_SCANCODE_S] then
-            delta.y = 1
-        end
-        if g_states[SDL_SCANCODE.SDL_SCANCODE_A] then
-            delta.x = -1
-        end
-        if g_states[SDL_SCANCODE.SDL_SCANCODE_D] then
-            delta.x = 1
-        end
+        if g_states[SDL_SCANCODE.SDL_SCANCODE_W] then delta.y = -1 end
+        if g_states[SDL_SCANCODE.SDL_SCANCODE_S] then delta.y = 1 end
+        if g_states[SDL_SCANCODE.SDL_SCANCODE_A] then delta.x = -1 end
+        if g_states[SDL_SCANCODE.SDL_SCANCODE_D] then delta.x = 1 end
 
         if g_states[SDL_SCANCODE.SDL_SCANCODE_E] then
             move_block_r(player.pos, delta)
@@ -329,14 +321,9 @@ table.insert(event_handlers[EVENT_IDS.TICK],
 )
 
 table.insert(event_handlers[EVENT_IDS.SDL_KEYDOWN],
-    function(sym, mod, state, rep)
-        blockengine.get_keyboard_state(g_states)
-    end
+    function(sym, mod, state, rep) blockengine.get_keyboard_state(g_states) end
 )
 
-
 table.insert(event_handlers[EVENT_IDS.SDL_KEYUP],
-    function(sym, mod, state, rep)
-        blockengine.get_keyboard_state(g_states)
-    end
+    function(sym, mod, state, rep) blockengine.get_keyboard_state(g_states) end
 )

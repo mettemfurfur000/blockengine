@@ -1,5 +1,5 @@
 #include "../src/include/data_manipulations.h"
-#include "utils.h"
+#include "test_utils.h"
 
 int test_basic_data_manip()
 {

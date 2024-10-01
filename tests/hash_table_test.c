@@ -1,6 +1,6 @@
 #include "../src/include/hash_table.h"
 #include "../src/include/benchmarking.h"
-#include "utils.h"
+#include "test_utils.h"
 
 int test_rand_fill_and_remove()
 {

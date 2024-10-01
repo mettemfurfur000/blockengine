@@ -1,5 +1,5 @@
 #include "../src/include/block_registry.h"
-#include "utils.h"
+#include "test_utils.h"
 
 int test_read_from_string()
 {

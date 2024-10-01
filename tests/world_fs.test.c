@@ -1,6 +1,6 @@
 #include "../src/include/world_fs.h"
 #include <unistd.h>
-#include "utils.h"
+#include "test_utils.h"
 #include <signal.h>
 
 const char *test_world = "test_world\0";

@@ -1,5 +1,5 @@
 #include "../src/include/block_properties.h"
-#include "utils.h"
+#include "test_utils.h"
 
 int test_basic_io()
 {

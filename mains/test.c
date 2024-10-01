@@ -1,10 +1,11 @@
-#include "../tests/test_mcf.c"
-#include "../tests/test_upd.c"
-#include "../tests/test_fsf.c"
-#include "../tests/test_hst.c"
-#include "../tests/test_bps.c"
-#include "../tests/test_dmp.c"
-#include "../tests/test_reg.c"
+#include "../tests/block_memory_control_test.c"
+#include "../tests/block_operations_test.c"
+#include "../tests/block_properties_test.c"
+#include "../tests/block_registry_test.c"
+#include "../tests/data_manipulations_test.c"
+#include "../tests/hash_table_test.c"
+#include "../tests/test_utils.h"
+#include "../tests/world_fs.test.c"
 
 #include "../src/include/endianless.h"
 

@@ -1,6 +1,6 @@
 #include "../src/include/block_memory_control.h"
 #include <stdio.h>
-#include "utils.h"
+#include "test_utils.h"
 
 int test_block_init()
 {

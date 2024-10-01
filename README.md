@@ -41,14 +41,7 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [x] Basic passive scripts
    - [x] Functions for simple operations on blocks
    - [ ] Custom events for block interactions
-      - [ ] on_set, 
-            on_destroy,
-            on_load, 
-            on_unload, 
-            on_move, 
-            on_data_create,
-            on_data_remove,
-            on_signal
+      - [ ] on_set, on_destroy, on_load, on_unload, on_move, on_data_create, on_data_remove, on_signal
 - [ ] Graphics
    - [x] Basic static textures
    - [x] Animated textures
