@@ -3,26 +3,22 @@
 
 #include "engine_types.h"
 
-#define FLAG_IS_VALID_POS(f, i) i >= 0 && i < sizeof(f) ? 1 : 0
-#define FLAG_GET(f, i) f & (1 << i)
+#define FLAG_IS_VALID_POS(f, i) (i >= 0 && i < sizeof(f) ? 1 : 0)
+#define FLAG_GET(f, mask) ((f) & (mask))
 
-#define FLAG_FLIP(f, i) f ^= (1 << i);
+#define FLAG_FLIP(f, mask) ((f) ^= (mask));
 
-#define FLAG_ON(f, i) f |= 1 << (i);
-#define FLAG_OFF(f, i) f &= ~(1 << (i));
+#define FLAG_ON(f, mask) ((f) |= (mask));
+#define FLAG_OFF(f, mask) ((f) &= ~(mask));
 
-#define FLAG_SET(f, i, val)    \
-    if (FLAG_GET(f, i) != val) \
-    FLAG_FLIP(f, i)
+#define FLAG_SET(f, mask, val)      \
+    if (FLAG_GET(f, mask) != (val)) \
+    FLAG_FLIP(f, mask)
 
-void test()
-{
-    byte testflags;
-
-    if (FLAG_IS_VALID_POS(testflags, 3))
-    {
-        FLAG_SET(testflags, 3, 1);
-    }
-}
+#define FLAG_CONFIGURE(f, mask, v, condition) \
+    if (condition)                            \
+        FLAG_OFF(f, mask)                     \
+    else                                      \
+        FLAG_SET(f, mask, v)
 
 #endif

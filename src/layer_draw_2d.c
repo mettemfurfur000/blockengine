@@ -2,6 +2,21 @@
 #include "include/data_manipulations.h"
 #include "include/world_utils.h"
 
+// 45801564169
+
+const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313, 6307353, 1532671, 6233633, 873473, 685613};
+const byte funny_shifts[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 10};
+
+static unsigned short
+tile_rand(const int x, const int y)
+{
+	int prime = x % 10;
+	int antiprime = 9 - (y % 10);
+	int midprime = (prime + antiprime) / 2;
+	return ((funny_primes[prime] + funny_shifts[antiprime] * funny_primes[midprime]) >> funny_shifts[prime]) &
+		   0x7fff;
+}
+
 // renders layer of the world. smart enough to not render what player doesnt see
 void layer_render(const world *w, const int layer_index, block_registry_t *b_reg,
 				  const int frame_number,
@@ -33,14 +48,14 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 											1 + end_block_x / chunk_width,
 											1 + end_block_y / chunk_width);
 
-	if (layer_index == 0)
-	{
-		bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
-		bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
-		bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
-		bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
-		bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
-	}
+	// if (layer_index == 0)
+	// {
+	// 	bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
+	// 	bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
+	// 	bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
+	// 	bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
+	// 	bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
+	// }
 
 	const int block_x_offset = slice.x % g_block_width; /* offset in pixels for smooth rendering of blocks */
 	const int block_y_offset = slice.y % g_block_width;
@@ -48,10 +63,10 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	float dest_x, dest_y;
 	dest_x = -block_x_offset - g_block_width * 2; // also minus 1 full block back to fill the gap
 
-	if (layer_index == 0)
-	{
-		bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_width, -block_y_offset - g_block_width);
-	}
+	// if (layer_index == 0)
+	// {
+	// 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_width, -block_y_offset - g_block_width);
+	// }
 
 	for (int i = start_block_x; i < end_block_x; i++)
 	{
@@ -98,8 +113,12 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 				int fps = br.frames_per_second;
 				frame = (byte)(seconds_since_start * fps);
 			}
+			else if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
+			{
+				frame = tile_rand(i, j);
+			}
 
-			block_render(texture, dest_x, dest_y, frame, type, br.ignore_type);
+			block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE));
 		}
 	}
 

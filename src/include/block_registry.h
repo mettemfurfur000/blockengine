@@ -19,9 +19,15 @@
 #include "endianless.h"
 #include "engine_types.h"
 #include "block_memory_control.h"
+#include "flags.h"
+
 #include "../../vec/src/vec.h"
 
 #define MAX_PATH_LENGTH 512
+
+#define B_RES_FLAG_IGNORE_TYPE 0x01
+#define B_RES_FLAG_RANDOM_POS 0x02
+#define B_RES_FLAG_IS_FILLER 0x04
 
 typedef struct block_resources
 {
@@ -31,11 +37,11 @@ typedef struct block_resources
 
 	char *lua_script_filename;
 
-	byte ignore_type;
-	byte frames_per_second;
 	char anim_controller; // controls which character inside of block controls current animation mode of block
 	char type_controller; // controls same thing but for animation type/state
-	byte is_filler;
+	byte frames_per_second;
+
+	byte flags;
 } block_resources;
 
 typedef vec_t(block_resources) block_registry_t;

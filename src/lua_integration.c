@@ -62,6 +62,9 @@ void scripting_register(lua_State *L)
 		{"blob_get_short", lua_blob_get_s},
 		{"blob_get_byte", lua_blob_get_b},
 
+		{"lua_blob_get_number", lua_blob_get_b},
+		{"lua_blob_set_number", lua_blob_get_b},
+
 		{"block_unpack", block_unpack},
 		{"get_keyboard_state", get_keyboard_state},
 

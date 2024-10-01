@@ -128,6 +128,7 @@ int texture_load(texture *dest, char *path_to_file)
 
 	dest->frames = dest->width / g_block_width;
 	dest->types = dest->height / g_block_width;
+	dest->total_frames = dest->frames * dest->types;
 
 	// copy filename
 	char *filename = strrchr(path_to_file, '/') + 1;
@@ -157,8 +158,11 @@ void free_texture(texture *t)
 // it trusts you to pass valid values in, be careful with frames and types...
 int block_render(texture *texture, const int x, const int y, int frame, int type, int ignore_type)
 {
+	frame = frame % texture->total_frames;
+
 	int frame_x = (frame % texture->frames) * g_block_width;
 	int frame_y = 0;
+
 	if (ignore_type)
 		frame_y = (frame / texture->frames) * g_block_width;
 	else

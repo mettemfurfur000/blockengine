@@ -178,6 +178,13 @@ if data contains a special clean token, handler will try to free/clear data from
 also handlers must return FAIL if they cant handle data or if data is invalid
 */
 
+#define DECLARE_DEFAULT_FLAG_HANDLER(name, flag)                                              \
+	int block_res_##name##_handler(const char *data, block_resources *dest)                   \
+	{                                                                                         \
+		FLAG_CONFIGURE(dest->flags, flag, atoi(data) ? 1 : 0, strcmp(data, clean_token) == 0) \
+		return SUCCESS;                                                                       \
+	}
+
 const static char clean_token[] = "??clean??";
 
 int block_res_id_handler(const char *data, block_resources *dest)
@@ -245,20 +252,8 @@ int block_res_fps_handler(const char *data, block_resources *dest)
 	return SUCCESS;
 }
 
-int block_res_ignore_type_handler(const char *data, block_resources *dest)
-{
-	if (!data)
-		return FAIL;
-
-	if (strcmp(data, clean_token) == 0)
-	{
-		dest->ignore_type = 0;
-		return SUCCESS;
-	}
-
-	dest->ignore_type = atoi(data);
-	return SUCCESS;
-}
+DECLARE_DEFAULT_FLAG_HANDLER(ignore_type, B_RES_FLAG_IGNORE_TYPE)
+DECLARE_DEFAULT_FLAG_HANDLER(position_based_type, B_RES_FLAG_RANDOM_POS)
 
 int block_res_anim_controller_handler(const char *data, block_resources *dest)
 {
@@ -322,6 +317,8 @@ const static resource_entry_handler res_handlers[] = {
 	{&block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {}},
 	{&block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}}, // directly controls the frame of a texture, so it cant used with fps
 	{&block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {}},
+	{&block_res_position_based_type_handler, "random_type", NOT_REQUIRED, {}, {}},
+
 	{&block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}}
 
 };
@@ -473,7 +470,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 		}
 	}
 
-	void_block.is_filler = 1;
+	FLAG_SET(void_block.flags, B_RES_FLAG_IS_FILLER, 1)
 
 	sort_by_id(reg);
 

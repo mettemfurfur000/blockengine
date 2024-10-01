@@ -312,7 +312,7 @@ table.insert(event_handlers[EVENT_IDS.TICK],
         if g_states[SDL_SCANCODE.SDL_SCANCODE_A] then delta.x = -1 end
         if g_states[SDL_SCANCODE.SDL_SCANCODE_D] then delta.x = 1 end
 
-        if g_states[SDL_SCANCODE.SDL_SCANCODE_E] then
+        if g_states[SDL_SCANCODE.SDL_SCANCODE_SPACE] then
             move_block_r(player.pos, delta)
         else
             move_block_g(player.pos, delta)

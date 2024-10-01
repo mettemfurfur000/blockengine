@@ -240,3 +240,50 @@ int lua_blob_get_b(lua_State *L)
 
     return 1; /* number of results */
 }
+
+int lua_blob_get_number(lua_State *L)
+{
+    int n = lua_gettop(L); /* number of arguments */
+
+    if (n != 2 ||
+        !lua_isuserdata(L, 1) ||
+        !lua_isstring(L, 2))
+    {
+        lua_pushliteral(L, "expected a block and a letter");
+        lua_error(L);
+    }
+
+    block *b = lua_touserdata(L, 1);
+    const char letter = lua_tostring(L, 2)[0];
+
+    long long output;
+    if (data_get_number(b, letter, &output) == SUCCESS)
+        lua_pushinteger(L, output);
+    else
+        lua_pushnil(L);
+
+    return 1; /* number of results */
+}
+int lua_blob_set_number(lua_State *L)
+{
+    int n = lua_gettop(L); /* number of arguments */
+
+    if (n != 2 ||
+        !lua_isuserdata(L, 1) ||
+        !lua_isstring(L, 2) ||
+        !(lua_isinteger(L, 3) || lua_isnumber(L, 3)))
+    {
+        lua_pushliteral(L, "expected a block, a letter and integer / number");
+        lua_error(L);
+    }
+
+    block *b = lua_touserdata(L, 1);
+    const char letter = lua_tostring(L, 2)[0];
+
+    long long number = lua_tointeger(L, 3);
+    int result = data_set_number(b, letter, number);
+
+    lua_pushboolean(L, result);
+
+    return 1; /* number of results */
+}

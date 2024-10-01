@@ -25,4 +25,9 @@ int lua_blob_get_i(lua_State *L);
 int lua_blob_get_s(lua_State *L);
 int lua_blob_get_b(lua_State *L);
 
+// cooler ones
+
+int lua_blob_get_number(lua_State *L);
+int lua_blob_set_number(lua_State *L);
+
 #endif

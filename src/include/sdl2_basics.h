@@ -27,8 +27,9 @@ typedef struct texture
 	int width;
 	int height;
 
-	unsigned short frames; // amount of vertical frames in a texture
-	unsigned short types;  // amount of types/states of a texture with their unique animations
+	unsigned short frames;		 // amount of vertical frames in a texture
+	unsigned short types;		 // amount of types/states of a texture with their unique animations
+	unsigned short total_frames; // things above multiplied
 } texture;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
