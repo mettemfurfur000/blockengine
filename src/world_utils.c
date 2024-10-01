@@ -19,7 +19,7 @@ void bprintf(const world *w, block_registry_t *reg, int layer, int orig_x, int o
 
         block_copy(dest, &reg->data[b.id].block_sample);
         data_create_element(&dest->data, 'v', 1);
-        data_set_b(dest->data, 'v', *ptr);
+        data_set_b(dest, 'v', *ptr);
         switch (*ptr)
         {
         case '\n':

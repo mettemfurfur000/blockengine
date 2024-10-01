@@ -1,13 +1,17 @@
 #include "include/block_registry.h"
 
-int length(long long value)
+#define EVAL_SIZE_MATCH(v, t) v >> (sizeof(t) * 8 - 8)
+#define RETURN_MATCHING_SIZE(v, t) \
+	if (EVAL_SIZE_MATCH(v, t))     \
+		return sizeof(t);
+// some kind of runtime type detection... returns amout of bytes, occupied by a number
+byte length(long long value)
 {
-	if (value >> 32)
-		return 8;
-	if (value >> 16)
-		return 4;
-	if (value >> 8)
-		return 2;
+	RETURN_MATCHING_SIZE(value, long long)
+	RETURN_MATCHING_SIZE(value, long)
+	RETURN_MATCHING_SIZE(value, int)
+	RETURN_MATCHING_SIZE(value, short)
+
 	return 1;
 }
 
@@ -225,53 +229,34 @@ int block_res_texture_handler(const char *data, block_resources *dest)
 	return texture_load(&dest->block_texture, texture_full_path);
 }
 
-int block_res_anim_toggle_handler(const char *data, block_resources *dest)
+int block_res_fps_handler(const char *data, block_resources *dest)
 {
 	if (!data)
 		return FAIL;
 
 	if (strcmp(data, clean_token) == 0)
 	{
-		dest->is_animated = 0;
-		return SUCCESS;
-	}
-
-	if (strcmp(data, "true") == 0)
-	{
-		dest->is_animated = 1;
-		return SUCCESS;
-	}
-
-	if (strcmp(data, "false") == 0)
-	{
-		dest->is_animated = 0;
-		return SUCCESS;
-	}
-
-	return FAIL;
-}
-
-int block_res_anim_fps_handler(const char *data, block_resources *dest)
-{
-	if (!data)
-		return FAIL;
-
-	if (strcmp(data, clean_token) == 0)
-	{
-		dest->is_animated = 0;
 		dest->frames_per_second = 0;
 		return SUCCESS;
 	}
 
 	int fps = atoi(data);
+	dest->frames_per_second = fps;
+	return SUCCESS;
+}
 
-	if (fps == 0)
+int block_res_ignore_type_handler(const char *data, block_resources *dest)
+{
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
 	{
-		dest->is_animated = 0;
+		dest->ignore_type = 0;
 		return SUCCESS;
 	}
 
-	dest->frames_per_second = fps;
+	dest->ignore_type = atoi(data);
 	return SUCCESS;
 }
 
@@ -287,6 +272,21 @@ int block_res_anim_controller_handler(const char *data, block_resources *dest)
 	}
 
 	dest->anim_controller = data[0];
+	return SUCCESS;
+}
+
+int block_res_type_controller_handler(const char *data, block_resources *dest)
+{
+	if (!data)
+		return FAIL;
+
+	if (strcmp(data, clean_token) == 0)
+	{
+		dest->type_controller = 0;
+		return SUCCESS;
+	}
+
+	dest->type_controller = data[0];
 	return SUCCESS;
 }
 
@@ -316,11 +316,12 @@ const static resource_entry_handler res_handlers[] = {
 
 	{&block_res_data_handler, "data", NOT_REQUIRED},
 
-	{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED, {}, {"ctrl_var"}},
-	{&block_res_anim_fps_handler, "fps", NOT_REQUIRED, {"is_animated"}, {"ctrl_var"}},
+	//{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED, {}, {"frame_controller"}}, //if fps is defined, it is animated
+	{&block_res_fps_handler, "fps", NOT_REQUIRED, {}, {"frame_controller"}},
 
-	{&block_res_anim_controller_handler, "ctrl_var", NOT_REQUIRED, {}, {"is_animated", "fps"}},
-
+	{&block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {}},
+	{&block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}}, // directly controls the frame of a texture, so it cant used with fps
+	{&block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {}},
 	{&block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}}
 
 };
@@ -442,7 +443,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 	}
 
 	// push a default void block with id 0
-	block_resources void_block = {.block_sample = {.id = 0, .data = 0}, .is_animated = 0, .frames_per_second = 0, .anim_controller = 0};
+	block_resources void_block = {.block_sample = {.id = 0, .data = 0}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
 	(void)vec_push(reg, void_block);
 
 	while ((entry = readdir(directory)) != NULL)
@@ -452,7 +453,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 
 		if (entry->d_type == DT_REG)
 		{
-			block_resources br = {.is_animated = 0, .frames_per_second = 0, .anim_controller = 0};
+			block_resources br = {.type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
 			char file_to_parse[300];
 			snprintf(file_to_parse, sizeof(file_to_parse), "%s/%s", folder, entry->d_name);
 

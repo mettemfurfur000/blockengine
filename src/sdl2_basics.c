@@ -12,7 +12,7 @@ char *window_name = "Block Engine";
 SDL_Window *g_window = NULL;
 SDL_Renderer *g_renderer = NULL;
 
-int g_block_size = 16;
+int g_block_width = 16;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define KEEPINLIMITS(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
@@ -84,35 +84,6 @@ int exit_graphics()
 	return SUCCESS;
 }
 
-int handle_events()
-{
-	SDL_Event e;
-
-	while (SDL_PollEvent(&e))
-	{
-		if (e.type == SDL_QUIT)
-			return FAIL;
-		if (e.type == SDL_WINDOWEVENT)
-		{
-			switch (e.window.event)
-			{
-			case SDL_WINDOWEVENT_MOVED:
-				SDL_Log("Window %d moved to %d,%d",
-						e.window.windowID, e.window.data1,
-						e.window.data2);
-				break;
-			case SDL_WINDOWEVENT_RESIZED:
-				SDL_Log("Window %d resized to %dx%d",
-						e.window.windowID, e.window.data1,
-						e.window.data2);
-			}
-			break;
-		}
-	}
-
-	return SUCCESS;
-}
-
 int texture_load(texture *dest, char *path_to_file)
 {
 	if (!dest)
@@ -155,13 +126,8 @@ int texture_load(texture *dest, char *path_to_file)
 		return FAIL;
 	}
 
-	// animation data calculations
-	dest->type = dest->width == g_block_size && dest->height == (g_block_size * 3) / 4 ? TEXTURE_TYPE_CONNECTED : TEXTURE_TYPE_REGULAR;
-
-	// dest->frame_side_size = greatest_common_divisor(dest->height, dest->width);
-	dest->frame_side_size = g_block_size;
-	dest->frames_per_line = dest->width / dest->frame_side_size;
-	dest->frames = dest->frames_per_line * (dest->height / dest->frame_side_size);
+	dest->frames = dest->width / g_block_width;
+	dest->types = dest->height / g_block_width;
 
 	// copy filename
 	char *filename = strrchr(path_to_file, '/') + 1;
@@ -188,22 +154,18 @@ void free_texture(texture *t)
 	}
 }
 
-int texture_render(texture *texture, int x, int y, float scale)
+// it trusts you to pass valid values in, be careful with frames and types...
+int block_render(texture *texture, const int x, const int y, int frame, int type, int ignore_type)
 {
-	SDL_Rect src = {0, 0, texture->frame_side_size, texture->frame_side_size};
-	SDL_Rect dest = {x, y, texture->frame_side_size * scale, texture->frame_side_size * scale};
+	int frame_x = (frame % texture->frames) * g_block_width;
+	int frame_y = 0;
+	if (ignore_type)
+		frame_y = (frame / texture->frames) * g_block_width;
+	else
+		frame_y = (frame % texture->types) * g_block_width;
 
-	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
-}
-
-int texture_render_anim(texture *texture, int x, int y, int frame, float scale)
-{
-	frame = frame % texture->frames;
-	int frame_x = texture->frame_side_size * (frame % texture->frames_per_line);
-	int frame_y = texture->frame_side_size * (frame / texture->frames_per_line);
-
-	SDL_Rect src = {frame_x, frame_y, texture->frame_side_size, texture->frame_side_size};
-	SDL_Rect dest = {x, y, texture->frame_side_size * scale, texture->frame_side_size * scale};
+	SDL_Rect src = {frame_x, frame_y, g_block_width, g_block_width};
+	SDL_Rect dest = {x, y, g_block_width, g_block_width};
 
 	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
 }
@@ -222,8 +184,8 @@ neighbours_mask expected layout, bit by bit:
 
 // int block_render_connected(texture *texture, int x, int y, byte neighbours_mask)
 // {
-// 	const byte half_w = g_block_size / 2;
-// 	const byte quart_w = g_block_size / 4;
+// 	const byte half_w = g_block_width / 2;
+// 	const byte quart_w = g_block_width / 4;
 // 	const byte three_quarts_w = half_w + quart_w;
 
 // 	SDL_Rect src = {0, 0, half_w, half_w};

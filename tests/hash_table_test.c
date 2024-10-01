@@ -98,9 +98,10 @@ int test_hash_table_fill()
 
 int test_hash_table_all()
 {
+	INIT_TESTING()
 	printf("test_hash_table_all:\n");
 	RUN_TEST(test_rand_fill_and_remove)
 	RUN_TEST(test_hash_table_fill)
 
-	return SUCCESS;
+	FINISH_TESTING()
 }

@@ -257,6 +257,7 @@ int test_block_move_recursive()
 
 int test_block_operations_all()
 {
+	INIT_TESTING()
 	printf("test_block_operations_all:\n");
 	t_w = make_test_world();
 
@@ -267,5 +268,5 @@ int test_block_operations_all()
 	RUN_TEST(test_block_move_recursive)
 
 	free_test_world(t_w);
-	return SUCCESS;
+	FINISH_TESTING()
 }

@@ -100,7 +100,7 @@ block get_block_from_the_registry(block_registry_t *reg, int id)
 
 int test_world_init(world **world, block_registry_t *reg)
 {
-	g_block_size = 16;
+	g_block_width = 16;
 	const int floor_layer_id = 1;
 
 	// make a world with one layer and one chunk

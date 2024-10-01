@@ -92,6 +92,7 @@ int test_sort()
 
 int test_all_registry()
 {
+	INIT_TESTING()
 	init_graphics();
 	printf("test_all_registry:\n");
 	RUN_TEST(test_read_from_string)
@@ -100,5 +101,5 @@ int test_all_registry()
 	RUN_TEST(test_sort);
 
 	exit_graphics();
-	return SUCCESS;
+	FINISH_TESTING()
 }

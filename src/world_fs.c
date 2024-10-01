@@ -134,19 +134,6 @@ int fread_endianless(void *data, const int size, FILE *f)
 	return readed == size;
 }
 
-// #define write_vector(v, f)                               \
-// 	fwrite_endianless(&v->length, sizeof(v->length), f); \
-// 	for (int i = 0; i < v->length; i++)                  \
-// 		fwrite_endianless(&v->data[i], sizeof(v->data[i]), f);
-
-// #define read_vector(v, f)                               \
-// 	fread_endianless(&v->length, sizeof(v->length), f); \
-// 	vec_init(v);                                        \
-// 	vec_reserve(v, v->length);                          \
-// 	v->length =  \
-// 	for (int i = 0; i < v->length; i++)                 \
-// 		fread_endianless(&v->data[i], sizeof(v->data[i]), f);
-
 /* write/read functions */
 void write_block(block *b, FILE *f)
 {

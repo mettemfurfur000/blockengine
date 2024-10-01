@@ -112,6 +112,7 @@ int test_block_swap()
 
 int test_block_all()
 {
+	INIT_TESTING()
 	printf("test_block_all:\n");
 	RUN_TEST(test_block_init)
 	RUN_TEST(test_block_data_resize)
@@ -120,5 +121,5 @@ int test_block_all()
 	RUN_TEST(test_block_teleport)
 	RUN_TEST(test_block_swap)
 
-	return SUCCESS;
+	FINISH_TESTING()
 }

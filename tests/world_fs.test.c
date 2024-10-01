@@ -132,6 +132,7 @@ int test_save_load_random()
 
 int test_world_all()
 {
+	INIT_TESTING()
 	printf("test_world_all:\n");
 	RUN_TEST(test_world_init)
 	RUN_TEST(test_layer_init)
@@ -139,5 +140,5 @@ int test_world_all()
 	RUN_TEST(test_load_world)
 	RUN_TEST(test_save_load_random)
 
-	return SUCCESS;
+	FINISH_TESTING()
 }

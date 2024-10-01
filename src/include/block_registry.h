@@ -31,9 +31,10 @@ typedef struct block_resources
 
 	char *lua_script_filename;
 
-	byte is_animated;
+	byte ignore_type;
 	byte frames_per_second;
 	char anim_controller; // controls which character inside of block controls current animation mode of block
+	char type_controller; // controls same thing but for animation type/state
 	byte is_filler;
 } block_resources;
 
@@ -47,7 +48,7 @@ typedef vec_t(block_resources) block_registry_t;
 #define T_BYTE 5
 #define T_STRING 6
 
-int length(long long value);
+byte length(long long value);
 
 void strip_digit(byte *dest, long long value, int actual_length);
 int str_to_enum(char *type_str);

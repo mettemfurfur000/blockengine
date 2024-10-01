@@ -1,4 +1,3 @@
 id = 2
 texture = numbers.png
-is_animated = true
 fps = 4

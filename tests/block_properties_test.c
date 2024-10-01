@@ -36,9 +36,10 @@ int test_random_save_cycle()
 
 int test_block_props_all()
 {
+	INIT_TESTING()
 	printf("test_block_props_all:\n");
 	RUN_TEST(test_basic_io)
 	RUN_TEST(test_random_save_cycle)
 
-	return SUCCESS;
+	FINISH_TESTING()
 }

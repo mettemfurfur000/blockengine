@@ -11,6 +11,9 @@
 
 #include "block_memory_control.h"
 
+#define BLOB_ELEMENT_SIZE(blob, pos) *(blob + pos + 1)
+#define BLOB_ELEMENT_VALUE(blob, pos) (blob + pos + 2)
+
 /*
 1 byte for size
 the next 1-255 bytes for user data
@@ -43,19 +46,26 @@ byte *data_get_ptr(byte *data, char letter);
 
 int data_create_element(byte **data_ptr, char letter, byte size);
 int data_delete_element(byte **data_ptr, char letter);
+// warning: ai-generated code
+int data_resize_element(block *b, char letter, byte new_size);
 
 // set
 
-int data_set_str(byte *data, char letter, const byte *src, int size);
-int data_set_i(byte *data, char letter, int value);
-int data_set_s(byte *data, char letter, short value);
-int data_set_b(byte *data, char letter, byte value);
+int data_set_str(block *b, char letter, const byte *src, int size);
+int data_set_i(block *b, char letter, int value);
+int data_set_s(block *b, char letter, short value);
+int data_set_b(block *b, char letter, byte value);
 
 // get
 
-int data_get_str(byte *data, char letter, byte *dest, int size);
-int data_get_i(byte *data, char letter, int *dest);
-int data_get_s(byte *data, char letter, short *dest);
-int data_get_b(byte *data, char letter, byte *dest);
+int data_get_str(block *b, char letter, byte *dest, int size);
+int data_get_i(block *b, char letter, int *dest);
+int data_get_s(block *b, char letter, short *dest);
+int data_get_b(block *b, char letter, byte *dest);
+
+// cooler functions
+
+int data_get_number(block *b, char letter, long long *value_out);
+int data_set_number(block *b, char letter, long long value);
 
 #endif

@@ -14,7 +14,7 @@ extern char *window_name;
 extern SDL_Window *g_window;
 extern SDL_Renderer *g_renderer;
 
-extern int g_block_size;
+extern int g_block_width;
 
 #define TEXTURE_TYPE_REGULAR 1
 #define TEXTURE_TYPE_CONNECTED 2
@@ -27,12 +27,8 @@ typedef struct texture
 	int width;
 	int height;
 
-	unsigned short frame_side_size;
-
-	unsigned short frames_per_line;
-	unsigned short frames;
-
-	byte type;
+	unsigned short frames; // amount of vertical frames in a texture
+	unsigned short types;  // amount of types/states of a texture with their unique animations
 } texture;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -43,12 +39,10 @@ char *get_folder_path(char *file_path, int bonus_for_str_size);
 
 int init_graphics();
 int exit_graphics();
-int handle_events();
 
 int texture_load(texture *dest, char *path_to_file);
 void free_texture(texture *t);
 
-int texture_render(texture *texture, int x, int y, float scale);
-int texture_render_anim(texture *texture, int x, int y, int frame, float scale);
+int block_render(texture *texture, const int x, const int y, int frame, int type, int fpt);
 
 #endif

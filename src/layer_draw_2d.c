@@ -12,15 +12,14 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	if (layer_index < 0 || layer_index >= w->layers.length)
 		return;
 
-	const int width = slice.w / g_block_size; // exact amowunt of lboks to render o nscren
-	const int height = slice.h / g_block_size;
+	const int width = slice.w / g_block_width; // exact amowunt of lboks to render o nscren
+	const int height = slice.h / g_block_width;
 
 	texture *texture;
 	block *b;
-	SDL_Rect src_rect;
-	SDL_Rect dest_rect = {0, 0, g_block_size, g_block_size};
-	const int start_block_x = ((slice.x / g_block_size) - 1);
-	const int start_block_y = ((slice.y / g_block_size) - 1);
+
+	const int start_block_x = ((slice.x / g_block_width) - 1);
+	const int start_block_y = ((slice.y / g_block_width) - 1);
 
 	const int end_block_x = start_block_x + width + 2;
 	const int end_block_y = start_block_y + height + 2;
@@ -34,34 +33,34 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 											1 + end_block_x / chunk_width,
 											1 + end_block_y / chunk_width);
 
-	// if (layer_index == 0)
-	// {
-	// 	bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
-	// 	bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
-	// 	bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
-	// 	bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
-	// 	bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
-	// }
+	if (layer_index == 0)
+	{
+		bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
+		bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
+		bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
+		bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
+		bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
+	}
 
-	const int block_x_offset = slice.x % g_block_size; /* offset in pixels for smooth rendering of blocks */
-	const int block_y_offset = slice.y % g_block_size;
+	const int block_x_offset = slice.x % g_block_width; /* offset in pixels for smooth rendering of blocks */
+	const int block_y_offset = slice.y % g_block_width;
 
 	float dest_x, dest_y;
-	dest_x = -block_x_offset - g_block_size * 2; // also minus 1 full block back to fill the gap
+	dest_x = -block_x_offset - g_block_width * 2; // also minus 1 full block back to fill the gap
 
-	// if (layer_index == 0)
-	// {
-	// 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_size, -block_y_offset - g_block_size);
-	// }
+	if (layer_index == 0)
+	{
+		bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_width, -block_y_offset - g_block_width);
+	}
 
 	for (int i = start_block_x; i < end_block_x; i++)
 	{
-		dest_x += g_block_size;
-		dest_y = -block_y_offset - g_block_size * 2;
+		dest_x += g_block_width;
+		dest_y = -block_y_offset - g_block_width * 2;
 
 		for (int j = start_block_y; j < end_block_y; j++)
 		{
-			dest_y += g_block_size;
+			dest_y += g_block_width;
 			// calculate y coordinate of block on screen
 
 			// get block
@@ -80,35 +79,27 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 			texture = &br.block_texture;
 			if (!texture)
 				continue;
-			// get frame
-			src_rect.x = 0;
-			src_rect.y = 0;
+
+			byte frame = 0;
+			byte type = 0;
+
+			if (br.type_controller != 0)
+			{
+				(void)data_get_b(b, br.type_controller, &type);
+			}
+
 			if (br.anim_controller != 0)
 			{
-				byte frame = 0;
-				if (data_get_b(b->data, br.anim_controller, &frame) == SUCCESS)
-				{
-					src_rect.x = texture->frame_side_size * (frame % texture->frames_per_line);
-					src_rect.y = texture->frame_side_size * (frame / texture->frames_per_line);
-				}
+				(void)data_get_b(b, br.anim_controller, &frame);
 			}
-			else if (br.is_animated && texture->frames > 1)
+			else if (br.frames_per_second > 1)
 			{
 				float seconds_since_start = SDL_GetTicks() / 1000.0f;
 				int fps = br.frames_per_second;
-				int frame = (int)(seconds_since_start * fps) % texture->frames;
-
-				src_rect.x = texture->frame_side_size * (frame % texture->frames_per_line);
-				src_rect.y = texture->frame_side_size * (frame / texture->frames_per_line);
+				frame = (byte)(seconds_since_start * fps);
 			}
-			// source is for from what part of texture render
-			src_rect.h = texture->frame_side_size;
-			src_rect.w = texture->frame_side_size;
-			// and dest_rect is for where on window render it
-			dest_rect.x = dest_x;
-			dest_rect.y = dest_y;
-			// no camera rotating, yet...
-			SDL_RenderCopy(g_renderer, texture->ptr, &src_rect, &dest_rect);
+
+			block_render(texture, dest_x, dest_y, frame, type, br.ignore_type);
 		}
 	}
 
