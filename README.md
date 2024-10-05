@@ -51,8 +51,8 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [x] Data-driven texture selection for individual blocks
    - [x] Animation-compatible data-driven textures
    - [ ] Particles
-   - [ ] Rotatable block textures, for turrets/cogs/valves
-   - [ ] Flippable textures for some memory economy
+   - [x] Rotatable block textures, for turrets/cogs/valves
+   - [x] Flippable textures for some memory economy
    - [x] Pseudorandom texture patterns based on block location
    - [ ] Connectable textures
    - [ ] Lightning?

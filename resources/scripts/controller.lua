@@ -67,6 +67,7 @@ wrap_register(EVENT_IDS.TICK, function(sym, mod, state, rep)
     controller.player.block = util_get_block(controller.player.pos)
 
     blockengine.blob_set_number(controller.player.block, "v", frame)
+    -- blockengine.blob_set_number(controller.player.block, "r", math.floor(math.fmod(controller.tick, 360)))
 
     if type ~= nil then
         blockengine.blob_set_number(controller.player.block, "t", type)

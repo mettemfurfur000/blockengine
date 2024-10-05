@@ -185,6 +185,20 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 		return SUCCESS;                                                                       \
 	}
 
+#define DECLARE_DEFAULT_CHAR_FIELD_HANDLER(name)                            \
+	int block_res_##name##_handler(const char *data, block_resources *dest) \
+	{                                                                       \
+		if (!data)                                                          \
+			return FAIL;                                                    \
+		if (strcmp(data, clean_token) == 0)                                 \
+		{                                                                   \
+			dest->name = 0;                                                 \
+			return SUCCESS;                                                 \
+		}                                                                   \
+		dest->name = data[0];                                               \
+		return SUCCESS;                                                     \
+	}
+
 const static char clean_token[] = "??clean??";
 
 int block_res_id_handler(const char *data, block_resources *dest)
@@ -255,35 +269,39 @@ int block_res_fps_handler(const char *data, block_resources *dest)
 DECLARE_DEFAULT_FLAG_HANDLER(ignore_type, B_RES_FLAG_IGNORE_TYPE)
 DECLARE_DEFAULT_FLAG_HANDLER(position_based_type, B_RES_FLAG_RANDOM_POS)
 
-int block_res_anim_controller_handler(const char *data, block_resources *dest)
-{
-	if (!data)
-		return FAIL;
+// int block_res_anim_controller_handler(const char *data, block_resources *dest)
+// {
+// 	if (!data)
+// 		return FAIL;
 
-	if (strcmp(data, clean_token) == 0)
-	{
-		dest->anim_controller = 0;
-		return SUCCESS;
-	}
+// 	if (strcmp(data, clean_token) == 0)
+// 	{
+// 		dest->anim_controller = 0;
+// 		return SUCCESS;
+// 	}
 
-	dest->anim_controller = data[0];
-	return SUCCESS;
-}
+// 	dest->anim_controller = data[0];
+// 	return SUCCESS;
+// }
 
-int block_res_type_controller_handler(const char *data, block_resources *dest)
-{
-	if (!data)
-		return FAIL;
+// int block_res_type_controller_handler(const char *data, block_resources *dest)
+// {
+// 	if (!data)
+// 		return FAIL;
 
-	if (strcmp(data, clean_token) == 0)
-	{
-		dest->type_controller = 0;
-		return SUCCESS;
-	}
+// 	if (strcmp(data, clean_token) == 0)
+// 	{
+// 		dest->type_controller = 0;
+// 		return SUCCESS;
+// 	}
 
-	dest->type_controller = data[0];
-	return SUCCESS;
-}
+// 	dest->type_controller = data[0];
+// 	return SUCCESS;
+// }
+DECLARE_DEFAULT_CHAR_FIELD_HANDLER(anim_controller)
+DECLARE_DEFAULT_CHAR_FIELD_HANDLER(type_controller)
+DECLARE_DEFAULT_CHAR_FIELD_HANDLER(flip_controller)
+DECLARE_DEFAULT_CHAR_FIELD_HANDLER(rotation_controller)
 
 int block_res_lua_script_handler(const char *data, block_resources *dest)
 {
@@ -316,6 +334,9 @@ const static resource_entry_handler res_handlers[] = {
 
 	{&block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {}},
 	{&block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}}, // directly controls the frame of a texture, so it cant used with fps
+	{&block_res_flip_controller_handler, "flip_controller", NOT_REQUIRED, {"data"}, {}},
+	{&block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED, {"data"}, {}},
+
 	{&block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {}},
 	{&block_res_position_based_type_handler, "random_type", NOT_REQUIRED, {}, {}},
 

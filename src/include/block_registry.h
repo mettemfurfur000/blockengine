@@ -38,8 +38,12 @@ typedef struct block_resources
 
 	char *lua_script_filename;
 
-	char anim_controller; // controls which character inside of block controls current animation mode of block
-	char type_controller; // controls same thing but for animation type/state
+	// these are references to internal block data fields, not actual values for a block
+	char anim_controller;	  // current animation frame / column
+	char type_controller;	  // current animation type / row
+	char flip_controller;	  // current type of flipping
+	char rotation_controller; // current rotation angle
+
 	byte frames_per_second;
 
 	byte flags;

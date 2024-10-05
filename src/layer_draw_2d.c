@@ -99,10 +99,23 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 
 			byte frame = 0;
 			byte type = 0;
+			byte flip = 0;
+			unsigned short rotation = 0;
 
 			if (br.type_controller != 0)
 			{
 				(void)data_get_b(b, br.type_controller, &type);
+			}
+
+			if (br.flip_controller != 0)
+			{
+				(void)data_get_b(b, br.flip_controller, &flip);
+			}
+
+			if (br.rotation_controller != 0)
+			{
+				//(void)data_get_b(b, br.rotation_controller, &rotation);
+				data_get_number(b, br.rotation_controller, (long long *)&rotation);
 			}
 
 			if (br.anim_controller != 0)
@@ -120,7 +133,7 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 				frame = tile_rand(i, j);
 			}
 
-			block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE), local_block_width);
+			block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE), local_block_width, flip, rotation);
 		}
 	}
 

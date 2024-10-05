@@ -4,3 +4,4 @@ texture = dev.png
 script = controller.lua
 frame_controller = v
 type_controller = t
+rotation_controller = r

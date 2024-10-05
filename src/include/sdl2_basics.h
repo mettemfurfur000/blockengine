@@ -44,6 +44,6 @@ int exit_graphics();
 int texture_load(texture *dest, char *path_to_file);
 void free_texture(texture *t);
 
-int block_render(texture *texture, const int x, const int y, int frame, int type, int ignore_type, int local_block_width);
+int block_render(texture *texture, const int x, const int y, byte frame, byte type, byte ignore_type, byte local_block_width, byte flip, unsigned short rotation);
 
 #endif

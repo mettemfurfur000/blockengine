@@ -163,7 +163,7 @@ void free_texture(texture *t)
 }
 
 // it trusts you to pass valid values in, be careful with frames and types...
-int block_render(texture *texture, const int x, const int y, int frame, int type, int ignore_type, int local_block_width)
+int block_render(texture *texture, const int x, const int y, byte frame, byte type, byte ignore_type, byte local_block_width, byte flip, unsigned short rotation)
 {
 	frame = frame % texture->total_frames;
 
@@ -178,7 +178,11 @@ int block_render(texture *texture, const int x, const int y, int frame, int type
 	SDL_Rect src = {frame_x, frame_y, g_block_width, g_block_width};
 	SDL_Rect dest = {x, y, local_block_width, local_block_width};
 
-	return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
+	const SDL_Point center = {local_block_width / 2, local_block_width / 2};
+
+	// return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
+
+	return !SDL_RenderCopyEx(g_renderer, texture->ptr, &src, &dest, rotation, &center, flip);
 }
 
 // TODO:
