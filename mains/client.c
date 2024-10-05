@@ -138,7 +138,7 @@ client_render_rules prepare_rendering_rules()
 	(void)vec_push(&rules.draw_order, 1);
 	(void)vec_push(&rules.draw_order, 0);
 
-	layer_slice t = {0, 0, rules.screen_width, rules.screen_height, 1.0f};
+	layer_slice t = {0, 0, rules.screen_width, rules.screen_height, 4};
 
 	(void)vec_push(&rules.slices, t);
 	(void)vec_push(&rules.slices, t);

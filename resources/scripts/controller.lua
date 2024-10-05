@@ -23,9 +23,7 @@ end
 local function get_walking_frame(delta)
     if delta.x == 0 and delta.y == 0 then return 0 end
 
-    local tick_fraction = math.floor(controller.tick / 100)
-
-    return 1 + math.fmod(tick_fraction, 2)
+    return 1 + math.fmod(controller.tick, 2)
 end
 
 wrap_register(EVENT_IDS.INIT, function(sym, mod, state, rep)
@@ -50,8 +48,6 @@ wrap_register(EVENT_IDS.TICK, function(sym, mod, state, rep)
 
     local frame = get_walking_frame(delta) -- aka specific frame of the animation
     local type = get_walking_type(delta)   -- aka direction
-
-    print(frame .. "," .. (type or "nil"))
 
     if controller.states[SDL_SCANCODE.SDL_SCANCODE_SPACE] then
         frame = 3

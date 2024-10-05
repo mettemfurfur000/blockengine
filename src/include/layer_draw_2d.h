@@ -10,7 +10,7 @@ typedef struct layer_slice
 	int x, y; // coordinates in the world, in pixels ( most of the time 16 per block )
 	int w, h; // width an height of visible uhhhh
 
-	float scale;
+	int mult;
 } layer_slice;
 
 typedef vec_t(layer_slice) layer_slices_t;

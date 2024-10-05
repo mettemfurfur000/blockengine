@@ -27,14 +27,16 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	if (layer_index < 0 || layer_index >= w->layers.length)
 		return;
 
-	const int width = slice.w / g_block_width; // exact amowunt of lboks to render o nscren
-	const int height = slice.h / g_block_width;
+	const int local_block_width = (g_block_width * slice.mult);
+
+	const int width = slice.w / local_block_width; // exact amowunt of lboks to render o nscren
+	const int height = slice.h / local_block_width;
 
 	texture *texture;
 	block *b;
 
-	const int start_block_x = ((slice.x / g_block_width) - 1);
-	const int start_block_y = ((slice.y / g_block_width) - 1);
+	const int start_block_x = ((slice.x / local_block_width) - 1);
+	const int start_block_y = ((slice.y / local_block_width) - 1);
 
 	const int end_block_x = start_block_x + width + 2;
 	const int end_block_y = start_block_y + height + 2;
@@ -57,25 +59,25 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 	// 	bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
 	// }
 
-	const int block_x_offset = slice.x % g_block_width; /* offset in pixels for smooth rendering of blocks */
-	const int block_y_offset = slice.y % g_block_width;
+	const int block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
+	const int block_y_offset = slice.y % local_block_width;
 
 	float dest_x, dest_y;
-	dest_x = -block_x_offset - g_block_width * 2; // also minus 1 full block back to fill the gap
+	dest_x = -block_x_offset - local_block_width * 2; // also minus 1 full block back to fill the gap
 
 	// if (layer_index == 0)
 	// {
-	// 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - g_block_width, -block_y_offset - g_block_width);
+	// 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - local_block_width, -block_y_offset - local_block_width);
 	// }
 
 	for (int i = start_block_x; i < end_block_x; i++)
 	{
-		dest_x += g_block_width;
-		dest_y = -block_y_offset - g_block_width * 2;
+		dest_x += local_block_width;
+		dest_y = -block_y_offset - local_block_width * 2;
 
 		for (int j = start_block_y; j < end_block_y; j++)
 		{
-			dest_y += g_block_width;
+			dest_y += local_block_width;
 			// calculate y coordinate of block on screen
 
 			// get block
@@ -118,7 +120,7 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 				frame = tile_rand(i, j);
 			}
 
-			block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE));
+			block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE), local_block_width);
 		}
 	}
 
