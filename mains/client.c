@@ -138,7 +138,7 @@ client_render_rules prepare_rendering_rules()
 	(void)vec_push(&rules.draw_order, 1);
 	(void)vec_push(&rules.draw_order, 0);
 
-	layer_slice t = {0, 0, rules.screen_width, rules.screen_height, 4};
+	layer_slice t = {0, 0, rules.screen_width, rules.screen_height, 3};
 
 	(void)vec_push(&rules.slices, t);
 	(void)vec_push(&rules.slices, t);
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 
 	unsigned long frame = 0;
 
-	const int target_fps = 30;
+	const int target_fps = 60;
 	const int ms_per_s = 1000 / target_fps;
 
 	const int target_tps = 10;

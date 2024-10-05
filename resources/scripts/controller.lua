@@ -4,7 +4,7 @@ controller = {
     player = { pos = { x = 0, y = 0 }, block = nil },
     states = {},
     tick = 0,
-    last_walk_frame = 0
+    standing = 1
 }
 
 local function util_get_block(pos)
@@ -44,7 +44,15 @@ wrap_register(EVENT_IDS.TICK, function(sym, mod, state, rep)
     if controller.states[SDL_SCANCODE.SDL_SCANCODE_A] then delta.x = -1 end
     if controller.states[SDL_SCANCODE.SDL_SCANCODE_D] then delta.x = 1 end
 
-    if delta.x == 0 and delta.y == 0 then return end
+    if delta.x == 0 and delta.y == 0 then
+        if controller.standing == 0 then
+            blockengine.blob_set_number(controller.player.block, "v", 0)
+            controller.standing = 1
+        end
+        return
+    end
+
+    controller.standing = 0
 
     local frame = get_walking_frame(delta) -- aka specific frame of the animation
     local type = get_walking_type(delta)   -- aka direction
