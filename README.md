@@ -41,6 +41,9 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [x] Basic passive scripts
    - [x] Functions for simple operations on blocks
    - [x] Block registry block querry
+   - [ ] Give lua access to rendering rules (camera pos, etc)
+   - [ ] Allow lua to create or delete world layers
+   - [ ] Allow lua to load/unload chunks, forced or on-demand
    - [x] Custom events for block interactions
       - [x] on_set, on_erase, on_move, 
       - [ ] on_load, on_unload, on_data_create, on_data_remove, on_signal
@@ -56,6 +59,8 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [x] Pseudorandom texture patterns based on block location
    - [ ] Connectable textures
    - [ ] Lightning?
-   
+- [ ] Sound
+   - [ ] Load and play sounds
+   - [ ] Allow scripts to play them
 
 That's the list I'm currently aiming for. Hope this helps!
