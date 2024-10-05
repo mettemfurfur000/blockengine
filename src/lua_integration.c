@@ -58,17 +58,19 @@ void scripting_register(lua_State *L)
 
 		{"blob_create", lua_blob_create},
 		{"blob_remove", lua_blob_remove},
+
 		{"blob_set_string", lua_blob_set_str},
 		{"blob_set_int", lua_blob_set_i},
-		{"blob_set_sshort", lua_blob_set_s},
+		{"blob_set_short", lua_blob_set_s},
 		{"blob_set_byte", lua_blob_set_b},
+
 		{"blob_get_string", lua_blob_get_str},
 		{"blob_get_int", lua_blob_get_i},
 		{"blob_get_short", lua_blob_get_s},
 		{"blob_get_byte", lua_blob_get_b},
 
-		{"lua_blob_get_number", lua_blob_get_b},
-		{"lua_blob_set_number", lua_blob_get_b},
+		{"blob_set_number", lua_blob_set_number},
+		{"blob_get_number", lua_blob_get_number},
 
 		{"block_unpack", block_unpack},
 		{"get_keyboard_state", get_keyboard_state},

@@ -17,6 +17,19 @@ function move_block_g(pos, delta)
     if blockengine.move_block_gently(g_world, 1, pos.x, pos.y, delta.x, delta.y) then
         pos.x = pos.x + delta.x
         pos.y = pos.y + delta.y
+        -- print("successful gentle move")
+    else
+        -- print("something is on the way!")
+
+        -- local obstacle = blockengine.access_block(g_world, 1, pos.x + delta.x, pos.y + delta.y)
+
+        -- if obstacle == nil then
+        --     print("its nil")
+        --     return pos
+        -- end
+
+        -- local id, datalen = blockengine.block_unpack(obstacle)
+        -- print("id is " .. id .. ", data length is " .. datalen)
     end
     return pos
 end

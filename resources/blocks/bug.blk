@@ -1,4 +1,3 @@
 id = 5
 data = { byte H = 20 }
 texture = bug.png
-script = controller.lua

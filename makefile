@@ -69,6 +69,7 @@ endif
 client_app: mains/client.c resources vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
 	gcc ${CFLAGS} -o build/client mains/client.c obj/vec.o $(objects) $(LDFLAGS)
+#	-./grab_dlls.sh build/client.exe /mingw64/bin 1
 ifeq ($(OS),Windows_NT)
 	./build/client.exe
 else

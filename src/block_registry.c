@@ -325,7 +325,7 @@ const static resource_entry_handler res_handlers[] = {
 
 const int TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
-int parse_block_resources_from_file(const char *file_path, block_resources *dest)
+int parse_block_resources_from_file(char *file_path, block_resources *dest)
 {
 	hash_table **properties = alloc_table();
 	int status = SUCCESS;
@@ -445,8 +445,8 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 	}
 
 	// push a default void block with id 0
-	block_resources void_block = {.block_sample = {.id = 0, .data = 0}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
-	(void)vec_push(reg, void_block);
+	block_resources filler_entry = {.block_sample = {.id = 0, .data = 0}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
+	(void)vec_push(reg, filler_entry);
 
 	while ((entry = readdir(directory)) != NULL)
 	{
@@ -475,16 +475,26 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 		}
 	}
 
-	FLAG_SET(void_block.flags, B_RES_FLAG_IS_FILLER, 1)
+	FLAG_SET(filler_entry.flags, B_RES_FLAG_IS_FILLER, 1)
 
 	sort_by_id(reg);
 
-	for (int i = 1; i < reg->length; i++)
+	int orig_length = reg->length;
+
+	for (int i = 1; i < orig_length; i++)
 	{
-		if (reg->data[i - 1].block_sample.id + 1 != reg->data[i].block_sample.id)
+		int block_prev_id = reg->data[i - 1].block_sample.id;
+		int block_cur_id = reg->data[i].block_sample.id;
+
+		if (block_prev_id + 1 != block_cur_id)
 		{
-			printf("Warning: Found a hole between %d and %d, filling with a filler block", i - 1, i);
-			(void)vec_push(reg, void_block);
+			for (int j = block_prev_id; j < block_cur_id - 1; j++)
+			{
+				filler_entry.block_sample.id = j;
+				printf("adding a filler entry with an id %d\n", j);
+				(void)vec_push(reg, filler_entry);
+			}
+			break;
 		}
 	}
 

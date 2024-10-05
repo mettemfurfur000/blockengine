@@ -268,7 +268,7 @@ int lua_blob_set_number(lua_State *L)
 {
     int n = lua_gettop(L); /* number of arguments */
 
-    if (n != 2 ||
+    if (n != 3 ||
         !lua_isuserdata(L, 1) ||
         !lua_isstring(L, 2) ||
         !(lua_isinteger(L, 3) || lua_isnumber(L, 3)))

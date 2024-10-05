@@ -109,10 +109,13 @@ int test_world_init(world **world, block_registry_t *reg)
 	for (int i = 0; i < (*world)->layers.length; i++)
 		world_layer_alloc(LAYER_FROM_WORLD((*world), i), 2, 2, 32, i);
 
-	world_layer_fill_randomly(*world, floor_layer_id, (reg), time(NULL), 2, 3);
+	// world_layer_fill_randomly(*world, floor_layer_id, (reg), time(NULL), 2, 3);
 
 	const block bug_sample = get_block_from_the_registry(reg, 5);
 	set_block((*world), floor_layer_id, 5, 5, &bug_sample);
+
+	const block dev_sample = get_block_from_the_registry(reg, 10);
+	set_block((*world), floor_layer_id, 10, 10, &dev_sample);
 
 	return SUCCESS;
 }

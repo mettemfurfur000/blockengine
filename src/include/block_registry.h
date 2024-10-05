@@ -91,7 +91,7 @@ typedef struct
 	char *incompabilities[4];
 } resource_entry_handler;
 
-int parse_block_resources_from_file(const char *file_path, block_resources *dest);
+int parse_block_resources_from_file(char *file_path, block_resources *dest);
 void free_block_resources(block_resources *b);
 
 int is_already_in_registry(block_registry_t *reg, block_resources *br);

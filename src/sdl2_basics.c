@@ -173,7 +173,7 @@ int block_render(texture *texture, const int x, const int y, int frame, int type
 	if (ignore_type)
 		frame_y = (frame / texture->frames) * g_block_width;
 	else
-		frame_y = (frame % texture->types) * g_block_width;
+		frame_y = (type % texture->types) * g_block_width;
 
 	SDL_Rect src = {frame_x, frame_y, g_block_width, g_block_width};
 	SDL_Rect dest = {x, y, g_block_width, g_block_width};
