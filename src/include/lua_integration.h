@@ -41,6 +41,7 @@ int scripting_handle_event(SDL_Event *event, const int override_id);
 
 int scripting_load_file(const char *filename);
 void scripting_load_scripts(block_registry_t *reg);
-void scripting_define_global_variables(const world *w);
+
+void scripting_define_global_object(void *ptr, char *name);
 
 #endif

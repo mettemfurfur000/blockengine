@@ -9,8 +9,6 @@
 
 #include "../src/include/endianless.h"
 
-// int main(int argc, char* argv[])
-// int main()
 int main(int argc, char *argv[])
 {
 	fprintf(stderr, "%s\n", "test thing");

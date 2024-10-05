@@ -176,7 +176,10 @@ int main(int argc, char *argv[])
 		return 1;
 
 	scripting_init();
-	scripting_define_global_variables(g_world);
+
+	scripting_define_global_object(g_world, "g_world");
+	scripting_define_global_object(g_reg, "g_reg");
+
 	scripting_load_scripts(g_reg);
 
 	unsigned long frame = 0;
@@ -200,6 +203,12 @@ int main(int argc, char *argv[])
 
 		while (SDL_PollEvent(&e))
 		{
+			if (is_user_event(e.type))
+			{
+				scripting_handle_event(&e, 0);
+				continue;
+			}
+
 			switch (e.type)
 			{
 			case SDL_KEYDOWN:

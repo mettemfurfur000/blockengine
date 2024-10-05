@@ -106,6 +106,8 @@ int test_random_data()
 
 		rand_src[rand_size] = 0;
 
+		// printf("filing %d bytes, %s\n", rand_size, rand_src);
+
 		status &= data_set_str(&t, 's', (byte *)rand_src, rand_size);
 		status &= data_get_str(&t, 's', (byte *)rand_dest, rand_size);
 

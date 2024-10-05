@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "engine_types.h"
+#include "engine_events.h"
 
 void make_void_block(block *b);
 

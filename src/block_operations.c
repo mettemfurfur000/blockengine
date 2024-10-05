@@ -1,4 +1,5 @@
 #include "include/block_operations.h"
+#include "include/engine_events.h"
 
 int is_chunk_unloaded(const world_layer *wl, const int chunk_x, const int chunk_y)
 {
@@ -41,24 +42,48 @@ block *get_block_access(const world *w, const int index, const int x, const int 
 // TODO: add chunk access function so caller have more control over chunk blocks
 // maybe even chunk section to have more control over region x,y by h,w (in blocks)
 
-int set_block(const world *w, const int index, const int x, const int y, const block *b)
+int set_block(const world *w, const int layer_index, const int x, const int y, const block *b)
 {
-	block *blk = get_block_access(w, index, x, y);
+	block *blk = get_block_access(w, layer_index, x, y);
 	if (!blk)
 		return FAIL;
 
+	{
+		block_update_event new_event = {.type = ENGINE_BLOCK_SET,
+										.target_x = x,
+										.target_y = y,
+										.target = blk,
+										.target_layer_id = layer_index,
+										.previous_id = blk->id,
+										.new_id = b->id};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
+	}
+
 	block_copy(blk, b);
+
 	return SUCCESS;
 }
 
-int clean_block(const world *w, int index, const int x, const int y)
+int clean_block(const world *w, int layer_index, const int x, const int y)
 {
-	block *blk = get_block_access(w, index, x, y);
+	block *blk = get_block_access(w, layer_index, x, y);
 	if (!blk)
 		return FAIL;
 
-	block_data_free(blk);
-	make_void_block(blk);
+	{
+		block_update_event new_event = {.type = ENGINE_BLOCK_ERASED,
+										.target_x = x,
+										.target_y = y,
+										.target = blk,
+										.target_layer_id = layer_index,
+										.previous_id = blk->id,
+										.new_id = 0};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
+	}
+
+	block_erase(blk);
 
 	return SUCCESS;
 }
@@ -88,6 +113,30 @@ int move_block_gently(const world *w, const int layer_index, const int x, const 
 	if (!is_block_void(destination))
 		return FAIL;
 
+	{ // source block updated to 0
+		block_update_event new_event = {.type = ENGINE_BLOCK_MOVE,
+										.target_x = x,
+										.target_y = y,
+										.target = source,
+										.target_layer_id = layer_index,
+										.previous_id = source->id,
+										.new_id = 0};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
+	}
+
+	{ // dest block becomes source block
+		block_update_event new_event = {.type = ENGINE_BLOCK_MOVE,
+										.target_x = x + vx,
+										.target_y = y + vy,
+										.target = destination,
+										.target_layer_id = layer_index,
+										.previous_id = 0,
+										.new_id = destination->id};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
+	}
+
 	block_teleport(destination, source);
 
 	return SUCCESS;
@@ -100,6 +149,30 @@ int move_block_rough(const world *w, const int layer_index, const int x, const i
 
 	if (!is_move_needed(destination, source))
 		return FAIL;
+
+	{ // source block updated to 0
+		block_update_event new_event = {.type = ENGINE_BLOCK_MOVE,
+										.target_x = x,
+										.target_y = y,
+										.target = source,
+										.target_layer_id = layer_index,
+										.previous_id = source->id,
+										.new_id = 0};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
+	}
+
+	{ // dest block was replaced with source block (Different Event id this time)
+		block_update_event new_event = {.type = ENGINE_BLOCK_ERASED,
+										.target_x = x + vx,
+										.target_y = y + vy,
+										.target = destination,
+										.target_layer_id = layer_index,
+										.previous_id = destination->id,
+										.new_id = source->id};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
+	}
 
 	block_teleport(destination, source);
 
@@ -126,6 +199,30 @@ int move_block_recursive(const world *w, const int layer_index, const int x, con
 																  : -1,
 								  limit_inclusive - 1))
 			return FAIL;
+	}
+
+	{ // source block updated to 0
+		block_update_event new_event = {.type = ENGINE_BLOCK_MOVE,
+										.target_x = x,
+										.target_y = y,
+										.target = source,
+										.target_layer_id = layer_index,
+										.previous_id = source->id,
+										.new_id = 0};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
+	}
+
+	{ // dest block becomes source block
+		block_update_event new_event = {.type = ENGINE_BLOCK_MOVE,
+										.target_x = x + vx,
+										.target_y = y + vy,
+										.target = destination,
+										.target_layer_id = layer_index,
+										.previous_id = 0,
+										.new_id = destination->id};
+
+		SDL_PushEvent((SDL_Event *)&new_event);
 	}
 
 	block_teleport(destination, source);

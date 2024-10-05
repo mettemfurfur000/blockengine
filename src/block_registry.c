@@ -334,8 +334,14 @@ int parse_block_resources_from_file(const char *file_path, block_resources *dest
 	{
 		printf("Error loading block resources: %s\n", file_path);
 		status = FAIL;
-		goto emergency_exit;
+		free_table(properties);
+		return status;
 	}
+
+	put_entry(properties, "source_filename", file_path);
+
+	// also include a full file in block resources, for whatever reason
+	dest->all_fields = properties;
 
 	char *entry = 0;
 
@@ -411,8 +417,7 @@ int parse_block_resources_from_file(const char *file_path, block_resources *dest
 		else
 			(void)vec_push(&seen_entries, res_handlers[i].name);
 	}
-emergency_exit:
-	free_table(properties);
+
 	return status;
 }
 
@@ -505,6 +510,8 @@ void free_block_resources(block_resources *b)
 	for (int i = 0; i < TOTAL_HANDLERS; i++)
 		if (res_handlers[i].function(clean_token, b) == FAIL)
 			printf("Error in \"%s\": handler \"%s\" failed to free block resources\n", b->block_sample.data, res_handlers[i].name);
+
+	free_table(b->all_fields);
 }
 
 void free_block_registry(block_registry_t *b_reg)

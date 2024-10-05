@@ -30,6 +30,9 @@ void free_node(hash_table *node)
 
 void copy_key(hash_table *node, char *key)
 {
+	if (!node)
+		return;
+
 	if (node->key)
 		free(node->key);
 
@@ -39,6 +42,9 @@ void copy_key(hash_table *node, char *key)
 
 void copy_value(hash_table *node, char *value)
 {
+	if (!node)
+		return;
+
 	if (node->value)
 		free(node->value);
 
@@ -48,6 +54,9 @@ void copy_value(hash_table *node, char *value)
 
 void copy_all(hash_table *node, char *key, char *value)
 {
+	if (!node)
+		return;
+
 	if (node->key)
 		free(node->key);
 
@@ -68,6 +77,8 @@ hash_table **alloc_table()
 
 void free_table(hash_table **table)
 {
+	if (!table)
+		return;
 	// thanks https://t.me/codemaniacbot
 	hash_table *node;
 	hash_table *next_node;
@@ -85,6 +96,9 @@ void free_table(hash_table **table)
 
 void put_entry(hash_table **table, char *key, char *value)
 {
+	if (!table)
+		return;
+
 	unsigned long hash = hash_function(key);
 	hash_table *node = table[hash];
 
@@ -117,6 +131,9 @@ void put_entry(hash_table **table, char *key, char *value)
 
 char *get_entry(hash_table **table, char *key)
 {
+	if (!table)
+		return key;
+
 	// thanks https://t.me/codemaniacbot
 	unsigned long hash = hash_function(key);
 	hash_table *node = table[hash];
@@ -133,6 +150,9 @@ char *get_entry(hash_table **table, char *key)
 
 void print_table(hash_table **table)
 {
+	if (!table)
+		return;
+
 	hash_table *node;
 	hash_table *next_node;
 	printf("table content:\n");
@@ -150,6 +170,9 @@ void print_table(hash_table **table)
 
 int remove_entry(hash_table **table, char *key)
 {
+	if (!table)
+		return FAIL;
+
 	unsigned long hash = hash_function(key);
 	hash_table *prev = NULL;
 	hash_table *node = table[hash];
@@ -175,6 +198,9 @@ int remove_entry(hash_table **table, char *key)
 
 int actual_size_of_table(hash_table **table)
 {
+	if (!table)
+		return -1;
+
 	int size = 0;
 	hash_table *node;
 
@@ -204,6 +230,9 @@ void fill_test_val(char *val, int num)
 
 void put_random_entry(hash_table **table, int seed)
 {
+	if (!table)
+		return;
+
 	srand(seed);
 	char key[128] = {0};
 	char value[128] = {0};

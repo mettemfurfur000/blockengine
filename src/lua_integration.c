@@ -3,7 +3,10 @@
 
 #include "include/lua_world_manipulation_functions.h"
 #include "include/lua_block_data_functions.h"
+#include "include/lua_registry_functions.h"
 #include "include/lua_utils.h"
+
+#include "include/engine_events.h"
 
 lua_State *g_L = 0;
 
@@ -37,9 +40,11 @@ void scripting_register(lua_State *L)
 		{"access_block", lua_access_block},
 		{"set_block", lua_set_block},
 		{"clean_block", lua_clean_block},
+
 		{"move_block_gently", lua_move_block_gently},
 		{"move_block_rough", lua_move_block_rough},
 		{"move_block_recursive", lua_move_block_recursive},
+
 		{"is_data_equal", lua_is_data_equal},
 		{"is_block_void", lua_is_block_void},
 		{"is_block_equal", lua_is_block_equal},
@@ -68,6 +73,8 @@ void scripting_register(lua_State *L)
 		{"block_unpack", block_unpack},
 		{"get_keyboard_state", get_keyboard_state},
 
+		{"read_registry_entry", lua_read_registry_entry},
+
 		{NULL, NULL}
 
 	};
@@ -77,10 +84,10 @@ void scripting_register(lua_State *L)
 									 // 0 objects on stack now
 }
 
-void scripting_define_global_variables(const world *w)
+void scripting_define_global_object(void *ptr, char *name)
 {
-	lua_pushlightuserdata(g_L, (void *)w);
-	lua_setglobal(g_L, "g_world");
+	lua_pushlightuserdata(g_L, ptr);
+	lua_setglobal(g_L, name);
 }
 
 void scripting_init()
@@ -96,7 +103,8 @@ void scripting_init()
 		lua_newtable(g_L);
 		lua_settable(g_L, -3);
 	}
-	lua_setglobal(g_L, "event_handlers"); /* makes the event_handlers table availiable for everyone */
+
+	lua_setglobal(g_L, "event_handlers"); /* makes the event_handlers table availiable for everyone to register their stuff */
 }
 
 void scripting_close()
@@ -104,12 +112,12 @@ void scripting_close()
 	lua_close(g_L);
 }
 
-int push_event_args(SDL_Event *e, const int event_id)
+int push_event_args(SDL_Event *e)
 {
 	if (!e)
 		return 0;
 
-	switch (event_id)
+	switch (e->type)
 	{
 	case SDL_KEYDOWN:
 	case SDL_KEYUP:
@@ -126,105 +134,110 @@ int push_event_args(SDL_Event *e, const int event_id)
 		lua_pushinteger(g_L, e->button.state);
 		lua_pushinteger(g_L, e->button.clicks);
 		return 5;
+	case ENGINE_BLOCK_SET:
+	case ENGINE_BLOCK_ERASED:
+	case ENGINE_BLOCK_UDPATE:
+	case ENGINE_BLOCK_MOVE:
+		block_update_event *real_event = (block_update_event *)e;
+
+		lua_pushlightuserdata(g_L, real_event->target);
+
+		lua_pushinteger(g_L, real_event->target_x);
+		lua_pushinteger(g_L, real_event->target_y);
+
+		lua_pushinteger(g_L, real_event->target_layer_id);
+		lua_pushinteger(g_L, real_event->previous_id);
+		lua_pushinteger(g_L, real_event->new_id);
+
+		return 6;
+		// case ENGINE_BLOB_UPDATE:
+		// 	engine_event *engn_e = (engine_event *)e;
+
+		// 	lua_pushlightuserdata(g_L, engn_e->target);
+		// 	lua_pushlightuserdata(g_L, engn_e->actor);
+
+		// 	lua_pushinteger(g_L, engn_e->target_x);
+		// 	lua_pushinteger(g_L, engn_e->target_y);
+
+		// 	lua_pushinteger(g_L, engn_e->actor_x);
+		// 	lua_pushinteger(g_L, engn_e->actor_y);
+
+		// 	lua_pushinteger(g_L, engn_e->target_layer_id);
+		// 	lua_pushinteger(g_L, engn_e->actor_layer_id);
+
+		// 	lua_pushinteger(g_L, engn_e->blob_letter);
+		// 	lua_pushinteger(g_L, engn_e->reserve_flags);
+
+		// 	lua_pushlstring(g_L, (char *)engn_e->signal, sizeof(engn_e->signal));
+
+		// 	return 11;
 	}
 	return 0;
+}
+
+void call_handler(SDL_Event *e)
+{
+	if (lua_pcall(g_L, push_event_args(e), 0, 0) != 0)
+		printf("error calling a handler `f': %s\n", lua_tostring(g_L, -1));
 }
 
 int scripting_handle_event(SDL_Event *event, const int override_id)
 {
 	const int event_id = event ? event->type : override_id;
 
-	lua_getglobal(g_L, "event_handlers");
+	lua_getglobal(g_L, "event_handlers"); // get table of event handlers, contains table of handers where keys is block ids
 
-	lua_pushnil(g_L);
-	while (lua_next(g_L, -2) != 0)
+	lua_pushinteger(g_L, event_id); // get a table of handlers for certain event_id
+	lua_gettable(g_L, -2);
+
+	if (lua_istable(g_L, -1)) // if any handlers exists here
 	{
-		int id = lua_tonumber(g_L, -2);
-		if (lua_type(g_L, -1) == LUA_TTABLE && id == event_id)
+		if (is_user_event(event_id)) // if event is for internal engine purposes only
 		{
-			lua_pushnil(g_L);
-			while (lua_next(g_L, -2) != 0)
+			if (is_block_event(event_id)) // for block events
 			{
-				if (lua_type(g_L, -1) == LUA_TFUNCTION)
-					if (lua_pcall(g_L, push_event_args(event, event_id), 0, 0) != 0)
-						printf("error running function `f': %s\n", lua_tostring(g_L, -1));
-					else
-						;
+				block_update_event *real_event = (block_update_event *)event;
+				// select a new id to call needed handler
+				// lua_pushinteger(g_L, real_event->new_id);
+				// select a prev id to call needed handler
+				lua_pushinteger(g_L, real_event->previous_id);
+				lua_gettable(g_L, -2);
+
+				if (lua_isfunction(g_L, -1)) // call, if exists
+					call_handler(event);
 				else
 					lua_pop(g_L, 1);
 			}
 		}
-
-		lua_pop(g_L, 1);
+		else // if event is just a general sdl2 event, iterate through all handlers and call them all
+		{
+			lua_pushnil(g_L);
+			while (lua_next(g_L, -2) != 0)
+			{
+				if (lua_isfunction(g_L, -1)) // call, if exists
+					call_handler(event);
+				else
+					lua_pop(g_L, 1);
+			}
+		}
 	}
 
-	lua_pop(g_L, 1);
+	lua_pop(g_L, 2); // pop a table and his event_id out of my lua stack
 
 	return 0;
 }
 
 int scripting_load_file(const char *short_filename)
 {
-	/*
-	the function is expected to return a table, that contains a list of
-	all events, that this script is listening to, and a function that
-	will be called for each event
-
-	format of the table:
-
-	{
-		[EVENT_ID] = function(event_data)
-			-- do something
-		end
-	}
-
-	list of all possible events can be found in our docs
-	*/
-
 	char filename[MAX_PATH_LENGTH] = "resources/scripts/";
 	strcat(filename, short_filename);
-
 	int status = luaL_dofile(g_L, filename);
 
 	if (status != LUA_OK)
 	{
 		fprintf(stderr, "Lua error in %s : %s", filename, lua_tostring(g_L, -1));
-		lua_pop(g_L, 1); /* pop error message from the stack */
 		return FAIL;
 	}
-
-	// // lets get this table from the top of the stack
-	// int elements = lua_gettop(g_L);
-	// int type = lua_type(g_L, -1);
-
-	// if (type != LUA_TTABLE)
-	// {
-	// 	fprintf(stderr, "Lua error in %s : expected table at the top of the stack, got %s instead\n", filename, lua_typename(g_L, type));
-	// 	lua_pop(g_L, 1); /* pop error message from the stack */
-	// 	return FAIL;
-	// }
-
-	// lua_getglobal(g_L, "event_handlers");
-
-	// // iterate over the table and get all functions
-	// lua_pushnil(g_L);
-	// while (lua_next(g_L, -3) != 0) // -3 is returned table from a script, -2 is event handlers table
-	// {
-	// 	// check for correct types
-	// 	if (lua_type(g_L, -1) != LUA_TFUNCTION || lua_type(g_L, -2) != LUA_TNUMBER)
-	// 	{
-	// 		fprintf(stderr, "Lua error in %s : expected function and event id (number), got %s and %s instead\n", filename, lua_typename(g_L, lua_type(g_L, -1)), lua_typename(g_L, lua_type(g_L, -2)));
-	// 		continue;
-	// 	}
-
-	// 	// damn i cant do this
-	// 	// scripting_register_event(lua_tocfunction(g_L, -1), lua_tonumber(g_L, -2));
-
-	// 	lua_pop(g_L, 1);
-	// }
-
-	// // pop all elements from the stack
-	// lua_pop(g_L, elements);
 
 	return SUCCESS;
 }
@@ -236,6 +249,9 @@ void scripting_load_scripts(block_registry_t *reg)
 	for (int i = 0; i < length; i++)
 	{
 		const char *lua_file = reg->data[i].lua_script_filename;
+
+		lua_pushinteger(g_L, reg->data[i].block_sample.id);
+		lua_setglobal(g_L, "scripting_current_block_id");
 
 		if (lua_file)
 			scripting_load_file(lua_file);

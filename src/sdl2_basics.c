@@ -4,6 +4,7 @@
 #include "../stb/stb_image.h"
 
 #include "include/engine_types.h"
+#include "include/engine_events.h"
 
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
@@ -69,6 +70,12 @@ int init_graphics()
 		printf("init_graphics() error:[%s]\n", SDL_GetError());
 
 	SDL_SetRenderDrawColor(g_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+
+	int result = SDL_RegisterEvents(TOTAL_ENGINE_EVENTS);
+	status &= result == (Uint32)-1 ? 0 : 1;
+
+	if (!status)
+		printf("Not able to allocate enough user events\n");
 
 	return status;
 }

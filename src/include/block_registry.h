@@ -31,6 +31,7 @@
 
 typedef struct block_resources
 {
+	hash_table **all_fields;
 	block block_sample;
 
 	texture block_texture;
