@@ -1,6 +1,7 @@
 #include "include/lua_integration.h"
 #include "include/block_registry.h"
 
+#include "include/lua_drawing_functions.h"
 #include "include/lua_world_manipulation_functions.h"
 #include "include/lua_block_data_functions.h"
 #include "include/lua_registry_functions.h"
@@ -77,6 +78,12 @@ void scripting_register(lua_State *L)
 
 		{"read_registry_entry", lua_read_registry_entry},
 
+		{"render_rules_get_resolutions", lua_render_rules_get_resolutions},
+		{"render_rules_get_order", lua_render_rules_get_order},
+
+		{"render_rules_slice_get", lua_slice_get},
+		{"render_rules_slice_set", lua_slice_set},
+
 		{NULL, NULL}
 
 	};
@@ -84,6 +91,17 @@ void scripting_register(lua_State *L)
 	luaL_newlib(L, blockengine_lib); // creates a table with blockengine functions
 	lua_setglobal(L, "blockengine"); // sets the table as global variable "blockengine"
 									 // 0 objects on stack now
+}
+
+void scripting_check_arguments(lua_State *L, int num, ...)
+{
+	va_list valist;
+	va_start(valist, num);
+
+	for (int i = 1; i <= num; i++)
+		LUA_ARG_CHECK(L, i, va_arg(valist, int))
+
+	va_end(valist);
 }
 
 void scripting_define_global_object(void *ptr, char *name)

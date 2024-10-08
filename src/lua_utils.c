@@ -2,13 +2,7 @@
 
 int block_unpack(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 1 || !lua_isuserdata(L, 1))
-    {
-        lua_pushliteral(L, "expected a block");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 1, LUA_TLIGHTUSERDATA);
 
     block *b = lua_touserdata(L, 1);
     lua_pushinteger(L, b->id);
@@ -19,16 +13,13 @@ int block_unpack(lua_State *L)
 
 int get_keyboard_state(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 1 || !lua_istable(L, 1))
-    {
-        lua_pushliteral(L, "expected a table to fill");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 1, LUA_TTABLE);
 
     int len = 0;
     const Uint8 *keystate = SDL_GetKeyboardState(&len);
+
+    if (keystate == 0)
+        return 1;
 
     for (int i = 0; i < len; i++)
     {

@@ -2,16 +2,7 @@
 
 int lua_blob_create(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 3 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2) ||
-        !lua_isinteger(L, 3))
-    {
-        lua_pushliteral(L, "expected a block, a letter, and size");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 3, LUA_TLIGHTUSERDATA, LUA_TSTRING, LUA_TNUMBER);
 
     block *b = lua_touserdata(L, 1);
     char letter = lua_tostring(L, 2)[0];
@@ -24,15 +15,7 @@ int lua_blob_create(lua_State *L)
 
 int lua_blob_remove(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2))
-    {
-        lua_pushliteral(L, "expected a block and a letter");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TSTRING);
 
     block *b = lua_touserdata(L, 1);
     char letter = lua_tostring(L, 2)[0];
@@ -46,16 +29,7 @@ int lua_blob_remove(lua_State *L)
 
 int lua_blob_set_str(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2) ||
-        !lua_isstring(L, 3))
-    {
-        lua_pushliteral(L, "expected a block, a letter and a string");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 3, LUA_TLIGHTUSERDATA, LUA_TSTRING, LUA_TSTRING);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -71,23 +45,13 @@ int lua_blob_set_str(lua_State *L)
 
 int lua_blob_set_i(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2) ||
-        !(lua_isinteger(L, 3) || lua_isnumber(L, 3)))
-    {
-        lua_pushliteral(L, "expected a block, a letter and integer / number");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 3, LUA_TLIGHTUSERDATA, LUA_TSTRING, LUA_TNUMBER);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
+    int value = lua_tointeger(L, 3);
 
-    int number = lua_tointeger(L, 3);
-
-    int result = data_set_i(b, letter, number);
+    int result = data_set_i(b, letter, value);
 
     lua_pushboolean(L, result);
 
@@ -96,16 +60,7 @@ int lua_blob_set_i(lua_State *L)
 
 int lua_blob_set_s(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2) ||
-        !(lua_isinteger(L, 3) || lua_isnumber(L, 3)))
-    {
-        lua_pushliteral(L, "expected a block, a letter and integer / number");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 3, LUA_TLIGHTUSERDATA, LUA_TSTRING, LUA_TNUMBER);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -120,16 +75,7 @@ int lua_blob_set_s(lua_State *L)
 }
 int lua_blob_set_b(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2) ||
-        !(lua_isinteger(L, 3) || lua_isnumber(L, 3)))
-    {
-        lua_pushliteral(L, "expected a block, a letter and integer / number");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 3, LUA_TLIGHTUSERDATA, LUA_TSTRING, LUA_TNUMBER);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -147,15 +93,7 @@ int lua_blob_set_b(lua_State *L)
 
 int lua_blob_get_str(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2))
-    {
-        lua_pushliteral(L, "expected a block and a letter");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TSTRING);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -171,15 +109,7 @@ int lua_blob_get_str(lua_State *L)
 
 int lua_blob_get_i(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2))
-    {
-        lua_pushliteral(L, "expected a block and a letter");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TSTRING);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -195,15 +125,7 @@ int lua_blob_get_i(lua_State *L)
 
 int lua_blob_get_s(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2))
-    {
-        lua_pushliteral(L, "expected a block and a letter");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TSTRING);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -219,15 +141,7 @@ int lua_blob_get_s(lua_State *L)
 
 int lua_blob_get_b(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2))
-    {
-        lua_pushliteral(L, "expected a block and a letter");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TSTRING);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -243,15 +157,7 @@ int lua_blob_get_b(lua_State *L)
 
 int lua_blob_get_number(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2))
-    {
-        lua_pushliteral(L, "expected a block and a letter");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TSTRING);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];
@@ -266,16 +172,7 @@ int lua_blob_get_number(lua_State *L)
 }
 int lua_blob_set_number(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 3 ||
-        !lua_isuserdata(L, 1) ||
-        !lua_isstring(L, 2) ||
-        !(lua_isinteger(L, 3) || lua_isnumber(L, 3)))
-    {
-        lua_pushliteral(L, "expected a block, a letter and integer / number");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 3, LUA_TLIGHTUSERDATA, LUA_TSTRING, LUA_TNUMBER);
 
     block *b = lua_touserdata(L, 1);
     const char letter = lua_tostring(L, 2)[0];

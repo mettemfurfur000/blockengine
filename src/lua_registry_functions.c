@@ -2,13 +2,7 @@
 
 int lua_read_registry_entry(lua_State *L)
 {
-    int n = lua_gettop(L); /* number of arguments */
-
-    if (n != 2 || !lua_isuserdata(L, 1) || !lua_isnumber(L, 2))
-    {
-        lua_pushliteral(L, "expected registry and block id");
-        lua_error(L);
-    }
+    scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TNUMBER);
 
     block_registry_t *reg = (block_registry_t *)lua_touserdata(L, 1);
     int block_id = lua_tonumber(L, 2);
