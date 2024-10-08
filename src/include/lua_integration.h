@@ -22,7 +22,10 @@
 
 #define STRUCT_SETFIELD(L, object, field, expected_type, converter) \
     if (lua_getfield(L, -1, #field) == expected_type)               \
+    {                                                               \
         object.field = converter(L, -1);                            \
+        lua_pop(L, 1);                                              \
+    }                                                               \
     else                                                            \
         LUA_RAISE_ERROR(L, "STRUCT_SETFIELD: expected a " #expected_type "for a field" #field)
 

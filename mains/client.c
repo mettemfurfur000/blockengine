@@ -178,13 +178,6 @@ int main(int argc, char *argv[])
 	if (test_world_init(&g_world, g_reg) == FAIL)
 		return 1;
 
-	scripting_init();
-
-	scripting_define_global_object(g_world, "g_world");
-	scripting_define_global_object(g_reg, "g_reg");
-
-	scripting_load_scripts(g_reg);
-
 	unsigned long frame = 0;
 
 	const int target_fps = 60;
@@ -194,6 +187,14 @@ int main(int argc, char *argv[])
 	const int tick_period = 1000 / target_tps;
 
 	client_render_rules rules = prepare_rendering_rules();
+
+	scripting_init();
+
+	scripting_define_global_object(g_world, "g_world");
+	scripting_define_global_object(g_reg, "g_reg");
+	scripting_define_global_object(&rules, "g_render_rules");
+
+	scripting_load_scripts(g_reg);
 
 	SDL_Event e;
 

@@ -41,7 +41,7 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [x] Basic passive scripts
    - [x] Functions for simple operations on blocks
    - [x] Block registry block querry
-   - [ ] Give lua access to rendering rules (camera pos, etc)
+   - [x] Give lua access to rendering rules (camera pos, etc)
    - [ ] Allow lua to create or delete world layers
    - [ ] Allow lua to load/unload chunks, forced or on-demand
    - [x] Custom events for block interactions

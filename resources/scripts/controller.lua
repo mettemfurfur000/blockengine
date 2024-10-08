@@ -26,10 +26,25 @@ local function get_walking_frame(delta)
     return 1 + math.fmod(controller.tick, 2)
 end
 
+g_block_size = 16
+
+local function camera_set_target(pos)
+    local slice = blockengine.render_rules_slice_get(g_render_rules, 1)
+
+    local actual_block_width = slice.mult * g_block_size
+
+    slice.x = (pos.x + 0.5) * actual_block_width - slice.w / 2
+    slice.y = (pos.y + 0.5) * actual_block_width - slice.h / 2
+
+    blockengine.render_rules_slice_set(g_render_rules, 1, slice)
+end
+
 wrap_register(EVENT_IDS.INIT, function(sym, mod, state, rep)
     local pos, p            = find_block(16, 16, scripting_current_block_id)
     controller.player.pos   = pos
     controller.player.block = p
+
+    camera_set_target(pos)
 
     print("initialized and found a player at " .. pos.x .. "," .. pos.y)
 end)
@@ -63,6 +78,8 @@ wrap_register(EVENT_IDS.TICK, function(sym, mod, state, rep)
     else
         controller.player.pos = move_block_g(controller.player.pos, delta)
     end
+
+    camera_set_target(controller.player.pos)
 
     controller.player.block = util_get_block(controller.player.pos)
 
