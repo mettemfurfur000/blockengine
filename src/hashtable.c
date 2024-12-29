@@ -22,20 +22,26 @@ u8 blob_dup(blob *dest, blob src)
 		return FAIL;
 
 	SAFE_FREE(dest->ptr)
-
 	dest->ptr = calloc(src.size, 1);
 	memcpy(dest->ptr, src.ptr, src.size);
+	dest->size = src.size;
+
 	return SUCCESS;
 }
 
 u8 blob_cmp(blob a, blob b)
 {
 	if (a.size != b.size)
+		return -1;
+
+	if (a.ptr == b.ptr)
 		return 0;
+
 	for (int i = 0; i < a.size; i++)
 		if (a.ptr[i] != b.ptr[i])
 			return a.ptr[i] - b.ptr[i];
-	return 1;
+
+	return 0;
 }
 
 hash_node *alloc_node()

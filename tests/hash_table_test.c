@@ -7,7 +7,7 @@ void blob_generate(blob *b, u32 seed)
 {
 	SAFE_FREE(b->ptr);
 
-	b->size = seed % 1000;
+	b->size = seed % 32;
 	b->ptr = malloc(b->size);
 
 	srand(seed);
@@ -23,7 +23,6 @@ int test_rand_fill_and_remove()
 
 	blob key = {};
 	blob val = {};
-
 	blob ret = {};
 
 	for (int i = 1; i < 100; i++)
@@ -51,73 +50,75 @@ int test_rand_fill_and_remove()
 	return status;
 }
 
-// int test_hash_table_fill()
-// {
-// 	hash_table **table = alloc_table();
-// 	char key[128];
-// 	char val[128];
-// 	char *ret;
-// 	int rand_val;
-// 	int status = 1;
-// 	int debug = 55;
+int test_hash_table_fill()
+{
+	hash_node **table = alloc_table();
 
-// 	const int tests = 1000;
-// 	double avg_random_get = 0;
-// 	float filling_time;
+	blob key = {};
+	blob val = {};
+	blob ret = {};
 
-// 	int bench_start_time;
+	int rand_val;
+	int status = 1;
+	int debug = 55;
 
-// 	bench_start_time = bench_start();
+	const int tests = 50000;
+	double avg_random_get = 0;
+	float filling_time;
 
-// 	for (int i = 0; i < tests; i++)
-// 	{
-// 		rand_val = rand();
+	int bench_start_time;
 
-// 		blob_generate(key, rand_val);
+	bench_start_time = bench_start();
 
-// 		blob_generate(val, rand_val);
+	for (int i = 0; i < tests; i++)
+	{
+		rand_val = rand();
 
-// 		put_entry(table, key, val);
-// 	}
+		blob_generate(&key, rand_val);
 
-// 	filling_time = bench_end(bench_start_time);
+		blob_generate(&val, rand_val);
 
-// #define RUNS 5
-// 	for (int j = 0; j < RUNS; j++)
-// 	{
-// 		bench_start_time = bench_start();
+		put_entry(table, key, val);
+	}
 
-// 		for (int i = 0; i < tests; i++)
-// 		{
-// 			rand_val = rand();
+	filling_time = bench_end(bench_start_time);
 
-// 			blob_generate(key, rand_val);
+#define RUNS 5
+	for (int j = 0; j < RUNS; j++)
+	{
+		bench_start_time = bench_start();
 
-// 			blob_generate(val, rand_val);
+		for (int i = 0; i < tests; i++)
+		{
+			rand_val = rand();
 
-// 			ret = get_entry(table, key);
+			blob_generate(&key, rand_val);
 
-// 			if (ret)
-// 				debug &= (strcmp(val, ret) == 0);
-// 		}
-// 		avg_random_get += bench_end(bench_start_time);
-// 	}
-// 	avg_random_get = avg_random_get / RUNS;
-// 	int gets_per_second = (1 / avg_random_get) * tests;
+			blob_generate(&val, rand_val);
 
-// 	free_table(table);
+			ret = get_entry(table, key);
 
-// 	printf("filling time = %f, average get time: %f, gets per second: %d\n", filling_time, avg_random_get, gets_per_second);
+			if (ret.ptr)
+				debug &= (blob_cmp(val, ret) == 0);
+		}
+		avg_random_get += bench_end(bench_start_time);
+	}
+	avg_random_get = avg_random_get / RUNS;
+	int gets_per_second = (1 / avg_random_get) * tests;
 
-// 	return status;
-// }
+	free_table(table);
+
+	printf("filling time = %f, average get time: %f, gets per second: %d\n", filling_time, avg_random_get, gets_per_second);
+
+	return status;
+}
 
 int test_hash_table_all()
 {
 	INIT_TESTING()
 	printf("test_hash_table_all:\n");
 	RUN_TEST(test_rand_fill_and_remove)
-	// RUN_TEST(test_hash_table_fill)
+	RUN_TEST(test_hash_table_fill)
 
 	FINISH_TESTING()
 }
