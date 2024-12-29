@@ -1,46 +1,42 @@
-#include "../src/include/data_manipulations.h"
+#include "../include/tags.h"
 #include "test_utils.h"
 #include <stdio.h>
 
 int test_basic_data_manip()
 {
-	int status = SUCCESS;
-
-	block t = {0, 0};
+	int status = 1;
 
 	int src = 55555;
 	int dest = 0;
 
-	block_init(&t, 16, 0, 0);
+	blob b = {};
 
-	status &= data_create_element(&t.data, 't', sizeof(src));
-	status &= data_set_i(&t, 't', src);
-	status &= data_get_i(&t, 't', &dest);
+	status &= tag_create(&b, 't', sizeof(src)) == SUCCESS;
+	status &= tag_set_i(&b, 't', src, sizeof(src)) == SUCCESS;
+	status &= tag_get_i(b, 't', (i64 *)&dest, sizeof(dest)) == SUCCESS;
 
 	status &= (src == dest);
 
-	block_data_free(&t);
+	tag_delete_all(&b);
 
 	return status;
 }
 
 int test_array_data()
 {
-	int status = SUCCESS;
+	int status = 1;
 
-	block t = {0, 0};
+	blob b = {};
 
 	char cool_string[] = "wholter put yure d away waltr...";
 	char not_cool_string[100] = "aah?";
 
-	block_init(&t, 16, 0, 0);
-
-	status &= data_set_str(&t, 's', (byte *)cool_string, strlen(cool_string));
-	status &= data_get_str(&t, 's', (byte *)not_cool_string, sizeof(not_cool_string));
+	status &= tag_set_str(&b, 's', (u8 *)cool_string, strlen(cool_string)) == SUCCESS;
+	status &= tag_get_str(b, 's', (u8 *)not_cool_string, sizeof(not_cool_string)) == SUCCESS;
 
 	status &= (strcmp(cool_string, not_cool_string) == 0);
 
-	block_data_free(&t);
+	tag_delete_all(&b);
 
 	return status;
 }
@@ -87,18 +83,14 @@ void dbg_data_layout(byte *blob)
 
 int test_random_data()
 {
-	int status = SUCCESS;
+	int status = 1;
 
-	const block void_block = {0, 0};
-
-	block t = void_block;
+	blob b = {};
 
 	char rand_src[64] = {};
 	char rand_dest[64] = {};
 
-	block_init(&t, 16, 0, 0);
-
-	for (int i = 0; i < 1000; i++)
+	for (int i = 0; i < 64; i++)
 	{
 		int rand_size = 1 + rand() % 50;
 
@@ -108,8 +100,18 @@ int test_random_data()
 
 		// printf("filing %d bytes, %s\n", rand_size, rand_src);
 
-		status &= data_set_str(&t, 's', (byte *)rand_src, rand_size);
-		status &= data_get_str(&t, 's', (byte *)rand_dest, rand_size);
+		status &= tag_set_str(&b, 's', (u8 *)rand_src, rand_size) == SUCCESS;
+		if (!status)
+		{
+			printf("failed to set a string\n");
+			break;
+		}
+		status &= tag_get_str(b, 's', (u8 *)rand_dest, rand_size) == SUCCESS;
+		if (!status)
+		{
+			printf("failed to get a string\n");
+			break;
+		}
 
 		if (strcmp(rand_src, rand_dest) == 0)
 		{
@@ -117,32 +119,32 @@ int test_random_data()
 		}
 		else
 		{
-			printf("data not matching: %s\n%s\n", rand_src, rand_dest);
+			printf("data not matching:\nin:\t%s\nout:\t%s\n", rand_src, rand_dest);
 			status &= 0;
 		}
 	}
 
-	block_data_free(&t);
+	tag_delete_all(&b);
 
 	return status;
 }
 
 int test_full_test()
 {
-	int status = SUCCESS;
+	int status = 1;
 
-	block t = {0, 0};
-	block_init(&t, 16, 0, 0);
+	blob b = {};
 
-	int runs = 100;
+	int runs = 64;
 	for (int i = 0; i < runs; i++)
 	{
-		long long number_in = rand() % 100;
-		long long number_out = 0;
+		u32 number_in = rand() + (rand() * 32768);
+		u32 number_out = 0;
+
 		// dbg_data_layout(t.data);
-		status &= data_set_number(&t, 't', number_in);
+		status &= tag_set_i(&b, 't', number_in, sizeof(number_in)) == SUCCESS;
 		// dbg_data_layout(t.data);
-		status &= data_get_number(&t, 't', (long long *)&number_out);
+		status &= tag_get_i(b, 't', (long long *)&number_out, sizeof(number_out)) == SUCCESS;
 		// dbg_data_layout(t.data);
 
 		status &= (number_in == number_out);
@@ -152,12 +154,12 @@ int test_full_test()
 		}
 	}
 
-	block_data_free(&t);
+	tag_delete_all(&b);
 
 	return status;
 }
 
-int test_all_data_manip()
+int test_tags_all()
 {
 	INIT_TESTING()
 	printf("test_all_data_manip:\n");

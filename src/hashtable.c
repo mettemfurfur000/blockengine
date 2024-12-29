@@ -10,6 +10,19 @@ unsigned long hash_function(blob key)
 	return hash % TABLE_SIZE;
 }
 
+void blob_generate(blob *b, u32 seed)
+{
+	SAFE_FREE(b->ptr);
+
+	b->size = seed % 32;
+	b->ptr = malloc(b->size);
+
+	srand(seed);
+
+	for (int i = 0; i < b->size; i++)
+		b->ptr[i] = (char)(rand() % 256);
+}
+
 blob blobify(char *str)
 {
 	blob b = {.str = str, .length = strlen(str)};

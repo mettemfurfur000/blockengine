@@ -35,6 +35,7 @@ typedef struct hash_node
 
 unsigned long hash_function(blob key);
 hash_node **alloc_table();
+void blob_generate(blob *b, u32 seed);
 
 blob blobify(char *str);
 u8 blob_dup(blob *dest, blob src);
