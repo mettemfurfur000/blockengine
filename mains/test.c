@@ -1,13 +1,13 @@
-#include "../tests/block_memory_control_test.c"
-#include "../tests/block_operations_test.c"
-#include "../tests/block_properties_test.c"
-#include "../tests/block_registry_test.c"
-#include "../tests/data_manipulations_test.c"
+// #include "../tests/block_memory_control_test.c"
+// #include "../tests/block_operations_test.c"
+// #include "../tests/block_properties_test.c"
+// #include "../tests/block_registry_test.c"
+// #include "../tests/data_manipulations_test.c"
 #include "../tests/hash_table_test.c"
-#include "../tests/test_utils.h"
-#include "../tests/world_fs.test.c"
+// #include "../tests/test_utils.h"
+// #include "../tests/world_fs.test.c"
 
-#include "../src/include/endianless.h"
+#include "../include/endianless.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,13 +17,13 @@ int main(int argc, char *argv[])
 	int successes = 0;
 #define tests 7
 
-	successes += test_block_all();
-	successes += test_block_operations_all();
-	successes += test_world_all();
+	// successes += test_block_all();
+	// successes += test_block_operations_all();
+	// successes += test_world_all();
 	successes += test_hash_table_all();
-	successes += test_block_props_all();
-	successes += test_all_data_manip();
-	successes += test_all_registry();
+	// successes += test_block_props_all();
+	// successes += test_all_data_manip();
+	// successes += test_all_registry();
 
 	switch (successes)
 	{

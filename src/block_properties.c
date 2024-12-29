@@ -1,4 +1,4 @@
-#include "include/hash_table.h"
+#include "../include/block_properties.h"
 
 char *strtok_take_whole_line()
 {
@@ -45,7 +45,7 @@ int read_properties(FILE *f, char *key, char *value)
 	return !feof(f);
 }
 
-int load_properties(const char *filename, hash_table **table)
+int load_properties(const char *filename, hash_node **table)
 {
 	FILE *f;
 	char key[256] = {0};
@@ -63,7 +63,7 @@ int load_properties(const char *filename, hash_table **table)
 	do
 	{
 		status = read_properties(f, key, value);
-		put_entry(table, key, value);
+		put_entry(table, blobify(key), blobify(value));
 	} while (status);
 
 	fclose(f);
@@ -71,11 +71,11 @@ int load_properties(const char *filename, hash_table **table)
 	return SUCCESS;
 }
 
-int save_properties(const char *filename, hash_table **table)
+int save_properties(const char *filename, hash_node **table)
 {
 	FILE *f = fopen(filename, "wb");
-	hash_table *node;
-	hash_table *next_node;
+	hash_node *node;
+	hash_node *next_node;
 
 	if (f == NULL)
 	{
@@ -89,7 +89,7 @@ int save_properties(const char *filename, hash_table **table)
 		while (node != NULL)
 		{
 			next_node = node->next;
-			write_properties(f, node->key, node->value);
+			write_properties(f, node->key.str, node->value.str);
 			node = next_node;
 		}
 	}

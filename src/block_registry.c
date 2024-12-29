@@ -1,11 +1,11 @@
-#include "include/block_registry.h"
+#include "../include/block_registry.h"
 
 #define EVAL_SIZE_MATCH(v, t) v >> (sizeof(t) * 8 - 8)
 #define RETURN_MATCHING_SIZE(v, t) \
 	if (EVAL_SIZE_MATCH(v, t))     \
 		return sizeof(t);
 // some kind of runtime type detection... returns amout of bytes, occupied by a number
-byte length(long long value)
+u8 length(u64 value)
 {
 	RETURN_MATCHING_SIZE(value, long long)
 	RETURN_MATCHING_SIZE(value, long)
@@ -15,14 +15,14 @@ byte length(long long value)
 	return 1;
 }
 
-void strip_digit(byte *dest, long long value, int actual_length)
+void strip_digit(u8 *dest, u64 value, u32 actual_length)
 {
-	byte *value_p = (byte *)&value;
-	for (int i = 0; i < actual_length; i++)
+	u8 *value_p = (u8 *)&value;
+	for (u32 i = 0; i < actual_length; i++)
 		dest[i] = value_p[i];
 }
 
-int str_to_enum(char *type_str)
+u32 str_to_enum(char *type_str)
 {
 	if (!strcmp(type_str, "digit"))
 		return T_DIGIT;
@@ -39,20 +39,20 @@ int str_to_enum(char *type_str)
 	return T_UNKNOWN;
 }
 
-int get_length_to_alloc(long long value, int type)
+u32 get_length_to_alloc(u64 value, u32 type)
 {
 	switch (type)
 	{
 	case T_DIGIT:
 		return length(value);
 	case T_LONG:
-		return sizeof(long);
+		return sizeof(u64);
 	case T_INT:
-		return sizeof(int);
+		return sizeof(u32);
 	case T_SHORT:
-		return sizeof(short);
+		return sizeof(u16);
 	case T_BYTE:
-		return sizeof(byte);
+		return sizeof(u8);
 	default:
 		return length(value);
 	}
@@ -75,23 +75,23 @@ int get_length_to_alloc(long long value, int type)
 //
 // other numerical types will save their length in bytes, even if you pass it with value of 0
 
-int make_block_data_from_string(const char *str_to_cpy, byte **out_data_ptr)
+u8 make_block_data_from_string(const char *str_to_cpy, blob *b)
 {
 	if (!str_to_cpy)
 		return FAIL;
 
-	if (!out_data_ptr)
+	if (!b)
 		return FAIL;
 
 	char character;
-	byte data_buffer[256] = {0};
-	byte data_to_load[256] = {0};
+	u8 data_buffer[256] = {0};
+	u8 data_to_load[256] = {0};
 
 	data_to_load[0] = 0;   // size byte
-	int data_iterator = 1; // starts with 1 because of size byte at start
+	u32 data_iterator = 0; // starts with 1 because of size u8 at start
 
-	long long value;
-	int value_length;
+	u64 value;
+	u32 value_length;
 
 	char *str = malloc(1 + strlen(str_to_cpy));
 	strcpy(str, str_to_cpy);
@@ -110,7 +110,7 @@ int make_block_data_from_string(const char *str_to_cpy, byte **out_data_ptr)
 		if (strcmp(token, "}") == 0)
 			goto block_data_exit;
 
-		int type = str_to_enum(token);
+		u32 type = str_to_enum(token);
 
 		token = strtok(NULL, " \n"); // character
 
@@ -140,7 +140,7 @@ int make_block_data_from_string(const char *str_to_cpy, byte **out_data_ptr)
 
 			value_length = get_length_to_alloc(value, type);
 
-			make_endianless((byte *)&value, value_length);
+			make_endianless((u8 *)&value, value_length);
 			memcpy(data_buffer, &value, value_length);
 			strip_digit(data_buffer, value, value_length);
 		}
@@ -149,21 +149,19 @@ int make_block_data_from_string(const char *str_to_cpy, byte **out_data_ptr)
 		data_iterator++;
 		data_to_load[data_iterator] = value_length;
 		data_iterator++;
-		for (int i = 0; i < value_length; i++, data_iterator++)
+		for (u32 i = 0; i < value_length; i++, data_iterator++)
 			data_to_load[data_iterator] = data_buffer[i];
-
-		if (data_iterator > 255)
-			goto block_data_exit;
 	}
 block_data_exit:
-	if (data_iterator == 1) // ok, no data
+	if (data_iterator == 0) // ok, no data
 		return SUCCESS;
 
-	data_to_load[0] = data_iterator - 1; // writing size byte
+	// data_to_load[0] = data_iterator - 1; // writing size byte
+	b->size = data_iterator;
 
-	*out_data_ptr = (byte *)malloc(data_iterator);
+	b->ptr = (u8 *)malloc(data_iterator);
 
-	memcpy(*out_data_ptr, data_to_load, data_iterator);
+	memcpy(b->ptr, data_to_load, data_iterator);
 
 	free(str);
 
@@ -179,61 +177,49 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 */
 
 #define DECLARE_DEFAULT_FLAG_HANDLER(name, flag)                                              \
-	int block_res_##name##_handler(const char *data, block_resources *dest)                   \
+	u8 block_res_##name##_handler(const char *data, block_resources *dest)                    \
 	{                                                                                         \
 		FLAG_CONFIGURE(dest->flags, flag, atoi(data) ? 1 : 0, strcmp(data, clean_token) == 0) \
 		return SUCCESS;                                                                       \
 	}
 
-#define DECLARE_DEFAULT_CHAR_FIELD_HANDLER(name)                            \
-	int block_res_##name##_handler(const char *data, block_resources *dest) \
-	{                                                                       \
-		if (!data)                                                          \
-			return FAIL;                                                    \
-		if (strcmp(data, clean_token) == 0)                                 \
-		{                                                                   \
-			dest->name = 0;                                                 \
-			return SUCCESS;                                                 \
-		}                                                                   \
-		dest->name = data[0];                                               \
-		return SUCCESS;                                                     \
+#define DECLARE_DEFAULT_CHAR_FIELD_HANDLER(name)                           \
+	u8 block_res_##name##_handler(const char *data, block_resources *dest) \
+	{                                                                      \
+		if (!data)                                                         \
+			return FAIL;                                                   \
+		if (strcmp(data, clean_token) == 0)                                \
+		{                                                                  \
+			dest->name = 0;                                                \
+			return SUCCESS;                                                \
+		}                                                                  \
+		dest->name = data[0];                                              \
+		return SUCCESS;                                                    \
 	}
 
 const static char clean_token[] = "??clean??";
 
-int block_res_id_handler(const char *data, block_resources *dest)
+u8 block_res_id_handler(const char *data, block_resources *dest)
 {
 	if (!data)
 		return FAIL;
 
-	if (strcmp(data, clean_token) == 0)
-	{
-		dest->block_sample.id = 0;
-		return SUCCESS;
-	}
-
-	int id = atoi(data);
-
-	dest->block_sample.id = id;
+	dest->id = strcmp(data, clean_token) == 0 ? 0 : atoi(data);
 
 	return SUCCESS;
 }
 
-int block_res_data_handler(const char *data, block_resources *dest)
+u8 block_res_data_handler(const char *data, block_resources *dest)
 {
 	if (!data)
 		return FAIL;
 
-	if (strcmp(data, clean_token) == 0)
-	{
-		block_data_free(&dest->block_sample);
-		return SUCCESS;
-	}
-
-	return make_block_data_from_string(data, &dest->block_sample.data);
+	return strcmp(data, clean_token) == 0
+			   ? tag_delete_all(&dest->tags)
+			   : make_block_data_from_string(data, &dest->tags);
 }
 
-int block_res_texture_handler(const char *data, block_resources *dest)
+u8 block_res_texture_handler(const char *data, block_resources *dest)
 {
 	if (!data)
 		return FAIL;
@@ -250,7 +236,7 @@ int block_res_texture_handler(const char *data, block_resources *dest)
 	return texture_load(&dest->block_texture, texture_full_path);
 }
 
-int block_res_fps_handler(const char *data, block_resources *dest)
+u8 block_res_fps_handler(const char *data, block_resources *dest)
 {
 	if (!data)
 		return FAIL;
@@ -261,7 +247,7 @@ int block_res_fps_handler(const char *data, block_resources *dest)
 		return SUCCESS;
 	}
 
-	int fps = atoi(data);
+	u32 fps = atoi(data);
 	dest->frames_per_second = fps;
 	return SUCCESS;
 }
@@ -269,41 +255,12 @@ int block_res_fps_handler(const char *data, block_resources *dest)
 DECLARE_DEFAULT_FLAG_HANDLER(ignore_type, B_RES_FLAG_IGNORE_TYPE)
 DECLARE_DEFAULT_FLAG_HANDLER(position_based_type, B_RES_FLAG_RANDOM_POS)
 
-// int block_res_anim_controller_handler(const char *data, block_resources *dest)
-// {
-// 	if (!data)
-// 		return FAIL;
-
-// 	if (strcmp(data, clean_token) == 0)
-// 	{
-// 		dest->anim_controller = 0;
-// 		return SUCCESS;
-// 	}
-
-// 	dest->anim_controller = data[0];
-// 	return SUCCESS;
-// }
-
-// int block_res_type_controller_handler(const char *data, block_resources *dest)
-// {
-// 	if (!data)
-// 		return FAIL;
-
-// 	if (strcmp(data, clean_token) == 0)
-// 	{
-// 		dest->type_controller = 0;
-// 		return SUCCESS;
-// 	}
-
-// 	dest->type_controller = data[0];
-// 	return SUCCESS;
-// }
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(anim_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(type_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(flip_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(rotation_controller)
 
-int block_res_lua_script_handler(const char *data, block_resources *dest)
+u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 {
 	if (!data)
 		return FAIL;
@@ -314,7 +271,7 @@ int block_res_lua_script_handler(const char *data, block_resources *dest)
 		return SUCCESS;
 	}
 
-	int len = strlen(data);
+	u32 len = strlen(data);
 	dest->lua_script_filename = malloc(len + 1);
 	memcpy(dest->lua_script_filename, data, len + 1);
 
@@ -344,12 +301,12 @@ const static resource_entry_handler res_handlers[] = {
 
 };
 
-const int TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
+const u32 TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
-int parse_block_resources_from_file(char *file_path, block_resources *dest)
+u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 {
-	hash_table **properties = alloc_table();
-	int status = SUCCESS;
+	hash_node **properties = alloc_table();
+	u32 status = SUCCESS;
 
 	if (!load_properties(file_path, properties))
 	{
@@ -359,21 +316,21 @@ int parse_block_resources_from_file(char *file_path, block_resources *dest)
 		return status;
 	}
 
-	put_entry(properties, "source_filename", file_path);
+	put_entry(properties, blobify("source_filename"), blobify(file_path));
 
 	// also include a full file in block resources, for whatever reason
 	dest->all_fields = properties;
 
-	char *entry = 0;
+	blob entry = {};
 
 	vec_str_t seen_entries;
 	vec_init(&seen_entries);
 
-	for (int i = 0; i < TOTAL_HANDLERS; i++)
+	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
 	{
-		entry = get_entry(properties, res_handlers[i].name);
+		entry = get_entry(properties, blobify(res_handlers[i].name));
 
-		if (!entry)
+		if (!entry.ptr)
 		{
 			if (res_handlers[i].is_critical)
 			{
@@ -384,7 +341,7 @@ int parse_block_resources_from_file(char *file_path, block_resources *dest)
 			continue;
 		}
 		// check for dependencies
-		for (int j = 0; j < sizeof(res_handlers[i].dependencies) / sizeof(void *); j++)
+		for (u32 j = 0; j < sizeof(res_handlers[i].dependencies) / sizeof(void *); j++)
 		{
 			char *dep = res_handlers[i].dependencies[j];
 			if (!dep)
@@ -396,7 +353,7 @@ int parse_block_resources_from_file(char *file_path, block_resources *dest)
 				status = FAIL;
 				break;
 			}
-			int k = 0;
+			u32 k = 0;
 			vec_find(&seen_entries, dep, k);
 			if (k == -1)
 			{
@@ -410,7 +367,7 @@ int parse_block_resources_from_file(char *file_path, block_resources *dest)
 
 		// check for incompatibilities
 		// basicly same as incompatibilities but instead of requiring certain fields it skips them
-		for (int j = 0; j < sizeof(res_handlers[i].incompabilities) / sizeof(void *); j++)
+		for (u32 j = 0; j < sizeof(res_handlers[i].incompabilities) / sizeof(void *); j++)
 		{
 			char *inc = res_handlers[i].incompabilities[j];
 			if (!inc)
@@ -419,7 +376,7 @@ int parse_block_resources_from_file(char *file_path, block_resources *dest)
 			if (seen_entries.length == 0)
 				continue;
 
-			int k = 0;
+			u32 k = 0;
 			vec_find(&seen_entries, inc, k);
 			if (k == -1)
 				continue;
@@ -429,9 +386,9 @@ int parse_block_resources_from_file(char *file_path, block_resources *dest)
 			break;
 		}
 
-		if (res_handlers[i].function(entry, dest) == FAIL)
+		if (res_handlers[i].function(entry.str, dest) == FAIL)
 		{
-			printf("Error in \"%s\": handler \"%s\" failed to process this data: %s\n", file_path, res_handlers[i].name, entry);
+			printf("Error in \"%s\": handler \"%s\" failed to process this data: %s\n", file_path, res_handlers[i].name, entry.str);
 			status = FAIL;
 			break;
 		}
@@ -442,16 +399,16 @@ int parse_block_resources_from_file(char *file_path, block_resources *dest)
 	return status;
 }
 
-int is_already_in_registry(block_registry_t *reg, block_resources *br)
+u32 is_already_in_registry(block_registry_t *reg, block_resources *br)
 {
-	for (int i = 0; i < reg->length; i++)
-		if (br->block_sample.id == reg->data[i].block_sample.id)
+	for (u32 i = 0; i < reg->length; i++)
+		if (br->id == reg->data[i].id)
 			return SUCCESS;
 
 	return FAIL;
 }
 
-int read_block_registry(const char *folder, block_registry_t *reg)
+u32 read_block_registry(const char *folder, block_registry_t *reg)
 {
 	DIR *directory;
 	struct dirent *entry;
@@ -466,7 +423,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 	}
 
 	// push a default void block with id 0
-	block_resources filler_entry = {.block_sample = {.id = 0, .data = 0}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
+	block_resources filler_entry = {.id = 0, .tags = {{}, {}}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
 	(void)vec_push(reg, filler_entry);
 
 	while ((entry = readdir(directory)) != NULL)
@@ -500,18 +457,18 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 
 	sort_by_id(reg);
 
-	int orig_length = reg->length;
+	u32 orig_length = reg->length;
 
-	for (int i = 1; i < orig_length; i++)
+	for (u32 i = 1; i < orig_length; i++)
 	{
-		int block_prev_id = reg->data[i - 1].block_sample.id;
-		int block_cur_id = reg->data[i].block_sample.id;
+		u32 block_prev_id = reg->data[i - 1].id;
+		u32 block_cur_id = reg->data[i].id;
 
 		if (block_prev_id + 1 != block_cur_id)
 		{
-			for (int j = block_prev_id; j < block_cur_id - 1; j++)
+			for (u32 j = block_prev_id; j < block_cur_id - 1; j++)
 			{
-				filler_entry.block_sample.id = j;
+				filler_entry.id = j;
 				printf("adding a filler entry with an id %d\n", j);
 				(void)vec_push(reg, filler_entry);
 			}
@@ -528,7 +485,7 @@ int read_block_registry(const char *folder, block_registry_t *reg)
 
 int __b_cmp(const void *a, const void *b)
 {
-	return ((block_resources *)a)->block_sample.id > ((block_resources *)b)->block_sample.id;
+	return ((block_resources *)a)->id > ((block_resources *)b)->id;
 }
 
 void sort_by_id(block_registry_t *b_reg)
@@ -538,16 +495,16 @@ void sort_by_id(block_registry_t *b_reg)
 
 void free_block_resources(block_resources *b)
 {
-	for (int i = 0; i < TOTAL_HANDLERS; i++)
+	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
 		if (res_handlers[i].function(clean_token, b) == FAIL)
-			printf("Error in \"%s\": handler \"%s\" failed to free block resources\n", b->block_sample.data, res_handlers[i].name);
+			printf("Error in \"%lld\": handler \"%s\" failed to free block resources\n", b->id, res_handlers[i].name);
 
 	free_table(b->all_fields);
 }
 
 void free_block_registry(block_registry_t *b_reg)
 {
-	for (int i = 0; i < b_reg->length; i++)
+	for (u32 i = 0; i < b_reg->length; i++)
 		free_block_resources(&b_reg->data[i]);
 	vec_deinit(b_reg);
 }

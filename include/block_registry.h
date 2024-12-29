@@ -1,11 +1,11 @@
-#ifndef BLOCK_REGISTRY
-#define BLOCK_REGISTRY
+#ifndef BLOCK_REGISTRY_H
+#define BLOCK_REGISTRY_H 1
 
 // vscode itellisense wants this define so bad...
 #define _DEFAULT_SOURCE 1
 
 #ifdef _WIN64
-#include "../../dirent/include/dirent.h"
+#include "../dirent/include/dirent.h"
 #else
 #include <dirent.h>
 #endif
@@ -14,14 +14,17 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "sdl2_basics.h"
-#include "block_properties.h"
+#include "hashtable.h"
+#include "general.h"
 #include "endianless.h"
-#include "engine_types.h"
-#include "block_memory_control.h"
+#include "block_properties.h"
+
+#include "sdl2_basics.h"
 #include "flags.h"
 
-#include "../../vec/src/vec.h"
+#include "tags.h"
+
+#include "../vec/src/vec.h"
 
 #define MAX_PATH_LENGTH 512
 
@@ -31,8 +34,9 @@
 
 typedef struct block_resources
 {
-	hash_table **all_fields;
-	block block_sample;
+	hash_node **all_fields;
+	u64 id;
+	blob tags;
 
 	texture block_texture;
 
@@ -44,9 +48,8 @@ typedef struct block_resources
 	char flip_controller;	  // current type of flipping
 	char rotation_controller; // current rotation angle
 
-	byte frames_per_second;
-
-	byte flags;
+	u8 frames_per_second;
+	u8 flags;
 } block_resources;
 
 typedef vec_t(block_resources) block_registry_t;
@@ -59,11 +62,11 @@ typedef vec_t(block_resources) block_registry_t;
 #define T_BYTE 5
 #define T_STRING 6
 
-byte length(long long value);
+u8 length(u64 value);
 
-void strip_digit(byte *dest, long long value, int actual_length);
-int str_to_enum(char *type_str);
-int get_length_to_alloc(long long value, int type);
+void strip_digit(u8 *dest, u64 value, u32 actual_length);
+u32 str_to_enum(char *type_str);
+u32 get_length_to_alloc(u64 value, u32 type);
 
 // format:
 
@@ -81,27 +84,25 @@ int get_length_to_alloc(long long value, int type);
 // digits will be stripped for saving space, keep it in mind
 //
 // other numerical types will save their length in bytes, even if you pass it with value of 0
-int make_block_data_from_string(const char *str_to_cpy, byte **out_data_ptr);
+u8 make_block_data_from_string(const char *str_to_cpy, blob *b);
 
 #define NOT_REQUIRED 0
 #define REQUIRED 1
 
 typedef struct
 {
-	int (*function)(const char *, block_resources *);
+	u8 (*function)(const char *, block_resources *);
 	char *name;
-	byte is_critical;
+	u8 is_critical;
 	char *dependencies[4];
 	char *incompabilities[4];
 } resource_entry_handler;
 
-int parse_block_resources_from_file(char *file_path, block_resources *dest);
+u32 parse_block_resources_from_file(char *file_path, block_resources *dest);
 void free_block_resources(block_resources *b);
 
-int is_already_in_registry(block_registry_t *reg, block_resources *br);
-int read_block_registry(const char *folder, block_registry_t *reg);
-
-int __b_cmp(const void *a, const void *b);
+u32 is_already_in_registry(block_registry_t *reg, block_resources *br);
+u32 read_block_registry(const char *folder, block_registry_t *reg);
 
 void sort_by_id(block_registry_t *b_reg);
 void free_block_registry(block_registry_t *b_reg);

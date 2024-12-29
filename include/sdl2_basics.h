@@ -3,9 +3,10 @@
 
 #include <SDL2/SDL.h>
 
-#include "engine_types.h"
+#include "general.h"
+#include "events.h"
 
-#include "../../stb/stb_image.h"
+#include "../stb/stb_image.h"
 
 extern int SCREEN_WIDTH;
 extern int SCREEN_HEIGHT;
@@ -44,6 +45,6 @@ int exit_graphics();
 int texture_load(texture *dest, char *path_to_file);
 void free_texture(texture *t);
 
-int block_render(texture *texture, const int x, const int y, byte frame, byte type, byte ignore_type, byte local_block_width, byte flip, unsigned short rotation);
+int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width, u8 flip, unsigned short rotation);
 
 #endif

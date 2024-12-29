@@ -1,10 +1,7 @@
-#include "include/sdl2_basics.h"
+#include "../include/sdl2_basics.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb/stb_image.h"
-
-#include "include/engine_types.h"
-#include "include/engine_events.h"
 
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
@@ -105,7 +102,7 @@ int texture_load(texture *dest, char *path_to_file)
 		return FAIL;
 	}
 
-	byte *image_data;
+	u8 *image_data;
 	int channels;
 
 	if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height, &channels, STBI_rgb_alpha)))
@@ -163,7 +160,7 @@ void free_texture(texture *t)
 }
 
 // it trusts you to pass valid values in, be careful with frames and types...
-int block_render(texture *texture, const int x, const int y, byte frame, byte type, byte ignore_type, byte local_block_width, byte flip, unsigned short rotation)
+int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width, u8 flip, unsigned short rotation)
 {
 	frame = frame % texture->total_frames;
 
@@ -197,11 +194,11 @@ neighbours_mask expected layout, bit by bit:
  if bit is 1, then neighbour have same block id
 */
 
-// int block_render_connected(texture *texture, int x, int y, byte neighbours_mask)
+// int block_render_connected(texture *texture, int x, int y, u8 neighbours_mask)
 // {
-// 	const byte half_w = g_block_width / 2;
-// 	const byte quart_w = g_block_width / 4;
-// 	const byte three_quarts_w = half_w + quart_w;
+// 	const u8 half_w = g_block_width / 2;
+// 	const u8 quart_w = g_block_width / 4;
+// 	const u8 three_quarts_w = half_w + quart_w;
 
 // 	SDL_Rect src = {0, 0, half_w, half_w};
 // 	SDL_Rect dest = {x + quart_w, y + quart_w, half_w, half_w};

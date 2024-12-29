@@ -1,11 +1,13 @@
 #ifndef ENDIANLESS
 #define ENDIANLESS
 
-#include "engine_types.h"
+#include "general.h"
 
-volatile byte is_big_endian(void);
-volatile byte is_little_endian(void);
-int flip_bytes_in_place(byte *bytes, int size);
+volatile u8 is_big_endian(void);
+volatile u8 is_little_endian(void);
+
+int flip_bytes_in_place(u8 *bytes, int size);
+int make_endianless(u8 *bytes, int size);
 
 // make byte data little endian
 // in little endian makes no change
@@ -15,7 +17,7 @@ int flip_bytes_in_place(byte *bytes, int size);
 /*
 value = 0x12345678;
 
-byte* val_arr = (byte*)&value;
+u8* val_arr = (u8*)&value;
 
 val_arr[i] =
 
@@ -38,7 +40,5 @@ val_arr[i] =
 	[ 78 ]	[ 56 ] 	[ 34 ] 	[ 12 ]
 
 */
-
-int make_endianless(byte *bytes, int size);
 
 #endif

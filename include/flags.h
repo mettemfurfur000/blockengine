@@ -1,8 +1,6 @@
 #ifndef FLAGS_H
 #define FLAGS_H
 
-#include "engine_types.h"
-
 #define FLAG_IS_VALID_POS(f, i) (i >= 0 && i < sizeof(f) ? 1 : 0)
 #define FLAG_GET(f, mask) ((f) & (mask))
 
