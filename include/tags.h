@@ -1,5 +1,5 @@
-#ifndef tags_MANIPULATIONS
-#define tags_MANIPULATIONS
+#ifndef TAGS_MANIPULATIONS_H
+#define TAGS_MANIPULATIONS_H 1
 
 #include <stdlib.h>
 #include <string.h>

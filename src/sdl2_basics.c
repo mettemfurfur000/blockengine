@@ -54,7 +54,7 @@ int init_graphics()
 {
 	const int flags = SDL_INIT_VIDEO;
 
-	int status = SUCCESS;
+	int status = 1;
 	status &= !SDL_Init(flags);
 
 	g_window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -64,7 +64,7 @@ int init_graphics()
 	status &= g_renderer ? 1 : 0;
 
 	if (!status)
-		printf("init_graphics() error:[%s]\n", SDL_GetError());
+		LOG_ERROR("init_graphics() error:[%s]\n", SDL_GetError());
 
 	SDL_SetRenderDrawColor(g_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
@@ -72,7 +72,7 @@ int init_graphics()
 	status &= result == (Uint32)-1 ? 0 : 1;
 
 	if (!status)
-		printf("Not able to allocate enough user events\n");
+		LOG_ERROR("Not able to allocate enough user events\n");
 
 	return status;
 }
@@ -92,13 +92,13 @@ int texture_load(texture *dest, char *path_to_file)
 {
 	if (!dest)
 	{
-		printf("texture_load Error: No desination texture\n");
+		LOG_ERROR("texture_load Error: No desination texture\n");
 		return FAIL;
 	}
 
 	if (!path_to_file)
 	{
-		printf("texture_load Error: No path to file\n");
+		LOG_ERROR("texture_load Error: No path to file\n");
 		return FAIL;
 	}
 
@@ -107,7 +107,7 @@ int texture_load(texture *dest, char *path_to_file)
 
 	if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height, &channels, STBI_rgb_alpha)))
 	{
-		printf("texture_load Error: stbi_load failed, no such file: %s\n", path_to_file);
+		LOG_ERROR("texture_load Error: stbi_load failed, no such file: %s\n", path_to_file);
 		return FAIL;
 	}
 
@@ -115,7 +115,7 @@ int texture_load(texture *dest, char *path_to_file)
 
 	if (!surface)
 	{
-		printf("texture_load Error: SDL_CreateRGBSurfaceFrom failed\n");
+		LOG_ERROR("texture_load Error: SDL_CreateRGBSurfaceFrom failed\n");
 		return FAIL;
 	}
 
@@ -125,8 +125,8 @@ int texture_load(texture *dest, char *path_to_file)
 
 	if (!dest->ptr)
 	{
-		printf("texture_load Error: SDL_CreateTextureFromSurface failed\n");
-		printf("%s\n", SDL_GetError());
+		LOG_ERROR("texture_load Error: SDL_CreateTextureFromSurface failed\n");
+		LOG_ERROR("%s\n", SDL_GetError());
 		return FAIL;
 	}
 

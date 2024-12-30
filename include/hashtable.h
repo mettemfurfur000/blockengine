@@ -1,5 +1,5 @@
 #ifndef HASHTABLE_H
-#define HASHTABLE_H
+#define HASHTABLE_H 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +15,6 @@ typedef struct blob
 	union // just different names for the same thing
 	{
 		u8 *ptr;
-		u8 *data;
 		char *str; // may not be a string at all!
 	};
 

@@ -66,8 +66,10 @@ void free_node(hash_node *node)
 {
 	if (!node)
 		return;
+
 	SAFE_FREE(node->key.ptr)
 	SAFE_FREE(node->value.ptr)
+
 	free(node);
 }
 

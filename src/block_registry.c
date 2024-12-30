@@ -308,9 +308,9 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 	hash_node **properties = alloc_table();
 	u32 status = SUCCESS;
 
-	if (!load_properties(file_path, properties))
+	if (load_properties(file_path, properties) == FAIL)
 	{
-		printf("Error loading block resources: %s\n", file_path);
+		LOG_ERROR("Error loading block resources: %s", file_path);
 		status = FAIL;
 		free_table(properties);
 		return status;
@@ -334,12 +334,14 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 		{
 			if (res_handlers[i].is_critical)
 			{
-				printf("Error in \"%s\" : No \"%s\" entry\n", file_path, res_handlers[i].name);
+				LOG_ERROR("\"%s\" : No \"%s\" entry\n", file_path, res_handlers[i].name);
 				status = FAIL;
 				break;
 			}
 			continue;
 		}
+		// fix string to be null terminated
+		entry.ptr[entry.length] = '\0';
 		// check for dependencies
 		for (u32 j = 0; j < sizeof(res_handlers[i].dependencies) / sizeof(void *); j++)
 		{
@@ -349,7 +351,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 
 			if (seen_entries.length == 0)
 			{
-				printf("Error in \"%s\": \"%s\" is dependent on \"%s\", but seen entries array is empty\n", file_path, res_handlers[i].name, dep);
+				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\", but seen entries array is empty\n", file_path, res_handlers[i].name, dep);
 				status = FAIL;
 				break;
 			}
@@ -357,12 +359,12 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			vec_find(&seen_entries, dep, k);
 			if (k == -1)
 			{
-				printf("Error in \"%s\": \"%s\" is dependent on \"%s\"\n", file_path, res_handlers[i].name, dep);
+				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\"\n", file_path, res_handlers[i].name, dep);
 				status = FAIL;
 				break;
 			}
 
-			// printf("Debug message \"%s\": Dependency \"%s\" is found for \"%s\"\n", file_path, dep, res_handlers[i].name);
+			LOG_DEBUG("\"%s\": Dependency \"%s\" is found for \"%s\"\n", file_path, dep, res_handlers[i].name);
 		}
 
 		// check for incompatibilities
@@ -381,14 +383,14 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			if (k == -1)
 				continue;
 
-			printf("Error in \"%s\": \"%s\" is incompatible with \"%s\"\n", file_path, res_handlers[i].name, inc);
+			LOG_ERROR("\"%s\": \"%s\" is incompatible with \"%s\"\n", file_path, res_handlers[i].name, inc);
 			status = FAIL;
 			break;
 		}
 
 		if (res_handlers[i].function(entry.str, dest) == FAIL)
 		{
-			printf("Error in \"%s\": handler \"%s\" failed to process this data: %s\n", file_path, res_handlers[i].name, entry.str);
+			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s\n", file_path, res_handlers[i].name, entry.str);
 			status = FAIL;
 			break;
 		}
@@ -417,7 +419,7 @@ u32 read_block_registry(const char *folder, block_registry_t *reg)
 
 	if (directory == NULL)
 	{
-		printf("Unable to open directory: %s\n", folder);
+		LOG_ERROR("Unable to open directory: %s\n", folder);
 		closedir(directory);
 		return FAIL;
 	}

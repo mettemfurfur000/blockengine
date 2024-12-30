@@ -1,18 +1,22 @@
 // #include "../tests/block_memory_control_test.c"
 // #include "../tests/block_operations_test.c"
-#include "../tests/block_properties_test.c"
-// #include "../tests/block_registry_test.c"
-#include "../tests/tags_test.c"
-#include "../tests/hash_table_test.c"
 // #include "../tests/test_utils.h"
 // #include "../tests/world_fs.test.c"
+
+#include "../tests/block_properties_test.c"
+#include "../tests/block_registry_test.c"
+#include "../tests/tags_test.c"
+#include "../tests/hash_table_test.c"
 
 #include "../include/endianless.h"
 
 int main(int argc, char *argv[])
 {
-	fprintf(stderr, "%s\n", "test thing");
 	printf("Big endian? %s\n", is_big_endian() ? "TRUE" : "FALSE");
+
+	log_start("test.log");
+
+	LOG_DEBUG("test debug");
 
 	int successes = 0;
 #define tests 7
@@ -23,7 +27,7 @@ int main(int argc, char *argv[])
 	successes += test_hash_table_all();
 	successes += test_block_props_all();
 	successes += test_tags_all();
-	// successes += test_all_registry();
+	successes += test_all_registry();
 
 	switch (successes)
 	{
@@ -36,6 +40,8 @@ int main(int argc, char *argv[])
 	default:
 		printf("%d/%d SUCCESS\n", successes, tests);
 	}
+
+	log_end();
 
 	return 0;
 }

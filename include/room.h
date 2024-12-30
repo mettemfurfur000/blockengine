@@ -3,20 +3,24 @@
 
 #include "general.h"
 #include "layer.h"
-#include "level.h"
+
+struct layer;
 
 typedef struct room
 {
-    level *parent;
-    u32 id;
+    // level *p_level;
+
     char *name;
+    u32 id;
 
     u32 width;
     u32 height;
     u32 depth;
 
-    layer *layers;
+    struct layer *layers;
     // TODO: entities
 } room;
+
+// room room_create(level *p_level, char *name, u32 width, u32 height, u32 depth);
 
 #endif

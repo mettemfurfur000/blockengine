@@ -1,5 +1,5 @@
 #ifndef EVENTS_H
-#define EVENTS_H
+#define EVENTS_H 1
 
 #include "flags.h"
 #include "general.h"

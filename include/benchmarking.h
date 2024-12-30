@@ -1,5 +1,5 @@
-#ifndef BENCHMARKING
-#define BENCHMARKING
+#ifndef BENCHMARKING_H
+#define BENCHMARKING_H 1
 
 #include <time.h>
 

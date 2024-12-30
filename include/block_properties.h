@@ -1,5 +1,5 @@
 #ifndef BLOCK_PROPERTIES_H
-#define BLOCK_PROPERTIES_H
+#define BLOCK_PROPERTIES_H 1
 
 #include "hashtable.h"
 

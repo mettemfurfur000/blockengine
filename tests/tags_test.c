@@ -47,39 +47,39 @@ void fillrand(char *b, int size)
 		b[i] = 'a' + rand() % 26;
 }
 
-void dbg_data_layout(byte *blob)
-{
-	if (!blob)
-	{
-		printf("no blob\n");
-		return;
-	}
+// void dbg_data_layout(u8 *blob)
+// {
+// 	if (!blob)
+// 	{
+// 		printf("no blob\n");
+// 		return;
+// 	}
 
-	if (blob[0] == 0)
-	{
-		printf("empty blob\n");
-		return;
-	}
+// 	if (blob[0] == 0)
+// 	{
+// 		printf("empty blob\n");
+// 		return;
+// 	}
 
-	short data_size = blob[0] + 1;
-	short index = 1;
+// 	short data_size = blob[0] + 1;
+// 	short index = 1;
 
-	printf("data_size %d\n", data_size);
+// 	printf("data_size %d\n", data_size);
 
-	printf("[\n");
-	while (index < data_size)
-	{
-		byte letter = blob[index];
-		byte size = blob[index + 1];
-		printf("\t%x:%d:", letter, size);
-		for (int i = 0; i < size; i++)
-			printf("%02x", blob[index + 2 + i]);
-		printf("\n");
+// 	printf("[\n");
+// 	while (index < data_size)
+// 	{
+// 		byte letter = blob[index];
+// 		byte size = blob[index + 1];
+// 		printf("\t%x:%d:", letter, size);
+// 		for (int i = 0; i < size; i++)
+// 			printf("%02x", blob[index + 2 + i]);
+// 		printf("\n");
 
-		index += blob[index + 1] + 2;
-	}
-	printf("]\n");
-}
+// 		index += blob[index + 1] + 2;
+// 	}
+// 	printf("]\n");
+// }
 
 int test_random_data()
 {
@@ -150,7 +150,7 @@ int test_full_test()
 		status &= (number_in == number_out);
 		if (number_in != number_out)
 		{
-			printf("number mismath: %lld != %lld\n", number_in, number_out);
+			printf("number mismath: %d != %d\n", number_in, number_out);
 		}
 	}
 

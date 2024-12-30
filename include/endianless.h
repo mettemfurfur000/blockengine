@@ -1,5 +1,5 @@
-#ifndef ENDIANLESS
-#define ENDIANLESS
+#ifndef ENDIANLESS_H
+#define ENDIANLESS_H 1
 
 #include "general.h"
 
