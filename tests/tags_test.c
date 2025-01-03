@@ -159,14 +159,11 @@ int test_full_test()
 	return status;
 }
 
-int test_tags_all()
-{
-	INIT_TESTING()
-	printf("test_all_data_manip:\n");
-	RUN_TEST(test_basic_data_manip)
-	RUN_TEST(test_array_data)
-	RUN_TEST(test_random_data)
-	RUN_TEST(test_full_test)
+INIT_TESTING(test_tags_all)
 
-	FINISH_TESTING()
-}
+RUN_TEST(test_basic_data_manip)
+RUN_TEST(test_array_data)
+RUN_TEST(test_random_data)
+RUN_TEST(test_full_test)
+
+FINISH_TESTING()

@@ -2,7 +2,6 @@
 #define GENERAL_H 1
 
 #include <assert.h>
-
 #include "logging.h"
 
 typedef unsigned char u8;
@@ -34,5 +33,12 @@ static_assert(sizeof(i64) == 8);
     if (ptr)           \
         free(ptr);     \
     ptr = 0;
+
+#define PTR_CHECKER(ptr)             \
+    if (!ptr)                        \
+    {                                \
+        LOG_ERROR(#ptr "is NULL\n"); \
+        return FAIL;                 \
+    }
 
 #endif

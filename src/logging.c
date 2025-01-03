@@ -35,5 +35,7 @@ void log_msg(const char *format, ...)
     va_end(args);
     fprintf(log_file, "\n");
 
+    fflush(log_file);
+
     return;
 }

@@ -16,11 +16,8 @@ int test_basic_io()
 	return status;
 }
 
-int test_block_props_all()
-{
-	INIT_TESTING()
-	printf("test_block_props_all:\n");
-	RUN_TEST(test_basic_io)
+INIT_TESTING(test_block_props_all)
 
-	FINISH_TESTING()
-}
+RUN_TEST(test_basic_io)
+
+FINISH_TESTING()

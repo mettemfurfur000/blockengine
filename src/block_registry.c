@@ -77,11 +77,8 @@ u32 get_length_to_alloc(u64 value, u32 type)
 
 u8 make_block_data_from_string(const char *str_to_cpy, blob *b)
 {
-	if (!str_to_cpy)
-		return FAIL;
-
-	if (!b)
-		return FAIL;
+	PTR_CHECKER(str_to_cpy)
+	PTR_CHECKER(b)
 
 	char character;
 	u8 data_buffer[256] = {0};
@@ -93,7 +90,7 @@ u8 make_block_data_from_string(const char *str_to_cpy, blob *b)
 	u64 value;
 	u32 value_length;
 
-	char *str = malloc(1 + strlen(str_to_cpy));
+	char *str = strdup(str_to_cpy);
 	strcpy(str, str_to_cpy);
 
 	char *token = strtok(str, " \n"); // consume start token
@@ -186,8 +183,6 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 #define DECLARE_DEFAULT_CHAR_FIELD_HANDLER(name)                           \
 	u8 block_res_##name##_handler(const char *data, block_resources *dest) \
 	{                                                                      \
-		if (!data)                                                         \
-			return FAIL;                                                   \
 		if (strcmp(data, clean_token) == 0)                                \
 		{                                                                  \
 			dest->name = 0;                                                \
@@ -201,9 +196,6 @@ const static char clean_token[] = "??clean??";
 
 u8 block_res_id_handler(const char *data, block_resources *dest)
 {
-	if (!data)
-		return FAIL;
-
 	dest->id = strcmp(data, clean_token) == 0 ? 0 : atoi(data);
 
 	return SUCCESS;
@@ -211,9 +203,6 @@ u8 block_res_id_handler(const char *data, block_resources *dest)
 
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
-	if (!data)
-		return FAIL;
-
 	return strcmp(data, clean_token) == 0
 			   ? tag_delete_all(&dest->tags)
 			   : make_block_data_from_string(data, &dest->tags);
@@ -221,9 +210,6 @@ u8 block_res_data_handler(const char *data, block_resources *dest)
 
 u8 block_res_texture_handler(const char *data, block_resources *dest)
 {
-	if (!data)
-		return FAIL;
-
 	if (strcmp(data, clean_token) == 0)
 	{
 		free_texture(&dest->block_texture);
@@ -238,9 +224,6 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
 
 u8 block_res_fps_handler(const char *data, block_resources *dest)
 {
-	if (!data)
-		return FAIL;
-
 	if (strcmp(data, clean_token) == 0)
 	{
 		dest->frames_per_second = 0;
@@ -262,9 +245,6 @@ DECLARE_DEFAULT_CHAR_FIELD_HANDLER(rotation_controller)
 
 u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 {
-	if (!data)
-		return FAIL;
-
 	if (strcmp(data, clean_token) == 0)
 	{
 		free(dest->lua_script_filename);
@@ -308,6 +288,8 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 	hash_node **properties = alloc_table();
 	u32 status = SUCCESS;
 
+	LOG_INFO("Parsing file: %s", file_path);
+
 	if (load_properties(file_path, properties) == FAIL)
 	{
 		LOG_ERROR("Error loading block resources: %s", file_path);
@@ -334,7 +316,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 		{
 			if (res_handlers[i].is_critical)
 			{
-				LOG_ERROR("\"%s\" : No \"%s\" entry\n", file_path, res_handlers[i].name);
+				LOG_ERROR("\"%s\" : No \"%s\" entry", file_path, res_handlers[i].name);
 				status = FAIL;
 				break;
 			}
@@ -351,7 +333,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 
 			if (seen_entries.length == 0)
 			{
-				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\", but seen entries array is empty\n", file_path, res_handlers[i].name, dep);
+				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\", but seen entries array is empty", file_path, res_handlers[i].name, dep);
 				status = FAIL;
 				break;
 			}
@@ -359,12 +341,12 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			vec_find(&seen_entries, dep, k);
 			if (k == -1)
 			{
-				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\"\n", file_path, res_handlers[i].name, dep);
+				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\"", file_path, res_handlers[i].name, dep);
 				status = FAIL;
 				break;
 			}
 
-			LOG_DEBUG("\"%s\": Dependency \"%s\" is found for \"%s\"\n", file_path, dep, res_handlers[i].name);
+			LOG_DEBUG("\"%s\": Dependency \"%s\" is found for \"%s\"", file_path, dep, res_handlers[i].name);
 		}
 
 		// check for incompatibilities
@@ -383,14 +365,14 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			if (k == -1)
 				continue;
 
-			LOG_ERROR("\"%s\": \"%s\" is incompatible with \"%s\"\n", file_path, res_handlers[i].name, inc);
+			LOG_ERROR("\"%s\": \"%s\" is incompatible with \"%s\"", file_path, res_handlers[i].name, inc);
 			status = FAIL;
 			break;
 		}
 
-		if (res_handlers[i].function(entry.str, dest) == FAIL)
+		if (res_handlers[i].function(entry.str, dest) == FAIL) // handler is beink called here
 		{
-			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s\n", file_path, res_handlers[i].name, entry.str);
+			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s", file_path, res_handlers[i].name, entry.str);
 			status = FAIL;
 			break;
 		}
@@ -419,10 +401,12 @@ u32 read_block_registry(const char *folder, block_registry_t *reg)
 
 	if (directory == NULL)
 	{
-		LOG_ERROR("Unable to open directory: %s\n", folder);
+		LOG_ERROR("Unable to open directory: %s", folder);
 		closedir(directory);
 		return FAIL;
 	}
+
+	LOG_INFO("Reading block registry from %s", folder);
 
 	// push a default void block with id 0
 	block_resources filler_entry = {.id = 0, .tags = {{}, {}}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
@@ -447,7 +431,7 @@ u32 read_block_registry(const char *folder, block_registry_t *reg)
 
 			if (is_already_in_registry(reg, &br))
 			{
-				printf("Found duplicate resource: %s\n", file_to_parse);
+				LOG_INFO("Found duplicate resource: %s, resource is not pushed!", file_to_parse);
 				continue;
 			}
 
@@ -471,7 +455,7 @@ u32 read_block_registry(const char *folder, block_registry_t *reg)
 			for (u32 j = block_prev_id; j < block_cur_id - 1; j++)
 			{
 				filler_entry.id = j;
-				printf("adding a filler entry with an id %d\n", j);
+				LOG_INFO("Adding a filler entry with an id %d", j);
 				(void)vec_push(reg, filler_entry);
 			}
 			break;
@@ -499,7 +483,7 @@ void free_block_resources(block_resources *b)
 {
 	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
 		if (res_handlers[i].function(clean_token, b) == FAIL)
-			printf("Error in \"%lld\": handler \"%s\" failed to free block resources\n", b->id, res_handlers[i].name);
+			LOG_ERROR("\"%lld\": handler \"%s\" failed to free block resources", b->id, res_handlers[i].name);
 
 	free_table(b->all_fields);
 }

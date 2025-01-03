@@ -66,6 +66,9 @@ void free_node(hash_node *node)
 {
 	if (!node)
 		return;
+#if HASHTABLE_DEBUG_LOGGING == 1
+	print_node(node, "freeing");
+#endif
 
 	SAFE_FREE(node->key.ptr)
 	SAFE_FREE(node->value.ptr)
@@ -79,6 +82,9 @@ void copy_key(hash_node *node, blob key)
 		return;
 
 	blob_dup(&node->key, key);
+#if HASHTABLE_DEBUG_LOGGING == 1
+	print_node(node, "key copied");
+#endif
 }
 
 void copy_value(hash_node *node, blob value)
@@ -87,6 +93,10 @@ void copy_value(hash_node *node, blob value)
 		return;
 
 	blob_dup(&node->value, value);
+
+#if HASHTABLE_DEBUG_LOGGING == 1
+	print_node(node, "value copied");
+#endif
 }
 
 void copy_all(hash_node *node, blob key, blob value)
@@ -96,6 +106,10 @@ void copy_all(hash_node *node, blob key, blob value)
 
 	blob_dup(&node->key, key);
 	blob_dup(&node->value, value);
+
+#if HASHTABLE_DEBUG_LOGGING == 1
+	print_node(node, "all copied");
+#endif
 }
 
 hash_node **alloc_table()
@@ -179,25 +193,32 @@ blob get_entry(hash_node **table, blob key)
 	return ret;
 }
 
+void print_node(hash_node *node, const char *context)
+{
+	LOG_DEBUG("%s %.*s [%d] : %.*s [%d], %p -> %p",
+			  context,
+			  node->key.size,
+			  node->key.ptr,
+			  node->key.size,
+			  node->value.size, node->value.ptr,
+			  node->value.size,
+			  node->key.ptr,
+			  node->value.ptr);
+}
+
 void print_table(hash_node **table)
 {
-	if (!table)
-		return;
-
 	hash_node *node;
-	printf("table content:\n");
+	LOG_DEBUG("table content:");
 
 	for (int i = 0; i < TABLE_SIZE; ++i)
 	{
 		node = table[i];
 		while (node != NULL)
 		{
-			printf("    %.*s [%d] : %.*s [%d]\n",
-				   node->key.size, node->key.ptr,
-				   node->key.size,
-				   node->value.size, node->value.ptr,
-				   node->value.size);
-
+#if HASHTABLE_DEBUG_LOGGING == 1
+			print_node(node, "printing");
+#endif
 			node = node->next;
 		}
 	}

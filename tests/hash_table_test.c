@@ -12,7 +12,7 @@ int test_rand_fill_and_remove()
 	blob val = {};
 	blob ret = {};
 
-	for (int i = 1; i < 100; i++)
+	for (int i = 1; i < 2000; i++)
 	{
 		blob_generate(&key, 5 + i);
 
@@ -49,7 +49,7 @@ int test_hash_table_fill()
 	int status = 1;
 	int debug = 55;
 
-	const int tests = 50000;
+	const int tests = 1000;
 	double avg_random_get = 0;
 	float filling_time;
 
@@ -70,7 +70,7 @@ int test_hash_table_fill()
 
 	filling_time = bench_end(bench_start_time);
 
-#define RUNS 5
+#define RUNS 10
 	for (int j = 0; j < RUNS; j++)
 	{
 		bench_start_time = bench_start();
@@ -95,17 +95,18 @@ int test_hash_table_fill()
 
 	free_table(table);
 
-	printf("filling time = %f, average get time: %f, gets per second: %d\n", filling_time, avg_random_get, gets_per_second);
+	LOG_DEBUG("filling time = %f, average get time: %f, gets per second: %d", filling_time, avg_random_get, gets_per_second);
 
 	return status;
 }
 
-int test_hash_table_all()
-{
-	INIT_TESTING()
-	printf("test_hash_table_all:\n");
-	RUN_TEST(test_rand_fill_and_remove)
-	RUN_TEST(test_hash_table_fill)
+INIT_TESTING(test_hash_table_all)
 
-	FINISH_TESTING()
-}
+RUN_TEST(test_rand_fill_and_remove)
+RUN_TEST(test_hash_table_fill)
+RUN_TEST(test_rand_fill_and_remove)
+RUN_TEST(test_hash_table_fill)
+RUN_TEST(test_rand_fill_and_remove)
+RUN_TEST(test_hash_table_fill)
+
+FINISH_TESTING()

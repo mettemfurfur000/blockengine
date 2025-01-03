@@ -34,9 +34,11 @@ int test_parse_from_file()
 	if (!status)
 		return FAIL;
 
-	printf("\t\tblock: %lld, %.*s\n", br.id,
-		   br.tags.size,
-		   br.tags.str);
+	LOG_INFO("\t\tblock: %lld, %.*s", br.id,
+			 br.tags.size,
+			 br.tags.str);
+
+	print_table(br.all_fields);
 
 	free_block_resources(&br);
 
@@ -45,21 +47,21 @@ int test_parse_from_file()
 
 void print_registry(block_registry_t br)
 {
-	printf("printing registry with size %d:\n", br.length);
+	LOG_INFO("printing registry with size %d:\n", br.length);
 
 	for (int i = 0; i < br.length; i++)
 	{
-		printf("\t\tblock: %lld,", br.data[i].id);
+		LOG_INFO("\t\tblock: %lld,", br.data[i].id);
 
-		br.data[i].tags.ptr ? printf("%.*s\n", br.data[i].tags.size,
-									 br.data[i].tags.ptr)
-							: printf("(no data)\n");
+		br.data[i].tags.ptr ? LOG_INFO("%.*s\n", br.data[i].tags.size,
+									   br.data[i].tags.ptr)
+							: LOG_INFO("(no data)\n");
 	}
 }
 
 int test_parse_folder()
 {
-	int status = SUCCESS;
+	int status = 1;
 	block_registry_t b_reg;
 	vec_init(&b_reg);
 
@@ -74,11 +76,11 @@ int test_parse_folder()
 
 int test_sort()
 {
-	int status = SUCCESS;
+	int status = 1;
 	block_registry_t b_reg;
 	vec_init(&b_reg);
 
-	status = read_block_registry("resources/blocks", &b_reg);
+	status &= read_block_registry("resources/blocks", &b_reg);
 
 	print_registry(b_reg);
 
@@ -91,16 +93,13 @@ int test_sort()
 	return status;
 }
 
-int test_all_registry()
-{
-	INIT_TESTING()
-	init_graphics();
-	printf("test_all_registry:\n");
-	RUN_TEST(test_read_from_string)
-	RUN_TEST(test_parse_from_file)
-	RUN_TEST(test_parse_folder)
-	RUN_TEST(test_sort);
+INIT_TESTING(test_all_registry)
 
-	exit_graphics();
-	FINISH_TESTING()
-}
+init_graphics();
+RUN_TEST(test_read_from_string)
+RUN_TEST(test_parse_from_file)
+RUN_TEST(test_parse_folder)
+RUN_TEST(test_sort);
+exit_graphics();
+
+FINISH_TESTING()
