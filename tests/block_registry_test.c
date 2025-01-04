@@ -27,7 +27,7 @@ int test_read_from_string()
 int test_parse_from_file()
 {
 	int status = 1;
-	block_resources br = {0};
+	block_resources br = {};
 
 	status &= parse_block_resources_from_file("resources/blocks/test.blk", &br) == SUCCESS;
 

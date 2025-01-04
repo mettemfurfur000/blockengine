@@ -6,7 +6,6 @@
 int test_rand_fill_and_remove()
 {
 	hash_node **table = alloc_table();
-	int status = 1;
 
 	blob key = {};
 	blob val = {};
@@ -22,19 +21,27 @@ int test_rand_fill_and_remove()
 			put_entry(table, key, val);
 			ret = get_entry(table, key);
 
-			status &= (blob_cmp(ret, val) == 0);
+			if (blob_cmp(ret, val) != 0)
+			{
+				LOG_DEBUG("hashtable returned a different value for the same key, %s != %s", ret, val);
+				return 0;
+			}
 		}
 		else
 		{
 			remove_entry(table, key);
 			ret = get_entry(table, key);
 
-			status &= !ret.ptr;
+			if (ret.ptr != NULL)
+			{
+				LOG_DEBUG("hashtable returned a value for a removed key, %s", ret);
+				return 0;
+			}
 		}
 	}
 
 	free_table(table);
-	return status;
+	return 1;
 }
 
 int test_hash_table_fill()
@@ -47,7 +54,6 @@ int test_hash_table_fill()
 
 	int rand_val;
 	int status = 1;
-	int debug = 55;
 
 	const int tests = 1000;
 	double avg_random_get = 0;
@@ -60,12 +66,8 @@ int test_hash_table_fill()
 	for (int i = 0; i < tests; i++)
 	{
 		rand_val = rand();
-
 		blob_generate(&key, rand_val);
-
-		blob_generate(&val, rand_val);
-
-		put_entry(table, key, val);
+		put_entry(table, key, key);
 	}
 
 	filling_time = bench_end(bench_start_time);
@@ -80,13 +82,16 @@ int test_hash_table_fill()
 			rand_val = rand();
 
 			blob_generate(&key, rand_val);
-
 			blob_generate(&val, rand_val);
 
 			ret = get_entry(table, key);
 
-			if (ret.ptr)
-				debug &= (blob_cmp(val, ret) == 0);
+			if (blob_cmp(val, ret) != 0)
+			{
+				status = 0;
+				LOG_DEBUG("hashtable returned a different value for the same key, %s != %s", ret, val);
+				break;
+			}
 		}
 		avg_random_get += bench_end(bench_start_time);
 	}

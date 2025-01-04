@@ -66,14 +66,14 @@ void free_node(hash_node *node)
 {
 	if (!node)
 		return;
+
 #if HASHTABLE_DEBUG_LOGGING == 1
 	print_node(node, "freeing");
 #endif
 
 	SAFE_FREE(node->key.ptr)
 	SAFE_FREE(node->value.ptr)
-
-	free(node);
+	SAFE_FREE(node);
 }
 
 void copy_key(hash_node *node, blob key)

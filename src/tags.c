@@ -76,7 +76,7 @@ u8 tag_delete(blob *b, char letter)
 		return SUCCESS;
 	}
 
-	u8 *new_data = (u8 *)calloc(new_data_size, sizeof(byte));
+	u8 *new_data = (u8 *)calloc(new_data_size, 1);
 
 	if (pos_before_element <= 0) // first
 		memcpy(new_data, b->ptr + bytes_to_skip_size, new_data_size);
@@ -105,7 +105,7 @@ u8 tag_resize(blob *b, char letter, u8 new_size)
 	i32 pos = fdesp(*b, letter);
 	if (pos < 0)
 		return FAIL;
-
+#if 0
 	u8 cur_tag_size = b->ptr[pos + 1];
 	i16 diff = new_size - cur_tag_size;
 
@@ -128,6 +128,40 @@ u8 tag_resize(blob *b, char letter, u8 new_size)
 
 	SAFE_FREE(b->ptr);
 	b->ptr = new_data;
+#endif
+	u8 cur_tag_size = b->ptr[pos + 1];
+	i16 diff = new_size - cur_tag_size;
+
+	u64 blob_size = b->size;
+	u64 new_data_length = blob_size + diff;
+	u16 bytes_to_skip_size = 2 + cur_tag_size;
+
+	u8 *new_data = (u8 *)calloc(new_data_length, 1);
+	if (!new_data)
+		return FAIL;
+
+	// Copy data before tag
+	if (pos > 0)
+		memcpy(new_data, b->ptr, pos);
+
+	// Copy data after tag
+	if (pos + bytes_to_skip_size < blob_size)
+		memcpy(new_data + pos + 2 + new_size,
+			   b->ptr + pos + bytes_to_skip_size,
+			   blob_size - pos - bytes_to_skip_size);
+
+	// Write new tag header
+	new_data[pos] = letter;
+	new_data[pos + 1] = new_size;
+
+	// Copy tag content
+	memcpy(new_data + pos + 2,
+		   b->ptr + pos + 2,
+		   (new_size < cur_tag_size) ? new_size : cur_tag_size);
+
+	SAFE_FREE(b->ptr);
+	b->ptr = new_data;
+	b->size = new_data_length;
 
 	return SUCCESS;
 }
