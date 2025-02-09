@@ -77,8 +77,8 @@ u32 get_length_to_alloc(u64 value, u32 type)
 
 u8 make_block_data_from_string(const char *str_to_cpy, blob *b)
 {
-	PTR_CHECKER(str_to_cpy)
-	PTR_CHECKER(b)
+	CHECK_PTR(str_to_cpy, make_block_data_from_string)
+	CHECK_PTR(b, make_block_data_from_string)
 
 	char character;
 	u8 data_buffer[256] = {0};
@@ -288,14 +288,12 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 	hash_node **properties = alloc_table();
 	u32 status = SUCCESS;
 
-	LOG_INFO("Parsing file: %s", file_path);
-
 	if (load_properties(file_path, properties) == FAIL)
 	{
 		LOG_ERROR("Error loading block resources: %s", file_path);
-		status = FAIL;
+
 		free_table(properties);
-		return status;
+		return FAIL;
 	}
 
 	put_entry(properties, blobify("source_filename"), blobify(file_path));
@@ -323,7 +321,8 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			continue;
 		}
 		// fix string to be null terminated
-		entry.ptr[entry.length] = '\0';
+		// this line of code caused alot of headaches for me, i hate myself
+		entry.str[entry.length - 1] = '\0';
 		// check for dependencies
 		for (u32 j = 0; j < sizeof(res_handlers[i].dependencies) / sizeof(void *); j++)
 		{
@@ -383,7 +382,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 	return status;
 }
 
-u32 is_already_in_registry(block_registry_t *reg, block_resources *br)
+u32 is_already_in_registry(block_resources_t *reg, block_resources *br)
 {
 	for (u32 i = 0; i < reg->length; i++)
 		if (br->id == reg->data[i].id)
@@ -392,7 +391,7 @@ u32 is_already_in_registry(block_registry_t *reg, block_resources *br)
 	return FAIL;
 }
 
-u32 read_block_registry(const char *folder, block_registry_t *reg)
+u32 read_block_registry(const char *folder, block_resources_t *reg)
 {
 	DIR *directory;
 	struct dirent *entry;
@@ -474,7 +473,7 @@ int __b_cmp(const void *a, const void *b)
 	return ((block_resources *)a)->id > ((block_resources *)b)->id;
 }
 
-void sort_by_id(block_registry_t *b_reg)
+void sort_by_id(block_resources_t *b_reg)
 {
 	qsort(b_reg->data, b_reg->length, sizeof(*b_reg->data), __b_cmp);
 }
@@ -488,9 +487,62 @@ void free_block_resources(block_resources *b)
 	free_table(b->all_fields);
 }
 
-void free_block_registry(block_registry_t *b_reg)
+void free_block_registry(block_resources_t *b_reg)
 {
 	for (u32 i = 0; i < b_reg->length; i++)
 		free_block_resources(&b_reg->data[i]);
 	vec_deinit(b_reg);
+}
+
+u32 read_all_registries(char *folder, vec_registries_t *dest)
+{
+	DIR *directory;
+	struct dirent *entry;
+
+	char pathbuf[MAX_PATH_LENGTH] = {};
+
+	directory = opendir(folder);
+
+	if (directory == NULL)
+	{
+		LOG_ERROR("Unable to open directory: %s", folder);
+		closedir(directory);
+		return FAIL;
+	}
+
+	while ((entry = readdir(directory)) != NULL)
+	{
+		if (entry->d_type == DT_DIR)
+		{
+			block_registry temp = {};
+
+			vec_init(&temp.resources);
+			temp.name = entry->d_name;
+
+			LOG_INFO("Found directory: %s", entry->d_name);
+
+			sprintf(pathbuf, "%s%c%s", folder, SEPARATOR, entry->d_name);
+			LOG_INFO("Reading registry from %s", pathbuf);
+
+			if (read_block_registry(pathbuf, &temp.resources) == FAIL)
+			{
+				LOG_ERROR("Error reading registry from %s", pathbuf);
+				closedir(directory);
+				return FAIL;
+			}
+
+			(void)vec_push(dest, temp);
+		}
+	}
+	closedir(directory);
+	return SUCCESS;
+}
+
+block_registry *find_registry(vec_registries_t *src, char *name)
+{
+	for (u32 i = 0; i < src->length; i++)
+		if (strcmp(src->data[i].name, name) == 0)
+			return &src->data[i];
+
+	return NULL;
 }

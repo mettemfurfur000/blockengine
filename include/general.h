@@ -2,6 +2,7 @@
 #define GENERAL_H 1
 
 #include <assert.h>
+#include <stdbool.h>
 #include "logging.h"
 
 typedef unsigned char u8;
@@ -34,11 +35,18 @@ static_assert(sizeof(i64) == 8);
         free(ptr);     \
     ptr = 0;
 
-#define PTR_CHECKER(ptr)             \
-    if (!ptr)                        \
-    {                                \
-        LOG_ERROR(#ptr "is NULL\n"); \
-        return FAIL;                 \
+#define CHECK_PTR(ptr, func_name)                        \
+    if (!(ptr))                                          \
+    {                                                    \
+        LOG_ERROR(#func_name " : '" #ptr "' is NULL\n"); \
+        return FAIL;                                     \
+    }
+
+#define CHECK(expression, func_name)                                       \
+    if (expression)                                                        \
+    {                                                                      \
+        LOG_ERROR(#func_name " : check failed: '" #expression " == 0'\n"); \
+        return FAIL;                                                       \
     }
 
 #endif

@@ -58,6 +58,8 @@ int load_properties(const char *filename, hash_node **table)
 		return FAIL;
 	}
 
+	LOG_INFO("Loading properties from %s", filename);
+
 	int status = 1;
 
 	do

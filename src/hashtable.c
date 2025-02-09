@@ -25,7 +25,7 @@ void blob_generate(blob *b, u32 seed)
 
 blob blobify(char *str)
 {
-	blob b = {.str = str, .length = strlen(str)};
+	blob b = {.str = str, .length = strlen(str) + 1};
 	return b;
 }
 
@@ -35,9 +35,13 @@ u8 blob_dup(blob *dest, blob src)
 		return FAIL;
 
 	SAFE_FREE(dest->ptr)
-	dest->ptr = calloc(src.size, 1);
+
+	dest->ptr = malloc(src.size);
 	memcpy(dest->ptr, src.ptr, src.size);
+
 	dest->size = src.size;
+
+	LOG_DEBUG("blob %.*s (%d) copied to %p", src.size, src.ptr, src.size, dest->ptr);
 
 	return SUCCESS;
 }
@@ -114,13 +118,20 @@ void copy_all(hash_node *node, blob key, blob value)
 
 hash_node **alloc_table()
 {
-	return (hash_node **)calloc(TABLE_SIZE, sizeof(hash_node *));
+	hash_node **t = (hash_node **)malloc(TABLE_SIZE * sizeof(hash_node *));
+	memset(t, 0, TABLE_SIZE * sizeof(hash_node *));
+
+	LOG_DEBUG("Allocated table of size %d, ptr %p", TABLE_SIZE, t);
+
+	return t;
 }
 
 void free_table(hash_node **table)
 {
 	if (!table)
 		return;
+
+	LOG_DEBUG("Freeing table of size %d, ptr %p", TABLE_SIZE, table);
 
 	hash_node *node;
 	hash_node *next_node;

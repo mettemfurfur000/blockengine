@@ -52,7 +52,16 @@ typedef struct block_resources
 	u8 flags;
 } block_resources;
 
-typedef vec_t(block_resources) block_registry_t;
+typedef vec_t(block_resources) block_resources_t;
+
+typedef struct block_registry
+{
+	block_resources_t resources;
+
+	const char *name;
+} block_registry;
+
+typedef vec_t(block_registry) vec_registries_t;
 
 #define T_UNKNOWN 0
 #define T_DIGIT 1
@@ -101,10 +110,13 @@ typedef struct
 u32 parse_block_resources_from_file(char *file_path, block_resources *dest);
 void free_block_resources(block_resources *b);
 
-u32 is_already_in_registry(block_registry_t *reg, block_resources *br);
-u32 read_block_registry(const char *folder, block_registry_t *reg);
+u32 is_already_in_registry(block_resources_t *reg, block_resources *br);
+u32 read_block_registry(const char *folder, block_resources_t *reg);
 
-void sort_by_id(block_registry_t *b_reg);
-void free_block_registry(block_registry_t *b_reg);
+void sort_by_id(block_resources_t *b_reg);
+void free_block_registry(block_resources_t *b_reg);
+
+u32 read_all_registries(char *folder, vec_registries_t *dest);
+block_registry *find_registry(vec_registries_t *src, char *name);
 
 #endif

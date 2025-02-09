@@ -2,7 +2,7 @@
 
 volatile u8 is_big_endian(void)
 {
-	volatile union
+	volatile static union
 	{
 		unsigned int i;
 		char c[4];
@@ -13,13 +13,40 @@ volatile u8 is_big_endian(void)
 
 volatile u8 is_little_endian(void)
 {
-	volatile union
+	volatile static union
 	{
 		unsigned int i;
 		char c[4];
 	} e = {0x00000001};
 
 	return e.c[0];
+}
+
+void endianless_copy(u8 *dest, u8 *src, int size)
+{
+	if (is_little_endian())
+		memcpy(dest, src, size);
+	else
+		for (int i = size - 1; i >= 0; i--)
+			dest[size - i - 1] = src[i];
+}
+
+int endianless_write(u8 *data, int size, FILE *f)
+{
+	if (is_little_endian()) // write as is if little endian
+		return fwrite(data, 1, size, f) == size ? SUCCESS : FAIL;
+	for (int i = size - 1; i >= 0; i--) // write in reverse if big endian
+		fputc(data[i], f);
+	return SUCCESS;
+}
+
+int endianless_read(u8 *data, int size, FILE *f)
+{
+	if (is_little_endian()) // read as is if little endian
+		return fread(data, 1, size, f) == size ? SUCCESS : FAIL;
+	for (int i = size - 1; i >= 0; i--) // read in reverse if big endian
+		data[i] = fgetc(f);
+	return SUCCESS;
 }
 
 int flip_bytes_in_place(u8 *bytes, int size)

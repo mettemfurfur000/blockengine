@@ -55,7 +55,7 @@ int test_hash_table_fill()
 	int rand_val;
 	int status = 1;
 
-	const int tests = 1000;
+	const int tests = 10000;
 	double avg_random_get = 0;
 	float filling_time;
 

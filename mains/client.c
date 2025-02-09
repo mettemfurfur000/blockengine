@@ -10,7 +10,7 @@
 // #include <omp.h>
 
 world *g_world = 0;
-block_registry_t *g_reg = 0;
+block_resources_t *g_reg = 0;
 
 void free_world(world *w)
 {
@@ -20,7 +20,7 @@ void free_world(world *w)
 	free(w);
 }
 
-void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *reg, const int seed, const int start_range, const int range)
+void chunk_fill_randomly_from_registry(layer_chunk *c, const block_resources_t *reg, const int seed, const int start_range, const int range)
 {
 	srand(seed);
 
@@ -41,7 +41,7 @@ void chunk_fill_randomly_from_registry(layer_chunk *c, const block_registry_t *r
 		}
 }
 
-void world_layer_fill_randomly(world *w, const int layer_index, const block_registry_t *reg, const int seed, const int start_range, const int range)
+void world_layer_fill_randomly(world *w, const int layer_index, const block_resources_t *reg, const int seed, const int start_range, const int range)
 {
 	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
 	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
@@ -85,7 +85,7 @@ float lerp(float a, float b, float t)
 	return a + t * (b - a);
 }
 
-block get_block_from_the_registry(block_registry_t *reg, int id)
+block get_block_from_the_registry(block_resources_t *reg, int id)
 {
 	for (int i = 0; i < reg->length; i++)
 	{
@@ -95,7 +95,7 @@ block get_block_from_the_registry(block_registry_t *reg, int id)
 	return (block){};
 }
 
-int test_world_init(world **world, block_registry_t *reg)
+int test_world_init(world **world, block_resources_t *reg)
 {
 	g_block_width = 16;
 	const int floor_layer_id = 1;
@@ -120,7 +120,7 @@ int test_world_init(world **world, block_registry_t *reg)
 	return SUCCESS;
 }
 
-void test_world_exit(world *world, block_registry_t *reg)
+void test_world_exit(world *world, block_resources_t *reg)
 {
 	for (int i = 0; i < world->layers.length; i++)
 		world_layer_free(LAYER_FROM_WORLD(world, i));
@@ -159,7 +159,7 @@ client_render_rules prepare_rendering_rules()
 
 int main(int argc, char *argv[])
 {
-	block_registry_t reg;
+	block_resources_t reg;
 	vec_init(&reg);
 
 	g_reg = &reg;

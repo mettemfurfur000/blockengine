@@ -24,12 +24,12 @@ typedef struct client_render_rules
 } client_render_rules;
 
 // renders layer of the world. smart enough to not render what player doesnt see
-void layer_render(const world *w, const int layer_index, block_registry_t *b_reg,
+void layer_render(const world *w, const int layer_index, block_resources_t *b_reg,
 				  const int frame_number,
 				  const layer_slice slice);
 
 // renders single frame of the world.
-void client_render(const world *w, block_registry_t *b_reg, client_render_rules render_rules, const int cur_frame);
+void client_render(const world *w, block_resources_t *b_reg, client_render_rules render_rules, const int cur_frame);
 
 // TODO: after handling block updates from server, make sure to write function that rerenders only changed parts of the world.
 // until then, just rerender everything.

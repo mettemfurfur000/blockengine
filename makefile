@@ -1,4 +1,4 @@
-CFLAGS += -O0 -Wall -g  # -pg -no-pie
+CFLAGS += -O1 -Wall -g  # -pg -no-pie
 LDFLAGS += -lm # -pg
 
 ifeq ($(OS),Windows_NT)
@@ -16,7 +16,7 @@ endif
 
 sources := $(shell cd src;echo *.c)
 objects := $(patsubst %.c,obj/%.o,$(sources))
-headers := $(shell cd src/include;echo *.h)
+headers := $(shell cd include;echo *.h)
 
 .PHONY: win_get_libs
 win_get_libs: SDL2.dll libwinpthread-1.dll

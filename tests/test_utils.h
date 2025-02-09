@@ -13,7 +13,7 @@
 	LOG_DEBUG("Executing %s", #f_name); \
 	result = f_name();                  \
 	passed += result ? 1 : 0;           \
-	LOG_DEBUG("Result: %s ", result ? "SUCCESS" : "FAIL");
+	LOG_DEBUG("%s Result: %s ", #f_name, result ? "SUCCESS" : "FAIL");
 
 #define FINISH_TESTING()    \
 	return passed == total; \

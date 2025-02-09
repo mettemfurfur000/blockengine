@@ -1,4 +1,5 @@
 #include "../include/logging.h"
+#include <pthread.h>
 
 int log_enabled = 0;
 FILE *log_file = NULL;
@@ -24,18 +25,48 @@ void log_end()
     log_enabled = 0;
 }
 
-void log_msg(const char *format, ...)
+char *log_level_to_str(unsigned char level)
 {
-    if (!log_enabled)
+    switch (level)
+    {
+    case 1:
+        return "ERROR";
+    case 2:
+        return "WARNING";
+    case 3:
+        return "INFO";
+    case 4:
+        return "DEBUG";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+void log_msg(unsigned char level, const char *format, ...)
+{
+    if (!log_enabled || level == 0)
         return;
+
+    static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&log_mutex);
+
+    time_t now = time(NULL);
+    char *timestr = ctime(&now);
+    timestr[strlen(timestr) - 1] = '\0';
+    fprintf(log_file, "[%s] [%s] ", timestr, log_level_to_str(level));
 
     va_list args;
     va_start(args, format);
-    vfprintf(log_file, format, args);
+    int ret = vfprintf(log_file, format, args);
     va_end(args);
-    fprintf(log_file, "\n");
 
+    if (ret < 0)
+    {
+        // Handle error
+    }
+
+    fprintf(log_file, "\n");
     fflush(log_file);
 
-    return;
+    pthread_mutex_unlock(&log_mutex);
 }

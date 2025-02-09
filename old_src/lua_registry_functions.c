@@ -4,7 +4,7 @@ int lua_read_registry_entry(lua_State *L)
 {
     scripting_check_arguments(L, 2, LUA_TLIGHTUSERDATA, LUA_TNUMBER);
 
-    block_registry_t *reg = (block_registry_t *)lua_touserdata(L, 1);
+    block_resources_t *reg = (block_resources_t *)lua_touserdata(L, 1);
     int block_id = lua_tonumber(L, 2);
 
     for (int i = 0; i < reg->length; i++)

@@ -18,7 +18,7 @@ tile_rand(const int x, const int y)
 }
 
 // renders layer of the world. smart enough to not render what player doesnt see
-void layer_render(const world *w, const int layer_index, block_registry_t *b_reg,
+void layer_render(const world *w, const int layer_index, block_resources_t *b_reg,
 				  const int frame_number,
 				  const layer_slice slice)
 {
@@ -141,7 +141,7 @@ void layer_render(const world *w, const int layer_index, block_registry_t *b_reg
 }
 
 // renders single frame of the world.
-void client_render(const world *w, block_registry_t *b_reg, client_render_rules render_rules, const int frame_number)
+void client_render(const world *w, block_resources_t *b_reg, client_render_rules render_rules, const int frame_number)
 {
 	for (int i = 0; i < render_rules.draw_order.length; i++)
 	{

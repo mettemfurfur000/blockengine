@@ -262,7 +262,7 @@ int scripting_load_file(const char *short_filename)
 	return SUCCESS;
 }
 
-void scripting_load_scripts(block_registry_t *reg)
+void scripting_load_scripts(block_resources_t *reg)
 {
 	const int length = reg->length;
 

@@ -21,6 +21,8 @@ int test_read_from_string()
 
 	status &= memcmp(data_out.ptr, (const char *)data_must_be, data_out.size) == 0;
 
+	free(data_out.ptr);
+
 	return status;
 }
 
@@ -38,14 +40,14 @@ int test_parse_from_file()
 			 br.tags.size,
 			 br.tags.str);
 
-	print_table(br.all_fields);
+	// print_table(br.all_fields);
 
 	free_block_resources(&br);
 
 	return status;
 }
 
-void print_registry(block_registry_t br)
+void print_registry(block_resources_t br)
 {
 	LOG_INFO("printing registry with size %d:\n", br.length);
 
@@ -62,10 +64,10 @@ void print_registry(block_registry_t br)
 int test_parse_folder()
 {
 	int status = 1;
-	block_registry_t b_reg;
+	block_resources_t b_reg;
 	vec_init(&b_reg);
 
-	status = read_block_registry("resources/blocks", &b_reg);
+	status = read_block_registry("resources/blocks", &b_reg) == SUCCESS;
 
 	print_registry(b_reg);
 
@@ -77,10 +79,10 @@ int test_parse_folder()
 int test_sort()
 {
 	int status = 1;
-	block_registry_t b_reg;
+	block_resources_t b_reg;
 	vec_init(&b_reg);
 
-	status &= read_block_registry("resources/blocks", &b_reg);
+	status &= read_block_registry("resources/blocks", &b_reg) == SUCCESS;
 
 	print_registry(b_reg);
 

@@ -1,7 +1,7 @@
 #include "include/world_utils.h"
 
 // turns string into formatted block chain
-void bprintf(const world *w, block_registry_t *reg, int layer, int orig_x, int orig_y, int length_limit, const char *format, ...)
+void bprintf(const world *w, block_resources_t *reg, int layer, int orig_x, int orig_y, int length_limit, const char *format, ...)
 {
     char buffer[1024] = {};
     va_list args;

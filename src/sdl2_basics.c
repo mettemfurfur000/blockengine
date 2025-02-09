@@ -74,6 +74,20 @@ int init_graphics()
 	if (!status)
 		LOG_ERROR("Not able to allocate enough user events");
 
+	SDL_AudioSpec desired;
+	desired.freq = 22050;
+	desired.format = AUDIO_S16SYS;
+	desired.channels = 2;
+	desired.samples = 4096;
+	desired.callback = NULL;
+	SDL_AudioSpec obtained;
+
+	if (SDL_OpenAudio(&desired, &obtained) == -1)
+	{
+		LOG_ERROR("SDL_OpenAudio Error: %s", SDL_GetError());
+		return FAIL;
+	}
+
 	return status;
 }
 
