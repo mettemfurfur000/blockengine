@@ -33,31 +33,31 @@ u8 block_get_id(room *r, u32 layer_index, u32 x, u32 y, u64 *id)
     return SUCCESS;
 }
 
-u8 block_get_tags(room *r, u32 layer_index, u32 x, u32 y, blob *tags_out)
+u8 block_get_vars(room *r, u32 layer_index, u32 x, u32 y, blob *vars_out)
 {
-    CHECK(r, block_get_tags)
+    CHECK(r, block_get_vars)
     layer l = r->layers.data[layer_index];
-    CHECK(x >= r->width || y >= r->height, block_get_tags);
-    CHECK(tags_out, block_get_tags)
-    CHECK(l.tags, block_get_tags)
+    CHECK(x >= r->width || y >= r->height, block_get_vars);
+    CHECK(vars_out, block_get_vars)
+    CHECK(l.vars, block_get_vars)
 
     u64 key_num = MERGE32_TO_64(x, y);
     blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
-    *tags_out = get_entry(l.tags, key);
+    *vars_out = get_entry(l.vars, key);
 
     return SUCCESS;
 }
 
-u8 block_set_tags(room *r, u32 layer_index, u32 x, u32 y, blob tags)
+u8 block_set_vars(room *r, u32 layer_index, u32 x, u32 y, blob vars)
 {
-    CHECK(r, block_set_tags)
+    CHECK(r, block_set_vars)
     layer l = r->layers.data[layer_index];
-    CHECK(x >= r->width || y >= r->height, block_set_tags)
-    CHECK(l.tags, block_set_tags)
+    CHECK(x >= r->width || y >= r->height, block_set_vars)
+    CHECK(l.vars, block_set_vars)
 
     u64 key_num = MERGE32_TO_64(x, y);
     blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
-    put_entry(l.tags, key, tags);
+    put_entry(l.vars, key, vars);
 
     return SUCCESS;
 }
@@ -69,8 +69,8 @@ u8 alloc_layer(layer *l, room *parent_room)
 
     l->blocks = calloc(parent_room->width * parent_room->width, l->bytes_per_block);
 
-    if (FLAG_GET(l->flags, LAYER_FLAG_HAS_TAGS) && l->tags == 0)
-        l->tags = alloc_table();
+    if (FLAG_GET(l->flags, LAYER_FLAG_HAS_vars) && l->vars == 0)
+        l->vars = alloc_table();
     return SUCCESS;
 }
 
@@ -78,8 +78,8 @@ u8 free_layer(layer *l)
 {
     CHECK(l, free_layer)
     SAFE_FREE(l->blocks);
-    if (l->tags)
-        free_table(l->tags);
+    if (l->vars)
+        free_table(l->vars);
 
     return SUCCESS;
 }

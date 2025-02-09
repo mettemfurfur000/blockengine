@@ -1,4 +1,4 @@
-#include "../include/tags.h"
+#include "../include/vars.h"
 #include "test_utils.h"
 #include <stdio.h>
 
@@ -159,7 +159,7 @@ int test_full_test()
 	return status;
 }
 
-INIT_TESTING(test_tags_all)
+INIT_TESTING(test_vars_all)
 
 RUN_TEST(test_basic_data_manip)
 RUN_TEST(test_array_data)

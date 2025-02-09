@@ -37,8 +37,8 @@ int test_parse_from_file()
 		return FAIL;
 
 	LOG_INFO("\t\tblock: %lld, %.*s", br.id,
-			 br.tags.size,
-			 br.tags.str);
+			 br.vars.size,
+			 br.vars.str);
 
 	// print_table(br.all_fields);
 
@@ -55,8 +55,8 @@ void print_registry(block_resources_t br)
 	{
 		LOG_INFO("\t\tblock: %lld,", br.data[i].id);
 
-		br.data[i].tags.ptr ? LOG_INFO("%.*s\n", br.data[i].tags.size,
-									   br.data[i].tags.ptr)
+		br.data[i].vars.ptr ? LOG_INFO("%.*s\n", br.data[i].vars.size,
+									   br.data[i].vars.ptr)
 							: LOG_INFO("(no data)\n");
 	}
 }

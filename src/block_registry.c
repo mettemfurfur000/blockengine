@@ -204,8 +204,8 @@ u8 block_res_id_handler(const char *data, block_resources *dest)
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
 	return strcmp(data, clean_token) == 0
-			   ? tag_delete_all(&dest->tags)
-			   : make_block_data_from_string(data, &dest->tags);
+			   ? tag_delete_all(&dest->vars)
+			   : make_block_data_from_string(data, &dest->vars);
 }
 
 u8 block_res_texture_handler(const char *data, block_resources *dest)
@@ -408,7 +408,7 @@ u32 read_block_registry(const char *folder, block_resources_t *reg)
 	LOG_INFO("Reading block registry from %s", folder);
 
 	// push a default void block with id 0
-	block_resources filler_entry = {.id = 0, .tags = {{}, {}}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
+	block_resources filler_entry = {.id = 0, .vars = {{}, {}}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
 	(void)vec_push(reg, filler_entry);
 
 	while ((entry = readdir(directory)) != NULL)

@@ -1,5 +1,5 @@
-#ifndef TAGS_MANIPULATIONS_H
-#define TAGS_MANIPULATIONS_H 1
+#ifndef vars_MANIPULATIONS_H
+#define vars_MANIPULATIONS_H 1
 
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +39,7 @@ fdesp(example,'g') returns -1 (Failure)
 
 i32 fdesp(blob b, char letter);
 
-// tags
+// vars
 
 blob tag_get(blob b, char letter);
 

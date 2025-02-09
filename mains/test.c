@@ -5,7 +5,7 @@
 
 #include "../tests/block_properties_test.c"
 #include "../tests/block_registry_test.c"
-#include "../tests/tags_test.c"
+#include "../tests/vars_test.c"
 #include "../tests/hash_table_test.c"
 
 #include "../include/endianless.h"
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	// successes += test_world_all();
 	successes += test_hash_table_all();
 	successes += test_block_props_all();
-	successes += test_tags_all();
+	successes += test_vars_all();
 	successes += test_all_registry();
 
 	switch (successes)

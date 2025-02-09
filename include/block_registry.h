@@ -22,7 +22,7 @@
 #include "sdl2_basics.h"
 #include "flags.h"
 
-#include "tags.h"
+#include "vars.h"
 
 #include "../vec/src/vec.h"
 
@@ -36,7 +36,7 @@ typedef struct block_resources
 {
 	hash_node **all_fields;
 	u64 id;
-	blob tags;
+	blob vars;
 
 	texture block_texture;
 
