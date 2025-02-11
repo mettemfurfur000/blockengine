@@ -3,6 +3,8 @@
 
 #include "test_utils.h"
 
+#define TESTS 100000
+
 int test_rand_fill_and_remove()
 {
 	hash_node **table = alloc_table();
@@ -11,7 +13,7 @@ int test_rand_fill_and_remove()
 	blob val = {};
 	blob ret = {};
 
-	for (int i = 1; i < 2000; i++)
+	for (int i = 1; i < TESTS; i++)
 	{
 		blob_generate(&key, 5 + i);
 
@@ -55,7 +57,6 @@ int test_hash_table_fill()
 	int rand_val;
 	int status = 1;
 
-	const int tests = 10000;
 	double avg_random_get = 0;
 	float filling_time;
 
@@ -63,7 +64,7 @@ int test_hash_table_fill()
 
 	bench_start_time = bench_start();
 
-	for (int i = 0; i < tests; i++)
+	for (int i = 0; i < TESTS; i++)
 	{
 		rand_val = rand();
 		blob_generate(&key, rand_val);
@@ -72,12 +73,12 @@ int test_hash_table_fill()
 
 	filling_time = bench_end(bench_start_time);
 
-#define RUNS 10
+#define RUNS 5
 	for (int j = 0; j < RUNS; j++)
 	{
 		bench_start_time = bench_start();
 
-		for (int i = 0; i < tests; i++)
+		for (int i = 0; i < TESTS; i++)
 		{
 			rand_val = rand();
 
@@ -99,17 +100,13 @@ int test_hash_table_fill()
 
 	free_table(table);
 
-	LOG_INFO("filling time = %f, average get time: %f, gets per second: %d", filling_time, avg_random_get, (1 / avg_random_get) * tests);
+	LOG_INFO("filling time = %f, average get time: %f, gets per second: %d", filling_time, avg_random_get, (1 / avg_random_get) * TESTS);
 
 	return status;
 }
 
 INIT_TESTING(test_hash_table_all)
 
-RUN_TEST(test_rand_fill_and_remove)
-RUN_TEST(test_hash_table_fill)
-RUN_TEST(test_rand_fill_and_remove)
-RUN_TEST(test_hash_table_fill)
 RUN_TEST(test_rand_fill_and_remove)
 RUN_TEST(test_hash_table_fill)
 
