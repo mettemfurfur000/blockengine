@@ -96,11 +96,10 @@ int test_hash_table_fill()
 		avg_random_get += bench_end(bench_start_time);
 	}
 	avg_random_get = avg_random_get / RUNS;
-	int gets_per_second = (1 / avg_random_get) * tests;
 
 	free_table(table);
 
-	LOG_DEBUG("filling time = %f, average get time: %f, gets per second: %d", filling_time, avg_random_get, gets_per_second);
+	LOG_INFO("filling time = %f, average get time: %f, gets per second: %d", filling_time, avg_random_get, (1 / avg_random_get) * tests);
 
 	return status;
 }

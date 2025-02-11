@@ -1,18 +1,21 @@
-[ ] - add proper logging system
-[ ] - code a normal client using openGL
+[x] - add proper logging system
+[ ] - code a normal client using openGL (hell nah)
 [ ] - add a function to convert block data from raw to readable format and back (for lua)
 
 [ ] - big world layer update
-    [ ] - allow layers to have different block id sizes:
-        [ ] - basic sizes:
+    [x] - allow layers to have different block id sizes:
+        [x] - basic sizes:
             1, 2, 4 bytes
-        [ ] - micro sizes:
+        [x] - micro sizes:
             4, 2, 1 bit(s) per block
-    [ ] - allow layers to have different height and width sizes (so it could fit in a hashtable lookup function)
-        [ ] - 1, 2, 4 bytes for size variable for 256, 65536, and 4294967296 blocks in total for 1 dimension
-    [ ] - make general functions for block operations on layers, so its independant on id limits or world sizes
+    [x] - allow layers to have different height and width sizes (so it could fit in a hashtable lookup function)
+        [x] - 1, 2, 4 bytes for size variable for 256, 65536, and 4294967296 blocks in total for 1 dimension
+    [x] - make general functions for block operations on layers, so its independant on id limits or world sizes
     [ ] - make it easily saveable on disk for later loading, of course
-    [ ] - instead of storing block data inside of each block, store it in some sort of hashtable
+    [x] - instead of storing block data inside of each block, store it in some sort of hashtable
+        [ ] - leave an option to store block variables the old way
 
-    [ ] - also change registies and have each layer its own registry
-    [ ] - allow multiple layers to share 1 registry, but only if they have the same id range (sizes may be different)
+    [x] - also change registies and have each layer its own registry (or no registry at all)
+    [x] - allow multiple layers to share 1 registry, but only if they have the same id range (sizes may be different)
+[ ] - testing 
+    

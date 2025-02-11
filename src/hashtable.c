@@ -31,8 +31,7 @@ blob blobify(char *str)
 
 u8 blob_dup(blob *dest, blob src)
 {
-	if (!dest)
-		return FAIL;
+	CHECK_PTR(dest, blob_dup);
 
 	SAFE_FREE(dest->ptr)
 
@@ -68,9 +67,6 @@ hash_node *alloc_node()
 
 void free_node(hash_node *node)
 {
-	if (!node)
-		return;
-
 #if HASHTABLE_DEBUG_LOGGING == 1
 	print_node(node, "freeing");
 #endif
@@ -82,9 +78,6 @@ void free_node(hash_node *node)
 
 void copy_key(hash_node *node, blob key)
 {
-	if (!node)
-		return;
-
 	blob_dup(&node->key, key);
 #if HASHTABLE_DEBUG_LOGGING == 1
 	print_node(node, "key copied");
@@ -93,9 +86,6 @@ void copy_key(hash_node *node, blob key)
 
 void copy_value(hash_node *node, blob value)
 {
-	if (!node)
-		return;
-
 	blob_dup(&node->value, value);
 
 #if HASHTABLE_DEBUG_LOGGING == 1
@@ -105,9 +95,6 @@ void copy_value(hash_node *node, blob value)
 
 void copy_all(hash_node *node, blob key, blob value)
 {
-	if (!node)
-		return;
-
 	blob_dup(&node->key, key);
 	blob_dup(&node->value, value);
 
@@ -128,8 +115,7 @@ hash_node **alloc_table()
 
 void free_table(hash_node **table)
 {
-	if (!table)
-		return;
+	CHECK_PTR_NORET(table, free_table);
 
 	LOG_DEBUG("Freeing table of size %d, ptr %p", TABLE_SIZE, table);
 
@@ -150,8 +136,7 @@ void free_table(hash_node **table)
 
 void put_entry(hash_node **table, blob key, blob value)
 {
-	if (!table)
-		return;
+	CHECK_PTR_NORET(table, put_entry);
 
 	unsigned long hash = hash_function(key);
 	hash_node *node = table[hash];
@@ -237,8 +222,7 @@ void print_table(hash_node **table)
 
 void remove_entry(hash_node **table, blob key)
 {
-	if (!table)
-		return;
+	CHECK_PTR_NORET(table, remove_entry);
 
 	unsigned long hash = hash_function(key);
 	hash_node *prev = NULL;
@@ -263,8 +247,7 @@ void remove_entry(hash_node **table, blob key)
 
 u64 actual_size_of_table(hash_node **table)
 {
-	if (!table)
-		return -1;
+	CHECK_PTR(table, actual_size_of_table);
 
 	u64 size = 0;
 	hash_node *node;
@@ -282,4 +265,24 @@ u64 actual_size_of_table(hash_node **table)
 	}
 
 	return size;
+}
+
+u64 table_elements(hash_node **table)
+{
+	CHECK_PTR(table, table_elements);
+
+	u64 count = 0;
+
+	hash_node *node;
+	for (int i = 0; i < TABLE_SIZE; ++i)
+	{
+		node = table[i];
+		while (node != NULL)
+		{
+			count++;
+			node = node->next;
+		}
+	}
+
+	return count;
 }

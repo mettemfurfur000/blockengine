@@ -1,4 +1,4 @@
-CFLAGS += -O1 -Wall -g  # -pg -no-pie
+CFLAGS += -O0 -Wall -g  # -pg -no-pie
 LDFLAGS += -lm # -pg
 
 ifeq ($(OS),Windows_NT)
@@ -34,10 +34,12 @@ make_folders:
 #part with resources copy
 .PHONY: resources
 resources: make_folders
-	mkdir -p build/resources
-	mkdir -p build/resources/textures
-	mkdir -p build/resources/blocks
-	cp -r resources/* build/resources
+	mkdir -p build/levels
+	mkdir -p build/registries
+	mkdir -p build/registries/test
+	mkdir -p build/registries/test/textures
+	mkdir -p build/registries/test/blocks
+	cp -r resources/* build/registries/test
 
 obj/%.o : src/%.c
 	gcc $(CFLAGS) -c $^ -o $@

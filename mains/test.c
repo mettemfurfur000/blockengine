@@ -1,7 +1,7 @@
 // #include "../tests/block_memory_control_test.c"
 // #include "../tests/block_operations_test.c"
 // #include "../tests/test_utils.h"
-// #include "../tests/world_fs.test.c"
+#include "../tests/file_system_test.c"
 
 #include "../tests/block_properties_test.c"
 #include "../tests/block_registry_test.c"
@@ -23,10 +23,11 @@ int main(int argc, char *argv[])
 
 	// successes += test_block_all();
 	// successes += test_block_operations_all();
-	// successes += test_world_all();
+
 	successes += test_hash_table_all();
 	successes += test_block_props_all();
 	successes += test_vars_all();
+	successes += test_file_system();
 	successes += test_all_registry();
 
 	switch (successes)

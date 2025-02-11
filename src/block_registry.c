@@ -216,8 +216,14 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
 		return SUCCESS;
 	}
 
-	char texture_full_path[256];
-	snprintf(texture_full_path, sizeof(texture_full_path), "resources/textures/%s", data);
+	CHECK_PTR(dest->parent_registry, block_res_texture_handler)
+
+	block_registry *b_reg = (block_registry *)dest->parent_registry;
+
+	CHECK_PTR(b_reg->name, block_res_texture_handler)
+
+	char texture_full_path[256] = {};
+	snprintf(texture_full_path, sizeof(texture_full_path), REGISTRIES_FOLDER "/%s/" REGISTRY_TEXTURES_FOLDER "/%s", b_reg->name, data);
 
 	return texture_load(&dest->block_texture, texture_full_path);
 }
@@ -290,7 +296,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 
 	if (load_properties(file_path, properties) == FAIL)
 	{
-		LOG_ERROR("Error loading block resources: %s", file_path);
+		LOG_ERROR("Error loading properties: %s", file_path);
 
 		free_table(properties);
 		return FAIL;
@@ -369,7 +375,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			break;
 		}
 
-		if (res_handlers[i].function(entry.str, dest) == FAIL) // handler is beink called here
+		if (res_handlers[i].function(entry.str, dest) != SUCCESS) // handler is beink called here
 		{
 			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s", file_path, res_handlers[i].name, entry.str);
 			status = FAIL;
@@ -386,26 +392,32 @@ u32 is_already_in_registry(block_resources_t *reg, block_resources *br)
 {
 	for (u32 i = 0; i < reg->length; i++)
 		if (br->id == reg->data[i].id)
-			return SUCCESS;
+			return 1;
 
-	return FAIL;
+	return 0;
 }
 
-u32 read_block_registry(const char *folder, block_resources_t *reg)
+u32 read_block_registry(const char *name, block_registry *registry)
 {
+	CHECK_PTR(registry, read_block_registry);
+	registry->name = name;
+
+	block_resources_t *reg = &registry->resources;
 	DIR *directory;
 	struct dirent *entry;
 
-	directory = opendir(folder);
+	char path[64] = {};
+	snprintf(path, sizeof(path), REGISTRIES_FOLDER "/%s/blocks", name);
+	directory = opendir(path);
 
 	if (directory == NULL)
 	{
-		LOG_ERROR("Unable to open directory: %s", folder);
+		LOG_ERROR("Unable to open directory: %s", path);
 		closedir(directory);
 		return FAIL;
 	}
 
-	LOG_INFO("Reading block registry from %s", folder);
+	LOG_INFO("Reading block registry from %s", path);
 
 	// push a default void block with id 0
 	block_resources filler_entry = {.id = 0, .vars = {{}, {}}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
@@ -418,12 +430,13 @@ u32 read_block_registry(const char *folder, block_resources_t *reg)
 
 		if (entry->d_type == DT_REG)
 		{
-			block_resources br = {.type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
-			char file_to_parse[300];
-			snprintf(file_to_parse, sizeof(file_to_parse), "%s/%s", folder, entry->d_name);
+			block_resources br = {.type_controller = 0, .frames_per_second = 0, .anim_controller = 0, .parent_registry = registry};
+			char file_to_parse[468] = {};
+			snprintf(file_to_parse, sizeof(file_to_parse), "%s/%s", path, entry->d_name);
 
 			if (parse_block_resources_from_file(file_to_parse, &br) == FAIL)
 			{
+				LOG_ERROR("Failed to parse block resources from file: %s", file_to_parse);
 				free_block_resources(&br);
 				continue;
 			}
@@ -440,7 +453,7 @@ u32 read_block_registry(const char *folder, block_resources_t *reg)
 
 	FLAG_SET(filler_entry.flags, B_RES_FLAG_IS_FILLER, 1)
 
-	sort_by_id(reg);
+	sort_by_id(registry);
 
 	u32 orig_length = reg->length;
 
@@ -461,7 +474,7 @@ u32 read_block_registry(const char *folder, block_resources_t *reg)
 		}
 	}
 
-	sort_by_id(reg);
+	sort_by_id(registry);
 
 	closedir(directory);
 
@@ -473,25 +486,27 @@ int __b_cmp(const void *a, const void *b)
 	return ((block_resources *)a)->id > ((block_resources *)b)->id;
 }
 
-void sort_by_id(block_resources_t *b_reg)
+void sort_by_id(block_registry *b_reg)
 {
-	qsort(b_reg->data, b_reg->length, sizeof(*b_reg->data), __b_cmp);
+	qsort(b_reg->resources.data, b_reg->resources.length, sizeof(*b_reg->resources.data), __b_cmp);
 }
 
 void free_block_resources(block_resources *b)
 {
 	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
-		if (res_handlers[i].function(clean_token, b) == FAIL)
-			LOG_ERROR("\"%lld\": handler \"%s\" failed to free block resources", b->id, res_handlers[i].name);
+		if (res_handlers[i].function(clean_token, b) != SUCCESS)
+			LOG_ERROR("block id \"%lld\": handler \"%s\" failed to free block resources", b->id, res_handlers[i].name);
 
-	free_table(b->all_fields);
+	if (b->id != 0 && FLAG_GET(b->flags, B_RES_FLAG_IS_FILLER) == 0) // ignore filler blocks and an air block, they are created by engine
+		free_table(b->all_fields);
 }
 
-void free_block_registry(block_resources_t *b_reg)
+void free_block_registry(block_registry *b_reg)
 {
-	for (u32 i = 0; i < b_reg->length; i++)
-		free_block_resources(&b_reg->data[i]);
-	vec_deinit(b_reg);
+	LOG_INFO("Freeing block registry: %s", b_reg->name);
+	for (u32 i = 0; i < b_reg->resources.length; i++)
+		free_block_resources(&b_reg->resources.data[i]);
+	vec_deinit(&b_reg->resources);
 }
 
 u32 read_all_registries(char *folder, vec_registries_t *dest)
@@ -524,7 +539,7 @@ u32 read_all_registries(char *folder, vec_registries_t *dest)
 			sprintf(pathbuf, "%s%c%s", folder, SEPARATOR, entry->d_name);
 			LOG_INFO("Reading registry from %s", pathbuf);
 
-			if (read_block_registry(pathbuf, &temp.resources) == FAIL)
+			if (read_block_registry(pathbuf, &temp) == FAIL)
 			{
 				LOG_ERROR("Error reading registry from %s", pathbuf);
 				closedir(directory);
@@ -538,11 +553,11 @@ u32 read_all_registries(char *folder, vec_registries_t *dest)
 	return SUCCESS;
 }
 
-block_registry *find_registry(vec_registries_t *src, char *name)
+block_registry *find_registry(vec_registries_t src, char *name)
 {
-	for (u32 i = 0; i < src->length; i++)
-		if (strcmp(src->data[i].name, name) == 0)
-			return &src->data[i];
+	for (u32 i = 0; i < src.length; i++)
+		if (strcmp(src.data[i].name, name) == 0)
+			return &src.data[i];
 
 	return NULL;
 }

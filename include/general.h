@@ -30,6 +30,10 @@ static_assert(sizeof(i64) == 8);
 
 #define SUCCESSFUL(op) ((op) == SUCCESS)
 
+#define LEVELS_FOLDER "levels"
+#define REGISTRIES_FOLDER "registries"
+#define REGISTRY_TEXTURES_FOLDER "textures"
+
 #define SAFE_FREE(ptr) \
     if (ptr)           \
         free(ptr);     \
@@ -42,11 +46,25 @@ static_assert(sizeof(i64) == 8);
         return FAIL;                                     \
     }
 
+#define CHECK_PTR_NORET(ptr, func_name)                  \
+    if (!(ptr))                                          \
+    {                                                    \
+        LOG_ERROR(#func_name " : '" #ptr "' is NULL\n"); \
+        return;                                          \
+    }
+
 #define CHECK(expression, func_name)                                       \
     if (expression)                                                        \
     {                                                                      \
         LOG_ERROR(#func_name " : check failed: '" #expression " == 0'\n"); \
         return FAIL;                                                       \
+    }
+
+#define CHECK_NORET(expression, func_name)                                 \
+    if (expression)                                                        \
+    {                                                                      \
+        LOG_ERROR(#func_name " : check failed: '" #expression " == 0'\n"); \
+        return;                                                            \
     }
 
 #endif

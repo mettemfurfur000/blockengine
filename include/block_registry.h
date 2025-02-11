@@ -35,6 +35,7 @@
 typedef struct block_resources
 {
 	hash_node **all_fields;
+	void *parent_registry;
 	u64 id;
 	blob vars;
 
@@ -111,12 +112,12 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest);
 void free_block_resources(block_resources *b);
 
 u32 is_already_in_registry(block_resources_t *reg, block_resources *br);
-u32 read_block_registry(const char *folder, block_resources_t *reg);
+u32 read_block_registry(const char *name, block_registry *registry);
 
-void sort_by_id(block_resources_t *b_reg);
-void free_block_registry(block_resources_t *b_reg);
+void sort_by_id(block_registry *b_reg);
+void free_block_registry(block_registry *b_reg);
 
 u32 read_all_registries(char *folder, vec_registries_t *dest);
-block_registry *find_registry(vec_registries_t *src, char *name);
+block_registry *find_registry(vec_registries_t src, char *name);
 
 #endif

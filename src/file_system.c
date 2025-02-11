@@ -1,8 +1,6 @@
 #include "../include/file_system.h"
 #include "../include/level.h"
 
-const char *levels_folder = "levels";
-
 #define WRITE(object, f) endianless_write((u8 *)&object, sizeof(object), f)
 #define READ(object, f) endianless_read((u8 *)&object, sizeof(object), f)
 
@@ -12,96 +10,209 @@ void blob_write(blob b, FILE *f)
     fwrite(b.str, 1, b.length, f);
 }
 
-void blob_read(blob *b, FILE *f)
+blob blob_read(FILE *f)
 {
-    READ(b->length, f);
-    b->str = malloc(b->length);
-    fread(b->str, 1, b->length, f);
+    blob t;
+    READ(t.length, f);
+    t.str = malloc(t.length);
+    fread(t.str, 1, t.length, f);
+    return t;
 }
 
-void write_room(room *r, FILE *f)
+void write_hashtable(hash_node **t, FILE *f)
+{
+    const u32 size = TABLE_SIZE;
+    const u32 elements = table_elements(t);
+
+    WRITE(size, f);     // write table size
+    WRITE(elements, f); // write number of elements
+
+    for (u32 i = 0; i < TABLE_SIZE; i++)
+    {
+        hash_node *n = t[i];
+        while (n != NULL)
+        {
+            blob_write(n->key, f);
+            blob_write(n->value, f);
+
+            n = n->next;
+        }
+    }
+}
+
+void read_hashtable(hash_node **t, FILE *f)
+{
+    u32 size = TABLE_SIZE;
+    u32 elements = 0;
+
+    READ(size, f);
+    READ(elements, f);
+
+    if (size != TABLE_SIZE)
+        LOG_WARNING("Table size mismatch, expected %d, got %d", TABLE_SIZE, size);
+
+    for (u32 i = 0; i < elements; i++)
+    {
+        blob key = blob_read(f);
+        blob value = blob_read(f);
+
+        put_entry(t, key, value); // i could just put it in place but im not sure about the order of them being called
+    }
+}
+
+void write_layer(layer l, level lvl, FILE *f)
+{
+    WRITE(l.bytes_per_block, f);
+    WRITE(l.flags, f);
+
+    if (!l.registry)
+        blob_write(blobify("no_registry"), f);
+    else
+        blob_write(blobify((char *)l.registry->name), f);
+
+    u64 id = 0;
+    for (u32 x = 0; x < l.width; x++)
+        for (u32 y = 0; y < l.height; y++)
+        {
+            if (block_get_id(&l, x, y, &id) == FAIL)
+                continue;
+            endianless_write((u8 *)&id, l.bytes_per_block, f);
+        }
+
+    write_hashtable(l.vars, f);
+}
+
+void read_layer(layer *l, level lvl, FILE *f)
+{
+    READ(l->bytes_per_block, f);
+    READ(l->flags, f);
+
+    blob registry_name = blob_read(f);
+
+    if (registry_name.length == 0)
+        l->registry = NULL;
+    else
+    {
+        l->registry = find_registry(lvl.registries, registry_name.str);
+
+        if (!l->registry)
+            LOG_WARNING("Registry %s not found", registry_name.str);
+
+        free(registry_name.str);
+    }
+
+    u64 id = 0;
+    for (u32 x = 0; x < l->width; x++)
+        for (u32 y = 0; y < l->height; y++)
+        {
+            if (block_get_id(l, x, y, &id) == FAIL)
+            {
+                LOG_WARNING("Failed to read block at %d, %d", x, y);
+                block_set_id(l, x, y, 0);
+                continue;
+            }
+            block_set_id(l, x, y, id);
+        }
+
+    read_hashtable(l->vars, f);
+}
+
+void write_room(room *r, level lvl, FILE *f)
 {
     WRITE(r->width, f);
     WRITE(r->height, f);
-    WRITE(r->depth, f);
 
+    CHECK_PTR_NORET(r->name, write_room)
     blob_write(blobify(r->name), f);
 
-    const u32 total_blocks = r->height + r->width;
-
-    for (u32 i = 0; i < r->depth; i++)
-    {
-        layer layer = r->layers.data[i];
-
-        WRITE(layer.bytes_per_block, f);
-        WRITE(layer.flags, f);
-
-        if (layer.registry != 0)
-            blob_write(blobify((char *)layer.registry->name), f);
-        else
-            blob_write(blobify(""), f);
-
-        for (u32 x = 0; x < r->width; x++)
-            for (u32 y = 0; y < r->height; y++)
-            {
-                u64 id = 0;
-                block_get_id(r, i, x, y, &id);
-                endianless_write((u8 *)&id, layer.bytes_per_block, f);
-            }
-    }
+    for (u32 i = 0; i < r->layers.length; i++)
+        write_layer(r->layers.data[i], lvl, f);
 }
 
-void read_room(level *parent_level, room *r, FILE *f)
+void read_room(room *r, level lvl, FILE *f)
 {
     READ(r->width, f);
     READ(r->height, f);
-    READ(r->depth, f);
 
-    blob t = {};
+    r->name = blob_read(f).str;
 
-    blob_read(&t, f);
-    r->name = t.str;
+    layer tmp;
 
-    const u32 total_blocks = r->height + r->width;
-
-    for (u32 i = 0; i < r->depth; i++)
+    for (u32 i = 0; i < r->layers.length; i++)
     {
-        layer l;
-        blob reg_name = {};
-
-        READ(l.bytes_per_block, f);
-        READ(l.flags, f);
-
-        blob_read(&reg_name, f);
-
-        if (FLAG_GET(l.flags, LAYER_FLAG_HAS_REGISTRY))
-            if (!(l.registry = find_registry(&parent_level->registries, reg_name.str)))
-            {
-                LOG_ERROR("Could not find registry '%s' for room '%s', defaulting to no-registry mode", reg_name.str, r->name);
-                FLAG_SET(l.flags, LAYER_FLAG_HAS_REGISTRY, 0);
-            }
-
-        alloc_layer(&l, r);
-
-        vec_push(&r->layers, l);
+        read_layer(&tmp, lvl, f);
+        (void)vec_push(&r->layers, tmp);
     }
 }
 
-int save_level_to_file(level *l)
+u8 save_level(level lvl)
 {
+    char path[256] = {};
+    sprintf(path, LEVELS_FOLDER "/%s.lvl", lvl.name);
+    FILE *f = fopen(path, "wb");
+    if (!f)
+        return FAIL;
+
+    CHECK_PTR(lvl.name, save_level)
+
+    blob_write(blobify(lvl.name), f);
+    WRITE(lvl.registries.length, f);
+    for (u32 i = 0; i < lvl.registries.length; i++)
+    {
+        const char *reg_name = lvl.registries.data[i].name;
+        CHECK_PTR(reg_name, save_level)
+        blob_write(blobify((char *)reg_name), f); // only save registry names
+    }
+
+    WRITE(lvl.rooms.length, f);
+    for (u32 i = 0; i < lvl.rooms.length; i++)
+        write_room(&lvl.rooms.data[i], lvl, f);
+
+    fclose(f);
+
     return SUCCESS;
 }
 
-// Level loading functions
-int load_level_from_file(level *l)
+u8 load_level(level *lvl, char *name)
 {
-}
+    char path[256] = {};
+    sprintf(path, LEVELS_FOLDER "/%s.lvl", name);
+    FILE *f = fopen(path, "rb");
+    if (!f)
+        return FAIL;
 
-// Utility functions
-int check_file_exists(const char *filename)
-{
-}
+    lvl->name = blob_read(f).str;
 
-int create_levels_directory(void)
-{
+    u32 reg_count;
+    READ(reg_count, f);
+    for (u32 i = 0; i < reg_count; i++)
+    {
+        char *name = blob_read(f).str;
+        block_registry reg = {.name = name};
+
+        sprintf(path, REGISTRIES_FOLDER "/%s", name);
+
+        if (read_block_registry(path, &reg) == FAIL)
+        {
+            LOG_WARNING("Failed to load registry %s", name);
+            free(name);
+            continue;
+        }
+
+        (void)vec_push(&lvl->registries, reg);
+        free(name);
+    }
+
+    u32 room_count;
+    READ(room_count, f);
+    for (u32 i = 0; i < room_count; i++)
+    {
+        room tmp = {};
+        read_room(&tmp, *lvl, f);
+        (void)vec_push(&lvl->rooms, tmp);
+    }
+
+    fclose(f);
+
+    return SUCCESS;
 }

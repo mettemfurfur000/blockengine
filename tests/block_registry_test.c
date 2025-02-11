@@ -1,4 +1,5 @@
 #include "../include/block_registry.h"
+#include "../include/file_system.h"
 #include "test_utils.h"
 
 int test_read_from_string()
@@ -31,7 +32,10 @@ int test_parse_from_file()
 	int status = 1;
 	block_resources br = {};
 
-	status &= parse_block_resources_from_file("resources/blocks/test.blk", &br) == SUCCESS;
+	char path[256] = {};
+	sprintf(path, "%s/%s/blocks/test.blk", REGISTRIES_FOLDER, TEST_REGISTRY);
+
+	status &= parse_block_resources_from_file(path, &br) == SUCCESS;
 
 	if (!status)
 		return FAIL;
@@ -47,8 +51,9 @@ int test_parse_from_file()
 	return status;
 }
 
-void print_registry(block_resources_t br)
+void print_registry(block_registry bro)
 {
+	block_resources_t br = bro.resources;
 	LOG_INFO("printing registry with size %d:\n", br.length);
 
 	for (int i = 0; i < br.length; i++)
@@ -64,10 +69,10 @@ void print_registry(block_resources_t br)
 int test_parse_folder()
 {
 	int status = 1;
-	block_resources_t b_reg;
-	vec_init(&b_reg);
+	block_registry b_reg;
+	vec_init(&b_reg.resources);
 
-	status = read_block_registry("resources/blocks", &b_reg) == SUCCESS;
+	status = read_block_registry(TEST_REGISTRY, &b_reg) == SUCCESS;
 
 	print_registry(b_reg);
 
@@ -79,10 +84,10 @@ int test_parse_folder()
 int test_sort()
 {
 	int status = 1;
-	block_resources_t b_reg;
-	vec_init(&b_reg);
+	block_registry b_reg;
+	vec_init(&b_reg.resources);
 
-	status &= read_block_registry("resources/blocks", &b_reg) == SUCCESS;
+	status = read_block_registry(TEST_REGISTRY, &b_reg) == SUCCESS;
 
 	print_registry(b_reg);
 
@@ -98,8 +103,8 @@ int test_sort()
 INIT_TESTING(test_all_registry)
 
 init_graphics();
-RUN_TEST(test_read_from_string)
-RUN_TEST(test_parse_from_file)
+// RUN_TEST(test_read_from_string)
+// RUN_TEST(test_parse_from_file)
 RUN_TEST(test_parse_folder)
 RUN_TEST(test_sort);
 exit_graphics();

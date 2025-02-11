@@ -29,8 +29,7 @@ blob tag_get(blob b, char letter)
 
 u8 tag_delete_all(blob *b)
 {
-	if (b)
-		return FAIL;
+	CHECK_PTR(b, tag_delete_all);
 
 	SAFE_FREE(b->ptr);
 	b->size = 0;
@@ -40,8 +39,7 @@ u8 tag_delete_all(blob *b)
 
 u8 tag_create(blob *b, char letter, u8 size)
 {
-	if (!b)
-		return FAIL;
+	CHECK_PTR(b, tag_create);
 
 	if (fdesp(*b, letter) >= 0)
 		return SUCCESS;

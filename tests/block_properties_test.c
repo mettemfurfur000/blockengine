@@ -4,7 +4,7 @@
 int test_basic_io()
 {
 	int status = 1;
-	char *file = "resources/test.prop";
+	char *file = REGISTRIES_FOLDER "/" TEST_REGISTRY "/test.prop";
 
 	hash_node **table = alloc_table();
 

@@ -49,6 +49,8 @@ blob get_entry(hash_node **table, blob key);
 void print_node(hash_node *node, const char *context);
 void print_table(hash_node **table);
 void remove_entry(hash_node **table, blob key);
+
 u64 actual_size_of_table(hash_node **table);
+u64 table_elements(hash_node **table);
 
 #endif
