@@ -1,4 +1,4 @@
-CFLAGS += -O0 -Wall -g  # -pg -no-pie
+CFLAGS += -O2 -Wall -g  # -pg -no-pie
 LDFLAGS += -lm # -pg
 
 ifeq ($(OS),Windows_NT)
@@ -14,7 +14,8 @@ ifeq ($(OS),Windows_NT)
 	cp C:/msys64/mingw64/bin/$@ build/
 endif
 
-sources := $(shell cd src;echo *.c)
+# sources := $(shell cd src;echo *.c)
+sources += $(shell cd src;find . -name '*.c')
 objects := $(patsubst %.c,obj/%.o,$(sources))
 headers := $(shell cd include;echo *.h)
 

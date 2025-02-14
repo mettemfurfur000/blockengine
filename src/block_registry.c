@@ -204,7 +204,7 @@ u8 block_res_id_handler(const char *data, block_resources *dest)
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
 	return strcmp(data, clean_token) == 0
-			   ? tag_delete_all(&dest->vars)
+			   ? var_delete_all(&dest->vars)
 			   : make_block_data_from_string(data, &dest->vars);
 }
 

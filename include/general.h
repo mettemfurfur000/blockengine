@@ -33,6 +33,7 @@ static_assert(sizeof(i64) == 8);
 #define LEVELS_FOLDER "levels"
 #define REGISTRIES_FOLDER "registries"
 #define REGISTRY_TEXTURES_FOLDER "textures"
+#define SCRIPTS_FOLDER "scripts"
 
 #define SAFE_FREE(ptr) \
     if (ptr)           \

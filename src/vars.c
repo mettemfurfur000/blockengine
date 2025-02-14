@@ -12,7 +12,7 @@ i32 fdesp(blob b, char letter)
 	return FAIL;
 }
 
-blob tag_get(blob b, char letter)
+blob var_get(blob b, char letter)
 {
 	i32 index = fdesp(b, letter);
 
@@ -27,9 +27,9 @@ blob tag_get(blob b, char letter)
 	return ret;
 }
 
-u8 tag_delete_all(blob *b)
+u8 var_delete_all(blob *b)
 {
-	CHECK_PTR(b, tag_delete_all);
+	CHECK_PTR(b, var_delete_all);
 
 	SAFE_FREE(b->ptr);
 	b->size = 0;
@@ -37,9 +37,9 @@ u8 tag_delete_all(blob *b)
 	return SUCCESS;
 }
 
-u8 tag_create(blob *b, char letter, u8 size)
+u8 var_create(blob *b, char letter, u8 size)
 {
-	CHECK_PTR(b, tag_create);
+	CHECK_PTR(b, var_create);
 
 	if (fdesp(*b, letter) >= 0)
 		return SUCCESS;
@@ -56,7 +56,7 @@ u8 tag_create(blob *b, char letter, u8 size)
 	return SUCCESS;
 }
 
-u8 tag_delete(blob *b, char letter)
+u8 var_delete(blob *b, char letter)
 {
 	u64 blob_size = b->size;
 	i32 element_pos = fdesp(*b, letter);
@@ -98,14 +98,14 @@ u8 tag_delete(blob *b, char letter)
 	return SUCCESS;
 }
 
-u8 tag_resize(blob *b, char letter, u8 new_size)
+u8 var_resize(blob *b, char letter, u8 new_size)
 {
 	i32 pos = fdesp(*b, letter);
 	if (pos < 0)
 		return FAIL;
 #if 0
-	u8 cur_tag_size = b->ptr[pos + 1];
-	i16 diff = new_size - cur_tag_size;
+	u8 cur_var_size = b->ptr[pos + 1];
+	i16 diff = new_size - cur_var_size;
 
 	u64 blob_size = b->size;
 	u64 new_data_length = blob_size + diff;
@@ -127,12 +127,12 @@ u8 tag_resize(blob *b, char letter, u8 new_size)
 	SAFE_FREE(b->ptr);
 	b->ptr = new_data;
 #endif
-	u8 cur_tag_size = b->ptr[pos + 1];
-	i16 diff = new_size - cur_tag_size;
+	u8 cur_var_size = b->ptr[pos + 1];
+	i16 diff = new_size - cur_var_size;
 
 	u64 blob_size = b->size;
 	u64 new_data_length = blob_size + diff;
-	u16 bytes_to_skip_size = 2 + cur_tag_size;
+	u16 bytes_to_skip_size = 2 + cur_var_size;
 
 	u8 *new_data = (u8 *)calloc(new_data_length, 1);
 	if (!new_data)
@@ -155,7 +155,7 @@ u8 tag_resize(blob *b, char letter, u8 new_size)
 	// Copy tag content
 	memcpy(new_data + pos + 2,
 		   b->ptr + pos + 2,
-		   (new_size < cur_tag_size) ? new_size : cur_tag_size);
+		   (new_size < cur_var_size) ? new_size : cur_var_size);
 
 	SAFE_FREE(b->ptr);
 	b->ptr = new_data;
@@ -170,7 +170,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 {
 	// if tag is not existink yet, create it
 	if (b->ptr == 0 || fdesp(*b, letter) < 0)
-		if (tag_create(b, letter, needed_size) == FAIL) // failed to create
+		if (var_create(b, letter, needed_size) == FAIL) // failed to create
 			return FAIL;
 		else
 			return fdesp(*b, letter); // created, returning the index
@@ -179,8 +179,8 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 
 	i32 old_pos = fdesp(*b, letter); // it exists
 
-	if (TAG_ELEMENT_SIZE(b->ptr, old_pos) < needed_size) // if size is smaller than needed, resize
-		if (tag_resize(b, letter, needed_size) == FAIL)
+	if (VAR_ELEMENT_SIZE(b->ptr, old_pos) < needed_size) // if size is smaller than needed, resize
+		if (var_resize(b, letter, needed_size) == FAIL)
 			return FAIL;
 		else
 			return fdesp(*b, letter);
@@ -203,13 +203,13 @@ i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
 	if (make_endianless(src, size) == FAIL)
 		return FAIL;
 
-	memcpy(TAG_ELEMENT_VALUE(b->ptr, pos), src, size);
+	memcpy(VAR_ELEMENT_VALUE(b->ptr, pos), src, size);
 
 	return SUCCESS;
 }
 
 // will affect src
-int data_get_num_endianless(blob b, char letter, void *dest, int size)
+i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
 {
 	if (!dest)
 		return FAIL;
@@ -218,14 +218,14 @@ int data_get_num_endianless(blob b, char letter, void *dest, int size)
 	if (pos < 0)
 		return FAIL;
 
-	u32 tag_size = TAG_ELEMENT_SIZE(b.ptr, pos);
+	u32 var_size = VAR_ELEMENT_SIZE(b.ptr, pos);
 
-	if (tag_size > size) // not enough space in dest ptr
+	if (var_size > size) // not enough space in dest ptr
 		return FAIL;
 
-	memcpy(dest, TAG_ELEMENT_VALUE(b.ptr, pos), tag_size);
+	memcpy(dest, VAR_ELEMENT_VALUE(b.ptr, pos), var_size);
 
-	if (make_endianless(dest, tag_size) == FAIL)
+	if (make_endianless(dest, var_size) == FAIL)
 		return FAIL;
 
 	return SUCCESS;
@@ -233,7 +233,7 @@ int data_get_num_endianless(blob b, char letter, void *dest, int size)
 
 // set
 
-u8 tag_set_str(blob *b, char letter, const u8 *src, u32 size)
+u8 var_set_str(blob *b, char letter, const u8 *src, u32 size)
 {
 	if (!b || !src || size <= 0)
 		return FAIL;
@@ -242,24 +242,24 @@ u8 tag_set_str(blob *b, char letter, const u8 *src, u32 size)
 	if (pos < 0)
 		return FAIL;
 
-	memcpy(TAG_ELEMENT_VALUE(b->ptr, pos), src, size);
+	memcpy(VAR_ELEMENT_VALUE(b->ptr, pos), src, size);
 
 	return SUCCESS;
 }
 
-u8 tag_set_u(blob *b, char letter, u64 value, u8 byte_len)
+u8 var_set_u(blob *b, char letter, u64 value, u8 byte_len)
 {
 	return data_set_num_endianless(b, letter, &value, byte_len) == FAIL;
 }
 
-u8 tag_set_i(blob *b, char letter, i64 value, u8 byte_len)
+u8 var_set_i(blob *b, char letter, i64 value, u8 byte_len)
 {
 	return data_set_num_endianless(b, letter, &value, byte_len) == FAIL;
 }
 
 // get
 
-u8 tag_get_str(blob b, char letter, u8 *dest, u32 size)
+u8 var_get_str(blob b, char letter, u8 *dest, u32 size)
 {
 	if (!dest)
 		return FAIL;
@@ -268,21 +268,21 @@ u8 tag_get_str(blob b, char letter, u8 *dest, u32 size)
 	if (pos < 0)
 		return FAIL;
 
-	int element_size = TAG_ELEMENT_SIZE(b.ptr, pos);
+	int element_size = VAR_ELEMENT_SIZE(b.ptr, pos);
 	int minsize = min(size, element_size);
 
-	memcpy(dest, TAG_ELEMENT_VALUE(b.ptr, pos), minsize);
+	memcpy(dest, VAR_ELEMENT_VALUE(b.ptr, pos), minsize);
 	dest[minsize] = '\0';
 
 	return SUCCESS;
 }
 
-u8 tag_get_u(blob b, char letter, u64 *dest, u8 byte_len)
+u8 var_get_u(blob b, char letter, void *dest, u8 byte_len)
 {
 	return data_get_num_endianless(b, letter, dest, byte_len);
 }
 
-u8 tag_get_i(blob b, char letter, i64 *dest, u8 byte_len)
+u8 var_get_i(blob b, char letter, void *dest, u8 byte_len)
 {
 	return data_get_num_endianless(b, letter, dest, byte_len);
 }

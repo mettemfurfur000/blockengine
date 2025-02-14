@@ -12,75 +12,55 @@ typedef enum
 
     ENGINE_BLOCK_UDPATE,
     ENGINE_BLOCK_ERASED,
-    ENGINE_BLOCK_SET,
-    ENGINE_BLOCK_MOVE,
+    ENGINE_BLOCK_CREATE,
 
     ENGINE_BLOCK_SECTION_END,
 
     ENGINE_BLOB_UPDATE,
+    ENGINE_BLOB_ERASED,
+    ENGINE_BLOB_CREATE,
 
     ENGINE_LAST_EVENT
 } ENGINE_EVENTS;
 
 #define TOTAL_ENGINE_EVENTS ENGINE_LAST_EVENT - SDL_USEREVENT
 
-typedef struct
+typedef struct block_update_event
 {
-    Uint32 type; // kind of standart header for event structure
+    Uint32 type;
     Uint32 timestamp;
-    // 8
+
+    void *room_ptr;
+    void *layer_ptr;
     u64 target_id;
-    // 16
-    Uint32 target_x;
-    Uint32 target_y;
-    // 24
-    Uint16 target_layer_id;
-    Uint16 previous_id;
-    Uint16 new_id;
-    // 30
+    u64 previous_id;
+
+    u32 x;
+    u32 y;
 } block_update_event;
 
-typedef struct
+static_assert(sizeof(block_update_event) <= sizeof(SDL_Event));
+
+typedef struct blob_update_event
 {
     Uint32 type; // kind of standart header for event structure
     Uint32 timestamp;
-    // 8
+
+    void *room_ptr;
+    void *layer_ptr;
     u64 target_id;
-    // 16
-    Uint32 target_x;
-    Uint32 target_y;
-    // 24
-    Uint16 target_layer_id;
+
+    u32 x;
+    u32 y;
+
+    u16 pos;
     char letter;
-    int size_change;
     int size;
-    u8 *element_value;
+    u8 *ptr;
     // 28
 } blob_update_event;
 
-typedef struct
-{
-    Uint32 type; // kind of standart header for event structure
-    Uint32 timestamp;
-    // 8
-    u64 target_id;
-    u64 actor_id;
-    // 24
-    Uint32 target_x;
-    Uint32 target_y;
-    // 32
-    Uint32 actor_x;
-    Uint32 actor_y;
-    // 40
-    Uint16 target_layer_id;
-    Uint16 actor_layer_id;
-    // 44
-    u8 blob_letter; // for blob updates
-    u8 reserve_flags;
-    // 46
-    u8 signal[10];
-    // 56
-} engine_event;
+static_assert(sizeof(blob_update_event) <= sizeof(SDL_Event));
 
 #define IS_ENGINE_EVENT(id) (id >= SDL_USEREVENT && id < ENGINE_LAST_EVENT)
 #define IS_BLOCK_EVENT(id) (id > ENGINE_BLOCK_SECTION_START && id < ENGINE_BLOCK_SECTION_END)

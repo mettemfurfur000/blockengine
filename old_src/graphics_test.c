@@ -1,5 +1,4 @@
-#include "../src/include/sdl2_basics.h"
-#include <stdio.h>
+#include "../include/rendering.h"
 
 int main(int argc, char *argv[])
 {

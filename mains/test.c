@@ -2,7 +2,6 @@
 // #include "../tests/block_operations_test.c"
 // #include "../tests/test_utils.h"
 #include "../tests/file_system_test.c"
-
 #include "../tests/block_properties_test.c"
 #include "../tests/block_registry_test.c"
 #include "../tests/vars_test.c"
@@ -19,10 +18,7 @@ int main(int argc, char *argv[])
 	LOG_DEBUG("test debug");
 
 	int successes = 0;
-#define tests 7
-
-	// successes += test_block_all();
-	// successes += test_block_operations_all();
+#define tests 5
 
 	successes += test_hash_table_all();
 	successes += test_block_props_all();

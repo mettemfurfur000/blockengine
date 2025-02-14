@@ -13,8 +13,8 @@
 #include "block_registry.h"
 #include "hashtable.h"
 
-#define TAG_ELEMENT_SIZE(blob, pos) *(blob + pos + 1)
-#define TAG_ELEMENT_VALUE(blob, pos) (blob + pos + 2)
+#define VAR_ELEMENT_SIZE(blob, pos) *(blob + pos + 1)
+#define VAR_ELEMENT_VALUE(blob, pos) (blob + pos + 2)
 
 /*
 Find Data Element Start Position
@@ -41,26 +41,31 @@ i32 fdesp(blob b, char letter);
 
 // vars
 
-blob tag_get(blob b, char letter);
+blob var_get(blob b, char letter);
 
 // memory
 
-u8 tag_create(blob *b, char letter, u8 size);
-u8 tag_delete(blob *b, char letter);
-u8 tag_delete_all(blob *b);
+u8 var_create(blob *b, char letter, u8 size);
+u8 var_delete(blob *b, char letter);
+u8 var_delete_all(blob *b);
 
-u8 tag_resize(blob *b, char letter, u8 new_size);
+u8 var_resize(blob *b, char letter, u8 new_size);
 
 // set
 
-u8 tag_set_str(blob *b, char letter, const u8 *src, u32 size);
-u8 tag_set_u(blob *b, char letter, u64 value, u8 byte_len);
-u8 tag_set_i(blob *b, char letter, i64 value, u8 byte_len);
+u8 var_set_str(blob *b, char letter, const u8 *src, u32 size);
+u8 var_set_u(blob *b, char letter, u64 value, u8 byte_len);
+u8 var_set_i(blob *b, char letter, i64 value, u8 byte_len);
 
 // get
 
-u8 tag_get_str(blob b, char letter, u8 *dest, u32 size);
-u8 tag_get_u(blob b, char letter, u64 *dest, u8 byte_len);
-u8 tag_get_i(blob b, char letter, i64 *dest, u8 byte_len);
+u8 var_get_str(blob b, char letter, u8 *dest, u32 size);
+u8 var_get_u(blob b, char letter, void *dest, u8 byte_len);
+u8 var_get_i(blob b, char letter, void *dest, u8 byte_len);
+
+// utils
+
+i32 data_get_num_endianless(blob b, char letter, void *dest, int size);
+i32 data_set_num_endianless(blob *b, char letter, void *src, int size);
 
 #endif

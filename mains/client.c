@@ -1,136 +1,117 @@
-#include "../src/include/block_operations.h"
-#include "../src/include/block_registry.h"
-#include "../src/include/layer_draw_2d.h"
-#include "../src/include/data_manipulations.h"
-#include "../src/include/world_utils.h"
-#include "../src/include/lua_integration.h"
+#include "../include/vars.h"
+#include "../include/level.h"
+#include "../include/rendering.h"
+#include "../include/block_registry.h"
 
 #include <time.h>
 
 // #include <omp.h>
 
-world *g_world = 0;
-block_resources_t *g_reg = 0;
+// void chunk_fill_randomly_from_registry(layer_chunk *c, const block_resources_t *reg, const int seed, const int start_range, const int range)
+// {
+// 	srand(seed);
 
-void free_world(world *w)
-{
-	for (int i = 0; i < w->layers.length; i++)
-		world_layer_free(LAYER_FROM_WORLD(w, i));
-	vec_deinit(&w->layers);
-	free(w);
-}
+// 	int minrange = min(range, reg->length) - start_range;
 
-void chunk_fill_randomly_from_registry(layer_chunk *c, const block_resources_t *reg, const int seed, const int start_range, const int range)
-{
-	srand(seed);
+// 	for (int i = 0; i < c->width; i++)
+// 		for (int j = 0; j < c->width; j++)
+// 		{
+// 			int choosen_block_index = start_range + rand() % minrange;
 
-	int minrange = min(range, reg->length) - start_range;
+// 			if (!reg->data[choosen_block_index].block_sample.id)
+// 				continue;
 
-	for (int i = 0; i < c->width; i++)
-		for (int j = 0; j < c->width; j++)
-		{
-			int choosen_block_index = start_range + rand() % minrange;
+// 			if (FLAG_GET(reg->data[choosen_block_index].flags, B_RES_FLAG_IS_FILLER))
+// 				continue;
 
-			if (!reg->data[choosen_block_index].block_sample.id)
-				continue;
+// 			block_copy(BLOCK_FROM_CHUNK(c, i, j), &reg->data[choosen_block_index].block_sample);
+// 		}
+// }
 
-			if (FLAG_GET(reg->data[choosen_block_index].flags, B_RES_FLAG_IS_FILLER))
-				continue;
+// void world_layer_fill_randomly(world *w, const int layer_index, const block_resources_t *reg, const int seed, const int start_range, const int range)
+// {
+// 	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
+// 	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
+// 	const int size_x = layer->size_x;
+// 	const int size_y = layer->size_y;
 
-			block_copy(BLOCK_FROM_CHUNK(c, i, j), &reg->data[choosen_block_index].block_sample);
-		}
-}
+// 	for (int i = 0; i < size_x; i++)
+// 		for (int j = 0; j < size_y; j++)
+// 			chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(layer, i, j), reg, seed ^ (i * size_y + j), start_range, range);
+// }
 
-void world_layer_fill_randomly(world *w, const int layer_index, const block_resources_t *reg, const int seed, const int start_range, const int range)
-{
-	// const int TOTAL_CHUNKS = w->layers[layer_index].size_x * w->layers[layer_index].size_y;
-	const world_layer *layer = LAYER_FROM_WORLD(w, layer_index);
-	const int size_x = layer->size_x;
-	const int size_y = layer->size_y;
+// void debug_print_world(world *w)
+// {
+// 	for (int i = 0; i < w->layers.length; i++)
+// 	{
+// 		printf("layer %d\n", i);
+// 		const world_layer *layer = LAYER_FROM_WORLD(w, i);
 
-	for (int i = 0; i < size_x; i++)
-		for (int j = 0; j < size_y; j++)
-			chunk_fill_randomly_from_registry(CHUNK_FROM_LAYER(layer, i, j), reg, seed ^ (i * size_y + j), start_range, range);
-}
-
-void debug_print_world(world *w)
-{
-	for (int i = 0; i < w->layers.length; i++)
-	{
-		printf("layer %d\n", i);
-		const world_layer *layer = LAYER_FROM_WORLD(w, i);
-
-		for (int j = 0; j < layer->size_x; j++)
-		{
-			for (int k = 0; k < layer->size_y; k++)
-			{
-				printf("chunk %d %d\n", j, k);
-				const layer_chunk *c = CHUNK_FROM_LAYER(layer, j, k);
-				for (int l = 0; l < layer->chunks[j][k]->width; l++)
-				{
-					for (int m = 0; m < layer->chunks[j][k]->width; m++)
-					{
-						block *b = BLOCK_FROM_CHUNK(c, l, m);
-						printf("%c", b->id % 96 + 'A');
-					}
-					printf("\n");
-				}
-			}
-		}
-	}
-}
+// 		for (int j = 0; j < layer->size_x; j++)
+// 		{
+// 			for (int k = 0; k < layer->size_y; k++)
+// 			{
+// 				printf("chunk %d %d\n", j, k);
+// 				const layer_chunk *c = CHUNK_FROM_LAYER(layer, j, k);
+// 				for (int l = 0; l < layer->chunks[j][k]->width; l++)
+// 				{
+// 					for (int m = 0; m < layer->chunks[j][k]->width; m++)
+// 					{
+// 						block *b = BLOCK_FROM_CHUNK(c, l, m);
+// 						printf("%c", b->id % 96 + 'A');
+// 					}
+// 					printf("\n");
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 float lerp(float a, float b, float t)
 {
 	return a + t * (b - a);
 }
 
-block get_block_from_the_registry(block_resources_t *reg, int id)
+void set_registry_block(layer *l, u32 x, u32 y, u64 id)
 {
-	for (int i = 0; i < reg->length; i++)
-	{
-		if (reg->data[i].block_sample.id == id)
-			return reg->data[i].block_sample;
-	}
-	return (block){};
+	block_resources_t reg = l->registry->resources;
+
+	block_set_id(l, x, y, id);
+	block_set_vars(l, x, y, reg.data[id].vars);
 }
 
-int test_world_init(world **world, block_resources_t *reg)
+level test_level_init()
 {
 	g_block_width = 16;
-	const int floor_layer_id = 1;
 
-	// make a world with one layer and one chunk
-	const char *world_name = "test_world";
-	*world = world_make(2, world_name);
-	if (!*world)
-		return FAIL;
+	level lvl = {.name = "client_test_level"};
+	init_level(&lvl);
 
-	for (int i = 0; i < (*world)->layers.length; i++)
-		world_layer_alloc(LAYER_FROM_WORLD((*world), i), 2, 2, 32, i);
+	room r = {.name = "client_test_room", .width = 20, .height = 12};
+	init_room(&r, &lvl);
 
-	// world_layer_fill_randomly(*world, floor_layer_id, (reg), time(NULL), 2, 3);
+	(void)vec_push(&lvl.rooms, r);
 
-	const block bug_sample = get_block_from_the_registry(reg, 5);
-	set_block((*world), floor_layer_id, 5, 5, &bug_sample);
+	layer l = {.bytes_per_block = 2};
+	FLAG_SET(l.flags, LAYER_FLAG_HAS_VARS, 1);
+	init_layer(&l, &r);
 
-	const block dev_sample = get_block_from_the_registry(reg, 10);
-	set_block((*world), floor_layer_id, 10, 10, &dev_sample);
+	(void)vec_push(&r.layers, l);
 
-	return SUCCESS;
+	set_registry_block(&l, 2, 2, 5);
+	set_registry_block(&l, 4, 4, 10);
+
+	return lvl;
 }
 
-void test_world_exit(world *world, block_resources_t *reg)
+void test_world_exit(level lvl)
 {
-	for (int i = 0; i < world->layers.length; i++)
-		world_layer_free(LAYER_FROM_WORLD(world, i));
-
-	world_free(world);
+	free_level(&lvl);
 }
 
 client_render_rules prepare_rendering_rules()
 {
-	client_render_rules rules = {SCREEN_WIDTH, SCREEN_HEIGHT, {}, {}};
+	client_render_rules rules = {.screen_width = SCREEN_WIDTH, .screen_height = SCREEN_HEIGHT, .cur_frame = 0, {}, {}};
 
 	vec_init(&rules.draw_order);
 	vec_init(&rules.slices);
@@ -159,24 +140,24 @@ client_render_rules prepare_rendering_rules()
 
 int main(int argc, char *argv[])
 {
-	block_resources_t reg;
-	vec_init(&reg);
-
-	g_reg = &reg;
-
 	if (!init_graphics())
 		return 1;
 
-	if (!read_block_registry("resources/blocks", g_reg))
+	block_registry reg;
+
+	if (!read_block_registry("test", &reg))
 		return 1;
 
-	for (int i = 0; i < g_reg->length; i++)
+	block_resources_t resources = reg.resources;
+
+	for (int i = 0; i < resources.length; i++)
 	{
-		printf("%d %s " BYTE_TO_BINARY_PATTERN "\n", g_reg->data[i].block_sample.id, g_reg->data[i].block_texture.filename, BYTE_TO_BINARY(g_reg->data[i].flags));
+		printf("%d %s " BYTE_TO_BINARY_PATTERN "\n", resources.data[i].id, resources.data[i].block_texture.filename, BYTE_TO_BINARY(resources.data[i].flags));
 	}
 
-	if (test_world_init(&g_world, g_reg) == FAIL)
-		return 1;
+	level lvl = test_level_init();
+
+	lvl.rooms.data[0].layers.data[0].registry = &reg;
 
 	unsigned long frame = 0;
 
