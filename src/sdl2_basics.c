@@ -54,25 +54,35 @@ int init_graphics()
 {
 	const int flags = SDL_INIT_VIDEO;
 
-	int status = 1;
-	status &= !SDL_Init(flags);
+	if (SDL_Init(flags))
+	{
+		LOG_ERROR("SDL_Init() error:[%s]", SDL_GetError());
+		return FAIL;
+	}
 
 	g_window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	status &= g_window ? 1 : 0;
+	if (!g_window)
+	{
+		LOG_ERROR("SDL_CreateWindow() error:[%s]", SDL_GetError());
+		return FAIL;
+	}
 
 	g_renderer = SDL_CreateRenderer(g_window, -1, 0);
-	status &= g_renderer ? 1 : 0;
-
-	if (!status)
-		LOG_ERROR("init_graphics() error:[%s]", SDL_GetError());
+	if (!g_renderer)
+	{
+		LOG_ERROR("SDL_CreateRenderer() error:[%s]", SDL_GetError());
+		return FAIL;
+	}
 
 	SDL_SetRenderDrawColor(g_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
 	int result = SDL_RegisterEvents(TOTAL_ENGINE_EVENTS);
-	status &= result == (Uint32)-1 ? 0 : 1;
-
-	if (!status)
+	if (result == (Uint32)-1)
+	{
 		LOG_ERROR("Not able to allocate enough user events");
+		LOG_ERROR("SDL_RegisterEvents() error:[%s]", SDL_GetError());
+		return FAIL;
+	}
 
 	SDL_AudioSpec desired;
 	desired.freq = 22050;
@@ -82,13 +92,13 @@ int init_graphics()
 	desired.callback = NULL;
 	SDL_AudioSpec obtained;
 
-	if (SDL_OpenAudio(&desired, &obtained) == -1)
+	if (SDL_OpenAudio(&desired, &obtained) < 0)
 	{
 		LOG_ERROR("SDL_OpenAudio Error: %s", SDL_GetError());
 		return FAIL;
 	}
 
-	return status;
+	return SUCCESS;
 }
 
 int exit_graphics()

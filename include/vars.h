@@ -35,6 +35,8 @@ indexes =  0  1  2  3  4  5  6  7  8  9  10 11 12 13
 fdesp(example,'c') returns 11
 fdesp(example,'a') returns 0
 fdesp(example,'g') returns -1 (Failure)
+
+blobs store values natively to the system
 */
 
 i32 fdesp(blob b, char letter);
@@ -45,23 +47,67 @@ blob var_get(blob b, char letter);
 
 // memory
 
-u8 var_create(blob *b, char letter, u8 size);
+u8 var_push(blob *b, char letter, u8 size);
 u8 var_delete(blob *b, char letter);
 u8 var_delete_all(blob *b);
 
 u8 var_resize(blob *b, char letter, u8 new_size);
 
+#define __a(__a) __a
+
+#define VAR_ACCESSOR_NAME(type, op) var_##op##_##type
+#define GETTER_NAME(type) VAR_ACCESSOR_NAME(type, get)
+#define SETTER_NAME(type) VAR_ACCESSOR_NAME(type, set)
+
+#define GETTER_DEF(type) u8 GETTER_NAME(type)(blob b, char letter, type *dest);
+#define GETTER_IMP(type)                                  \
+	u8 GETTER_NAME(type)(blob b, char letter, type *dest) \
+	{                                                     \
+		CHECK_PTR(dest, SETTER_NAME(type));               \
+		int pos = fdesp(b, letter);                       \
+		CHECK(pos < 0, SETTER_NAME(type));                \
+		*dest = *(type *)VAR_ELEMENT_VALUE(b.ptr, pos);   \
+		return SUCCESS;                                   \
+	}
+
+#define SETTER_DEF(type) u8 SETTER_NAME(type)(blob * b, char letter, type value);
+#define SETTER_IMP(type)                                    \
+	u8 SETTER_NAME(type)(blob * b, char letter, type value) \
+	{                                                       \
+		CHECK_PTR(b, SETTER_NAME(type));                    \
+		int pos = ensure_tag(b, letter, 1);                 \
+		CHECK(pos < 0, SETTER_NAME(type));                  \
+		*(type *)VAR_ELEMENT_VALUE(b->ptr, pos) = value;    \
+		return SUCCESS;                                     \
+	}
+
 // set
 
-u8 var_set_str(blob *b, char letter, const u8 *src, u32 size);
-u8 var_set_u(blob *b, char letter, u64 value, u8 byte_len);
-u8 var_set_i(blob *b, char letter, i64 value, u8 byte_len);
+u8 var_set_str(blob *b, char letter, const char *str);
+
+SETTER_DEF(u8)
+SETTER_DEF(u16)
+SETTER_DEF(u32)
+SETTER_DEF(u64)
+
+SETTER_DEF(i8)
+SETTER_DEF(i16)
+SETTER_DEF(i32)
+SETTER_DEF(i64)
 
 // get
 
-u8 var_get_str(blob b, char letter, u8 *dest, u32 size);
-u8 var_get_u(blob b, char letter, void *dest, u8 byte_len);
-u8 var_get_i(blob b, char letter, void *dest, u8 byte_len);
+GETTER_DEF(u8)
+GETTER_DEF(u16)
+GETTER_DEF(u32)
+GETTER_DEF(u64)
+
+GETTER_DEF(i8)
+GETTER_DEF(i16)
+GETTER_DEF(i32)
+GETTER_DEF(i64)
+
+u8 var_get_str(blob b, char letter, char **dest);
 
 // utils
 

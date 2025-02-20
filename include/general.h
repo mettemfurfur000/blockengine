@@ -54,18 +54,18 @@ static_assert(sizeof(i64) == 8);
         return;                                          \
     }
 
-#define CHECK(expression, func_name)                                       \
-    if (expression)                                                        \
-    {                                                                      \
-        LOG_ERROR(#func_name " : check failed: '" #expression " == 0'\n"); \
-        return FAIL;                                                       \
+#define CHECK(expression, func_name)                                              \
+    if (expression)                                                               \
+    {                                                                             \
+        LOG_ERROR(#func_name " : check failed: '" #expression " is positive'\n"); \
+        return FAIL;                                                              \
     }
 
-#define CHECK_NORET(expression, func_name)                                 \
-    if (expression)                                                        \
-    {                                                                      \
-        LOG_ERROR(#func_name " : check failed: '" #expression " == 0'\n"); \
-        return;                                                            \
+#define CHECK_NORET(expression, func_name)                                        \
+    if (expression)                                                               \
+    {                                                                             \
+        LOG_ERROR(#func_name " : check failed: '" #expression " is positive'\n"); \
+        return;                                                                   \
     }
 
 #endif

@@ -20,7 +20,7 @@ int test_room_init()
 
 int test_layer_init()
 {
-	layer new_layer = {.bytes_per_block = 2};
+	layer new_layer = {.bytes_per_block = 2, .width = 16, .height = 16};
 	FLAG_SET(new_layer.flags, LAYER_FLAG_HAS_VARS, 1);
 
 	init_layer(&new_layer, &test_room);

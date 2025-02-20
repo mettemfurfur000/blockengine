@@ -1,4 +1,4 @@
-CFLAGS += -O2 -Wall -g  # -pg -no-pie
+CFLAGS += -O0 -Wall -g  # -pg -no-pie
 LDFLAGS += -lm # -pg
 
 ifeq ($(OS),Windows_NT)
@@ -73,11 +73,6 @@ client_app: mains/client.c resources vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
 	gcc ${CFLAGS} -o build/client mains/client.c obj/vec.o $(objects) $(LDFLAGS)
 #	-./grab_dlls.sh build/client.exe /mingw64/bin 1
-ifeq ($(OS),Windows_NT)
-	./build/client.exe
-else
-	./build/client
-endif
 
 .PHONY: networking
 networking: mains/network_test_server.c mains/network_test_client.c vec $(objects)

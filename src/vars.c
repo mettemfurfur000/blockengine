@@ -5,7 +5,7 @@ i32 fdesp(blob b, char letter)
 	if (b.size == 0)
 		return FAIL;
 
-	for (int i = 0; i < b.size; i += b.ptr[i + 1] + 2)
+	for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)
 		if (b.ptr[i] == letter)
 			return i;
 
@@ -14,15 +14,14 @@ i32 fdesp(blob b, char letter)
 
 blob var_get(blob b, char letter)
 {
-	i32 index = fdesp(b, letter);
-
 	blob ret = {};
+	i32 index = fdesp(b, letter);
 
 	if (index < 0)
 		return ret;
 
-	ret.ptr = b.ptr + index + 2;
-	ret.size = b.ptr[index + 1];
+	ret.ptr = VAR_ELEMENT_VALUE(b.ptr, index);
+	ret.size = VAR_ELEMENT_SIZE(b.ptr, index);
 
 	return ret;
 }
@@ -37,9 +36,9 @@ u8 var_delete_all(blob *b)
 	return SUCCESS;
 }
 
-u8 var_create(blob *b, char letter, u8 size)
+u8 var_push(blob *b, char letter, u8 size)
 {
-	CHECK_PTR(b, var_create);
+	CHECK_PTR(b, var_push);
 
 	if (fdesp(*b, letter) >= 0)
 		return SUCCESS;
@@ -58,6 +57,8 @@ u8 var_create(blob *b, char letter, u8 size)
 
 u8 var_delete(blob *b, char letter)
 {
+	CHECK_PTR(b, var_delete);
+
 	u64 blob_size = b->size;
 	i32 element_pos = fdesp(*b, letter);
 	u32 pos_before_element = element_pos - 1;
@@ -100,6 +101,8 @@ u8 var_delete(blob *b, char letter)
 
 u8 var_resize(blob *b, char letter, u8 new_size)
 {
+	CHECK_PTR(b, var_resize);
+
 	i32 pos = fdesp(*b, letter);
 	if (pos < 0)
 		return FAIL;
@@ -168,9 +171,10 @@ u8 var_resize(blob *b, char letter, u8 new_size)
 
 i32 ensure_tag(blob *b, const int letter, const int needed_size)
 {
+	CHECK_PTR(b, ensure_tag);
 	// if tag is not existink yet, create it
 	if (b->ptr == 0 || fdesp(*b, letter) < 0)
-		if (var_create(b, letter, needed_size) == FAIL) // failed to create
+		if (var_push(b, letter, needed_size) == FAIL) // failed to create
 			return FAIL;
 		else
 			return fdesp(*b, letter); // created, returning the index
@@ -193,8 +197,8 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 // will affect src
 i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
 {
-	if (!src || !b)
-		return FAIL;
+	CHECK_PTR(b, data_set_num_endianless);
+	CHECK_PTR(src, data_set_num_endianless);
 
 	int pos = ensure_tag(b, letter, size);
 	if (pos < 0)
@@ -233,33 +237,35 @@ i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
 
 // set
 
-u8 var_set_str(blob *b, char letter, const u8 *src, u32 size)
+u8 var_set_str(blob *b, char letter, const char *str)
 {
-	if (!b || !src || size <= 0)
-		return FAIL;
+	CHECK_PTR(b, var_set_str);
+	CHECK_PTR(str, var_set_str);
+	u32 len = strlen(str);
+	CHECK(len == 0, var_set_str);
 
-	int pos = ensure_tag(b, letter, size);
+	int pos = ensure_tag(b, letter, len + 1);
 	if (pos < 0)
 		return FAIL;
 
-	memcpy(VAR_ELEMENT_VALUE(b->ptr, pos), src, size);
+	memcpy(VAR_ELEMENT_VALUE(b->ptr, pos), str, len + 1);
 
 	return SUCCESS;
 }
 
-u8 var_set_u(blob *b, char letter, u64 value, u8 byte_len)
-{
-	return data_set_num_endianless(b, letter, &value, byte_len) == FAIL;
-}
+SETTER_IMP(u8)
+SETTER_IMP(u16)
+SETTER_IMP(u32)
+SETTER_IMP(u64)
 
-u8 var_set_i(blob *b, char letter, i64 value, u8 byte_len)
-{
-	return data_set_num_endianless(b, letter, &value, byte_len) == FAIL;
-}
+SETTER_IMP(i8)
+SETTER_IMP(i16)
+SETTER_IMP(i32)
+SETTER_IMP(i64)
 
 // get
 
-u8 var_get_str(blob b, char letter, u8 *dest, u32 size)
+u8 var_get_str(blob b, char letter, char **dest)
 {
 	if (!dest)
 		return FAIL;
@@ -268,21 +274,17 @@ u8 var_get_str(blob b, char letter, u8 *dest, u32 size)
 	if (pos < 0)
 		return FAIL;
 
-	int element_size = VAR_ELEMENT_SIZE(b.ptr, pos);
-	int minsize = min(size, element_size);
-
-	memcpy(dest, VAR_ELEMENT_VALUE(b.ptr, pos), minsize);
-	dest[minsize] = '\0';
+	*dest = (char *)VAR_ELEMENT_VALUE(b.ptr, pos);
 
 	return SUCCESS;
 }
 
-u8 var_get_u(blob b, char letter, void *dest, u8 byte_len)
-{
-	return data_get_num_endianless(b, letter, dest, byte_len);
-}
+GETTER_IMP(u8)
+GETTER_IMP(u16)
+GETTER_IMP(u32)
+GETTER_IMP(u64)
 
-u8 var_get_i(blob b, char letter, void *dest, u8 byte_len)
-{
-	return data_get_num_endianless(b, letter, dest, byte_len);
-}
+GETTER_IMP(i8)
+GETTER_IMP(i16)
+GETTER_IMP(i32)
+GETTER_IMP(i64)

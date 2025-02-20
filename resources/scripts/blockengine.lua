@@ -13,58 +13,21 @@ function find_block(range_x, range_y, id_to_find)
     end
 end
 
-function move_block_g(pos, delta)
-    if blockengine.move_block_gently(g_world, 1, pos.x, pos.y, delta.x, delta.y) then
-        pos.x = pos.x + delta.x
-        pos.y = pos.y + delta.y
-        -- print("successful gentle move")
-    else
-        -- print("something is on the way!")
-
-        -- local obstacle = blockengine.access_block(g_world, 1, pos.x + delta.x, pos.y + delta.y)
-
-        -- if obstacle == nil then
-        --     print("its nil")
-        --     return pos
-        -- end
-
-        -- local id, datalen = blockengine.block_unpack(obstacle)
-        -- print("id is " .. id .. ", data length is " .. datalen)
-    end
-    return pos
-end
-
-function move_block_r(pos, delta)
-    if blockengine.move_block_rough(g_world, 1, pos.x, pos.y, delta.x, delta.y) then
-        pos.x = pos.x + delta.x
-        pos.y = pos.y + delta.y
-    end
-    return pos
-end
-
-function wrap_register(event_id, func)
-    -- print("registering " .. event_id .. " event for block " .. scripting_current_block_id)
-
-    if event_handlers[event_id] == nil then
-        -- print("creating a table for handlers here")
-        event_handlers[event_id] = {}
-    end
-
-    event_handlers[event_id][scripting_current_block_id] = func
-end
-
 EVENT_IDS = {
-    TICK                = 1,
-    INIT                = 2,
     SDL_KEYDOWN         = 768,
     SDL_KEYUP           = 769,
     SDL_MOUSEBUTTONDOWN = 1025,
     SDL_MOUSEBUTTONUP   = 1026,
     ENGINE_BLOCK_UDPATE = 32769,
     ENGINE_BLOCK_ERASED = 32770,
-    ENGINE_BLOCK_SET    = 32771,
-    ENGINE_BLOCK_MOVE   = 32772,
-    ENGINE_BLOB_UPDATE  = 32774
+    ENGINE_BLOCK_CREATE = 32771,
+
+    ENGINE_BLOB_UPDATE  = 32773,
+    ENGINE_BLOB_ERASED  = 32774,
+    ENGINE_BLOB_CREATE  = 32775,
+
+    ENGINE_TICK         = 32777,
+    ENGINE_INIT         = 32778,
 }
 
 SDL_SCANCODE = {

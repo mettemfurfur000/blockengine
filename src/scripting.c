@@ -2,49 +2,19 @@
 
 lua_State *g_L = 0;
 
-static int handlers[] = {
-    1,                   // tick event
-    2,                   // init event
-    SDL_KEYDOWN,         // 768
-    SDL_KEYUP,           // 769
-    SDL_MOUSEBUTTONDOWN, // 1025
-    SDL_MOUSEBUTTONUP    // 1026
-
-    //{SDL_MOUSEMOTION,{}},
-    //{SDL_MOUSEWHEEL,{}},
-    //{SDL_WINDOWEVENT, {}},
-    //{SDL_TEXTINPUT, {}},
-    //{SDL_TEXTEDITING, {}}
-
-};
-
-#define SUPPORTED_EVENTS sizeof(handlers) / sizeof(handlers[0])
+vec_int_t handlers[32] = {};
 
 void scripting_register(lua_State *L)
 {
-    /*
-    TODO:
-
-    add block data editig functions
-
-    int lua_set_block_id(lua_State *L);
-    int lua_get_block_id(lua_State *L);
-
-    int lua_get_block_vars(lua_State *L);
-    int lua_vars_get_integer(lua_State *L);
-
-    int lua_vars_set_integer(lua_State *L);
-
-    */
     const static luaL_Reg blockengine_lib[] = {
 
-        {"set_block_id", lua_set_block_id},
-        {"get_block_id", lua_get_block_id},
+        // {"set_block_id", lua_set_block_id},
+        // {"get_block_id", lua_get_block_id},
 
-        {"get_block_vars", lua_get_block_vars},
+        // {"get_block_vars", lua_get_block_vars},
 
-        {"vars_get_integer", lua_vars_get_integer},
-        {"vars_set_integer", lua_vars_set_integer},
+        // {"vars_get_integer", lua_vars_get_integer},
+        // {"vars_set_integer", lua_vars_set_integer},
 
         {NULL, NULL}
 
@@ -55,21 +25,9 @@ void scripting_register(lua_State *L)
                                      // 0 objects on stack now
 }
 
-void scripting_check_arguments(lua_State *L, int num, ...)
+void *check_light_userdata(lua_State *L, int index)
 {
-    va_list valist;
-    va_start(valist, num);
-
-    for (int i = 1; i <= num; i++)
-        LUA_ARG_CHECK(L, i, va_arg(valist, int))
-
-    va_end(valist);
-}
-
-void scripting_define_global_object(void *ptr, char *name)
-{
-    lua_pushlightuserdata(g_L, ptr);
-    lua_setglobal(g_L, name);
+    return lua_islightuserdata(L, index) ? lua_touserdata(L, index) : (void *)0 + luaL_error(L, "Expected light userdata at index %d", index);
 }
 
 void scripting_init()
@@ -77,21 +35,54 @@ void scripting_init()
     g_L = luaL_newstate(); /* opens Lua */
     luaL_openlibs(g_L);
     scripting_register(g_L); /* register all blockengine functions */
-    //
-    lua_createtable(g_L, 0, SUPPORTED_EVENTS);
-    for (int i = 0; i < SUPPORTED_EVENTS; i++)
-    {
-        lua_pushinteger(g_L, handlers[i]);
-        lua_newtable(g_L);
-        lua_settable(g_L, -3);
-    }
-
-    lua_setglobal(g_L, "event_handlers"); /* makes the event_handlers table availiable for everyone to register their stuff */
 }
 
 void scripting_close()
 {
     lua_close(g_L);
+}
+
+u16 get_lookup_id(u32 type)
+{
+    if (type >= SDL_QUIT && type < SDL_DISPLAYEVENT) // quit events
+        return 0;
+    if (type >= SDL_DISPLAYEVENT && type < SDL_WINDOWEVENT) // display events
+        return 1;
+    if (type >= SDL_WINDOWEVENT && type < SDL_KEYDOWN) // window events
+        return 2;
+    if (type >= SDL_KEYDOWN && type < SDL_MOUSEMOTION) // key events
+        return 3;
+    if (type >= SDL_MOUSEMOTION && type < SDL_JOYAXISMOTION) // mouse events
+        return 4;
+    if (type >= SDL_JOYAXISMOTION && type < SDL_CONTROLLERAXISMOTION) // joystick events
+        return 5;
+    if (type >= SDL_CONTROLLERAXISMOTION && type < SDL_FINGERDOWN) // controller events
+        return 6;
+    if (type >= SDL_FINGERDOWN && type < SDL_DOLLARGESTURE) // touch events
+        return 7;
+    if (type >= SDL_DOLLARGESTURE && type < SDL_CLIPBOARDUPDATE) // gesture events
+        return 8;
+    if (type >= SDL_CLIPBOARDUPDATE && type < SDL_DROPFILE) // clipboard events
+        return 9;
+    if (type >= SDL_DROPFILE && type < SDL_AUDIODEVICEADDED) // drop events
+        return 10;
+    if (type >= SDL_AUDIODEVICEADDED && type < SDL_SENSORUPDATE) // audio events
+        return 11;
+    if (type >= SDL_SENSORUPDATE && type < SDL_RENDER_TARGETS_RESET) // sensor events
+        return 12;
+    if (type >= SDL_RENDER_TARGETS_RESET && type < SDL_POLLSENTINEL) // render events
+        return 13;
+    if (type >= SDL_POLLSENTINEL && type < SDL_USEREVENT) // poll events
+        return 14;
+    if (type >= ENGINE_BLOCK_UDPATE && type < ENGINE_BLOCK_SECTION_END) // block events
+        return 15;
+    if (type >= ENGINE_BLOB_UPDATE && type < ENGINE_BLOB_SECTION_END) // blob events
+        return 16;
+    if (type == ENGINE_TICK)
+        return 17;
+    if (type == ENGINE_INIT)
+        return 18;
+    return sizeof(handlers); // unknown event, must be an error
 }
 
 int push_event_args(SDL_Event *e)
@@ -126,7 +117,7 @@ int push_event_args(SDL_Event *e)
         lua_pushlightuserdata(g_L, block_event->room_ptr);
         lua_pushlightuserdata(g_L, block_event->layer_ptr);
 
-        lua_pushinteger(g_L, block_event->target_id);
+        lua_pushinteger(g_L, block_event->new_id);
         lua_pushinteger(g_L, block_event->previous_id);
 
         lua_pushinteger(g_L, block_event->x);
@@ -141,7 +132,7 @@ int push_event_args(SDL_Event *e)
         lua_pushlightuserdata(g_L, blob_event->room_ptr);
         lua_pushlightuserdata(g_L, blob_event->layer_ptr);
 
-        lua_pushinteger(g_L, blob_event->target_id);
+        lua_pushinteger(g_L, blob_event->new_id);
 
         lua_pushinteger(g_L, blob_event->x);
         lua_pushinteger(g_L, blob_event->y);
@@ -155,65 +146,50 @@ int push_event_args(SDL_Event *e)
         lua_pushlightuserdata(g_L, blob_event->ptr);
 
         return 9;
+    case ENGINE_TICK:
+        lua_pushinteger(g_L, e->user.code);
     }
     return 0;
 }
 
-void call_handler(SDL_Event *e)
+void call_handlers(SDL_Event e)
 {
-    if (lua_pcall(g_L, push_event_args(e), 0, 0) != 0)
-        printf("error calling a handler `f': %s\n", lua_tostring(g_L, -1));
-}
+    u16 lookup_id = get_lookup_id(e.type);
 
-void scripting_register_event(lua_CFunction function, const int event_id)
-{
-    // TODO
-}
-
-int scripting_handle_event(SDL_Event *event, const int override_id)
-{
-    const int event_id = event ? event->type : override_id;
-
-    lua_getglobal(g_L, "event_handlers"); // get table of event handlers, contains table of handers where keys is block ids
-
-    lua_pushinteger(g_L, event_id); // get a table of handlers for certain event_id
-    lua_gettable(g_L, -2);
-
-    if (lua_istable(g_L, -1)) // if any handlers exists here
+    if (lookup_id == sizeof(handlers))
     {
-        if (IS_ENGINE_EVENT(event_id)) // if event is for internal engine purposes only
-        {
-            if (IS_BLOCK_EVENT(event_id)) // for block events
-            {
-                block_update_event *real_event = (block_update_event *)event;
-                // select a new id to call needed handler
-                // lua_pushinteger(g_L, real_event->new_id);
-                // select a prev id to call needed handler
-                lua_pushinteger(g_L, real_event->previous_id);
-                lua_gettable(g_L, -2);
-
-                if (lua_isfunction(g_L, -1)) // call, if exists
-                    call_handler(event);
-                else
-                    lua_pop(g_L, 1);
-            }
-        }
-        else // if event is just a general sdl2 event, iterate through all handlers and call them all
-        {
-            lua_pushnil(g_L);
-            while (lua_next(g_L, -2) != 0)
-            {
-                if (lua_isfunction(g_L, -1)) // call, if exists
-                    call_handler(event);
-                else
-                    lua_pop(g_L, 1);
-            }
-        }
+        LOG_ERROR("Unknown event type %d", e.type);
+        return;
     }
 
-    lua_pop(g_L, 2); // pop a table and his event_id out of my lua stack
+    vec_int_t target = handlers[lookup_id];
 
-    return 0;
+    const int handler_count = target.length;
+    for (int i = 0; i < handler_count; i++)
+    {
+        lua_geti(g_L, LUA_REGISTRYINDEX, target.data[i]);
+
+        u16 args = push_event_args(&e);
+
+        if (lua_pcall(g_L, args, 0, 0) != 0)
+        {
+            LOG_ERROR("Error calling a handler: %s", lua_tostring(g_L, -1));
+            lua_pop(g_L, 1);
+        }
+    }
+}
+
+void scripting_register_event_handler(int lua_func_ref, int event_type)
+{
+    u16 lookup_id = get_lookup_id(event_type);
+
+    if (lookup_id == sizeof(handlers))
+    {
+        LOG_ERROR("Unknown event type %d", event_type);
+        return;
+    }
+
+    (void)vec_push(&handlers[lookup_id], lua_func_ref);
 }
 
 int scripting_load_file(const char *reg_name, const char *short_filename)

@@ -6,7 +6,7 @@
 
 #include "SDL2/SDL.h"
 
-typedef enum
+typedef enum ENGINE_EVENTS
 {
     ENGINE_BLOCK_SECTION_START = SDL_USEREVENT,
 
@@ -20,6 +20,11 @@ typedef enum
     ENGINE_BLOB_ERASED,
     ENGINE_BLOB_CREATE,
 
+    ENGINE_BLOB_SECTION_END,
+
+    ENGINE_TICK,
+    ENGINE_INIT,
+
     ENGINE_LAST_EVENT
 } ENGINE_EVENTS;
 
@@ -32,7 +37,7 @@ typedef struct block_update_event
 
     void *room_ptr;
     void *layer_ptr;
-    u64 target_id;
+    u64 new_id;
     u64 previous_id;
 
     u32 x;
@@ -48,7 +53,7 @@ typedef struct blob_update_event
 
     void *room_ptr;
     void *layer_ptr;
-    u64 target_id;
+    u64 new_id;
 
     u32 x;
     u32 y;

@@ -65,13 +65,10 @@ u8 init_layer(layer *l, room *parent_room)
     CHECK_PTR(parent_room, init_layer)
     CHECK_PTR(l, init_layer)
 
-    CHECK(parent_room->width == 0 || parent_room->height == 0, init_layer)
+    CHECK(l->width == 0 || l->height == 0, init_layer)
     CHECK(l->bytes_per_block == 0, init_layer)
 
-    l->width = parent_room->width;
-    l->height = parent_room->height;
-
-    l->blocks = calloc(parent_room->width * parent_room->width, l->bytes_per_block);
+    l->blocks = calloc(l->width * l->width, l->bytes_per_block);
 
     if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS) && l->vars == 0)
         l->vars = alloc_table();
@@ -139,4 +136,40 @@ u8 free_level(level *l)
 
     SAFE_FREE(l->name);
     return SUCCESS;
+}
+
+// more useful functions
+
+level *level_create(const char *name, u32 width, u32 height)
+{
+    level *lvl = calloc(1, sizeof(level));
+    lvl->name = strdup(name);
+    init_level(lvl);
+    return lvl;
+}
+
+void room_create(level *parent, const char *name, u32 w, u32 h)
+{
+    room r = {.name = strdup(name),
+              .width = w,
+              .height = h,
+              .parent_level = parent};
+    init_room(&r, parent);
+
+    (void)vec_push(&parent->rooms, r);
+}
+
+void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 flags)
+{
+    layer l = {
+        .registry = registry_ref,
+        .bytes_per_block = bytes_per_block,
+        .width = parent->width,
+        .height = parent->height,
+        .flags = flags,
+    };
+
+    init_layer(&l, parent);
+
+    (void)vec_push(&parent->layers, l);
 }

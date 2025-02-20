@@ -63,4 +63,8 @@ u8 free_layer(layer *l);
 u8 free_room(room *r);
 u8 free_level(level *l);
 
+level *level_create(const char *name, u32 width, u32 height);
+void room_create(level *parent, const char *name, u32 w, u32 h);
+void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 flags);
+
 #endif

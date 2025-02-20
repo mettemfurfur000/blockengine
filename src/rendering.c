@@ -21,7 +21,7 @@ u8 render_layer(layer_slice slice)
     const int width = slice.w / local_block_width; // exact amowunt of lboks to render o nscren
     const int height = slice.h / local_block_width;
 
-    texture *texture;
+    CHECK_PTR(slice.ref, render_layer)
     block_registry *b_reg = slice.ref->registry;
 
     const int start_block_x = ((slice.x / local_block_width) - 1);
@@ -49,6 +49,8 @@ u8 render_layer(layer_slice slice)
     // {
     // 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ", -block_x_offset - local_block_width, -block_y_offset - local_block_width);
     // }
+
+    texture *texture;
 
     for (int i = start_block_x; i < end_block_x; i++)
     {
@@ -79,51 +81,37 @@ u8 render_layer(layer_slice slice)
 
             // get block vars
 
-            blob vars = {};
-            if (block_get_vars(slice.ref, i, j, &vars) != SUCCESS || vars.length == 0 || vars.ptr == NULL)
-                continue;
-
             u8 frame = 0;
             u8 type = 0;
             u8 flip = 0;
             u16 rotation = 0;
 
-            if (br.type_controller != 0)
+            blob vars = {};
+            if (block_get_vars(slice.ref, i, j, &vars) == SUCCESS && vars.length != 0 && vars.ptr != NULL)
             {
-                if (var_get_u(vars, br.type_controller, &type, sizeof(type)) != SUCCESS)
-                    continue;
-            }
+                if (br.type_controller != 0)
+                    var_get_u8(vars, br.type_controller, &type);
 
-            if (br.flip_controller != 0)
-            {
-                //(void)data_get_b(b, br.flip_controller, &flip);
-                if (var_get_u(vars, br.flip_controller, &flip, sizeof(flip)) != SUCCESS)
-                    continue;
-            }
+                if (br.flip_controller != 0)
+                    var_get_u8(vars, br.flip_controller, &flip);
 
-            if (br.rotation_controller != 0)
-            {
-                //(void)data_get_b(b, br.rotation_controller, &rotation);
-                // data_get_number(b, br.rotation_controller, (long long *)&rotation);
-                if (var_get_u(vars, br.rotation_controller, &rotation, sizeof(rotation)) != SUCCESS)
-                    continue;
-            }
+                if (br.rotation_controller != 0)
+                    var_get_u16(vars, br.rotation_controller, &rotation);
 
-            if (br.anim_controller != 0)
-            {
-                // (void)data_get_b(b, br.anim_controller, &frame);
-                if (var_get_u(vars, br.anim_controller, &frame, sizeof(frame)) != SUCCESS)
-                    continue;
-            }
-            else if (br.frames_per_second > 1)
-            {
-                float seconds_since_start = SDL_GetTicks() / 1000.0f;
-                int fps = br.frames_per_second;
-                frame = (u8)(seconds_since_start * fps);
-            }
-            else if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
-            {
-                frame = tile_rand(i, j);
+                // calculate a frame
+
+                if (br.anim_controller != 0)
+                    var_get_u8(vars, br.anim_controller, &frame);
+                else if (br.frames_per_second > 1)
+                {
+                    float seconds_since_start = SDL_GetTicks() / 1000.0f;
+                    int fps = br.frames_per_second;
+                    frame = (u8)(seconds_since_start * fps);
+                }
+                else if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
+                {
+                    frame = tile_rand(i, j);
+                }
             }
 
             block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE), local_block_width, flip, rotation);

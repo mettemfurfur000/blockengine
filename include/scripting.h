@@ -12,75 +12,66 @@
 
 #include <SDL2/SDL_events.h>
 
-#define LUA_RAISE_ERROR(L, errtext) \
-    lua_pushliteral(L, errtext), lua_error(L);
+#define LUA_SET_GLOBAL_OBJECT(name, ptr) \
+    {                                    \
+        lua_pushlightuserdata(g_L, ptr); \
+        lua_setglobal(g_L, name);        \
+    }
 
-#define STRUCT_GETFIELD(L, object, field, pusher) \
-    pusher(L, object.field);                      \
+#define STRUCT_GET(L, object, field, pusher) \
+    pusher(L, object.field);                 \
     lua_setfield(L, -2, #field);
 
-#define STRUCT_SETFIELD(L, object, field, expected_type, converter) \
-    if (lua_getfield(L, -1, #field) == expected_type)               \
-    {                                                               \
-        object.field = converter(L, -1);                            \
-        lua_pop(L, 1);                                              \
-    }                                                               \
-    else                                                            \
-        LUA_RAISE_ERROR(L, "STRUCT_SETFIELD: expected a " #expected_type "for a field" #field)
-
-#define STRUCT_CHECK(L, value, max_size) \
-    if (index >= value)                  \
-    LUA_RAISE_ERROR(L, #value " >= " #max_size)
-
-#define LUA_ARGS_NUMBER_CHECK(L, mustbe) \
-    if (lua_gettop(L) != mustbe)         \
-    LUA_RAISE_ERROR(L, "expected " #mustbe " arguments")
-
-#define LUA_ARG_CHECK(L, pos, mustbe) \
-    if (lua_type(L, pos) != mustbe)   \
-    LUA_RAISE_ERROR(L, "expected " #mustbe " at " #pos)
-
-void scripting_check_arguments(lua_State *L, int num, ...);
+#define STRUCT_SET(L, object, field, converter) \
+    object.field = converter(L, -1);            \
+    lua_pop(L, 1);
 
 extern lua_State *g_L;
 
-typedef vec_t(lua_CFunction) vec_CFunction_t;
+// utils
 
-typedef struct
-{
-    int event_id;
-    vec_void_t functions;
-} event_handler;
+void *check_light_userdata(lua_State *L, int index);
 
 void scripting_init();
 void scripting_close();
 
-void scripting_register_event(lua_CFunction function, const int event_id);
-int scripting_handle_event(SDL_Event *event, const int override_id);
+void call_handlers(SDL_Event e);
+void scripting_register_event_handler(int lua_func_ref, int event_type);
 
 void scripting_load_scripts(block_registry *registry);
 
-void scripting_define_global_object(void *ptr, char *name);
-
 // lua functions
 
-int lua_set_block_id(lua_State *L);
-int lua_get_block_id(lua_State *L);
+int lua_register_handler(lua_State *L);
 
-int lua_get_block_vars(lua_State *L);
+int lua_block_set_id(lua_State *L);
+int lua_block_get_id(lua_State *L);
+
+int lua_block_get_vars(lua_State *L);
+int lua_block_set_vars(lua_State *L);
+
 int lua_vars_get_integer(lua_State *L);
-
 int lua_vars_set_integer(lua_State *L);
 
 // rendering things
 
 int lua_render_rules_get_resolutions(lua_State *L);
+
 int lua_render_rules_get_order(lua_State *L);
 
-// unpacks data from a slice object
 int lua_slice_get(lua_State *L);
-
-// packs slice from a lua table back into c structure and then sets it in a render rules
 int lua_slice_set(lua_State *L);
+
+// level managing functions
+
+int lua_create_level(lua_State *L);
+
+int lua_load_registry(lua_State *L);
+
+int lua_create_room(lua_State *L);
+int lua_get_room(lua_State *L);
+
+int lua_get_room_count(lua_State *L);
+int lua_create_layer(lua_State *L);
 
 #endif
