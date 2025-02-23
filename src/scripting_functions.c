@@ -227,11 +227,11 @@ int lua_create_layer(lua_State *L)
 {
     level *l = (level *)check_light_userdata(L, 1);
     room *r = (room *)check_light_userdata(L, 2);
-    char *registry_name = luaL_checkstring(L, 3);
+    const char *registry_name = luaL_checkstring(L, 3);
     u8 bytes_per_block = luaL_checkinteger(L, 4);
     bool use_vars = lua_toboolean(L, 5);
 
-    block_registry *reg = find_registry(l->registries, registry_name);
+    block_registry *reg = find_registry(l->registries, (char *)registry_name);
 
     if (reg == NULL)
     {

@@ -75,8 +75,8 @@ float lerp(float a, float b, float t)
 
 u8 set_registry_block(layer *l, u32 x, u32 y, u64 id)
 {
-	CHECK_PTR(l, set_registry_block);
-	CHECK_PTR(l->registry, set_registry_block);
+	CHECK_PTR(l);
+	CHECK_PTR(l->registry);
 
 	block_resources_t reg = l->registry->resources;
 

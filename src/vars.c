@@ -2,14 +2,14 @@
 
 i32 fdesp(blob b, char letter)
 {
-	if (b.size == 0)
+	if (b.size == 0 || b.ptr == 0)
 		return FAIL;
 
 	for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)
 		if (b.ptr[i] == letter)
-			return i;
+			return i; // found
 
-	return FAIL;
+	return FAIL; // not found
 }
 
 blob var_get(blob b, char letter)
@@ -28,7 +28,7 @@ blob var_get(blob b, char letter)
 
 u8 var_delete_all(blob *b)
 {
-	CHECK_PTR(b, var_delete_all);
+	CHECK_PTR(b);
 
 	SAFE_FREE(b->ptr);
 	b->size = 0;
@@ -38,18 +38,18 @@ u8 var_delete_all(blob *b)
 
 u8 var_push(blob *b, char letter, u8 size)
 {
-	CHECK_PTR(b, var_push);
+	CHECK_PTR(b);
 
 	if (fdesp(*b, letter) >= 0)
 		return SUCCESS;
 
-	int new_data_size = b->size + size + 2;
+	u32 old_size = b->size;
+	u32 new_data_size = old_size + size + 2; // 1 byte for letter and 1 byte for size
 
-	b->ptr = realloc(b->ptr, new_data_size);
+	b->ptr = b->ptr ? realloc(b->ptr, new_data_size) : calloc(new_data_size, 1);
+	b->ptr[old_size] = letter;
+	b->ptr[old_size + 1] = size;
 
-	b->ptr[b->size] = letter;
-	b->ptr[b->size + 1] = size;
-	memset(b->ptr + 2, 0, size);
 	b->size = new_data_size;
 
 	return SUCCESS;
@@ -57,7 +57,7 @@ u8 var_push(blob *b, char letter, u8 size)
 
 u8 var_delete(blob *b, char letter)
 {
-	CHECK_PTR(b, var_delete);
+	CHECK_PTR(b);
 
 	u64 blob_size = b->size;
 	i32 element_pos = fdesp(*b, letter);
@@ -101,7 +101,7 @@ u8 var_delete(blob *b, char letter)
 
 u8 var_resize(blob *b, char letter, u8 new_size)
 {
-	CHECK_PTR(b, var_resize);
+	CHECK_PTR(b);
 
 	i32 pos = fdesp(*b, letter);
 	if (pos < 0)
@@ -167,11 +167,10 @@ u8 var_resize(blob *b, char letter, u8 new_size)
 	return SUCCESS;
 }
 
-// utils
-
 i32 ensure_tag(blob *b, const int letter, const int needed_size)
 {
-	CHECK_PTR(b, ensure_tag);
+	CHECK_PTR(b);
+	CHECK(needed_size == 0);
 	// if tag is not existink yet, create it
 	if (b->ptr == 0 || fdesp(*b, letter) < 0)
 		if (var_push(b, letter, needed_size) == FAIL) // failed to create
@@ -197,8 +196,8 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 // will affect src
 i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
 {
-	CHECK_PTR(b, data_set_num_endianless);
-	CHECK_PTR(src, data_set_num_endianless);
+	CHECK_PTR(b);
+	CHECK_PTR(src);
 
 	int pos = ensure_tag(b, letter, size);
 	if (pos < 0)
@@ -239,10 +238,10 @@ i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
 
 u8 var_set_str(blob *b, char letter, const char *str)
 {
-	CHECK_PTR(b, var_set_str);
-	CHECK_PTR(str, var_set_str);
+	CHECK_PTR(b);
+	CHECK_PTR(str);
 	u32 len = strlen(str);
-	CHECK(len == 0, var_set_str);
+	CHECK(len == 0);
 
 	int pos = ensure_tag(b, letter, len + 1);
 	if (pos < 0)
@@ -255,7 +254,31 @@ u8 var_set_str(blob *b, char letter, const char *str)
 
 SETTER_IMP(u8)
 SETTER_IMP(u16)
-SETTER_IMP(u32)
+// SETTER_IMP(u32)
+u8 var_set_u32(blob *b, char letter, u32 value)
+{
+	if (!(b))
+	{
+		log_msg(1, "%s:%d "
+				   "check failed: '"
+				   "b"
+				   "' is NULL\n",
+				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 257);
+		return -1;
+	};
+	int pos = ensure_tag(b, letter, sizeof(u32));
+	if (pos < 0)
+	{
+		log_msg(1, "%s:%d "
+				   "check failed: '"
+				   "pos < 0"
+				   " is positive'\n",
+				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 257);
+		return -1;
+	};
+	*(u32 *)(b->ptr + pos + 2) = value;
+	return 0;
+}
 SETTER_IMP(u64)
 
 SETTER_IMP(i8)
@@ -281,10 +304,91 @@ u8 var_get_str(blob b, char letter, char **dest)
 
 GETTER_IMP(u8)
 GETTER_IMP(u16)
-GETTER_IMP(u32)
+// GETTER_IMP(u32)
+u8 var_get_u32(blob b, char letter, u32 *dest)
+{
+	if (!(dest))
+	{
+		log_msg(1, "%s:%d "
+				   "check failed: '"
+				   "dest"
+				   "' is NULL\n",
+				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 283);
+		return -1;
+	};
+	int pos = fdesp(b, letter);
+	if (pos < 0)
+	{
+		log_msg(1, "%s:%d "
+				   "check failed: '"
+				   "pos < 0"
+				   " is positive'\n",
+				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 283);
+		return -1;
+	};
+	*dest = *(u32 *)(b.ptr + pos + 2);
+	return 0;
+}
 GETTER_IMP(u64)
 
 GETTER_IMP(i8)
 GETTER_IMP(i16)
 GETTER_IMP(i32)
 GETTER_IMP(i64)
+
+// utils
+
+void dbg_data_layout(blob b)
+{
+	u8 data_size = b.size;
+
+	char buf[256] = {};
+	char ret[1024] = {};
+
+	sprintf(buf, "data_size %d\n", data_size);
+	strcat(ret, buf);
+
+	sprintf(buf, "{\n");
+	strcat(ret, buf);
+
+	u32 index = 0;
+	while (index < data_size)
+	{
+		byte letter = b.ptr[index];
+		byte size = b.ptr[index + 1];
+
+		void *ptr = VAR_ELEMENT_VALUE(b.ptr, index);
+
+		if (size == 1)
+			sprintf(buf, "\tu8 %c = %d;\n", letter, *(u8 *)ptr);
+		else if (size == 2)
+			sprintf(buf, "\tu16 %c = %d;\n", letter, *(u16 *)ptr);
+		else if (size == 4)
+			sprintf(buf, "\tu32 %c = %d;\n", letter, *(u32 *)ptr);
+		else if (size == 8)
+			sprintf(buf, "\tu64 %c = %lld;\n", letter, *(u64 *)ptr);
+		else
+		{
+			sprintf(buf, "\tchar %c[] = %s;\n\t// u8 %c[] = { ", letter, (char *)ptr, letter);
+			strcat(ret, buf);
+
+			for (int i = 0; i < size; i++)
+			{
+				if (i != size - 1)
+					sprintf(buf, "0x%02x, ", *(u8 *)(ptr + i));
+				else
+					sprintf(buf, "0x%02x", *(u8 *)(ptr + i));
+				strcat(ret, buf);
+			}
+			sprintf(buf, "};\n");
+		}
+		strcat(ret, buf);
+
+		index += b.ptr[index + 1] + 2;
+	}
+
+	sprintf(buf, "}\n");
+	strcat(ret, buf);
+
+	LOG_INFO("%s", ret);
+}

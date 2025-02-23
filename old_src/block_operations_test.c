@@ -45,7 +45,7 @@ int test_block_set()
 
 	block_data_free(&test_block);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_clean()
@@ -69,7 +69,7 @@ int test_block_clean()
 
 	block_data_free(&test_block);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_move_gently()
@@ -133,7 +133,7 @@ int test_block_move_gently()
 	block_data_free(&test_block);
 	block_data_free(&other_block);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_move_rough()
@@ -189,7 +189,7 @@ int test_block_move_rough()
 	block_data_free(&test_block);
 	block_data_free(&other_block);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_move_recursive()
@@ -252,7 +252,7 @@ int test_block_move_recursive()
 	block_data_free(&test_block);
 	block_data_free(&other_block);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_operations_all()

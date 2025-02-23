@@ -1,47 +1,84 @@
 #include "../include/vars.h"
 #include "test_utils.h"
 #include <stdio.h>
+#include <time.h>
 
 int test_basic_data_manip()
 {
-	int status = 1;
-
 	int src = 55555;
 	int dest = 0;
 
 	blob b = {};
 
-	status &= var_push(&b, 't', sizeof(src)) == SUCCESS;
-	status &= var_set_i32(&b, 't', src) == SUCCESS;
-	status &= var_get_i32(b, 't', &dest) == SUCCESS;
+	CHECK(var_push(&b, 't', sizeof(src)));
+	CHECK(var_set_i32(&b, 't', src));
+	CHECK(var_get_i32(b, 't', &dest));
 
-	status &= (src == dest);
+	CHECK(src != dest);
+
+	dbg_data_layout(b);
 
 	var_delete_all(&b);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_random_data()
 {
-	int status = 1;
-
 	blob b = {};
 
-	for (char i = 'A'; i < 'z'; i++)
+	for (char i = 'A'; i < 'Z'; i++)
 	{
 		u32 src = rand() * sizeof(u16) + rand();
 		u32 dest = 0;
-		status &= var_push(&b, i, sizeof(src)) == SUCCESS;
-		status &= var_set_u32(&b, i, src) == SUCCESS;
-		status &= var_get_u32(b, i, &dest) == SUCCESS;
+		CHECK(var_push(&b, i, sizeof(src)));
+		CHECK(var_set_u32(&b, i, src));
+		CHECK(var_get_u32(b, i, &dest));
 
-		status &= (src == dest);
+		CHECK(src != dest);
 	}
+
+	dbg_data_layout(b);
 
 	var_delete_all(&b);
 
-	return status;
+	return SUCCESS;
+}
+
+int test_five_hundred_variables()
+{
+	i32 seed = time(NULL);
+
+	srand(seed);
+
+	blob b = {};
+
+	u32 src = 0x12345678;
+
+	for (int i = 0; i < 26; i++)
+	{
+		char letter = 'A' + i;
+		CHECK(var_set_u32(&b, letter, src));
+	}
+
+	for (int i = 0; i < 26; i++)
+	{
+		char letter = 'A' + i;
+		u32 dest = 0;
+		CHECK(var_get_u32(b, letter, &dest));
+		if (src != dest)
+		{
+			printf("%c : src %x != dest %x\n", letter, src, dest);
+			return FAIL;
+		}
+		// CHECK(src != dest);
+	}
+
+	dbg_data_layout(b);
+
+	var_delete_all(&b);
+
+	return SUCCESS;
 }
 
 void fillrand(char *b, int size)
@@ -51,43 +88,10 @@ void fillrand(char *b, int size)
 	b[size] = 0;
 }
 
-// void dbg_data_layout(u8 *blob)
-// {
-// 	if (!blob)
-// 	{
-// 		printf("no blob\n");
-// 		return;
-// 	}
-
-// 	if (blob[0] == 0)
-// 	{
-// 		printf("empty blob\n");
-// 		return;
-// 	}
-
-// 	short data_size = blob[0] + 1;
-// 	short index = 1;
-
-// 	printf("data_size %d\n", data_size);
-
-// 	printf("[\n");
-// 	while (index < data_size)
-// 	{
-// 		byte letter = blob[index];
-// 		byte size = blob[index + 1];
-// 		printf("\t%x:%d:", letter, size);
-// 		for (int i = 0; i < size; i++)
-// 			printf("%02x", blob[index + 2 + i]);
-// 		printf("\n");
-
-// 		index += blob[index + 1] + 2;
-// 	}
-// 	printf("]\n");
-// }
-
 INIT_TESTING(test_vars_all)
 
 RUN_TEST(test_basic_data_manip)
 RUN_TEST(test_random_data)
+RUN_TEST(test_five_hundred_variables)
 
 FINISH_TESTING()

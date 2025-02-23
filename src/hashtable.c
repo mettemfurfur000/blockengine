@@ -31,7 +31,7 @@ blob blobify(char *str)
 
 u8 blob_dup(blob *dest, blob src)
 {
-	CHECK_PTR(dest, blob_dup);
+	CHECK_PTR(dest);
 
 	SAFE_FREE(dest->ptr)
 
@@ -115,7 +115,7 @@ hash_node **alloc_table()
 
 void free_table(hash_node **table)
 {
-	CHECK_PTR_NORET(table, free_table);
+	CHECK_PTR_NORET(table);
 
 	LOG_DEBUG("Freeing table of size %d, ptr %p", TABLE_SIZE, table);
 
@@ -136,7 +136,7 @@ void free_table(hash_node **table)
 
 void put_entry(hash_node **table, blob key, blob value)
 {
-	CHECK_PTR_NORET(table, put_entry);
+	CHECK_PTR_NORET(table);
 
 	unsigned long hash = hash_function(key);
 	hash_node *node = table[hash];
@@ -222,7 +222,7 @@ void print_table(hash_node **table)
 
 void remove_entry(hash_node **table, blob key)
 {
-	CHECK_PTR_NORET(table, remove_entry);
+	CHECK_PTR_NORET(table);
 
 	unsigned long hash = hash_function(key);
 	hash_node *prev = NULL;
@@ -247,7 +247,7 @@ void remove_entry(hash_node **table, blob key)
 
 u64 actual_size_of_table(hash_node **table)
 {
-	CHECK_PTR(table, actual_size_of_table);
+	CHECK_PTR(table);
 
 	u64 size = 0;
 	hash_node *node;
@@ -269,7 +269,7 @@ u64 actual_size_of_table(hash_node **table)
 
 u64 table_elements(hash_node **table)
 {
-	CHECK_PTR(table, table_elements);
+	CHECK_PTR(table);
 
 	u64 count = 0;
 

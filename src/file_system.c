@@ -122,7 +122,7 @@ void write_room(room *r, level lvl, FILE *f)
     WRITE(r->width, f);
     WRITE(r->height, f);
 
-    CHECK_PTR_NORET(r->name, write_room)
+    CHECK_PTR_NORET(r->name)
     blob_write(blobify(r->name), f);
 
     for (u32 i = 0; i < r->layers.length; i++)
@@ -153,14 +153,14 @@ u8 save_level(level lvl)
     if (!f)
         return FAIL;
 
-    CHECK_PTR(lvl.name, save_level)
+    CHECK_PTR(lvl.name)
 
     blob_write(blobify(lvl.name), f);
     WRITE(lvl.registries.length, f);
     for (u32 i = 0; i < lvl.registries.length; i++)
     {
         const char *reg_name = lvl.registries.data[i].name;
-        CHECK_PTR(reg_name, save_level)
+        CHECK_PTR(reg_name)
         blob_write(blobify((char *)reg_name), f); // only save registry names
     }
 

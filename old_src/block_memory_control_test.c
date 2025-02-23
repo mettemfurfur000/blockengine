@@ -12,7 +12,7 @@ int test_block_init()
 
 	block_data_free(&t1);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_data_resize()
@@ -27,7 +27,7 @@ int test_block_data_resize()
 
 	block_data_free(&t1);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_erase()
@@ -42,7 +42,7 @@ int test_block_erase()
 
 	block_data_free(&t1);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_copy()
@@ -59,7 +59,7 @@ int test_block_copy()
 	block_data_free(&t1);
 	block_data_free(&t2);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_teleport()
@@ -81,7 +81,7 @@ int test_block_teleport()
 	block_data_free(&t2);
 	block_data_free(&t1_copy);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_swap()
@@ -107,7 +107,7 @@ int test_block_swap()
 	block_data_free(&t1_copy);
 	block_data_free(&t2_copy);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_block_all()

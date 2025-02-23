@@ -10,12 +10,12 @@ room test_room = {.name = "test_room", .width = 8, .height = 8};
 
 int test_room_init()
 {
-	init_level(&test_level);
-	init_room(&test_room, &test_level);
+	CHECK(init_level(&test_level))
+	CHECK(init_room(&test_room, &test_level))
 
 	(void)vec_push(&test_level.rooms, test_room);
 
-	return 1;
+	return SUCCESS;
 }
 
 int test_layer_init()
@@ -23,7 +23,7 @@ int test_layer_init()
 	layer new_layer = {.bytes_per_block = 2, .width = 16, .height = 16};
 	FLAG_SET(new_layer.flags, LAYER_FLAG_HAS_VARS, 1);
 
-	init_layer(&new_layer, &test_room);
+	CHECK(init_layer(&new_layer, &test_room))
 
 	(void)vec_push(&test_room.layers, new_layer);
 
@@ -31,68 +31,33 @@ int test_layer_init()
 
 	u64 id = 0;
 
-	if (block_get_id(l, 7, 7, &id) != SUCCESS)
-	{
-		LOG_ERROR("Failed to get block id");
-		return 0;
-	}
+	CHECK(block_get_id(l, 7, 7, &id))
+	CHECK(block_set_id(l, 7, 7, 100))
+	CHECK(block_get_id(l, 7, 7, &id))
 
-	if (block_set_id(l, 7, 7, 100) != SUCCESS)
-	{
-		LOG_ERROR("Failed to set block id");
-		return 0;
-	}
+	CHECK(id != 100)
 
-	if (block_get_id(l, 7, 7, &id) != SUCCESS)
-	{
-		LOG_ERROR("Block id was not set");
-		return 0;
-	}
-
-	if (id != 100)
-	{
-		LOG_ERROR("Block id is not 100");
-		return 0;
-	}
-
-	return 1;
+	return SUCCESS;
 }
 
 int test_save_level()
 {
-	if (save_level(test_level) != SUCCESS)
-	{
-		LOG_ERROR("Failed to save level");
-		return 0;
-	}
+	CHECK(save_level(test_level))
 
-	return 1;
+	return SUCCESS;
 }
 
 int test_load_level()
 {
 	level on_disk_level = {};
-	if (load_level(&on_disk_level, "test_level") != SUCCESS)
-	{
-		LOG_ERROR("Failed to load level");
-		return 0;
-	}
 
-	if (on_disk_level.rooms.length != 1)
-	{
-		LOG_ERROR("Level rooms length is not 1, it is %d", on_disk_level.rooms.length);
-		return 0;
-	}
-
-	if (on_disk_level.rooms.data[0].width != 8)
-	{
-		LOG_ERROR("Level room width is not 8, it is %d", on_disk_level.rooms.data[0].width);
-		return 0;
-	}
+	CHECK(load_level(&on_disk_level, "test_level"))
+	CHECK(on_disk_level.rooms.length != 1)
+	CHECK(on_disk_level.rooms.data[0].width != 8)
 
 	free_level(&on_disk_level);
 
-	return 1;
+	return SUCCESS;
 }
 
 INIT_TESTING(test_file_system)

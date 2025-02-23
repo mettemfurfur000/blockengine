@@ -14,8 +14,8 @@
 	total++;                             \
 	LOG_INFO("EXECUTING TEST " #f_name); \
 	result = f_name();                   \
-	passed += result ? 1 : 0;            \
-	LOG_INFO("TEST " #f_name " RESULT: %s ", result ? "SUCCESS" : "FAIL");
+	passed += result == SUCCESS ? 1 : 0; \
+	LOG_INFO("TEST " #f_name " RESULT: %s ", result == SUCCESS ? "SUCCESS" : "FAIL");
 
 #define FINISH_TESTING()    \
 	return passed == total; \

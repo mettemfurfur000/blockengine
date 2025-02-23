@@ -4,7 +4,6 @@
 
 int test_read_from_string()
 {
-	int status = 1;
 	blob data_out;
 
 	char *test_string = "{\nbyte a = 30\nint i = 1024\ndigit d = 666\nstring @ Hello gordon freeman!\n}";
@@ -18,37 +17,30 @@ int test_read_from_string()
 
 	// actually my cool data type is just pascal strings, sad.
 
-	status &= make_block_data_from_string(test_string, &data_out) == SUCCESS;
-
-	status &= memcmp(data_out.ptr, (const char *)data_must_be, data_out.size) == 0;
+	CHECK(make_block_data_from_string(test_string, &data_out))
+	CHECK(memcmp(data_out.ptr, (const char *)data_must_be, data_out.size))
 
 	free(data_out.ptr);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_parse_from_file()
 {
-	int status = 1;
 	block_resources br = {};
 
 	char path[256] = {};
 	sprintf(path, "%s/%s/blocks/test.blk", REGISTRIES_FOLDER, TEST_REGISTRY);
 
-	status &= parse_block_resources_from_file(path, &br) == SUCCESS;
-
-	if (!status)
-		return FAIL;
+	CHECK(parse_block_resources_from_file(path, &br))
 
 	LOG_INFO("\t\tblock: %lld, %.*s", br.id,
 			 br.vars.size,
 			 br.vars.str);
 
-	// print_table(br.all_fields);
-
 	free_block_resources(&br);
 
-	return status;
+	return SUCCESS;
 }
 
 void print_registry(block_registry bro)
@@ -68,26 +60,24 @@ void print_registry(block_registry bro)
 
 int test_parse_folder()
 {
-	int status = 1;
 	block_registry b_reg;
 	vec_init(&b_reg.resources);
 
-	status = read_block_registry(TEST_REGISTRY, &b_reg) == SUCCESS;
+	CHECK(read_block_registry(TEST_REGISTRY, &b_reg))
 
 	print_registry(b_reg);
 
 	free_block_registry(&b_reg);
 
-	return status;
+	return SUCCESS;
 }
 
 int test_sort()
 {
-	int status = 1;
 	block_registry b_reg;
 	vec_init(&b_reg.resources);
 
-	status = read_block_registry(TEST_REGISTRY, &b_reg) == SUCCESS;
+	CHECK(read_block_registry(TEST_REGISTRY, &b_reg))
 
 	print_registry(b_reg);
 
@@ -97,7 +87,7 @@ int test_sort()
 
 	free_block_registry(&b_reg);
 
-	return status;
+	return SUCCESS;
 }
 
 INIT_TESTING(test_all_registry)

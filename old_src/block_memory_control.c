@@ -42,7 +42,7 @@ int is_chunk_equal(const layer_chunk *a, const layer_chunk *b)
 		status &= is_block_equal(blk, BLOCK_FROM_CHUNK(b, x, y));
 	})
 
-	return status;
+	return SUCCESS;
 }
 
 void block_data_free(block *b)

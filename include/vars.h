@@ -52,8 +52,7 @@ u8 var_delete(blob *b, char letter);
 u8 var_delete_all(blob *b);
 
 u8 var_resize(blob *b, char letter, u8 new_size);
-
-#define __a(__a) __a
+i32 ensure_tag(blob *b, const int letter, const int needed_size);
 
 #define VAR_ACCESSOR_NAME(type, op) var_##op##_##type
 #define GETTER_NAME(type) VAR_ACCESSOR_NAME(type, get)
@@ -63,9 +62,9 @@ u8 var_resize(blob *b, char letter, u8 new_size);
 #define GETTER_IMP(type)                                  \
 	u8 GETTER_NAME(type)(blob b, char letter, type *dest) \
 	{                                                     \
-		CHECK_PTR(dest, SETTER_NAME(type));               \
+		CHECK_PTR(dest);                                  \
 		int pos = fdesp(b, letter);                       \
-		CHECK(pos < 0, SETTER_NAME(type));                \
+		CHECK(pos < 0);                                   \
 		*dest = *(type *)VAR_ELEMENT_VALUE(b.ptr, pos);   \
 		return SUCCESS;                                   \
 	}
@@ -74,9 +73,9 @@ u8 var_resize(blob *b, char letter, u8 new_size);
 #define SETTER_IMP(type)                                    \
 	u8 SETTER_NAME(type)(blob * b, char letter, type value) \
 	{                                                       \
-		CHECK_PTR(b, SETTER_NAME(type));                    \
-		int pos = ensure_tag(b, letter, 1);                 \
-		CHECK(pos < 0, SETTER_NAME(type));                  \
+		CHECK_PTR(b);                                       \
+		int pos = ensure_tag(b, letter, sizeof(type));      \
+		CHECK(pos < 0);                                     \
 		*(type *)VAR_ELEMENT_VALUE(b->ptr, pos) = value;    \
 		return SUCCESS;                                     \
 	}
@@ -110,6 +109,8 @@ GETTER_DEF(i64)
 u8 var_get_str(blob b, char letter, char **dest);
 
 // utils
+
+void dbg_data_layout(blob b);
 
 i32 data_get_num_endianless(blob b, char letter, void *dest, int size);
 i32 data_set_num_endianless(blob *b, char letter, void *src, int size);

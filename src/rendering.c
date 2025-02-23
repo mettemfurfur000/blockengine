@@ -15,13 +15,13 @@ tile_rand(const int x, const int y)
 
 u8 render_layer(layer_slice slice)
 {
-    CHECK(slice.zoom == 0, render_layer)
+    CHECK(slice.zoom == 0)
     const int local_block_width = (g_block_width * slice.zoom);
 
     const int width = slice.w / local_block_width; // exact amowunt of lboks to render o nscren
     const int height = slice.h / local_block_width;
 
-    CHECK_PTR(slice.ref, render_layer)
+    CHECK_PTR(slice.ref)
     block_registry *b_reg = slice.ref->registry;
 
     const int start_block_x = ((slice.x / local_block_width) - 1);

@@ -3,17 +3,16 @@
 
 int test_basic_io()
 {
-	int status = 1;
 	char *file = REGISTRIES_FOLDER "/" TEST_REGISTRY "/test.prop";
 
 	hash_node **table = alloc_table();
 
-	status &= load_properties(file, table) == SUCCESS;
-	status &= save_properties(file, table) == SUCCESS;
+	CHECK(load_properties(file, table))
+	CHECK(save_properties(file, table))
 
 	free_table(table);
 
-	return status;
+	return SUCCESS;
 }
 
 INIT_TESTING(test_block_props_all)

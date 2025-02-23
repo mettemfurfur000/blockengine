@@ -77,8 +77,8 @@ u32 get_length_to_alloc(u64 value, u32 type)
 
 u8 make_block_data_from_string(const char *str_to_cpy, blob *b)
 {
-	CHECK_PTR(str_to_cpy, make_block_data_from_string)
-	CHECK_PTR(b, make_block_data_from_string)
+	CHECK_PTR(str_to_cpy)
+	CHECK_PTR(b)
 
 	char character;
 	u8 data_buffer[256] = {0};
@@ -216,11 +216,11 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
 		return SUCCESS;
 	}
 
-	CHECK_PTR(dest->parent_registry, block_res_texture_handler)
+	CHECK_PTR(dest->parent_registry)
 
 	block_registry *b_reg = (block_registry *)dest->parent_registry;
 
-	CHECK_PTR(b_reg->name, block_res_texture_handler)
+	CHECK_PTR(b_reg->name)
 
 	char texture_full_path[256] = {};
 	snprintf(texture_full_path, sizeof(texture_full_path), REGISTRIES_FOLDER "/%s/" REGISTRY_TEXTURES_FOLDER "/%s", b_reg->name, data);
@@ -399,7 +399,7 @@ u32 is_already_in_registry(block_resources_t *reg, block_resources *br)
 
 u32 read_block_registry(const char *name, block_registry *registry)
 {
-	CHECK_PTR(registry, read_block_registry);
+	CHECK_PTR(registry);
 	registry->name = name;
 
 	block_resources_t *reg = &registry->resources;

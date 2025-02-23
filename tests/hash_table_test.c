@@ -26,7 +26,7 @@ int test_rand_fill_and_remove()
 			if (blob_cmp(ret, val) != 0)
 			{
 				LOG_DEBUG("hashtable returned a different value for the same key, %s != %s", ret, val);
-				return 0;
+				return FAIL;
 			}
 		}
 		else
@@ -37,13 +37,13 @@ int test_rand_fill_and_remove()
 			if (ret.ptr != NULL)
 			{
 				LOG_DEBUG("hashtable returned a value for a removed key, %s", ret);
-				return 0;
+				return FAIL;
 			}
 		}
 	}
 
 	free_table(table);
-	return 1;
+	return SUCCESS;
 }
 
 int test_hash_table_fill()
@@ -55,7 +55,6 @@ int test_hash_table_fill()
 	blob ret = {};
 
 	int rand_val;
-	int status = 1;
 
 	double avg_random_get = 0;
 	float filling_time;
@@ -89,9 +88,11 @@ int test_hash_table_fill()
 
 			if (blob_cmp(val, ret) != 0)
 			{
-				status = 0;
 				LOG_DEBUG("hashtable returned a different value for the same key, %s != %s", ret, val);
-				break;
+
+				free_table(table);
+
+				return FAIL;
 			}
 		}
 		avg_random_get += bench_end(bench_start_time);
@@ -102,7 +103,7 @@ int test_hash_table_fill()
 
 	LOG_INFO("filling time = %f, average get time: %f, gets per second: %d", filling_time, avg_random_get, (1 / avg_random_get) * TESTS);
 
-	return status;
+	return SUCCESS;
 }
 
 INIT_TESTING(test_hash_table_all)
