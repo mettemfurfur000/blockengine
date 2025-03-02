@@ -5,9 +5,7 @@ i32 fdesp(blob b, char letter)
 	if (b.size == 0 || b.ptr == 0)
 		return FAIL;
 
-	for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)
-		if (b.ptr[i] == letter)
-			return i; // found
+	VAR_FOREACH(b, if (b.ptr[i] == letter) return i;) // found
 
 	return FAIL; // not found
 }
@@ -20,8 +18,8 @@ blob var_get(blob b, char letter)
 	if (index < 0)
 		return ret;
 
-	ret.ptr = VAR_ELEMENT_VALUE(b.ptr, index);
-	ret.size = VAR_ELEMENT_SIZE(b.ptr, index);
+	ret.ptr = VAR_VALUE(b.ptr, index);
+	ret.size = VAR_SIZE(b.ptr, index);
 
 	return ret;
 }
@@ -182,7 +180,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 
 	i32 old_pos = fdesp(*b, letter); // it exists
 
-	if (VAR_ELEMENT_SIZE(b->ptr, old_pos) < needed_size) // if size is smaller than needed, resize
+	if (VAR_SIZE(b->ptr, old_pos) < needed_size) // if size is smaller than needed, resize
 		if (var_resize(b, letter, needed_size) == FAIL)
 			return FAIL;
 		else
@@ -206,7 +204,7 @@ i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
 	if (make_endianless(src, size) == FAIL)
 		return FAIL;
 
-	memcpy(VAR_ELEMENT_VALUE(b->ptr, pos), src, size);
+	memcpy(VAR_VALUE(b->ptr, pos), src, size);
 
 	return SUCCESS;
 }
@@ -221,12 +219,12 @@ i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
 	if (pos < 0)
 		return FAIL;
 
-	u32 var_size = VAR_ELEMENT_SIZE(b.ptr, pos);
+	u32 var_size = VAR_SIZE(b.ptr, pos);
 
 	if (var_size > size) // not enough space in dest ptr
 		return FAIL;
 
-	memcpy(dest, VAR_ELEMENT_VALUE(b.ptr, pos), var_size);
+	memcpy(dest, VAR_VALUE(b.ptr, pos), var_size);
 
 	if (make_endianless(dest, var_size) == FAIL)
 		return FAIL;
@@ -247,7 +245,7 @@ u8 var_set_str(blob *b, char letter, const char *str)
 	if (pos < 0)
 		return FAIL;
 
-	memcpy(VAR_ELEMENT_VALUE(b->ptr, pos), str, len + 1);
+	memcpy(VAR_VALUE(b->ptr, pos), str, len + 1);
 
 	return SUCCESS;
 }
@@ -297,7 +295,7 @@ u8 var_get_str(blob b, char letter, char **dest)
 	if (pos < 0)
 		return FAIL;
 
-	*dest = (char *)VAR_ELEMENT_VALUE(b.ptr, pos);
+	*dest = (char *)VAR_VALUE(b.ptr, pos);
 
 	return SUCCESS;
 }
@@ -357,7 +355,7 @@ void dbg_data_layout(blob b)
 		byte letter = b.ptr[index];
 		byte size = b.ptr[index + 1];
 
-		void *ptr = VAR_ELEMENT_VALUE(b.ptr, index);
+		void *ptr = VAR_VALUE(b.ptr, index);
 
 		if (size == 1)
 			sprintf(buf, "\tu8 %c = %d;\n", letter, *(u8 *)ptr);

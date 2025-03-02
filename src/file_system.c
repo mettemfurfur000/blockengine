@@ -19,6 +19,42 @@ blob blob_read(FILE *f)
     return t;
 }
 
+void blob_vars_write(blob b, FILE *f)
+{
+    WRITE(b.length, f);
+
+    VAR_FOREACH(b, {
+        putc(b.ptr[i], f);
+        u8 size = b.ptr[i + 1];
+        putc(size, f);
+        u8 *val = VAR_VALUE(b.ptr, i);
+        if (size % 2 == 0)
+            endianless_write(val, size, f);
+        else
+            fwrite(val, 1, size, f);
+    });
+}
+
+blob blob_vars_read(blob b, FILE *f)
+{
+    blob t;
+    READ(t.size, f);
+    t.ptr = calloc(t.size, 1);
+
+    VAR_FOREACH(b, {
+        b.ptr[i] = getc(f);
+        u8 size = getc(f);
+        b.ptr[i + 1] = size;
+        u8 *val = VAR_VALUE(b.ptr, i);
+        if (size % 2 == 0)
+            endianless_read(val, size, f);
+        else
+            fread(val, 1, size, f);
+    });
+
+    return t;
+}
+
 void write_hashtable(hash_node **t, FILE *f)
 {
     const u32 size = TABLE_SIZE;

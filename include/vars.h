@@ -13,8 +13,13 @@
 #include "block_registry.h"
 #include "hashtable.h"
 
-#define VAR_ELEMENT_SIZE(blob, pos) *(blob + pos + 1)
-#define VAR_ELEMENT_VALUE(blob, pos) (blob + pos + 2)
+#define VAR_LETTER(blob, pos) *(char *)(blob + pos)
+#define VAR_SIZE(blob, pos) *(u8 *)(blob + pos + 1)
+#define VAR_VALUE(blob, pos) (blob + pos + 2)
+
+#define VAR_FOREACH(blob, code)                        \
+	for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2) \
+	code
 
 /*
 Find Data Element Start Position
@@ -65,7 +70,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 		CHECK_PTR(dest);                                  \
 		int pos = fdesp(b, letter);                       \
 		CHECK(pos < 0);                                   \
-		*dest = *(type *)VAR_ELEMENT_VALUE(b.ptr, pos);   \
+		*dest = *(type *)VAR_VALUE(b.ptr, pos);           \
 		return SUCCESS;                                   \
 	}
 
@@ -76,7 +81,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 		CHECK_PTR(b);                                       \
 		int pos = ensure_tag(b, letter, sizeof(type));      \
 		CHECK(pos < 0);                                     \
-		*(type *)VAR_ELEMENT_VALUE(b->ptr, pos) = value;    \
+		*(type *)VAR_VALUE(b->ptr, pos) = value;            \
 		return SUCCESS;                                     \
 	}
 
