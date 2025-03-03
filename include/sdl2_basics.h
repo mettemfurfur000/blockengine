@@ -2,6 +2,7 @@
 #define SDL2_BASICS_H 1
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 
 #include "general.h"
 #include "events.h"
@@ -13,7 +14,8 @@ extern int SCREEN_HEIGHT;
 extern char *window_name;
 
 extern SDL_Window *g_window;
-extern SDL_Renderer *g_renderer;
+// extern SDL_Renderer *g_renderer; // do not use
+extern SDL_GLContext *g_gl_context;
 
 extern int g_block_width;
 
@@ -22,7 +24,8 @@ extern int g_block_width;
 
 typedef struct texture
 {
-	SDL_Texture *ptr;
+	// SDL_Texture *ptr;
+	GLuint gl_id;
 	char *filename;
 
 	int width;

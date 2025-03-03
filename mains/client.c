@@ -83,6 +83,9 @@ u8 set_registry_block(layer *l, u32 x, u32 y, u64 id)
 	block_set_id(l, x, y, id);
 	block_set_vars(l, x, y, reg.data[id].vars);
 
+	LOG_INFO("setting block %d at %d %d", id, x, y);
+	dbg_data_layout(reg.data[id].vars);
+
 	return SUCCESS;
 }
 
@@ -97,12 +100,21 @@ level test_level_init()
 	init_room(&r, &lvl);
 
 	(void)vec_push(&lvl.rooms, r);
+	room *a_room = &lvl.rooms.data[0];
 
-	layer l = {.bytes_per_block = 2};
+	layer l = {.bytes_per_block = 2, .width = r.width, .height = r.height};
 	FLAG_SET(l.flags, LAYER_FLAG_HAS_VARS, 1);
 	init_layer(&l, &r);
 
-	(void)vec_push(&lvl.rooms.data[0].layers, l);
+	(void)vec_push(&a_room->layers, l);
+
+	// reuse the l struct to craft a new layer, just erase unnecessary data
+	l.blocks = NULL;
+	l.bytes_per_block = 1;
+	l.vars = NULL;
+	init_layer(&l, &r);
+
+	(void)vec_push(&a_room->layers, l);
 
 	return lvl;
 }
@@ -149,7 +161,7 @@ client_render_rules prepare_rendering_rules()
 
 int main(int argc, char *argv[])
 {
-	log_start("test.log");
+	log_start("client.log");
 
 	if (init_graphics() == FAIL)
 		return 1;
@@ -172,8 +184,10 @@ int main(int argc, char *argv[])
 	level lvl = test_level_init();
 
 	layer *floor_layer_ref = &lvl.rooms.data[0].layers.data[0];
+	layer *overlay_layer_ref = &lvl.rooms.data[0].layers.data[1];
 
 	floor_layer_ref->registry = &reg;
+	overlay_layer_ref->registry = &reg;
 	test_level_generate_test_layout(floor_layer_ref);
 
 	unsigned long frame = 0;
@@ -200,13 +214,15 @@ int main(int argc, char *argv[])
 
 	int latest_logic_tick = SDL_GetTicks();
 
-	// scripting_handle_event(NULL, 2); // tick event
 	e.type = ENGINE_INIT;
 
 	call_handlers(e);
 
+	int total_ms_took = 0;
+
 	for (;;)
 	{
+		LOG_INFO("frame %lu", frame);
 		int frame_begin_tick = SDL_GetTicks();
 
 		while (SDL_PollEvent(&e))
@@ -238,19 +254,21 @@ int main(int argc, char *argv[])
 			call_handlers(e);
 		}
 
-		SDL_RenderClear(g_renderer);
+		glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
 		client_render(rules);
 
-		SDL_RenderPresent(g_renderer);
+		SDL_GL_SwapWindow(g_window);
 
 		int loop_took = SDL_GetTicks() - frame_begin_tick;
 		int chill_time = ms_per_s - loop_took;
-
 		SDL_Delay(max(1, chill_time));
 
 		frame++;
 	}
 logic_exit:
+	LOG_INFO("exiting...");
 
 	exit_graphics();
 

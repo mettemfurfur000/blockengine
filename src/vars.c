@@ -252,31 +252,7 @@ u8 var_set_str(blob *b, char letter, const char *str)
 
 SETTER_IMP(u8)
 SETTER_IMP(u16)
-// SETTER_IMP(u32)
-u8 var_set_u32(blob *b, char letter, u32 value)
-{
-	if (!(b))
-	{
-		log_msg(1, "%s:%d "
-				   "check failed: '"
-				   "b"
-				   "' is NULL\n",
-				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 257);
-		return -1;
-	};
-	int pos = ensure_tag(b, letter, sizeof(u32));
-	if (pos < 0)
-	{
-		log_msg(1, "%s:%d "
-				   "check failed: '"
-				   "pos < 0"
-				   " is positive'\n",
-				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 257);
-		return -1;
-	};
-	*(u32 *)(b->ptr + pos + 2) = value;
-	return 0;
-}
+SETTER_IMP(u32)
 SETTER_IMP(u64)
 
 SETTER_IMP(i8)
@@ -302,31 +278,7 @@ u8 var_get_str(blob b, char letter, char **dest)
 
 GETTER_IMP(u8)
 GETTER_IMP(u16)
-// GETTER_IMP(u32)
-u8 var_get_u32(blob b, char letter, u32 *dest)
-{
-	if (!(dest))
-	{
-		log_msg(1, "%s:%d "
-				   "check failed: '"
-				   "dest"
-				   "' is NULL\n",
-				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 283);
-		return -1;
-	};
-	int pos = fdesp(b, letter);
-	if (pos < 0)
-	{
-		log_msg(1, "%s:%d "
-				   "check failed: '"
-				   "pos < 0"
-				   " is positive'\n",
-				(strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') ? strrchr("C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c", '\\') + 1 : "C:\\msys64\\home\\mttffr\\blockengine\\src\\vars.c"), 283);
-		return -1;
-	};
-	*dest = *(u32 *)(b.ptr + pos + 2);
-	return 0;
-}
+GETTER_IMP(u32)
 GETTER_IMP(u64)
 
 GETTER_IMP(i8)

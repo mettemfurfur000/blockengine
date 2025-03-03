@@ -35,7 +35,7 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob *vars_out)
     CHECK_PTR(l->blocks)
     CHECK_PTR(vars_out)
     CHECK(x >= l->width || y >= l->height)
-    CHECK(l->vars)
+    CHECK_PTR(l->vars)
 
     u64 key_num = MERGE32_TO_64(x, y);
     blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
