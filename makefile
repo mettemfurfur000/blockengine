@@ -6,7 +6,7 @@ ifeq ($(OS),Windows_NT)
 	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32
 endif
 
-LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf
+LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32
 
 # get shared libs here
 ifeq ($(OS),Windows_NT)
@@ -53,7 +53,6 @@ test: mains/test.c registry vec $(objects)
 graphic: mains/graphics_test.c registry vec $(objects)
 	gcc -o obj/g_test.o -c mains/graphics_test.c ${CFLAGS}
 	gcc ${CFLAGS} -o build/g_test obj/g_test.o obj/vec.o $(objects) $(LDFLAGS)
-	./build/g_test
 
 .PHONY: test_lua
 test_lua: mains/lua_test.c

@@ -5,7 +5,8 @@ int SCREEN_HEIGHT = 480;
 char *window_name = "Block Engine";
 
 SDL_Window *g_window = NULL;
-SDL_Renderer *g_renderer = NULL;
+// SDL_Renderer *g_renderer = NULL; // do not use
+SDL_GLContext *g_gl_context = NULL;
 
 int g_block_width = 16;
 
@@ -57,21 +58,25 @@ int init_graphics()
 		return FAIL;
 	}
 
-	g_window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+
+	g_window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
 	if (!g_window)
 	{
 		LOG_ERROR("SDL_CreateWindow() error:[%s]", SDL_GetError());
 		return FAIL;
 	}
 
-	g_renderer = SDL_CreateRenderer(g_window, -1, 0);
-	if (!g_renderer)
-	{
-		LOG_ERROR("SDL_CreateRenderer() error:[%s]", SDL_GetError());
-		return FAIL;
-	}
+	g_gl_context = SDL_GL_CreateContext(g_window);
 
-	SDL_SetRenderDrawColor(g_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	// Setup OpenGL for 2D rendering
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0f, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, -1.0f, 1.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
 	int result = SDL_RegisterEvents(TOTAL_ENGINE_EVENTS);
 	if (result == (Uint32)-1)
@@ -95,6 +100,9 @@ int init_graphics()
 		return FAIL;
 	}
 
+	glClear(GL_COLOR_BUFFER_BIT);
+	glLoadIdentity();
+
 	return SUCCESS;
 }
 
@@ -102,7 +110,8 @@ int exit_graphics()
 {
 	SDL_DestroyWindow(g_window);
 
-	SDL_DestroyRenderer(g_renderer);
+	// SDL_DestroyRenderer(g_renderer);
+	SDL_GL_DeleteContext(g_gl_context);
 
 	SDL_Quit();
 
@@ -111,6 +120,7 @@ int exit_graphics()
 
 int texture_load(texture *dest, char *path_to_file)
 {
+	// Alot of error checking here.
 	if (!dest)
 	{
 		LOG_ERROR("texture_load Error: No desination texture");
@@ -123,39 +133,54 @@ int texture_load(texture *dest, char *path_to_file)
 		return FAIL;
 	}
 
+	if (strlen(path_to_file) >= MAX_PATH)
+	{
+		LOG_ERROR("texture_load Error: Path to file too long: %s", path_to_file);
+		return FAIL;
+	}
+
+	// Load image
+
 	u8 *image_data;
 	int channels;
 
 	if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height, &channels, STBI_rgb_alpha)))
 	{
+		stbi_image_free(image_data);
 		LOG_ERROR("texture_load Error: stbi_load failed, no such file: %s", path_to_file);
 		return FAIL;
 	}
 
-	SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(image_data, dest->width, dest->height, 32, dest->width * 4, 0xff, 0xff00, 0xff0000, 0xff000000);
-
-	if (!surface)
+	if (dest->width <= 0 || dest->height <= 0)
 	{
-		LOG_ERROR("texture_load Error: SDL_CreateRGBSurfaceFrom failed");
+		stbi_image_free(image_data);
+		LOG_ERROR("texture_load Error: stbi_load failed, invalid size: %s", path_to_file);
 		return FAIL;
 	}
 
-	dest->ptr = SDL_CreateTextureFromSurface(g_renderer, surface);
+	GLuint texture_id;
 
-	SDL_FreeSurface(surface);
+	// Create and bind texture
 
-	if (!dest->ptr)
-	{
-		LOG_ERROR("texture_load Error: SDL_CreateTextureFromSurface failed");
-		LOG_ERROR("SDL_GetError: %s", SDL_GetError());
-		return FAIL;
-	}
+	glGenTextures(1, &texture_id);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dest->width, dest->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// Free image data
+	stbi_image_free(image_data);
+
+	// Store all the values in the texture struct
+	dest->gl_id = texture_id;
 
 	dest->frames = dest->width / g_block_width;
 	dest->types = dest->height / g_block_width;
 	dest->total_frames = dest->frames * dest->types;
 
-	// copy filename
+	// copy filename for later use
 	char *filename = strrchr(path_to_file, '/') + 1;
 	int namelen = strlen(filename);
 
@@ -168,41 +193,57 @@ int texture_load(texture *dest, char *path_to_file)
 
 void free_texture(texture *t)
 {
-	if (t->filename)
-	{
-		free(t->filename);
-		t->filename = 0;
-	}
-	if (t->ptr)
-	{
-		SDL_DestroyTexture(t->ptr);
-		t->ptr = 0;
-	}
+	SAFE_FREE(t->filename);
+
+	glDeleteTextures(1, &t->gl_id);
 }
 
 // it trusts you to pass valid values in, be careful with frames and types...
 int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width, u8 flip, unsigned short rotation)
 {
-	frame = frame % texture->total_frames;
+	// frame is an index into one of the frames on a texture
+	frame = frame % texture->total_frames; // wrap frames
 
-	int frame_x = (frame % texture->frames) * g_block_width;
-	int frame_y = 0;
+	// get texture coordinates of a frame
+
+	// int frame_x = (frame % texture->frames) * g_block_width;
+	// int frame_y = 0;
+
+	// now in floats for opengl, also normalized
+
+	float frame_x = (frame % texture->frames) / (float)texture->frames;
+	float frame_y = 0.0f;
 
 	if (ignore_type)
-		frame_y = (frame / texture->frames) * g_block_width;
+		frame_y = (frame / texture->frames) / (float)texture->types;
 	else
-		frame_y = (type % texture->types) * g_block_width;
+		frame_y = (type % texture->types) / (float)texture->types;
 
-	SDL_Rect src = {frame_x, frame_y, g_block_width, g_block_width};
-	SDL_Rect dest = {x, y, local_block_width, local_block_width};
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	const SDL_Point center = {local_block_width / 2, local_block_width / 2};
+	glBindTexture(GL_TEXTURE_2D, texture->gl_id);
 
-	// return !SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
+	glBegin(GL_QUADS);
+	{
+		// top left
+		glTexCoord2f(frame_x, frame_y);
+		glVertex2i(x, y);
+		// top right
+		glTexCoord2f(frame_x + 1.0f / texture->frames, frame_y);
+		glVertex2i(x + local_block_width, y);
+		// bottom right
+		glTexCoord2f(frame_x + 1.0f / texture->frames, frame_y + 1.0f / texture->types);
+		glVertex2i(x + local_block_width, y + local_block_width);
+		// bottom left
+		glTexCoord2f(frame_x, frame_y + 1.0f / texture->types);
+		glVertex2i(x, y + local_block_width);
+	}
+	glEnd();
 
-	return !SDL_RenderCopyEx(g_renderer, texture->ptr, &src, &dest, rotation, &center, flip);
+	return SUCCESS;
 }
-
 // TODO:
 
 /*

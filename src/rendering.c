@@ -1,5 +1,50 @@
 #include "../include/rendering.h"
 
+// turns string into formatted block chain
+void bprintf(layer *l, int orig_x, int orig_y, int length_limit, char *format, ...)
+{
+    char buffer[1024] = {};
+    va_list args;
+    va_start(args, format);
+    vsprintf(buffer, format, args);
+
+    char *ptr = buffer;
+    int x = orig_x;
+    int y = orig_y;
+
+    while (*ptr != 0)
+    {
+        block_set_id(l, x, y, 4);
+        blob b = {};
+        block_get_vars(l, x, y, &b);
+        var_set_u8(&b, 'v', *ptr);
+        block_set_vars(l, x, y, b);
+
+        switch (*ptr)
+        {
+        case '\n':
+            x = orig_x;
+            y++;
+            break;
+        case '\t':
+            x += 4;
+            break;
+        default:
+            x++;
+        }
+
+        if (x > length_limit)
+        {
+            x = orig_x;
+            y++;
+        }
+
+        ptr++;
+    }
+
+    va_end(args);
+}
+
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313, 6307353, 1532671, 6233633, 873473, 685613};
 const u8 funny_shifts[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 10};
 
@@ -21,7 +66,16 @@ u8 render_layer(layer_slice slice)
     const int width = slice.w / local_block_width; // exact amowunt of lboks to render o nscren
     const int height = slice.h / local_block_width;
 
-    CHECK_PTR(slice.ref)
+    if (!slice.ref)
+        return SUCCESS;
+
+    // if (slice.ref->bytes_per_block == 1)
+    // {
+    //     bprintf(slice.ref, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
+    //     bprintf(slice.ref, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
+    //     // bprintf(slice.ref, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
+    // }
+
     block_registry *b_reg = slice.ref->registry;
 
     const int start_block_x = ((slice.x / local_block_width) - 1);
@@ -29,15 +83,6 @@ u8 render_layer(layer_slice slice)
 
     const int end_block_x = start_block_x + width + 2;
     const int end_block_y = start_block_y + height + 2;
-
-    // if (layer_index == 0)
-    // {
-    // 	bprintf(w, b_reg, 0, 0, 0, 32, "%d    %d    ", start_block_x, start_block_y);
-    // 	bprintf(w, b_reg, 0, 0, 3, 32, "%d    %d    ", end_block_x, end_block_y);
-    // 	bprintf(w, b_reg, 0, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
-    // 	bprintf(w, b_reg, 0, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
-    // 	bprintf(w, b_reg, 0, 0, 4, 32, "%d    %d    %d    %d    ", start_block_x / chunk_width, start_block_y / chunk_width, 1 + end_block_x / chunk_width, 1 + end_block_y / chunk_width);
-    // }
 
     const int block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
     const int block_y_offset = slice.y % local_block_width;
@@ -61,6 +106,9 @@ u8 render_layer(layer_slice slice)
         {
             dest_y += local_block_width;
             // calculate y coordinate of block on screen
+
+            if (i > slice.ref->width || j > slice.ref->height)
+                continue;
 
             // get block
             u64 id = 0;

@@ -9,7 +9,7 @@
 
 int main(int argc, char *argv[])
 {
-	log_start("test.log");
+	log_start("client.log");
 
 	if (init_graphics() == FAIL)
 		return 1;
@@ -41,8 +41,11 @@ int main(int argc, char *argv[])
 	e.type = ENGINE_INIT;
 	call_handlers(e);
 
+	int total_ms_took = 0;
+
 	for (;;)
 	{
+		LOG_INFO("frame %lu", frame);
 		int frame_begin_tick = SDL_GetTicks();
 
 		while (SDL_PollEvent(&e))
@@ -74,19 +77,21 @@ int main(int argc, char *argv[])
 			call_handlers(e);
 		}
 
-		SDL_RenderClear(g_renderer);
+		glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
 		client_render(rules);
 
-		SDL_RenderPresent(g_renderer);
+		SDL_GL_SwapWindow(g_window);
 
 		int loop_took = SDL_GetTicks() - frame_begin_tick;
 		int chill_time = ms_per_s - loop_took;
-
 		SDL_Delay(max(1, chill_time));
 
 		frame++;
 	}
 logic_exit:
+	LOG_INFO("exiting...");
 
 	exit_graphics();
 
