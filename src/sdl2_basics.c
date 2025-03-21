@@ -1,8 +1,5 @@
 #include "../include/sdl2_basics.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "../stb/stb_image.h"
-
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
 char *window_name = "Block Engine";

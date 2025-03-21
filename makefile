@@ -32,15 +32,11 @@ make_folders:
 	mkdir -p obj
 	mkdir -p build
 
-#part with resources copy
-.PHONY: resources
-resources: make_folders
-	mkdir -p build/levels
-	mkdir -p build/registries
-	mkdir -p build/registries/test
-	mkdir -p build/registries/test/textures
-	mkdir -p build/registries/test/blocks
-	cp -r resources/* build/registries/test
+#part with registry copy
+.PHONY: registry
+registry: make_folders
+	mkdir -p build
+	cp -r instance/* build/
 
 obj/%.o : src/%.c
 	gcc $(CFLAGS) -c $^ -o $@
@@ -49,12 +45,12 @@ obj/%.o : src/%.c
 # 	gcc $(CFLAGS) -o build/$@ $^ $(LDFLAGS)
 
 .PHONY: test
-test: mains/test.c resources vec $(objects)
+test: mains/test.c registry vec $(objects)
 	gcc -o obj/test.o -c mains/test.c ${CFLAGS}
 	gcc ${CFLAGS} -o build/test obj/test.o obj/vec.o $(objects) $(LDFLAGS)
 
 .PHONY: graphic
-graphic: mains/graphics_test.c resources vec $(objects)
+graphic: mains/graphics_test.c registry vec $(objects)
 	gcc -o obj/g_test.o -c mains/graphics_test.c ${CFLAGS}
 	gcc ${CFLAGS} -o build/g_test obj/g_test.o obj/vec.o $(objects) $(LDFLAGS)
 	./build/g_test
@@ -69,9 +65,15 @@ else
 endif
 
 .PHONY: client_app
-client_app: mains/client.c resources vec $(objects)
+client_app: mains/client.c registry vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
-	gcc ${CFLAGS} -o build/client mains/client.c obj/vec.o $(objects) $(LDFLAGS)
+	gcc ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS)
+#	-./grab_dlls.sh build/client.exe /mingw64/bin 1
+
+.PHONY: texgen
+texgen: mains/texgen.c registry vec $(objects)
+	gcc -o obj/texgen.o -c mains/texgen.c ${CFLAGS}
+	gcc ${CFLAGS} -o build/texgen obj/texgen.o obj/vec.o $(objects) $(LDFLAGS)
 #	-./grab_dlls.sh build/client.exe /mingw64/bin 1
 
 .PHONY: networking
@@ -82,8 +84,8 @@ ifeq ($(OS),Windows_NT)
 	gcc ${CFLAGS} -o build/test_server obj/network_test_server.o obj/vec.o $(objects) $(LDFLAGS)
 	gcc ${CFLAGS} -o build/test_client obj/network_test_client.o obj/vec.o $(objects) $(LDFLAGS)
 else
-	gcc -o build/test_server mains/network_test_server.c -Wall
-	gcc -o build/test_client mains/network_test_client.c -Wall
+	gcc -o build/test_server mains/network_test_server.o -Wall
+	gcc -o build/test_client mains/network_test_client.o -Wall
 endif
 	
 clean:

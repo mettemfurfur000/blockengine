@@ -39,6 +39,7 @@ void call_handlers(SDL_Event e);
 void scripting_register_event_handler(int lua_func_ref, int event_type);
 
 void scripting_load_scripts(block_registry *registry);
+int scripting_load_file(const char *reg_name, const char *short_filename);
 
 // lua functions
 

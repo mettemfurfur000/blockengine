@@ -16,7 +16,7 @@ extern FILE *log_file;
 #endif
 
 // change this to change the log level
-#define LOG_LEVEL 3
+#define LOG_LEVEL 4
 #define USE_FILENAMES 1
 
 #if (USE_FILENAMES == 1)
