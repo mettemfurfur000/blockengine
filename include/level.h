@@ -9,8 +9,10 @@
 #include "block_registry.h"
 #include "../vec/src/vec.h"
 
-#define LAYER_FLAG_HAS_VARS 0x01
-#define LAYER_FLAG_HAS_REGISTRY 0x02
+#define LAYER_FLAG_HAS_VARS 0b00000001
+#define LAYER_FLAG_HAS_REGISTRY 0b00000010
+
+#define SHARED_FLAG_GC_AWARE 0b1000000
 
 typedef struct layer
 {
@@ -37,16 +39,19 @@ typedef struct room
 
     layer_vec_t layers;
     // TODO: implement support for entities
+
+    u8 flags;
 } room;
 
 typedef vec_t(room) room_vec_t;
 
 typedef struct level
 {
-    char *name;
-
     vec_registries_t registries;
     room_vec_t rooms;
+    
+    char *name;
+    u8 flags;
 } level;
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id);

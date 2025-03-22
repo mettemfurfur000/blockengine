@@ -85,9 +85,14 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 		return SUCCESS;                                     \
 	}
 
+// var info
+
+i16 var_size(blob b, char letter);
+
 // set
 
 u8 var_set_str(blob *b, char letter, const char *str);
+//u8 var_set_integer(blob *b, char letter, u64 value, u8 bytes_length);
 
 SETTER_DEF(u8)
 SETTER_DEF(u16)
@@ -112,6 +117,7 @@ GETTER_DEF(i32)
 GETTER_DEF(i64)
 
 u8 var_get_str(blob b, char letter, char **dest);
+//u8 var_get_integer(blob *b, char letter, u64 *value_ret, u8 *bytes_length);
 
 // utils
 

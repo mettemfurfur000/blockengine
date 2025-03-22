@@ -1,4 +1,4 @@
-id = 10
+id = 2
 data = { byte v = 0 byte t = 0}
 texture = dev.png
 script = controller.lua

@@ -189,7 +189,13 @@ u8 save_level(level lvl)
     if (!f)
         return FAIL;
 
-    CHECK_PTR(lvl.name)
+    //CHECK_PTR(lvl.name)
+    if(!lvl.name)
+    {
+        fclose(f);
+        LOG_ERROR("Level name is null");
+        return FAIL;
+    }
 
     blob_write(blobify(lvl.name), f);
     WRITE(lvl.registries.length, f);

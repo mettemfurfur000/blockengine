@@ -1,20 +1,27 @@
 #include "../include/scripting.h"
+#include "../include/level_editing.h"
+#include "../include/image_editing.h"
+#include "../include/render_rule_control.h"
 
 lua_State *g_L = 0;
 
 vec_int_t handlers[32] = {};
 
+static int lua_register_handler(lua_State *L)
+{
+    luaL_checkany(L, 1);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    int handler_id = luaL_checkinteger(L, 1);
+
+    scripting_register_event_handler(ref, handler_id);
+    return 0;
+}
+
 void scripting_register(lua_State *L)
 {
     const static luaL_Reg blockengine_lib[] = {
 
-        // {"set_block_id", lua_set_block_id},
-        // {"get_block_id", lua_get_block_id},
-
-        // {"get_block_vars", lua_get_block_vars},
-
-        // {"vars_get_integer", lua_vars_get_integer},
-        // {"vars_set_integer", lua_vars_set_integer},
+        {"register_handler", lua_register_handler},
 
         {NULL, NULL}
 
@@ -35,6 +42,15 @@ void scripting_init()
     g_L = luaL_newstate(); /* opens Lua */
     luaL_openlibs(g_L);
     scripting_register(g_L); /* register all blockengine functions */
+
+    lua_level_register(g_L); /* level editing */
+    lua_room_register(g_L);
+    lua_layer_register(g_L);
+    lua_vars_register(g_L);
+
+    load_image_editing_library(g_L); /* image editing */
+
+    lua_register_render_rules(g_L); /* client render rules */
 }
 
 void scripting_close()

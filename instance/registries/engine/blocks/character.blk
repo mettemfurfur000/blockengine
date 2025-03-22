@@ -1,4 +1,4 @@
-id = 4
+id = 1
 data = { byte v = 32 }
 texture = character.png
 frame_controller = v

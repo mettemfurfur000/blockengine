@@ -143,17 +143,22 @@ u8 free_level(level *l)
 level *level_create(const char *name, u32 width, u32 height)
 {
     level *lvl = calloc(1, sizeof(level));
+
     lvl->name = strdup(name);
     init_level(lvl);
+
     return lvl;
 }
 
 void room_create(level *parent, const char *name, u32 w, u32 h)
 {
-    room r = {.name = strdup(name),
-              .width = w,
-              .height = h,
-              .parent_level = parent};
+    room r = {
+        .name = strdup(name),
+        .width = w,
+        .height = h,
+        .parent_level = parent
+    };
+
     init_room(&r, parent);
 
     (void)vec_push(&parent->rooms, r);

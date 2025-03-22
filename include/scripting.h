@@ -9,8 +9,31 @@
 
 #include "block_registry.h"
 #include "events.h"
+#include "level.h"
 
 #include <SDL2/SDL_events.h>
+
+typedef struct LuaHolder
+{
+    union
+    {
+        void *ptr;
+        level *lvl;
+        room *r;
+        layer *l;
+        blob *b;
+    };
+
+} LuaHolder;
+
+#define LUA_CHECK_USER_OBJECT(L, type, name) \
+    LuaHolder *name = (LuaHolder *)luaL_checkudata(L, 1, #type);
+
+#define NEW_USER_OBJECT(L, type, pointer)                                  \
+    LuaHolder *__##type = (LuaHolder *)lua_newuserdata(L, sizeof(void *)); \
+    __##type->ptr = (pointer);                                             \
+    luaL_getmetatable(L, #type);                                           \
+    lua_setmetatable(L, -2);
 
 #define LUA_SET_GLOBAL_OBJECT(name, ptr) \
     {                                    \
@@ -40,39 +63,5 @@ void scripting_register_event_handler(int lua_func_ref, int event_type);
 
 void scripting_load_scripts(block_registry *registry);
 int scripting_load_file(const char *reg_name, const char *short_filename);
-
-// lua functions
-
-int lua_register_handler(lua_State *L);
-
-int lua_block_set_id(lua_State *L);
-int lua_block_get_id(lua_State *L);
-
-int lua_block_get_vars(lua_State *L);
-int lua_block_set_vars(lua_State *L);
-
-int lua_vars_get_integer(lua_State *L);
-int lua_vars_set_integer(lua_State *L);
-
-// rendering things
-
-int lua_render_rules_get_resolutions(lua_State *L);
-
-int lua_render_rules_get_order(lua_State *L);
-
-int lua_slice_get(lua_State *L);
-int lua_slice_set(lua_State *L);
-
-// level managing functions
-
-int lua_create_level(lua_State *L);
-
-int lua_load_registry(lua_State *L);
-
-int lua_create_room(lua_State *L);
-int lua_get_room(lua_State *L);
-
-int lua_get_room_count(lua_State *L);
-int lua_create_layer(lua_State *L);
 
 #endif

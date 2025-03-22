@@ -36,6 +36,12 @@ u8 blob_dup(blob *dest, blob src)
 	SAFE_FREE(dest->ptr)
 
 	dest->ptr = malloc(src.size);
+	if (!dest->ptr)
+	{
+		LOG_ERROR("blob_dup: failed to allocate memory");
+		return FAIL;
+	}
+	
 	memcpy(dest->ptr, src.ptr, src.size);
 
 	dest->size = src.size;
