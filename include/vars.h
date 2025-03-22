@@ -69,7 +69,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 	{                                                     \
 		CHECK_PTR(dest);                                  \
 		int pos = fdesp(b, letter);                       \
-		CHECK(pos < 0);                                   \
+		if(pos < 0) return FAIL;                                   \
 		*dest = *(type *)VAR_VALUE(b.ptr, pos);           \
 		return SUCCESS;                                   \
 	}
@@ -80,7 +80,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 	{                                                       \
 		CHECK_PTR(b);                                       \
 		int pos = ensure_tag(b, letter, sizeof(type));      \
-		CHECK(pos < 0);                                     \
+		if(pos < 0) return FAIL;                                     \
 		*(type *)VAR_VALUE(b->ptr, pos) = value;            \
 		return SUCCESS;                                     \
 	}

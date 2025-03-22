@@ -26,8 +26,8 @@ typedef struct LuaHolder
 
 } LuaHolder;
 
-#define LUA_CHECK_USER_OBJECT(L, type, name) \
-    LuaHolder *name = (LuaHolder *)luaL_checkudata(L, 1, #type);
+#define LUA_CHECK_USER_OBJECT(L, type, name, index) \
+    LuaHolder *name = (LuaHolder *)luaL_checkudata(L, index, #type);
 
 #define NEW_USER_OBJECT(L, type, pointer)                                  \
     LuaHolder *__##type = (LuaHolder *)lua_newuserdata(L, sizeof(void *)); \

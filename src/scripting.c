@@ -49,6 +49,7 @@ void scripting_init()
     lua_vars_register(g_L);
 
     load_image_editing_library(g_L); /* image editing */
+    lua_level_editing_lib_register(g_L);
 
     lua_register_render_rules(g_L); /* client render rules */
 }

@@ -4,18 +4,18 @@
 
 static int lua_level_create(lua_State *L)
 {
-    NEW_USER_OBJECT(L, Level, level_create(luaL_checkstring(L, 1), luaL_checkinteger(L, 2), luaL_checkinteger(L, 3)));
+    NEW_USER_OBJECT(L, Level, level_create(luaL_checkstring(L, 1)));
     return 1;
 }
 
 static int lua_level_load_registry(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Level, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     const char *registry_name = luaL_checkstring(L, 2);
 
     block_registry r = {};
 
-    int success = read_block_registry(registry_name, &r) == FAIL;
+    int success = read_block_registry(registry_name, &r) == SUCCESS;
 
     if (success)
         (void)vec_push(&wrapper->lvl->registries, r);
@@ -26,7 +26,7 @@ static int lua_level_load_registry(lua_State *L)
 
 static int lua_level_gc(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Level, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
 
     if (FLAG_GET(wrapper->lvl->flags, SHARED_FLAG_GC_AWARE))
         return 0;
@@ -37,17 +37,17 @@ static int lua_level_gc(lua_State *L)
 
 static int lua_level_get_name(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Level, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     lua_pushstring(L, wrapper->lvl->name);
     return 1;
 }
 
 static int lua_level_get_room(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Level, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     int index = luaL_checkinteger(L, 2);
 
-    if (index > wrapper->lvl->rooms.length)
+    if (index >= wrapper->lvl->rooms.length)
         luaL_error(L, "Index out of range");
 
     room *r = &wrapper->lvl->rooms.data[index];
@@ -60,14 +60,14 @@ static int lua_level_get_room(lua_State *L)
 
 static int lua_level_get_room_count(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Level, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     lua_pushinteger(L, wrapper->lvl->rooms.length);
     return 1;
 }
 
 static int lua_level_get_room_by_name(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Level, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     const char *name = luaL_checkstring(L, 2);
 
     for (int i = 0; i < wrapper->lvl->rooms.length; i++)
@@ -84,9 +84,9 @@ static int lua_level_get_room_by_name(lua_State *L)
     return 1;
 }
 
-static int lua_level_room_create(lua_State *L)
+static int lua_level_new_room(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Level, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     const char *name = luaL_checkstring(L, 2);
     int x = luaL_checkinteger(L, 3);
     int y = luaL_checkinteger(L, 4);
@@ -104,14 +104,14 @@ static int lua_level_room_create(lua_State *L)
 
 static int lua_room_get_name(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Room, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
     lua_pushstring(L, wrapper->r->name);
     return 1;
 }
 
 static int lua_room_get_size(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Room, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
     lua_pushinteger(L, wrapper->r->width);
     lua_pushinteger(L, wrapper->r->height);
     return 2;
@@ -119,28 +119,31 @@ static int lua_room_get_size(lua_State *L)
 
 static int lua_room_new_layer(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Room, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
     const char *registry_name = luaL_checkstring(L, 2);
 
     int bytes_per_block = luaL_checkinteger(L, 3);
     int flags = luaL_checkinteger(L, 4);
 
-    block_registry *reg = find_registry(((level *)wrapper->r->parent_level)->registries, (char*)registry_name);
+    block_registry *reg = find_registry(((level *)wrapper->r->parent_level)->registries, (char *)registry_name);
 
     if (!reg)
-        luaL_error(L, "Registry not found");
+        luaL_error(L, "Registry %s not found", registry_name);
 
     layer_create(wrapper->r, reg, bytes_per_block, flags);
 
-    return 0;
+    layer *l = &wrapper->r->layers.data[wrapper->r->layers.length - 1];
+    NEW_USER_OBJECT(L, Layer, l);
+
+    return 1;
 }
 
 static int lua_room_get_layer(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Room, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
     int index = luaL_checkinteger(L, 2);
 
-    if (index > wrapper->r->layers.length)
+    if (index >= wrapper->r->layers.length)
         luaL_error(L, "Index out of range");
 
     layer *l = &wrapper->r->layers.data[index];
@@ -151,35 +154,58 @@ static int lua_room_get_layer(lua_State *L)
 
 static int lua_room_get_layer_count(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Room, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
     lua_pushinteger(L, wrapper->r->layers.length);
     return 1;
 }
 
 // layer-related functions
 
-static int lua_layer_set_id(lua_State *L)
+static int lua_layer_paste_block(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Layer, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
 
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
     u64 id = luaL_checknumber(L, 4);
 
-    lua_pushboolean(L, block_set_id(wrapper->l, x, y, id));
+    if (!wrapper->l->registry)
+        luaL_error(L, "Layer has no registry");
+
+    if (id >= wrapper->l->registry->resources.length)
+        luaL_error(L, "Block ID out of range");
+
+    block_resources *res = &wrapper->l->registry->resources.data[id];
+
+    u8 status = block_set_id(wrapper->l, x, y, id) == SUCCESS;
+    status &= block_set_vars(wrapper->l, x, y, res->vars) == SUCCESS;
+
+    lua_pushboolean(L, status);
+    return 1;
+}
+
+static int lua_layer_set_id(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+    u32 x = luaL_checknumber(L, 2);
+    u32 y = luaL_checknumber(L, 3);
+    u64 id = luaL_checknumber(L, 4);
+
+    lua_pushboolean(L, block_set_id(wrapper->l, x, y, id) == SUCCESS);
 
     return 1;
 }
 
 static int lua_block_get_id(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Layer, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
 
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
     u64 id = 0;
 
-    lua_pushboolean(L, block_get_id(wrapper->l, x, y, &id));
+    lua_pushboolean(L, block_get_id(wrapper->l, x, y, &id) == SUCCESS);
     lua_pushnumber(L, id);
 
     return 2;
@@ -187,7 +213,7 @@ static int lua_block_get_id(lua_State *L)
 
 static int lua_block_get_vars(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Layer, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
 
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
@@ -201,29 +227,41 @@ static int lua_block_get_vars(lua_State *L)
 
 static int lua_block_set_vars(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Layer, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
 
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper_vars);
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper_vars, 4);
 
-    lua_pushboolean(L, block_set_vars(wrapper->l, x, y, *wrapper_vars->b));
+    lua_pushboolean(L, block_set_vars(wrapper->l, x, y, *wrapper_vars->b) == SUCCESS);
 
     return 1;
+}
+
+static int lua_bprintf(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+    u64 character_id = luaL_checkinteger(L, 2);
+    u32 orig_x = luaL_checkinteger(L, 3);
+    u32 orig_y = luaL_checkinteger(L, 4);
+    u32 limit = luaL_checkinteger(L, 5);
+    const char *format = luaL_checkstring(L, 6);
+    bprintf(wrapper->l, character_id, orig_x, orig_y, limit, format);
+    return 0;
 }
 
 // vars
 
 static int lua_vars_length(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
     lua_pushinteger(L, wrapper->b->length);
     return 1;
 }
 
 static int lua_vars_get_var(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
     const char *key = luaL_checkstring(L, 2);
 
     if (strlen(key) > 1)
@@ -242,7 +280,7 @@ static int lua_vars_get_var(lua_State *L)
 
 static int lua_vars_get_string(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
     const char *key = luaL_checkstring(L, 2);
 
     if (strlen(key) > 1)
@@ -261,20 +299,20 @@ static int lua_vars_get_string(lua_State *L)
 
 static int lua_vars_set_string(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
     const char *key = luaL_checkstring(L, 2);
     const char *value = luaL_checkstring(L, 3);
 
     if (strlen(key) > 1)
         luaL_error(L, "Key must be a single character");
 
-    lua_pushboolean(L, var_set_str(wrapper->b, key[0], value));
+    lua_pushboolean(L, var_set_str(wrapper->b, key[0], value) == SUCCESS);
     return 1;
 }
 
 static int lua_vars_get_size(lua_State *L)
 {
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper);
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
     const char *key = luaL_checkstring(L, 2);
     if (strlen(key) > 1)
         luaL_error(L, "Key must be a single character");
@@ -291,13 +329,13 @@ static int lua_vars_get_size(lua_State *L)
 void lua_level_register(lua_State *L)
 {
     const static luaL_Reg level_methods[] = {
-        {"load_registry", lua_level_load_registry},
         {"__gc", lua_level_gc},
+        {"load_registry", lua_level_load_registry},
         {"get_name", lua_level_get_name},
         {"get_room", lua_level_get_room},
         {"get_room_count", lua_level_get_room_count},
         {"find_room", lua_level_get_room_by_name},
-        {"new_room", lua_level_room_create},
+        {"new_room", lua_level_new_room},
         {NULL, NULL},
     };
 
@@ -327,10 +365,12 @@ void lua_room_register(lua_State *L)
 void lua_layer_register(lua_State *L)
 {
     const static luaL_Reg layer_methods[] = {
+        {"paste_block", lua_layer_paste_block},
         {"set_id", lua_layer_set_id},
         {"get_id", lua_block_get_id},
         {"get_vars", lua_block_get_vars},
         {"set_vars", lua_block_set_vars},
+        {"bprint", lua_bprintf},
         {NULL, NULL},
     };
 

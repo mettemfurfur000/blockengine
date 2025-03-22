@@ -63,8 +63,9 @@ u8 render_layer(layer_slice slice)
             // calculate y coordinate of block on screen
 
             // get block
-            u64 id;
-            block_get_id(slice.ref, i, j, &id);
+            u64 id = 0;
+            if (i > 0 && j > 0 && i < slice.ref->width && j < slice.ref->height)
+                block_get_id(slice.ref, i, j, &id);
             // check if block is not void
             if (id == 0)
                 continue;

@@ -68,8 +68,14 @@ u8 free_layer(layer *l);
 u8 free_room(room *r);
 u8 free_level(level *l);
 
-level *level_create(const char *name, u32 width, u32 height);
+level *level_create(const char *name);
 void room_create(level *parent, const char *name, u32 w, u32 h);
 void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 flags);
+
+// utils
+
+// turns string into formatted block chain
+// supposed to be used with a special character block
+void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...);
 
 #endif

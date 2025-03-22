@@ -35,7 +35,7 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob *vars_out)
     CHECK_PTR(l->blocks)
     CHECK_PTR(vars_out)
     CHECK(x >= l->width || y >= l->height)
-    CHECK(l->vars)
+    CHECK_PTR(l->vars)
 
     u64 key_num = MERGE32_TO_64(x, y);
     blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
@@ -140,7 +140,7 @@ u8 free_level(level *l)
 
 // more useful functions
 
-level *level_create(const char *name, u32 width, u32 height)
+level *level_create(const char *name)
 {
     level *lvl = calloc(1, sizeof(level));
 
@@ -156,8 +156,7 @@ void room_create(level *parent, const char *name, u32 w, u32 h)
         .name = strdup(name),
         .width = w,
         .height = h,
-        .parent_level = parent
-    };
+        .parent_level = parent};
 
     init_room(&r, parent);
 
@@ -177,4 +176,51 @@ void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block
     init_layer(&l, parent);
 
     (void)vec_push(&parent->layers, l);
+}
+
+void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
+{
+    char buffer[1024] = {};
+    va_list args;
+    va_start(args, format);
+    vsprintf(buffer, format, args);
+
+    char *ptr = buffer;
+    int x = orig_x;
+    int y = orig_y;
+
+    blob vars_space = {};
+    var_set_u8(&vars_space, 'v', ' ');
+
+    while (*ptr != 0)
+    {
+        block_set_id(l, x, y, character_block_id);
+        blob vars = {};
+        block_get_vars(l, x, y, &vars);
+        var_set_u8(&vars, 'v', iscntrl(*ptr) ? ' ' : *ptr);
+        block_set_vars(l, x, y, vars);
+
+        switch (*ptr)
+        {
+        case '\n':
+            x = orig_x;
+            y++;
+            break;
+        case '\t':
+            x += 4;
+            break;
+        default:
+            x++;
+        }
+
+        if (x > length_limit)
+        {
+            x = orig_x;
+            y++;
+        }
+
+        ptr++;
+    }
+
+    va_end(args);
 }
