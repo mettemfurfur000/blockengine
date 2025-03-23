@@ -16,6 +16,8 @@ EVENT_IDS = {
     ENGINE_INIT         = 32778,
 }
 
+g_block_size = 16
+
 SDL_SCANCODE = {
     SDL_SCANCODE_UNKNOWN = 0,
 
@@ -267,3 +269,5 @@ SDL_SCANCODE = {
     SDL_SCANCODE_ENDCALL = 290,
     SDL_NUM_SCANCODES = 512
 }
+
+return { EVENT_IDS, SDL_SCANCODE}

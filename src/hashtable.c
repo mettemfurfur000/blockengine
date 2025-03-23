@@ -41,7 +41,7 @@ u8 blob_dup(blob *dest, blob src)
 		LOG_ERROR("blob_dup: failed to allocate memory");
 		return FAIL;
 	}
-	
+
 	memcpy(dest->ptr, src.ptr, src.size);
 
 	dest->size = src.size;
@@ -138,6 +138,53 @@ void free_table(hash_node **table)
 			node = next_node;
 		}
 	}
+}
+
+void move_node(hash_node **table, blob key_from, blob key_to)
+{
+	CHECK_PTR_NORET(table);
+
+	unsigned long hash = hash_function(key_from);
+
+	// first we find the node
+	hash_node *node_to_move = table[hash];
+
+	while (node_to_move != NULL)
+	{
+		if (blob_cmp(node_to_move->key, key_from) == 0)
+			break;
+		node_to_move = node_to_move->next;
+	}
+
+	if (node_to_move == NULL) // even if we don't find it, we still move the node (basicaly delete the destination)
+	{
+		remove_entry(table, key_to);
+		return;
+	}
+
+	// then we move it
+	unsigned long hash_to = hash_function(key_to);
+	hash_node *node_dest = table[hash_to];
+	if (node_dest == NULL) // if there is no node at the destination, we just move the node
+	{
+		table[hash_to] = node_to_move;
+		return;
+	}
+
+	while (node_dest != NULL) // if there is some nodes at the destination, we first find the one with matching key
+	{
+		if (blob_cmp(node_dest->key, key_to) == 0) // if found
+		{
+			// replace its value
+			SAFE_FREE(node_dest->value.ptr)
+			blob_dup(&node_dest->value, node_to_move->value);
+			break;
+		}
+		node_dest = node_dest->next;
+	}
+	// table[hash_to] = node_to_move;
+	table[hash] = node_to_move->next;
+	node_to_move->next = NULL;
 }
 
 void put_entry(hash_node **table, blob key, blob value)

@@ -89,14 +89,23 @@ static int lua_slice_set(lua_State *L)
 
     layer_slice slice = {};
 
-    LuaHolder *wrapper = (LuaHolder *)luaL_checkudata(L, 3, "Layer");
-    slice.ref = wrapper->l;
-
-    slice.x = luaL_checkinteger(L, 4);
-    slice.y = luaL_checkinteger(L, 5);
-    slice.w = luaL_checkinteger(L, 6);
-    slice.h = luaL_checkinteger(L, 7);
-    slice.zoom = luaL_checkinteger(L, 8);
+    STRUCT_SET(L, slice, x, LUA_TNUMBER, lua_tointeger);
+    STRUCT_SET(L, slice, y, LUA_TNUMBER, lua_tointeger);
+    STRUCT_SET(L, slice, h, LUA_TNUMBER, lua_tointeger);
+    STRUCT_SET(L, slice, w, LUA_TNUMBER, lua_tointeger);
+    STRUCT_SET(L, slice, zoom, LUA_TNUMBER, lua_tointeger);
+    // STRUCT_SET(L, slice, ref, LUA_TUSERDATA, lua_touserdata);
+    if (lua_getfield(L, -1, "ref") == 7)
+    {
+        LuaHolder *wrapper = (LuaHolder *)luaL_checkudata(L, -1, "Layer");
+        slice.ref = wrapper->l;
+        lua_pop(L, 1);
+    }
+    else
+        luaL_error(L, "STRUCT_SET: expected a "
+                           "LUA_TUSERDATA "
+                           "for a field "
+                           "ref");
 
     if (index >= rules->slices.length)
     {

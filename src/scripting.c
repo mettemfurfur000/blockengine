@@ -48,6 +48,8 @@ void scripting_init()
     lua_layer_register(g_L);
     lua_vars_register(g_L);
 
+    lua_logging_register(g_L);
+
     load_image_editing_library(g_L); /* image editing */
     lua_level_editing_lib_register(g_L);
 
@@ -131,8 +133,8 @@ int push_event_args(SDL_Event *e)
     case ENGINE_BLOCK_CREATE:
         block_update_event *block_event = (block_update_event *)e;
 
-        lua_pushlightuserdata(g_L, block_event->room_ptr);
-        lua_pushlightuserdata(g_L, block_event->layer_ptr);
+        NEW_USER_OBJECT(g_L, Room, block_event->room_ptr);
+        NEW_USER_OBJECT(g_L, Layer, block_event->layer_ptr);
 
         lua_pushinteger(g_L, block_event->new_id);
         lua_pushinteger(g_L, block_event->previous_id);
@@ -146,8 +148,8 @@ int push_event_args(SDL_Event *e)
     case ENGINE_BLOB_CREATE:
         blob_update_event *blob_event = (blob_update_event *)e;
 
-        lua_pushlightuserdata(g_L, blob_event->room_ptr);
-        lua_pushlightuserdata(g_L, blob_event->layer_ptr);
+        NEW_USER_OBJECT(g_L, Room, block_event->room_ptr);
+        NEW_USER_OBJECT(g_L, Layer, block_event->layer_ptr);
 
         lua_pushinteger(g_L, blob_event->new_id);
 

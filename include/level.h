@@ -16,6 +16,7 @@
 
 typedef struct layer
 {
+    void *parent_room;
     hash_node **vars;         // hashtable for block vars - variables, unique for said block. constant values are stored in the block registry, not here
     block_registry *registry; // block registry used by this layer. if NULL, the layer acts as a simple array of ids
     u8 *blocks;               // array of blocks, each of size bytes_per_block

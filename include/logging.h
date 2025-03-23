@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <lua.h>
+
 extern int log_enabled;
 extern FILE *log_file;
 
@@ -19,6 +21,8 @@ extern FILE *log_file;
 #define LOG_LEVEL 2
 #define USE_FILENAMES 1
 
+extern const int log_level;
+
 #if (USE_FILENAMES == 1)
 #define __FILENAME__ (strrchr(__FILE__, SEPARATOR) ? strrchr(__FILE__, SEPARATOR) + 1 : __FILE__)
 #else
@@ -27,25 +31,31 @@ extern FILE *log_file;
 // use these to log stuff
 
 #if (LOG_LEVEL >= 1)
-#define LOG_ERROR(format, ...) log_msg(1, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
+#define LOG_MESSAGE(format, ...) log_msg(1, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
+#else
+#define LOG_MESSAGE(format, ...) log_msg(0, "")
+#endif
+
+#if (LOG_LEVEL >= 2)
+#define LOG_ERROR(format, ...) log_msg(2, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
 #else
 #define LOG_ERROR(format, ...) log_msg(0, "")
 #endif
 
-#if (LOG_LEVEL >= 2)
-#define LOG_WARNING(format, ...) log_msg(2, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
+#if (LOG_LEVEL >= 3)
+#define LOG_WARNING(format, ...) log_msg(3, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
 #else
 #define LOG_WARNING(format, ...) log_msg(0, "")
 #endif
 
-#if (LOG_LEVEL >= 3)
-#define LOG_INFO(format, ...) log_msg(3, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
+#if (LOG_LEVEL >= 4)
+#define LOG_INFO(format, ...) log_msg(4, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
 #else
 #define LOG_INFO(format, ...) log_msg(0, "")
 #endif
 
-#if (LOG_LEVEL >= 4)
-#define LOG_DEBUG(format, ...) log_msg(4, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
+#if (LOG_LEVEL >= 5)
+#define LOG_DEBUG(format, ...) log_msg(5, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
 #else
 #define LOG_DEBUG(format, ...) log_msg(0, "")
 #endif
@@ -53,5 +63,9 @@ extern FILE *log_file;
 void log_start(const char *fname);
 void log_end();
 void log_msg(unsigned char level, const char *format, ...);
+
+// lua
+
+void lua_logging_register(lua_State *L);
 
 #endif

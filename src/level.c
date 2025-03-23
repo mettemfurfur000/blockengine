@@ -58,12 +58,30 @@ u8 block_set_vars(layer *l, u32 x, u32 y, blob vars)
     return SUCCESS;
 }
 
+// u8 block_move_vars(layer *l, u32 x, u32 y, u32 dest_x, u32 dest_y)
+// {
+//     CHECK_PTR(l)
+//     CHECK_PTR(l->blocks)
+//     CHECK_PTR(l->vars)
+//     CHECK(x >= l->width || y >= l->height)
+//     CHECK(dest_x >= l->width || dest_y >= l->height)
+
+//     u64 key_num = MERGE32_TO_64(x, y);
+//     u64 key_num_dest = MERGE32_TO_64(dest_x, dest_y);
+//     blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
+//     put_entry(l->vars, key, vars);
+
+//     return SUCCESS;
+// }
+
 // init functions
 
 u8 init_layer(layer *l, room *parent_room)
 {
     CHECK_PTR(parent_room)
     CHECK_PTR(l)
+
+    l->parent_room = parent_room;
 
     CHECK(l->width == 0 || l->height == 0)
     CHECK(l->bytes_per_block == 0)

@@ -1,5 +1,7 @@
 #include "../include/level_editing.h"
 
+#include "../include/events.h"
+
 // level-related stuff
 
 static int lua_level_create(lua_State *L)
@@ -161,6 +163,9 @@ static int lua_room_get_layer_count(lua_State *L)
 
 // layer-related functions
 
+// pastes the block from the registry into the layer
+// also triggers a block create event
+
 static int lua_layer_paste_block(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
@@ -177,8 +182,23 @@ static int lua_layer_paste_block(lua_State *L)
 
     block_resources *res = &wrapper->l->registry->resources.data[id];
 
-    u8 status = block_set_id(wrapper->l, x, y, id) == SUCCESS;
+    u64 old_id = 0;
+    u8 status = block_get_id(wrapper->l, x, y, &old_id) == SUCCESS;
+
+    status = block_set_id(wrapper->l, x, y, id) == SUCCESS;
     status &= block_set_vars(wrapper->l, x, y, res->vars) == SUCCESS;
+
+    block_update_event e = {
+        .type = ENGINE_BLOCK_CREATE,
+        .x = x,
+        .y = y,
+        .previous_id = old_id,
+        .new_id = id,
+        .layer_ptr = wrapper->l,
+        .room_ptr = wrapper->l->parent_room,
+    };
+
+    SDL_PushEvent((SDL_Event*)&e);
 
     lua_pushboolean(L, status);
     return 1;

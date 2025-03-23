@@ -1,8 +1,11 @@
 #include "../include/logging.h"
 #include <pthread.h>
+#include "../include/scripting.h"
 
 int log_enabled = 0;
 FILE *log_file = NULL;
+
+const int log_level = LOG_LEVEL;
 
 void log_start(const char *fname)
 {
@@ -30,12 +33,14 @@ char *log_level_to_str(unsigned char level)
     switch (level)
     {
     case 1:
-        return "ERROR";
+        "MESSAGE";
     case 2:
-        return "WARNING";
+        return "ERROR";
     case 3:
-        return "INFO";
+        return "WARNING";
     case 4:
+        return "INFO";
+    case 5:
         return "DEBUG";
     default:
         return "UNKNOWN";
@@ -69,4 +74,25 @@ void log_msg(unsigned char level, const char *format, ...)
     fflush(log_file);
 
     pthread_mutex_unlock(&log_mutex);
+}
+
+// a special function so lua can also use our logging system
+
+static int log_msg_lua(lua_State *L)
+{
+    if (!log_enabled)
+        return 0;
+
+    u8 level = luaL_checkinteger(L, 1);
+    if (level >= log_level)
+        return 0;
+
+    log_msg(level, "[LUA] %s", luaL_checkstring(L, 2));
+
+    return 0;
+}
+
+void lua_logging_register(lua_State *L)
+{
+    lua_register(L, "log_msg", log_msg_lua);
 }

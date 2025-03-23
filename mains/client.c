@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	e.type = ENGINE_INIT;
 	call_handlers(e);
 
-	int total_ms_took = 0;
+	// int total_ms_took = 0;
 
 	for (;;)
 	{

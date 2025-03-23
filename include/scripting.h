@@ -45,9 +45,14 @@ typedef struct LuaHolder
     pusher(L, object.field);                 \
     lua_setfield(L, -2, #field);
 
-#define STRUCT_SET(L, object, field, converter) \
-    object.field = converter(L, -1);            \
-    lua_pop(L, 1);
+#define STRUCT_SET(L, object, field, expected_type, converter) \
+    if (lua_getfield(L, -1, #field) == expected_type)          \
+    {                                                          \
+        object.field = converter(L, -1);                       \
+        lua_pop(L, 1);                                         \
+    }                                                          \
+    else                                                       \
+        luaL_error(L, "STRUCT_SET: expected a " #expected_type " for a field " #field)
 
 extern lua_State *g_L;
 
