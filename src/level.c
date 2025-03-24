@@ -175,7 +175,9 @@ u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
     u32 dest_x = x + dx;
     u32 dest_y = y + dy;
     CHECK(x >= l->width || y >= l->height)
-    CHECK(dest_x >= l->width || dest_y >= l->height)
+    // CHECK(dest_x >= l->width || dest_y >= l->height) // it was annoying to see a bunch of move errors in the console
+    if (dest_x >= l->width || dest_y >= l->height)
+        return FAIL;
 
     u64 id_dest = 0;
     u8 *dest_ptr = BLOCK_ID_PTR(l, dest_x, dest_y);
@@ -202,6 +204,7 @@ u8 init_layer(layer *l, room *parent_room)
 
     CHECK(l->width == 0 || l->height == 0)
     CHECK((l->block_size + l->var_index_size) == 0)
+    l->total_bytes_per_block = l->block_size + l->var_index_size;
 
     l->blocks = calloc(l->width * l->width, l->block_size + l->var_index_size);
 

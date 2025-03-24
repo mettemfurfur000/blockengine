@@ -7,6 +7,7 @@
 
 level test_level = {.name = "test_level"};
 room test_room = {.name = "test_room", .width = 8, .height = 8};
+room* t_room_ref = NULL;
 
 int test_room_init()
 {
@@ -15,27 +16,40 @@ int test_room_init()
 
 	(void)vec_push(&test_level.rooms, test_room);
 
+	t_room_ref = &test_level.rooms.data[0];
+
 	return SUCCESS;
 }
 
 int test_layer_init()
 {
-	layer new_layer = {.bytes_per_block = 2, .width = 16, .height = 16};
+	layer new_layer = {
+		.block_size = 2,
+		.var_index_size = 2,
+		.width = t_room_ref->width,
+		.height = t_room_ref->height
+
+	};
 	FLAG_SET(new_layer.flags, LAYER_FLAG_HAS_VARS, 1);
 
-	CHECK(init_layer(&new_layer, &test_room))
+	CHECK(init_layer(&new_layer, t_room_ref))
 
-	(void)vec_push(&test_room.layers, new_layer);
+	(void)vec_push(&t_room_ref->layers, new_layer);
 
-	layer *l = &test_room.layers.data[0];
+	layer *l = &t_room_ref->layers.data[0];
 
 	u64 id = 0;
 
-	CHECK(block_get_id(l, 7, 7, &id))
-	CHECK(block_set_id(l, 7, 7, 100))
-	CHECK(block_get_id(l, 7, 7, &id))
+	for(int i = 0; i < l->width * l->height; i++)
+	{
+		CHECK(block_set_id(l, i % l->width, i / l->width, i))
+	}
 
-	CHECK(id != 100)
+	for(int i = 0; i < l->width * l->height; i++)
+	{
+		CHECK(block_get_id(l, i % l->width, i / l->width, &id))
+		CHECK(id != i)
+	}
 
 	return SUCCESS;
 }
@@ -54,6 +68,16 @@ int test_load_level()
 	CHECK(load_level(&on_disk_level, "test_level"))
 	CHECK(on_disk_level.rooms.length != 1)
 	CHECK(on_disk_level.rooms.data[0].width != 8)
+
+	layer* l = &on_disk_level.rooms.data[0].layers.data[0];
+
+	u64 id = 0;
+
+	for(int i = 0; i < l->width * l->height; i++)
+	{
+		CHECK(block_get_id(l, i % l->width, i / l->width, &id))
+		CHECK(id != i)
+	}
 
 	free_level(&on_disk_level);
 

@@ -111,8 +111,8 @@ void write_layer(layer l, FILE *f)
         blob_write(blobify((char *)l.registry->name), f);
 
     u64 id = 0;
-    for (u32 x = 0; x < l.width; x++)
-        for (u32 y = 0; y < l.height; y++)
+    for (u32 y = 0; y < l.height; y++)
+        for (u32 x = 0; x < l.width; x++)
         {
             if (block_get_id(&l, x, y, &id) == FAIL)
                 continue;
@@ -143,10 +143,13 @@ void read_layer(layer *l, room *parent, FILE *f)
         l->registry = NULL;
     else
     {
-        l->registry = find_registry(((level *)parent->parent_level)->registries, registry_name.str);
+        if (strcmp(registry_name.str, "no_registry") != 0)
+        {
+            l->registry = find_registry(((level *)parent->parent_level)->registries, registry_name.str);
 
-        if (!l->registry)
-            LOG_WARNING("Registry %s not found", registry_name.str);
+            if (!l->registry)
+                LOG_WARNING("Registry %s not found", registry_name.str);
+        }
 
         free(registry_name.str);
     }
@@ -154,8 +157,8 @@ void read_layer(layer *l, room *parent, FILE *f)
     init_layer(l, parent);
 
     u64 id = 0;
-    for (u32 x = 0; x < l->width; x++)
-        for (u32 y = 0; y < l->height; y++)
+    for (u32 y = 0; y < l->height; y++)
+        for (u32 x = 0; x < l->width; x++)
         {
             endianless_read((u8 *)&id, l->block_size, f);
             if (block_set_id(l, x, y, id) == FAIL)
@@ -187,6 +190,8 @@ void write_room(room *r, FILE *f)
     CHECK_PTR_NORET(r->name)
     blob_write(blobify(r->name), f);
 
+    WRITE(r->layers.length, f);
+
     for (u32 i = 0; i < r->layers.length; i++)
         write_layer(r->layers.data[i], f);
 }
@@ -200,10 +205,14 @@ void read_room(room *r, FILE *f)
 
     layer tmp = {};
 
+    READ(r->layers.length, f);
+    vec_reserve(&r->layers, r->layers.length);
+
     for (u32 i = 0; i < r->layers.length; i++)
     {
         read_layer(&tmp, r, f);
-        (void)vec_push(&r->layers, tmp);
+        r->layers.data[i] = tmp;
+        memset(&tmp, 0, sizeof(layer));
     }
 }
 
