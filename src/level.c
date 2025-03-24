@@ -2,10 +2,90 @@
 
 // layer functions
 
-#define BLOCK_ID_PTR(l, x, y) (l->blocks + ((y * l->width) + x) * l->bytes_per_block)
+#define BLOCK_ID_PTR(l, x, y) (l->blocks + ((y * l->width) + x) * l->total_bytes_per_block)
 #define MERGE32_TO_64(a, b) (((u64)a << 32) | (u64)b)
 
 #define LAYER_CHECKS(l)
+
+// object pool functions
+
+var_holder *get_inactive(var_object_pool *pool, u32 required_size, u32 *index_out)
+{
+    for (u32 i = 1; i < pool->vars.length; i++)
+    {
+        var_holder iter = pool->vars.data[i];
+        if (!iter.active && iter.b->size >= required_size)
+        {
+            if (index_out)
+                *index_out = i;
+            return &pool->vars.data[i];
+        }
+    }
+
+    return NULL;
+}
+
+var_holder *get_variable(var_object_pool *pool, u32 index)
+{
+    if (index == 0 || index >= pool->vars.length) // block is referencing to an invalid var
+        return NULL;
+
+    return &pool->vars.data[index];
+}
+
+var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out)
+{
+    if (pool->inactive_count > pool->inactive_limit)
+    {
+        LOG_INFO("Clearing inactive vars");
+        var_holder_vec_t new_vars = {};
+
+        vec_reserve(&new_vars, pool->vars.length - pool->inactive_count);
+        // iterate through all vars and filter out inactive vars
+        for (u32 i = 0; i < pool->vars.length; i++)
+            if (!pool->vars.data[i].active)
+            {
+                SAFE_FREE(pool->vars.data[i].b);
+            }
+            else
+            {
+                (void)vec_push(&new_vars, pool->vars.data[i]);
+            }
+
+        vec_deinit(&pool->vars);
+        pool->vars = new_vars;
+    }
+
+    if (pool->inactive_count != 0)
+    {
+        LOG_INFO("Reusing an inactive var");
+
+        var_holder *var = get_inactive(pool, required_size, index_out);
+        var->active = true;
+        var->b->size = required_size;
+
+        return *var;
+    }
+
+    var_holder new = {
+        .active = true,
+        .b = calloc(1, sizeof(blob) + required_size),
+
+    };
+
+    new.b->ptr = (u8 *)(new.b) + sizeof(blob);
+    (void)vec_push(&pool->vars, new);
+    if (index_out)
+        *index_out = pool->vars.length - 1;
+
+    return new;
+}
+
+void remove_variable(var_object_pool *pool, var_holder *h)
+{
+    h->active = false;
+    pool->inactive_count++;
+}
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
 {
@@ -13,7 +93,7 @@ u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
     CHECK_PTR(l->blocks)
     CHECK(x >= l->width || y >= l->height)
 
-    memcpy(BLOCK_ID_PTR(l, x, y), (u8 *)&id, l->bytes_per_block);
+    memcpy(BLOCK_ID_PTR(l, x, y), (u8 *)&id, l->block_size);
 
     return SUCCESS;
 }
@@ -24,22 +104,39 @@ u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
     CHECK_PTR(l->blocks)
     CHECK(x >= l->width || y >= l->height)
 
-    memcpy((u8 *)id, BLOCK_ID_PTR(l, x, y), l->bytes_per_block);
+    memcpy((u8 *)id, BLOCK_ID_PTR(l, x, y), l->block_size);
 
     return SUCCESS;
 }
 
-u8 block_get_vars(layer *l, u32 x, u32 y, blob *vars_out)
+u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
 {
     CHECK_PTR(l)
     CHECK_PTR(l->blocks)
     CHECK_PTR(vars_out)
     CHECK(x >= l->width || y >= l->height)
-    CHECK_PTR(l->vars)
 
-    u64 key_num = MERGE32_TO_64(x, y);
-    blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
-    *vars_out = get_entry(l->vars, key);
+    u64 var_index = 0;
+    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+
+    var_holder *h = get_variable(&l->var_pool, var_index);
+
+    if (h)
+        *vars_out = h->b;
+    else
+    {
+        *vars_out = NULL;
+        return FAIL;
+    }
+
+    return SUCCESS;
+}
+
+u8 block_delete_vars(layer *l, u32 x, u32 y)
+{
+    CHECK_PTR(l)
+    CHECK_PTR(l->blocks)
+    CHECK(x >= l->width || y >= l->height)
 
     return SUCCESS;
 }
@@ -48,31 +145,28 @@ u8 block_set_vars(layer *l, u32 x, u32 y, blob vars)
 {
     CHECK_PTR(l)
     CHECK_PTR(l->blocks)
-    CHECK_PTR(l->vars)
     CHECK(x >= l->width || y >= l->height)
 
-    u64 key_num = MERGE32_TO_64(x, y);
-    blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
-    put_entry(l->vars, key, vars);
+    u32 var_index = 0;
+    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size); // get an existing var
+
+    var_holder *h = get_variable(&l->var_pool, var_index);
+    if (!h)
+    {
+        // creating a new var
+        var_holder new = new_variable(&l->var_pool, vars.size, &var_index);
+        memcpy(new.b->ptr, vars.ptr, vars.size);
+        new.b->size = vars.size;
+        memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&var_index, l->var_index_size);
+    }
+    else
+    {
+        h->b->size = vars.size;
+        memcpy(h->b->ptr, vars.ptr, vars.size);
+    }
 
     return SUCCESS;
 }
-
-// u8 block_move_vars(layer *l, u32 x, u32 y, u32 dest_x, u32 dest_y)
-// {
-//     CHECK_PTR(l)
-//     CHECK_PTR(l->blocks)
-//     CHECK_PTR(l->vars)
-//     CHECK(x >= l->width || y >= l->height)
-//     CHECK(dest_x >= l->width || dest_y >= l->height)
-
-//     u64 key_num = MERGE32_TO_64(x, y);
-//     u64 key_num_dest = MERGE32_TO_64(dest_x, dest_y);
-//     blob key = {.ptr = (u8 *)&key_num, .size = sizeof(key_num)};
-//     put_entry(l->vars, key, vars);
-
-//     return SUCCESS;
-// }
 
 // init functions
 
@@ -84,12 +178,18 @@ u8 init_layer(layer *l, room *parent_room)
     l->parent_room = parent_room;
 
     CHECK(l->width == 0 || l->height == 0)
-    CHECK(l->bytes_per_block == 0)
+    CHECK((l->block_size + l->var_index_size) == 0)
 
-    l->blocks = calloc(l->width * l->width, l->bytes_per_block);
+    l->blocks = calloc(l->width * l->width, l->block_size + l->var_index_size);
 
-    if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS) && l->vars == 0)
-        l->vars = alloc_table();
+    if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
+    {
+        vec_init(&l->var_pool.vars);
+        l->var_pool.inactive_count = 0;
+        l->var_pool.inactive_limit = 256 * 16;
+        // push an empty var so that the first var is always at index 1
+        (void) new_variable(&l->var_pool, 1, NULL);
+    }
 
     return SUCCESS;
 }
@@ -126,8 +226,10 @@ u8 free_layer(layer *l)
 {
     CHECK_PTR(l)
     SAFE_FREE(l->blocks);
-    if (l->vars)
-        free_table(l->vars);
+    if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
+    {
+        vec_deinit(&l->var_pool.vars);
+    }
 
     return SUCCESS;
 }
@@ -181,11 +283,13 @@ void room_create(level *parent, const char *name, u32 w, u32 h)
     (void)vec_push(&parent->rooms, r);
 }
 
-void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 flags)
+void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags)
 {
     layer l = {
         .registry = registry_ref,
-        .bytes_per_block = bytes_per_block,
+        .block_size = bytes_per_block,
+        .var_index_size = bytes_per_index,
+        .total_bytes_per_block = bytes_per_block + bytes_per_index,
         .width = parent->width,
         .height = parent->height,
         .flags = flags,
@@ -213,10 +317,10 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
     while (*ptr != 0)
     {
         block_set_id(l, x, y, character_block_id);
-        blob vars = {};
+        blob *vars = NULL;
         block_get_vars(l, x, y, &vars);
-        var_set_u8(&vars, 'v', iscntrl(*ptr) ? ' ' : *ptr);
-        block_set_vars(l, x, y, vars);
+        var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr);
+        block_set_vars(l, x, y, *vars);
 
         switch (*ptr)
         {

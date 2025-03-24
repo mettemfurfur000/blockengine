@@ -1,12 +1,12 @@
 #ifndef LEVEL_H
 #define LEVEL_H 1
 
+#include "vars.h"
 #include "hashtable.h"
 #include "endianless.h"
 #include "block_registry.h"
 #include "flags.h"
 #include "general.h"
-#include "block_registry.h"
 #include "../vec/src/vec.h"
 
 #define LAYER_FLAG_HAS_VARS 0b00000001
@@ -14,18 +14,40 @@
 
 #define SHARED_FLAG_GC_AWARE 0b1000000
 
+typedef struct var_holder
+{
+    blob *b;
+    u8 active;
+} var_holder;
+
+typedef vec_t(var_holder) var_holder_vec_t;
+
+typedef struct var_object_pool
+{
+    var_holder_vec_t vars;
+    u16 inactive_count;
+    u16 inactive_limit;
+} var_object_pool;
+
 typedef struct layer
 {
     void *parent_room;
-    hash_node **vars;         // hashtable for block vars - variables, unique for said block. constant values are stored in the block registry, not here
+    // hash_node **vars;         // hashtable for block vars - variables, unique for said block.
+    // constant values are stored in the block registry, not here
+
+    // hashtables are way too slow for this, using an array instead
+    
+    var_object_pool var_pool;
     block_registry *registry; // block registry used by this layer. if NULL, the layer acts as a simple array of ids
     u8 *blocks;               // array of blocks, each of size bytes_per_block
 
     u32 width;  //
     u32 height; //
-
-    u8 bytes_per_block; //
-    u8 flags;           //
+    u8 block_size;            // bytes per block id
+    u8 var_index_size;        // bytes per var index - a special index for the vars array
+    u8 total_bytes_per_block; // sum of block_size and var_index_size
+    
+    u8 flags;                 //
 } layer;
 
 typedef vec_t(layer) layer_vec_t;
@@ -50,7 +72,7 @@ typedef struct level
 {
     vec_registries_t registries;
     room_vec_t rooms;
-    
+
     char *name;
     u8 flags;
 } level;
@@ -58,7 +80,9 @@ typedef struct level
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id);
 u8 block_get_id(layer *l, u32 x, u32 y, u64 *id);
 
-u8 block_get_vars(layer *l, u32 x, u32 y, blob *vars_out);
+// u8 block_get_vars(layer *l, u32 x, u32 y, blob *vars_out);
+u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out);
+u8 block_delete_vars(layer *l, u32 x, u32 y);
 u8 block_set_vars(layer *l, u32 x, u32 y, blob vars);
 
 u8 init_layer(layer *l, room *parent_room); // call after setting their resolutions
@@ -71,8 +95,7 @@ u8 free_level(level *l);
 
 level *level_create(const char *name);
 void room_create(level *parent, const char *name, u32 w, u32 h);
-void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 flags);
-
+void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags);
 // utils
 
 // turns string into formatted block chain

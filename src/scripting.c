@@ -148,8 +148,8 @@ int push_event_args(SDL_Event *e)
     case ENGINE_BLOB_CREATE:
         blob_update_event *blob_event = (blob_update_event *)e;
 
-        NEW_USER_OBJECT(g_L, Room, block_event->room_ptr);
-        NEW_USER_OBJECT(g_L, Layer, block_event->layer_ptr);
+        NEW_USER_OBJECT(g_L, Room, blob_event->room_ptr);
+        NEW_USER_OBJECT(g_L, Layer, blob_event->layer_ptr);
 
         lua_pushinteger(g_L, blob_event->new_id);
 

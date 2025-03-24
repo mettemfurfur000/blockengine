@@ -125,14 +125,15 @@ static int lua_room_new_layer(lua_State *L)
     const char *registry_name = luaL_checkstring(L, 2);
 
     int bytes_per_block = luaL_checkinteger(L, 3);
-    int flags = luaL_checkinteger(L, 4);
+    int byte_per_index = luaL_checkinteger(L, 4);
+    int flags = luaL_checkinteger(L, 5);
 
     block_registry *reg = find_registry(((level *)wrapper->r->parent_level)->registries, (char *)registry_name);
 
     if (!reg)
         luaL_error(L, "Registry %s not found", registry_name);
 
-    layer_create(wrapper->r, reg, bytes_per_block, flags);
+    layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags);
 
     layer *l = &wrapper->r->layers.data[wrapper->r->layers.length - 1];
     NEW_USER_OBJECT(L, Layer, l);
@@ -198,7 +199,7 @@ static int lua_layer_paste_block(lua_State *L)
         .room_ptr = wrapper->l->parent_room,
     };
 
-    SDL_PushEvent((SDL_Event*)&e);
+    SDL_PushEvent((SDL_Event *)&e);
 
     lua_pushboolean(L, status);
     return 1;
@@ -237,10 +238,10 @@ static int lua_block_get_vars(lua_State *L)
 
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
-    blob vars = {};
+    blob *vars = NULL;
 
     lua_pushboolean(L, block_get_vars(wrapper->l, x, y, &vars));
-    NEW_USER_OBJECT(L, Vars, &vars);
+    NEW_USER_OBJECT(L, Vars, vars);
 
     return 1;
 }

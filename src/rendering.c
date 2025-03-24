@@ -136,22 +136,22 @@ u8 render_layer(layer_slice slice)
             u8 flip = 0;
             u16 rotation = 0;
 
-            blob vars = {};
-            if (block_get_vars(slice.ref, i, j, &vars) == SUCCESS && vars.length != 0 && vars.ptr != NULL)
+            blob *var = NULL;
+            if (block_get_vars(slice.ref, i, j, &var) == SUCCESS && var != NULL && var->length != 0 && var->ptr != NULL)
             {
                 if (br.type_controller != 0)
-                    var_get_u8(vars, br.type_controller, &type);
+                    var_get_u8(*var, br.type_controller, &type);
 
                 if (br.flip_controller != 0)
-                    var_get_u8(vars, br.flip_controller, &flip);
+                    var_get_u8(*var, br.flip_controller, &flip);
 
                 if (br.rotation_controller != 0)
-                    var_get_u16(vars, br.rotation_controller, &rotation);
+                    var_get_u16(*var, br.rotation_controller, &rotation);
 
                 // calculate a frame
 
                 if (br.anim_controller != 0)
-                    var_get_u8(vars, br.anim_controller, &frame);
+                    var_get_u8(*var, br.anim_controller, &frame);
                 else if (br.frames_per_second > 1)
                 {
                     float seconds_since_start = SDL_GetTicks() / 1000.0f;

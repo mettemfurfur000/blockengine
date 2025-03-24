@@ -29,10 +29,9 @@ typedef struct LuaHolder
 #define LUA_CHECK_USER_OBJECT(L, type, name, index) \
     LuaHolder *name = (LuaHolder *)luaL_checkudata(L, index, #type);
 
-#define NEW_USER_OBJECT(L, type, pointer)                                  \
-    LuaHolder *__##type = (LuaHolder *)lua_newuserdata(L, sizeof(void *)); \
-    __##type->ptr = (pointer);                                             \
-    luaL_getmetatable(L, #type);                                           \
+#define NEW_USER_OBJECT(L, type, pointer)                               \
+    ((LuaHolder *)lua_newuserdata(L, sizeof(void *)))->ptr = (pointer); \
+    luaL_getmetatable(L, #type);                                        \
     lua_setmetatable(L, -2);
 
 #define LUA_SET_GLOBAL_OBJECT(name, ptr) \

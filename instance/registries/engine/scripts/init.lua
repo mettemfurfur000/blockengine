@@ -1,9 +1,9 @@
 log_error = function(msg)
-    log_msg(1, msg)
+    log_msg(2, msg)
 end
 
 log_message = function(msg)
-    log_msg(0, msg)
+    log_msg(1, msg)
 end
 
 function try(f, catch_f)
@@ -33,7 +33,7 @@ if menu_room == nil then
     os.exit()
 end
 
-local floor_l = menu_room:new_layer("engine", 1, flags)
+local floor_l = menu_room:new_layer("engine", 2, 2, flags)
 if floor_l == nil then
     log_error("error creating layer")
     os.exit()

@@ -10,7 +10,6 @@
 #endif
 
 #include "endianless.h"
-#include "block_registry.h"
 #include "hashtable.h"
 
 #define VAR_LETTER(blob, pos) *(char *)(blob + pos)

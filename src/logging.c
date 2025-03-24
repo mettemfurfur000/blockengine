@@ -33,7 +33,7 @@ char *log_level_to_str(unsigned char level)
     switch (level)
     {
     case 1:
-        "MESSAGE";
+        return "MESSAGE";
     case 2:
         return "ERROR";
     case 3:
