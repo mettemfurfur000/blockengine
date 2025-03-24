@@ -20,11 +20,11 @@ int main(int argc, char *argv[])
 	int successes = 0;
 #define tests 5
 
-	// successes += test_hash_table_all();
-	// successes += test_block_props_all();
-	// successes += test_vars_all();
+	successes += test_hash_table_all();
+	successes += test_block_props_all();
+	successes += test_vars_all();
 	successes += test_file_system();
-	// successes += test_all_registry();
+	successes += test_all_registry();
 
 	switch (successes)
 	{

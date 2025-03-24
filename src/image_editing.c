@@ -147,7 +147,12 @@ image *rotate_image(const image *src, i8 clockwise_rotations)
     if (clockwise_rotations < 0)
         clockwise_rotations = 4 + clockwise_rotations;
 
-    image *img = create_image(src->height, src->width);
+    // swap width and height if rotation is not 180 degrees
+    image *img = NULL;
+    if (clockwise_rotations % 2 == 0)
+        img = create_image(src->width, src->height);
+    else
+        img = create_image(src->height, src->width);
 
     for (u32 j = 0; j < src->height; j++)
         for (u32 i = 0; i < src->width; i++)
