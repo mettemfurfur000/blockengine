@@ -41,11 +41,12 @@ int main(int argc, char *argv[])
 	e.type = ENGINE_INIT;
 	call_handlers(e);
 
-	// int total_ms_took = 0;
+	u32 total_ms_took = 0;
+	u32 perf_report_start = SDL_GetTicks();
 
 	for (;;)
 	{
-		LOG_INFO("frame %lu", frame);
+		// LOG_INFO("frame %lu", frame);
 		int frame_begin_tick = SDL_GetTicks();
 
 		while (SDL_PollEvent(&e))
@@ -86,7 +87,18 @@ int main(int argc, char *argv[])
 
 		int loop_took = SDL_GetTicks() - frame_begin_tick;
 		int chill_time = ms_per_s - loop_took;
+		total_ms_took += loop_took;
+
 		SDL_Delay(max(1, chill_time));
+
+		if (frame % 600 == 0)
+		{
+			u32 ms_since_report = SDL_GetTicks() - perf_report_start;
+			LOG_INFO("perf: %dms / %dms", total_ms_took, ms_since_report);
+			total_ms_took = 0;
+
+			perf_report_start = SDL_GetTicks();
+		}
 
 		frame++;
 	}

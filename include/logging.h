@@ -17,8 +17,9 @@ extern FILE *log_file;
 #define SEPARATOR '/'
 #endif
 
-// change this to change the log level
-#define LOG_LEVEL 2
+// change this to change the log level, then recompile everything :P
+// recommend level 5 for debugging and level 2 or 3 for releases
+#define LOG_LEVEL 5
 #define USE_FILENAMES 1
 
 extern const int log_level;

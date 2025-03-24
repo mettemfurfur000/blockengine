@@ -26,6 +26,10 @@ typedef struct LuaHolder
 
 } LuaHolder;
 
+#define LUA_EXPECT_UNSIGNED(L)    \
+    if (lua_tointeger(L, -1) < 0) \
+        luaL_error(L, "STRUCT_SET: expected an unsigned integer for a field");
+
 #define LUA_CHECK_USER_OBJECT(L, type, name, index) \
     LuaHolder *name = (LuaHolder *)luaL_checkudata(L, index, #type);
 

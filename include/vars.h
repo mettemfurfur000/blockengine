@@ -120,7 +120,7 @@ u8 var_get_str(blob b, char letter, char **dest);
 
 // utils
 
-void dbg_data_layout(blob b);
+void dbg_data_layout(blob b, char* ret);
 
 i32 data_get_num_endianless(blob b, char letter, void *dest, int size);
 i32 data_set_num_endianless(blob *b, char letter, void *src, int size);

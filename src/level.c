@@ -168,6 +168,29 @@ u8 block_set_vars(layer *l, u32 x, u32 y, blob vars)
     return SUCCESS;
 }
 
+u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
+{
+    CHECK_PTR(l)
+    CHECK_PTR(l->blocks)
+    u32 dest_x = x + dx;
+    u32 dest_y = y + dy;
+    CHECK(x >= l->width || y >= l->height)
+    CHECK(dest_x >= l->width || dest_y >= l->height)
+
+    u64 id_dest = 0;
+    u8 *dest_ptr = BLOCK_ID_PTR(l, dest_x, dest_y);
+    u8 *src_ptr = BLOCK_ID_PTR(l, x, y);
+
+    memcpy(dest_ptr, (u8 *)&id_dest, l->block_size);
+    if (id_dest != 0)
+        return FAIL;
+
+    memcpy(dest_ptr, src_ptr, l->block_size + l->var_index_size);
+    memset(src_ptr, 0, l->block_size + l->var_index_size);
+
+    return SUCCESS;
+}
+
 // init functions
 
 u8 init_layer(layer *l, room *parent_room)
@@ -188,7 +211,7 @@ u8 init_layer(layer *l, room *parent_room)
         l->var_pool.inactive_count = 0;
         l->var_pool.inactive_limit = 256 * 16;
         // push an empty var so that the first var is always at index 1
-        (void) new_variable(&l->var_pool, 1, NULL);
+        (void)new_variable(&l->var_pool, 1, NULL);
     }
 
     return SUCCESS;

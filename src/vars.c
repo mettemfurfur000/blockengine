@@ -300,12 +300,11 @@ GETTER_IMP(i64)
 
 // utils
 
-void dbg_data_layout(blob b)
+void dbg_data_layout(blob b, char* ret)
 {
 	u8 data_size = b.size;
 
 	char buf[256] = {};
-	char ret[1024] = {};
 
 	sprintf(buf, "data_size %d\n", data_size);
 	strcat(ret, buf);
@@ -351,6 +350,4 @@ void dbg_data_layout(blob b)
 
 	sprintf(buf, "}\n");
 	strcat(ret, buf);
-
-	LOG_INFO("%s", ret);
 }

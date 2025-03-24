@@ -89,10 +89,15 @@ static int lua_slice_set(lua_State *L)
 
     layer_slice slice = {};
 
+    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, x, LUA_TNUMBER, lua_tointeger);
+    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, y, LUA_TNUMBER, lua_tointeger);
+    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, h, LUA_TNUMBER, lua_tointeger);
+    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, w, LUA_TNUMBER, lua_tointeger);
+    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, zoom, LUA_TNUMBER, lua_tointeger);
     // STRUCT_SET(L, slice, ref, LUA_TUSERDATA, lua_touserdata);
     if (lua_getfield(L, -1, "ref") == 7)
@@ -103,9 +108,9 @@ static int lua_slice_set(lua_State *L)
     }
     else
         luaL_error(L, "STRUCT_SET: expected a "
-                           "LUA_TUSERDATA "
-                           "for a field "
-                           "ref");
+                      "LUA_TUSERDATA "
+                      "for a field "
+                      "ref");
 
     if (index >= rules->slices.length)
     {

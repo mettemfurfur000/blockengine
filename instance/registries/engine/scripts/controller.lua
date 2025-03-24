@@ -1,5 +1,9 @@
 local constants = require("registries.engine.scripts.constants")
 
+local player_block_id = scripting_current_block_id
+
+print("loading a controller")
+
 local player_states = {
     dead = 0,
     idle = 1,
@@ -16,27 +20,13 @@ local player = {
     keystate = {},
     home_layer = nil,
     home_room = nil,
+    vars = nil,
     last_delta = {
         x = 0,
         y = 0
     },
     state = player_states.dead
 }
-
-local function util_block_move(layer, pos, delta) -- TODO: implement move functions from C space
-    local dest_pos = { x = pos.x + delta.x, y =pos.y + delta.y }
-    local status, dest_id = layer:get_id(dest_pos.x, dest_pos.y)
-    local status2, src_id = layer:get_id(pos.x, pos.y)
-
-    if status ~= 0 or status2 ~= 0 then
-        return false
-    end
-
-    if dest_id == 0 then
-        layer:set_id(dest_pos.x, dest_pos.y, src_id)
-        layer:set_id(pos.x, pos.y, 0)
-    end
-end
 
 local function lerp(a, b)
     return a + (b - a) * 0.05
@@ -71,9 +61,19 @@ local function camera_set_target(pos)
     local slice = render_rules.get_slice(g_render_rules, 0)
 
     local actual_block_width = slice.zoom * g_block_size
-
     slice.x = (pos.x + 0.5) * actual_block_width - slice.w / 2
     slice.y = (pos.y + 0.5) * actual_block_width - slice.h / 2
+
+    slice.x = math.max(slice.x, 0)
+    slice.y = math.max(slice.y, 0)
+
+    render_rules.set_slice(g_render_rules, 0, slice)
+end
+
+local function camera_move_debug()
+    local slice = render_rules.get_slice(g_render_rules, 0)
+
+    slice.x = slice.x + 1
 
     render_rules.set_slice(g_render_rules, 0, slice)
 end
@@ -86,54 +86,44 @@ local function update_player()
         y = 0
     }
 
-    if player.keystate[SDL_SCANCODE.SDL_SCANCODE_W] then
-        delta.y = -1
-    end
-    if player.keystate[SDL_SCANCODE.SDL_SCANCODE_S] then
-        delta.y = 1
-    end
-    if player.keystate[SDL_SCANCODE.SDL_SCANCODE_A] then
-        delta.x = -1
-    end
-    if player.keystate[SDL_SCANCODE.SDL_SCANCODE_D] then
-        delta.x = 1
-    end
-
-    if delta.x == 0 and delta.y == 0 then -- standing actions
-        player.state = player_states.idle
-
-        if player.keystates[SDL_SCANCODE.SDL_SCANCODE_SPACE] then -- on spacebar press we attack
-            frame = 3
-            player.state = player_states.attack
-            player.player.pos = move_block_r(player.player.pos, delta)
-        else
-            player.player.pos = move_block_g(player.player.pos, delta)
-        end
-
-        return
-    end
-
-    player.state = player_states.walk
+    delta.x = (player.keystate['d'] or 0) - (player.keystate['a'] or 0)
+    delta.y = (player.keystate['s'] or 0) - (player.keystate['w'] or 0)
 
     local frame = walk_frame(delta) -- aka specific frame of the animation
     local type = walk_type(delta) -- aka direction
 
-    camera_set_target(player.player.pos)
+    if delta.x == 0 and delta.y == 0 then -- standing actions
+        player.state = player_states.idle
+        frame = 0
 
-    util_block_move(player.home_layer, player.player.pos, delta)
+        if player.keystate[' '] == 1 then -- on spacebar press we attack
+            frame = 3
+            player.state = player_states.attack
+        end
+    else
+        player.state = player_states.walk
 
-    -- blockengine.blob_set_number(player.player.block, "v", frame)
-    -- blockengine.blob_set_number(player.player.block, "r", math.floor(math.fmod(player.tick, 360)))
+        local status = player.home_layer:move_block(player.pos.x, player.pos.y, delta.x, delta.y)
+        if status == true then
+            player.pos.x = player.pos.x + delta.x
+            player.pos.y = player.pos.y + delta.y
+            -- print("moving, new pos", player.pos.x, player.pos.y)
+        end
+
+        camera_set_target(player.pos)
+    end
+
+    player.vars:set_number("v", frame, 1, 0)
 
     if type ~= nil then
-        -- blockengine.blob_set_number(player.player.block, "t", type)
+        player.vars:set_number("t", type, 1, 0)
     end
 end
 
 -- hook zone
 
 blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
-    if new_id ~= scripting_current_block_id then
+    if new_id ~= player_block_id then
         return
     end
 
@@ -147,21 +137,47 @@ blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer
     player.home_layer = layer
     player.home_room = room
 
-    camera_set_target(pos)
+    local status, vars = player.home_layer:get_vars(player.pos.x, player.pos.y)
+    if status == false then
+        log_error("error getting vars")
+        return
+    end
+
+    player.vars = vars
 
     print("initialized and found a player at " .. pos.x .. ", " .. pos.y .. ", room named " .. room:get_name())
+
+    print("vars", vars:__tostring())
 end)
 
 blockengine.register_handler(EVENT_IDS.SDL_KEYDOWN, function(keysym, mod, state, rep)
-    if rep > 0 then
+    if rep == nil or rep > 0 then
         return
     end
-    keystate[keysym] = state
+
+    if state == 0 then
+        return
+    end
+
+    local char = string.char(keysym)
+
+    player.keystate[char] = state
 end)
 
 blockengine.register_handler(EVENT_IDS.SDL_KEYUP, function(keysym, mod, state, rep)
-    if rep > 0 then
+    if rep == nil or rep > 0 then
         return
     end
-    keystate[keysym] = state
+
+    if state == 1 then
+        return
+    end
+
+    local char = string.char(keysym)
+
+    player.keystate[char] = state
+end)
+
+blockengine.register_handler(EVENT_IDS.ENGINE_TICK, function(code)
+    update_player()
 end)

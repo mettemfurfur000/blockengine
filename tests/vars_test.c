@@ -16,7 +16,8 @@ int test_basic_data_manip()
 
 	CHECK(src != dest);
 
-	dbg_data_layout(b);
+	char buf[1024] = {};
+	dbg_data_layout(b, buf);
 
 	var_delete_all(&b);
 
@@ -38,7 +39,8 @@ int test_random_data()
 		CHECK(src != dest);
 	}
 
-	dbg_data_layout(b);
+	char buf[1024] = {};
+	dbg_data_layout(b, buf);
 
 	var_delete_all(&b);
 
@@ -74,7 +76,8 @@ int test_five_hundred_variables()
 		// CHECK(src != dest);
 	}
 
-	dbg_data_layout(b);
+	char buf[1024] = {};
+	dbg_data_layout(b, buf);
 
 	var_delete_all(&b);
 

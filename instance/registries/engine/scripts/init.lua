@@ -53,7 +53,7 @@ local slice = {
     y = 0,
     w = width,
     h = height,
-    zoom = 1,
+    zoom = 4,
     ref = floor_l
 }
 

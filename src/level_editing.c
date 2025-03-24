@@ -20,7 +20,11 @@ static int lua_level_load_registry(lua_State *L)
     int success = read_block_registry(registry_name, &r) == SUCCESS;
 
     if (success)
+    {
         (void)vec_push(&wrapper->lvl->registries, r);
+
+        scripting_load_scripts(&r);
+    }
 
     lua_pushboolean(L, success);
     return 1;
@@ -205,6 +209,20 @@ static int lua_layer_paste_block(lua_State *L)
     return 1;
 }
 
+static int lua_layer_move_block(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+    u32 x = luaL_checknumber(L, 2);
+    u32 y = luaL_checknumber(L, 3);
+    u32 delta_x = luaL_checknumber(L, 4);
+    u32 delta_y = luaL_checknumber(L, 5);
+
+    lua_pushboolean(L, block_move(wrapper->l, x, y, delta_x, delta_y) == SUCCESS);
+
+    return 1;
+}
+
 static int lua_layer_set_id(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
@@ -240,10 +258,10 @@ static int lua_block_get_vars(lua_State *L)
     u32 y = luaL_checknumber(L, 3);
     blob *vars = NULL;
 
-    lua_pushboolean(L, block_get_vars(wrapper->l, x, y, &vars));
+    lua_pushboolean(L, block_get_vars(wrapper->l, x, y, &vars) == SUCCESS);
     NEW_USER_OBJECT(L, Vars, vars);
 
-    return 1;
+    return 2;
 }
 
 static int lua_block_set_vars(lua_State *L)
@@ -331,6 +349,60 @@ static int lua_vars_set_string(lua_State *L)
     return 1;
 }
 
+static int lua_vars_set_number(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
+    const char *key = luaL_checkstring(L, 2);
+    lua_Number number = luaL_checknumber(L, 3);
+    u8 bytes = luaL_checkinteger(L, 4);
+    u8 is_signed = luaL_checkinteger(L, 5);
+
+    if (strlen(key) > 1)
+        luaL_error(L, "Key must be a single character");
+
+    u8 status = 0;
+    if (is_signed)
+        switch (bytes)
+        {
+        case 1:
+            status = var_set_i8(wrapper->b, key[0], (i8)number) == SUCCESS;
+            break;
+        case 2:
+            status = var_set_i16(wrapper->b, key[0], (i16)number) == SUCCESS;
+            break;
+        case 3:
+            status = var_set_i32(wrapper->b, key[0], (i32)number) == SUCCESS;
+            break;
+        case 4:
+            status = var_set_i64(wrapper->b, key[0], (i64)number) == SUCCESS;
+            break;
+        default:
+            break;
+        }
+    else
+    switch (bytes)
+    {
+    case 1:
+        status = var_set_u8(wrapper->b, key[0], (u8)number) == SUCCESS;
+        break;
+    case 2:
+        status = var_set_u16(wrapper->b, key[0], (u16)number) == SUCCESS;
+        break;
+    case 3:
+        status = var_set_u32(wrapper->b, key[0], (u32)number) == SUCCESS;
+        break;
+    case 4:
+        status = var_set_u64(wrapper->b, key[0], (u64)number) == SUCCESS;
+        break;
+    default:
+        break;
+    }
+
+    lua_pushboolean(L, status);
+
+    return 1;
+}
+
 static int lua_vars_get_size(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
@@ -344,6 +416,15 @@ static int lua_vars_get_size(lua_State *L)
     else
         lua_pushinteger(L, size);
 
+    return 1;
+}
+
+static int lua_vars_tostring(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
+    char buffer[512];
+    dbg_data_layout(*wrapper->b, buffer);
+    lua_pushstring(L, buffer);
     return 1;
 }
 
@@ -389,6 +470,7 @@ void lua_layer_register(lua_State *L)
         {"paste_block", lua_layer_paste_block},
         {"set_id", lua_layer_set_id},
         {"get_id", lua_block_get_id},
+        {"move_block", lua_layer_move_block},
         {"get_vars", lua_block_get_vars},
         {"set_vars", lua_block_set_vars},
         {"bprint", lua_bprintf},
@@ -407,8 +489,10 @@ void lua_vars_register(lua_State *L)
         {"get_length", lua_vars_length},
         {"get_string", lua_vars_get_string},
         {"set_string", lua_vars_set_string},
+        {"set_number", lua_vars_set_number},
         {"get_var", lua_vars_get_var},
         {"get_size", lua_vars_get_size},
+        {"__tostring", lua_vars_tostring},
         {NULL, NULL},
     };
 

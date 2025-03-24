@@ -167,6 +167,7 @@ int push_event_args(SDL_Event *e)
         return 9;
     case ENGINE_TICK:
         lua_pushinteger(g_L, e->user.code);
+        return 1;
     }
     return 0;
 }
@@ -187,12 +188,13 @@ void call_handlers(SDL_Event e)
     for (int i = 0; i < handler_count; i++)
     {
         lua_geti(g_L, LUA_REGISTRYINDEX, target.data[i]);
+        luaL_checktype(g_L, -1, LUA_TFUNCTION);
 
         u16 args = push_event_args(&e);
 
         if (lua_pcall(g_L, args, 0, 0) != 0)
         {
-            LOG_ERROR("Error calling a handler: %s", lua_tostring(g_L, -1));
+            LOG_ERROR("Error calling a handler, id %d: %s", lookup_id, lua_tostring(g_L, -1));
             lua_pop(g_L, 1);
         }
     }
@@ -237,10 +239,14 @@ void scripting_load_scripts(block_registry *registry)
     {
         const char *lua_file = reg->data[i].lua_script_filename;
 
-        lua_pushinteger(g_L, reg->data[i].id);
-        lua_setglobal(g_L, "scripting_current_block_id");
-
         if (lua_file)
+        {
+            LOG_DEBUG("Loading script %s", lua_file);
+
+            lua_pushinteger(g_L, reg->data[i].id);
+            lua_setglobal(g_L, "scripting_current_block_id");
+
             scripting_load_file(reg_name, lua_file);
+        }
     }
 }
