@@ -204,6 +204,8 @@ void scripting_register_event_handler(int lua_func_ref, int event_type)
 {
     u16 lookup_id = get_lookup_id(event_type);
 
+    LOG_DEBUG("registering %d handler", lookup_id);
+
     if (lookup_id == sizeof(handlers))
     {
         LOG_ERROR("Unknown event type %d", event_type);

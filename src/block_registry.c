@@ -1,4 +1,5 @@
 #include "../include/block_registry.h"
+#include "../include/uuid.h"
 
 #define EVAL_SIZE_MATCH(v, t) v >> (sizeof(t) * 8 - 8)
 #define RETURN_MATCHING_SIZE(v, t) \
@@ -426,8 +427,8 @@ const static resource_entry_handler res_handlers[] = {
 	// graphics-related stuff
 	// frames
 	{NULL, &block_res_fps_handler, "fps", NOT_REQUIRED, {}, {"frame_controller"}},
-	{NULL, &block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}}, // directly controls the frame of a texture, so it cant used with fps
-	{NULL, &block_res_position_based_type_handler, "random_frame", NOT_REQUIRED, {}, {"frame_controller"}},			 // randomizes frame of a block based on its location
+	{NULL, &block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}},		// directly controls the frame of a texture, so it cant used with fps
+	{NULL, &block_res_position_based_type_handler, "random_frame", NOT_REQUIRED, {}, {"frame_controller"}}, // randomizes frame of a block based on its location
 	// flips, intested
 	{NULL, &block_res_flip_controller_handler, "flip_controller", NOT_REQUIRED, {"data"}, {}},
 	// untested
@@ -588,6 +589,7 @@ u32 read_block_registry(const char *name, block_registry *registry)
 {
 	CHECK_PTR(registry);
 	registry->name = name;
+	registry->uuid = generate_uuid();
 
 	block_resources_t *reg = &registry->resources;
 	DIR *directory;
@@ -747,11 +749,11 @@ u32 read_all_registries(char *folder, vec_registries_t *dest)
 	return SUCCESS;
 }
 
-block_registry *find_registry(vec_registries_t src, char *name)
+block_registry *find_registry(vec_void_t src, char *name)
 {
 	for (u32 i = 0; i < src.length; i++)
-		if (strcmp(src.data[i].name, name) == 0)
-			return &src.data[i];
+		if (strcmp(((block_registry *)src.data[i])->name, name) == 0)
+			return (block_registry *)src.data[i];
 
 	return NULL;
 }

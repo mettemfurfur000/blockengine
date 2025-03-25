@@ -4,7 +4,7 @@
 #include "flags.h"
 #include "general.h"
 
-#include "SDL2/SDL.h"
+#include <SDL2/SDL.h>
 
 typedef enum ENGINE_EVENTS
 {

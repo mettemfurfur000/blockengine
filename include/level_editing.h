@@ -1,10 +1,10 @@
 #ifndef LEVEL_EDITING_H
 #define LEVEL_EDITING_H
 
-#include "../include/scripting.h"
-#include "../include/level.h"
-#include "../include/rendering.h"
-#include "../include/block_registry.h"
+#include "scripting.h"
+#include "level.h"
+#include "rendering.h"
+#include "block_registry.h"
 
 /*
 The only userdata types we have here:

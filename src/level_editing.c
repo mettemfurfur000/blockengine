@@ -1,8 +1,28 @@
 #include "../include/level_editing.h"
-
 #include "../include/events.h"
 
 // level-related stuff
+
+static int lua_uuid_universal(lua_State *L)
+{
+    void *ptr = 0;
+    if (ptr = luaL_testudata(L, 1, "Level"))
+    {
+        lua_pushinteger(L, ((level *)ptr)->uuid);
+        return 1;
+    }
+    if (ptr = luaL_testudata(L, 1, "Room"))
+    {
+        lua_pushinteger(L, ((room *)ptr)->uuid);
+        return 1;
+    }
+    if (ptr = luaL_testudata(L, 1, "Layer"))
+    {
+        lua_pushinteger(L, ((layer *)ptr)->uuid);
+        return 1;
+    }
+    return 0;
+}
 
 static int lua_level_create(lua_State *L)
 {
@@ -15,15 +35,19 @@ static int lua_level_load_registry(lua_State *L)
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     const char *registry_name = luaL_checkstring(L, 2);
 
-    block_registry r = {};
+    block_registry *r = calloc(1, sizeof(block_registry));
 
-    int success = read_block_registry(registry_name, &r) == SUCCESS;
+    int success = read_block_registry(registry_name, r) == SUCCESS;
 
     if (success)
     {
         (void)vec_push(&wrapper->lvl->registries, r);
 
-        scripting_load_scripts(&r);
+        scripting_load_scripts(r);
+    }
+    else
+    {
+        free(r);
     }
 
     lua_pushboolean(L, success);
@@ -38,6 +62,9 @@ static int lua_level_gc(lua_State *L)
         return 0;
 
     free_level(wrapper->lvl);
+
+    free(wrapper->lvl);
+
     return 0;
 }
 
@@ -56,7 +83,7 @@ static int lua_level_get_room(lua_State *L)
     if (index >= wrapper->lvl->rooms.length)
         luaL_error(L, "Index out of range");
 
-    room *r = &wrapper->lvl->rooms.data[index];
+    room *r = wrapper->lvl->rooms.data[index];
 
     NEW_USER_OBJECT(L, Room, r);
     // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
@@ -78,9 +105,9 @@ static int lua_level_get_room_by_name(lua_State *L)
 
     for (int i = 0; i < wrapper->lvl->rooms.length; i++)
     {
-        if (strcmp(wrapper->lvl->rooms.data[i].name, name) == 0)
+        if (strcmp(((room *)wrapper->lvl->rooms.data[i])->name, name) == 0)
         {
-            NEW_USER_OBJECT(L, Room, &wrapper->lvl->rooms.data[i]);
+            NEW_USER_OBJECT(L, Room, wrapper->lvl->rooms.data[i]);
             // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
             return 1;
         }
@@ -97,13 +124,7 @@ static int lua_level_new_room(lua_State *L)
     int x = luaL_checkinteger(L, 3);
     int y = luaL_checkinteger(L, 4);
 
-    room_create(wrapper->lvl, name, x, y);
-
-    // vec_push(&wrapper->lvl->rooms, r);
-    room_vec_t *rooms = &wrapper->lvl->rooms;
-    room *r = &rooms->data[rooms->length - 1];
-
-    NEW_USER_OBJECT(L, Room, r);
+    NEW_USER_OBJECT(L, Room, room_create(wrapper->lvl, name, x, y));
     // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
     return 1;
 }
@@ -132,15 +153,12 @@ static int lua_room_new_layer(lua_State *L)
     int byte_per_index = luaL_checkinteger(L, 4);
     int flags = luaL_checkinteger(L, 5);
 
-    block_registry *reg = find_registry(((level *)wrapper->r->parent_level)->registries, (char *)registry_name);
+    block_registry *reg = find_registry((((level *)wrapper->r->parent_level)->registries), (char *)registry_name);
 
     if (!reg)
         luaL_error(L, "Registry %s not found", registry_name);
 
-    layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags);
-
-    layer *l = &wrapper->r->layers.data[wrapper->r->layers.length - 1];
-    NEW_USER_OBJECT(L, Layer, l);
+    NEW_USER_OBJECT(L, Layer, layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags));
 
     return 1;
 }
@@ -153,8 +171,7 @@ static int lua_room_get_layer(lua_State *L)
     if (index >= wrapper->r->layers.length)
         luaL_error(L, "Index out of range");
 
-    layer *l = &wrapper->r->layers.data[index];
-    NEW_USER_OBJECT(L, Layer, l);
+    NEW_USER_OBJECT(L, Layer, wrapper->r->layers.data[index]);
     // FLAG_SET(__Layer->l->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
     return 1;
 }
@@ -380,23 +397,23 @@ static int lua_vars_set_number(lua_State *L)
             break;
         }
     else
-    switch (bytes)
-    {
-    case 1:
-        status = var_set_u8(wrapper->b, key[0], (u8)number) == SUCCESS;
-        break;
-    case 2:
-        status = var_set_u16(wrapper->b, key[0], (u16)number) == SUCCESS;
-        break;
-    case 3:
-        status = var_set_u32(wrapper->b, key[0], (u32)number) == SUCCESS;
-        break;
-    case 4:
-        status = var_set_u64(wrapper->b, key[0], (u64)number) == SUCCESS;
-        break;
-    default:
-        break;
-    }
+        switch (bytes)
+        {
+        case 1:
+            status = var_set_u8(wrapper->b, key[0], (u8)number) == SUCCESS;
+            break;
+        case 2:
+            status = var_set_u16(wrapper->b, key[0], (u16)number) == SUCCESS;
+            break;
+        case 3:
+            status = var_set_u32(wrapper->b, key[0], (u32)number) == SUCCESS;
+            break;
+        case 4:
+            status = var_set_u64(wrapper->b, key[0], (u64)number) == SUCCESS;
+            break;
+        default:
+            break;
+        }
 
     lua_pushboolean(L, status);
 
@@ -438,6 +455,7 @@ void lua_level_register(lua_State *L)
         {"get_room_count", lua_level_get_room_count},
         {"find_room", lua_level_get_room_by_name},
         {"new_room", lua_level_new_room},
+        {"uuid", lua_uuid_universal},
         {NULL, NULL},
     };
 
@@ -455,6 +473,7 @@ void lua_room_register(lua_State *L)
         {"get_layer", lua_room_get_layer},
         {"get_layer_count", lua_room_get_layer_count},
         {"new_layer", lua_room_new_layer},
+        {"uuid", lua_uuid_universal},
         {NULL, NULL},
     };
 
@@ -474,6 +493,7 @@ void lua_layer_register(lua_State *L)
         {"get_vars", lua_block_get_vars},
         {"set_vars", lua_block_set_vars},
         {"bprint", lua_bprintf},
+        {"uuid", lua_uuid_universal},
         {NULL, NULL},
     };
 

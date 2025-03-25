@@ -31,6 +31,7 @@ typedef struct var_object_pool
 
 typedef struct layer
 {
+    u64 uuid;
     void *parent_room;
     // hash_node **vars;         // hashtable for block vars - variables, unique for said block.
     // constant values are stored in the block registry, not here
@@ -50,28 +51,26 @@ typedef struct layer
     u8 flags;                 //
 } layer;
 
-typedef vec_t(layer) layer_vec_t;
-
 typedef struct room
 {
+    u64 uuid;
     char *name;
     void *parent_level;
 
     u32 width;  //
     u32 height; //
 
-    layer_vec_t layers;
+    vec_void_t layers;
     // TODO: implement support for entities
 
     u8 flags;
 } room;
 
-typedef vec_t(room) room_vec_t;
-
 typedef struct level
 {
-    vec_registries_t registries;
-    room_vec_t rooms;
+    u64 uuid;
+    vec_void_t registries;
+    vec_void_t rooms;
 
     char *name;
     u8 flags;
@@ -95,8 +94,8 @@ u8 free_room(room *r);
 u8 free_level(level *l);
 
 level *level_create(const char *name);
-void room_create(level *parent, const char *name, u32 w, u32 h);
-void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags);
+room* room_create(level *parent, const char *name, u32 w, u32 h);
+layer* layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags);
 // utils
 
 // turns string into formatted block chain

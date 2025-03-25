@@ -2,7 +2,7 @@ local constants = require("registries.engine.scripts.constants")
 
 local player_block_id = scripting_current_block_id
 
-print("loading a controller")
+print("loading a controller block id " .. player_block_id)
 
 local player_states = {
     dead = 0,
@@ -58,7 +58,7 @@ local function walk_frame(delta)
 end
 
 local function camera_set_target(pos)
-    local slice = render_rules.get_slice(g_render_rules, 0)
+    local slice = render_rules.get_slice(g_render_rules, g_object_layer_index)
 
     local actual_block_width = slice.zoom * g_block_size
     slice.x = (pos.x + 0.5) * actual_block_width - slice.w / 2
@@ -67,15 +67,7 @@ local function camera_set_target(pos)
     slice.x = math.max(slice.x, 0)
     slice.y = math.max(slice.y, 0)
 
-    render_rules.set_slice(g_render_rules, 0, slice)
-end
-
-local function camera_move_debug()
-    local slice = render_rules.get_slice(g_render_rules, 0)
-
-    slice.x = slice.x + 1
-
-    render_rules.set_slice(g_render_rules, 0, slice)
+    render_rules.set_slice(g_render_rules, g_object_layer_index, slice)
 end
 
 local function update_player()
@@ -123,7 +115,7 @@ end
 -- hook zone
 
 blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
-    if new_id ~= player_block_id or layer ~= g_floor  then
+    if new_id ~= player_block_id or layer:uuid() ~= g_object_layer:uuid() then
         print("ignored a spawn event for " .. x .. "," .. y .. "block " .. new_id)
         return
     end

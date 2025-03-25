@@ -38,7 +38,8 @@ static_assert(sizeof(i64) == 8);
 #define SAFE_FREE(ptr) \
     if (ptr)           \
         free(ptr);     \
-    ptr = 0;
+    ptr = 0;           \
+    LOG_DEBUG("freeing %p", ptr);
 
 #define CHECK_PTR(ptr)                                   \
     if (!(ptr))                                          \

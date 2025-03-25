@@ -1,8 +1,8 @@
 #ifndef RULE_CONTROL_H
 #define RULE_CONTROL_H
 
-#include "../include/scripting.h"
-#include "../include/rendering.h"
+#include "scripting.h"
+#include "rendering.h"
 
 // rendering things
 

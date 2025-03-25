@@ -65,6 +65,7 @@ typedef struct block_registry
 	block_resources_t resources;
 
 	const char *name;
+	u64 uuid;
 } block_registry;
 
 typedef vec_t(block_registry) vec_registries_t;
@@ -124,6 +125,6 @@ void sort_by_id(block_registry *b_reg);
 void free_block_registry(block_registry *b_reg);
 
 u32 read_all_registries(char *folder, vec_registries_t *dest);
-block_registry *find_registry(vec_registries_t src, char *name);
+block_registry *find_registry(vec_void_t src, char *name);
 
 #endif

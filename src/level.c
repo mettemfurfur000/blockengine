@@ -1,4 +1,5 @@
 #include "../include/level.h"
+#include "../include/uuid.h"
 
 // layer functions
 
@@ -183,7 +184,7 @@ u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
     u8 *dest_ptr = BLOCK_ID_PTR(l, dest_x, dest_y);
     u8 *src_ptr = BLOCK_ID_PTR(l, x, y);
 
-    memcpy(dest_ptr, (u8 *)&id_dest, l->block_size);
+    memcpy((u8 *)&id_dest, dest_ptr, l->block_size);
     if (id_dest != 0)
         return FAIL;
 
@@ -201,6 +202,7 @@ u8 init_layer(layer *l, room *parent_room)
     CHECK_PTR(l)
 
     l->parent_room = parent_room;
+    l->uuid = generate_uuid();
 
     CHECK(l->width == 0 || l->height == 0)
     CHECK((l->block_size + l->var_index_size) == 0)
@@ -226,6 +228,7 @@ u8 init_room(room *r, level *parent_level)
     CHECK_PTR(r)
 
     r->parent_level = parent_level;
+    r->uuid = generate_uuid();
 
     vec_init(&r->layers);
 
@@ -234,14 +237,16 @@ u8 init_room(room *r, level *parent_level)
     return SUCCESS;
 }
 
-u8 init_level(level *l)
+u8 init_level(level *lvl)
 {
-    CHECK_PTR(l)
+    CHECK_PTR(lvl)
 
-    vec_init(&l->rooms);
-    vec_init(&l->registries);
+    vec_init(&lvl->rooms);
+    vec_init(&lvl->registries);
 
-    CHECK_PTR(l->name)
+    lvl->uuid = generate_uuid();
+
+    CHECK_PTR(lvl->name)
 
     return SUCCESS;
 }
@@ -257,6 +262,8 @@ u8 free_layer(layer *l)
         vec_deinit(&l->var_pool.vars);
     }
 
+    l->uuid = 0;
+
     return SUCCESS;
 }
 
@@ -265,22 +272,28 @@ u8 free_room(room *r)
     CHECK_PTR(r)
 
     for (u32 i = 0; i < r->layers.length; i++)
-        free_layer(&r->layers.data[i]);
+        free_layer(r->layers.data[i]);
 
     vec_deinit(&r->layers);
     SAFE_FREE(r->name);
 
+    r->uuid = 0;
+
     return SUCCESS;
 }
 
-u8 free_level(level *l)
+u8 free_level(level *lvl)
 {
-    CHECK_PTR(l)
+    CHECK_PTR(lvl)
 
-    vec_deinit(&l->rooms);
-    vec_deinit(&l->registries);
+    // LOG_DEBUG("Freeing a level");
 
-    SAFE_FREE(l->name);
+    vec_deinit(&lvl->rooms);
+    vec_deinit(&lvl->registries);
+
+    lvl->uuid = 0;
+
+    SAFE_FREE(lvl->name);
     return SUCCESS;
 }
 
@@ -296,34 +309,39 @@ level *level_create(const char *name)
     return lvl;
 }
 
-void room_create(level *parent, const char *name, u32 w, u32 h)
+room *room_create(level *parent, const char *name, u32 w, u32 h)
 {
-    room r = {
-        .name = strdup(name),
-        .width = w,
-        .height = h,
-        .parent_level = parent};
+    room *r = calloc(1, sizeof(room));
 
-    init_room(&r, parent);
+    r->name = strdup(name);
+    r->width = w;
+    r->height = h;
+    r->parent_level = parent;
+
+    init_room(r, parent);
 
     (void)vec_push(&parent->rooms, r);
+
+    return r;
 }
 
-void layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags)
+layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags)
 {
-    layer l = {
-        .registry = registry_ref,
-        .block_size = bytes_per_block,
-        .var_index_size = bytes_per_index,
-        .total_bytes_per_block = bytes_per_block + bytes_per_index,
-        .width = parent->width,
-        .height = parent->height,
-        .flags = flags,
-    };
+    layer *l = calloc(1, sizeof(layer));
 
-    init_layer(&l, parent);
+    l->registry = registry_ref;
+    l->block_size = bytes_per_block;
+    l->var_index_size = bytes_per_index;
+    l->total_bytes_per_block = bytes_per_block + bytes_per_index;
+    l->width = parent->width;
+    l->height = parent->height;
+    l->flags = flags;
+
+    init_layer(l, parent);
 
     (void)vec_push(&parent->layers, l);
+
+    return l;
 }
 
 void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
@@ -338,15 +356,31 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
     int y = orig_y;
 
     blob vars_space = {};
-    var_set_u8(&vars_space, 'v', ' ');
+    if (var_set_u8(&vars_space, 'v', ' ') != SUCCESS)
+    {
+        LOG_ERROR("bprintf Failed to set a u8 for character block");
+        return;
+    }
 
     while (*ptr != 0)
     {
         block_set_id(l, x, y, character_block_id);
         blob *vars = NULL;
-        block_get_vars(l, x, y, &vars);
-        var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr);
-        block_set_vars(l, x, y, *vars);
+        if (block_get_vars(l, x, y, &vars) != SUCCESS)
+        {
+            block_set_vars(l, x, y, vars_space);
+            if (block_get_vars(l, x, y, &vars) != SUCCESS)
+            {
+                LOG_ERROR("bprintf Failed create a variable");
+                return;
+            }
+        }
+
+        if (var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr))
+        {
+            LOG_ERROR("bprintf Failed to set a u8 for character block in a loop");
+            return;
+        }
 
         switch (*ptr)
         {

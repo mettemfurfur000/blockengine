@@ -1,51 +1,5 @@
 #include "../include/rendering.h"
 
-// turns string into formatted block chain
-// void bprintf(layer *l, int orig_x, int orig_y, int length_limit, char *format, ...)
-// void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
-// {
-//     char buffer[1024] = {};
-//     va_list args;
-//     va_start(args, format);
-//     vsprintf(buffer, format, args);
-
-//     char *ptr = buffer;
-//     int x = orig_x;
-//     int y = orig_y;
-
-//     while (*ptr != 0)
-//     {
-//         block_set_id(l, x, y, character_block_id);
-//         blob b = {};
-//         block_get_vars(l, x, y, &b);
-//         var_set_u8(&b, 'v', *ptr);
-//         block_set_vars(l, x, y, b);
-
-//         switch (*ptr)
-//         {
-//         case '\n':
-//             x = orig_x;
-//             y++;
-//             break;
-//         case '\t':
-//             x += 4;
-//             break;
-//         default:
-//             x++;
-//         }
-
-//         if (x > length_limit)
-//         {
-//             x = orig_x;
-//             y++;
-//         }
-
-//         ptr++;
-//     }
-
-//     va_end(args);
-// }
-
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313, 6307353, 1532671, 6233633, 873473, 685613};
 const u8 funny_shifts[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 10};
 
@@ -78,6 +32,8 @@ u8 render_layer(layer_slice slice)
     // }
 
     block_registry *b_reg = slice.ref->registry;
+
+    //LOG_DEBUG("finding registry %p", b_reg);
 
     const int start_block_x = ((slice.x / local_block_width) - 1);
     const int start_block_y = ((slice.y / local_block_width) - 1);
