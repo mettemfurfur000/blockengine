@@ -123,7 +123,8 @@ end
 -- hook zone
 
 blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
-    if new_id ~= player_block_id then
+    if new_id ~= player_block_id or layer ~= g_floor  then
+        print("ignored a spawn event for " .. x .. "," .. y .. "block " .. new_id)
         return
     end
 

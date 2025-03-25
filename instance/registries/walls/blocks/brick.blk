@@ -1,0 +1,6 @@
+id = 1
+id_ranged_to = 14
+id_range_skip = [ 7 ]
+id_range_increment = [ override_type ]
+texture = dark_brick_wall.png
+override_type = 0

@@ -1,4 +1,4 @@
 id = 2
 texture = numbers.png
-random_type = 1
+random_frame = 1
 script = yeller.lua

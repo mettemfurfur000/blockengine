@@ -31,8 +31,8 @@ char *get_folder_path(char *file_path, int bonus_for_str_size)
 	int len = strlen(file_path);
 	char *folder_path = (char *)malloc(len + bonus_for_str_size);
 	strcpy(folder_path, file_path);
-	// find the last occurrence of '/'
-	char *last_slash = strrchr(folder_path, '/');
+	// find the last occurrence of a separator
+	char *last_slash = strrchr(folder_path, SEPARATOR);
 	if (last_slash != NULL)
 	{
 		// if there is a slash, terminate the string after it
@@ -181,7 +181,7 @@ int texture_load(texture *dest, char *path_to_file)
 	dest->total_frames = dest->frames * dest->types;
 
 	// copy filename for later use
-	char *filename = strrchr(path_to_file, '/') + 1;
+	char *filename = strrchr(path_to_file, SEPARATOR) + 1;
 	int namelen = strlen(filename);
 
 	dest->filename = (char *)malloc(namelen + 1);

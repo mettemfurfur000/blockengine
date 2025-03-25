@@ -1,7 +1,7 @@
 #include "../include/rendering.h"
 
 // turns string into formatted block chain
-//void bprintf(layer *l, int orig_x, int orig_y, int length_limit, char *format, ...)
+// void bprintf(layer *l, int orig_x, int orig_y, int length_limit, char *format, ...)
 // void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
 // {
 //     char buffer[1024] = {};
@@ -122,6 +122,12 @@ u8 render_layer(layer_slice slice)
             if (id >= b_reg->resources.length)
                 continue;
 
+            if (b_reg->resources.length <= 0)
+            {
+                LOG_DEBUG("weird\n");
+                continue;
+            }
+
             block_resources br = b_reg->resources.data[id];
 
             // get texture
@@ -148,20 +154,20 @@ u8 render_layer(layer_slice slice)
                 if (br.rotation_controller != 0)
                     var_get_u16(*var, br.rotation_controller, &rotation);
 
-                // calculate a frame
-
                 if (br.anim_controller != 0)
                     var_get_u8(*var, br.anim_controller, &frame);
-                else if (br.frames_per_second > 1)
-                {
-                    float seconds_since_start = SDL_GetTicks() / 1000.0f;
-                    int fps = br.frames_per_second;
-                    frame = (u8)(seconds_since_start * fps);
-                }
-                else if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
-                {
-                    frame = tile_rand(i, j);
-                }
+            }
+
+            if (br.frames_per_second > 1)
+            {
+                float seconds_since_start = SDL_GetTicks() / 1000.0f;
+                int fps = br.frames_per_second;
+                frame = (u8)(seconds_since_start * fps);
+            }
+
+            if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
+            {
+                frame = tile_rand(i, j);
             }
 
             block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE), local_block_width, flip, rotation);

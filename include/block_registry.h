@@ -39,6 +39,10 @@ typedef struct block_resources
 	u64 id;
 	blob vars;
 
+	u64 ranged_id;
+	vec_int_t id_range_skip;
+	vec_str_t id_range_increment;
+
 	texture block_texture;
 
 	char *lua_script_filename;
@@ -48,6 +52,7 @@ typedef struct block_resources
 	char type_controller;	  // current animation type / row
 	char flip_controller;	  // current type of flipping
 	char rotation_controller; // current rotation angle
+	u8 override_type;		  // override type of block
 
 	u8 frames_per_second;
 	u8 flags;
@@ -101,6 +106,7 @@ u8 make_block_data_from_string(const char *str_to_cpy, blob *b);
 
 typedef struct
 {
+	void (*increment_fn)(block_resources *);
 	u8 (*function)(const char *, block_resources *);
 	char *name;
 	u8 is_critical;

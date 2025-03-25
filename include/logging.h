@@ -11,11 +11,13 @@
 extern int log_enabled;
 extern FILE *log_file;
 
-#ifdef _WIN64
-#define SEPARATOR '\\'
-#else
+// #ifdef _WIN64
+// #define SEPARATOR '\\'
+// #define SEPARATOR_STR "\\"
+// #else
 #define SEPARATOR '/'
-#endif
+#define SEPARATOR_STR "/"
+// #endif
 
 // change this to change the log level, then recompile everything :P
 // recommend level 5 for debugging and level 2 or 3 for releases

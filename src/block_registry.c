@@ -58,6 +58,87 @@ u32 get_length_to_alloc(u64 value, u32 type)
 	}
 }
 
+u8 read_int_list(const char *str, vec_int_t *dest)
+{
+	CHECK_PTR(str)
+	CHECK_PTR(dest)
+
+	char *dup = strdup(str);
+
+	char *token = strtok(dup, " \n"); // consume start token
+	if (strcmp(token, "[") != 0)
+	{
+		free(dup);
+		return FAIL;
+	}
+
+	u64 value;
+
+	while (1)
+	{
+		token = strtok(NULL, " \n");
+		if (!token)
+		{
+			free(dup);
+			return FAIL;
+		}
+
+		if (strcmp(token, "]") == 0)
+		{
+			free(dup);
+			return SUCCESS;
+		}
+
+		value = atoll(token);
+
+		(void)vec_push(dest, value);
+	}
+
+	free(dup);
+	return SUCCESS;
+}
+
+u8 read_str_list(const char *str, vec_str_t *dest)
+{
+	CHECK_PTR(str)
+	CHECK_PTR(dest)
+
+	char *dup = strdup(str);
+
+	char *token = strtok(dup, " \n"); // consume start token
+	if (strcmp(token, "[") != 0)
+	{
+		free(dup);
+		return FAIL;
+	}
+
+	char *value = NULL;
+
+	while (1)
+	{
+		token = strtok(NULL, " \n");
+		if (!token)
+		{
+			free(dup);
+			return FAIL;
+		}
+
+		if (strcmp(token, "]") == 0)
+		{
+			free(dup);
+			return SUCCESS;
+		}
+
+		value = strdup(token);
+
+		(void)vec_push(dest, value);
+	}
+
+	free(dup);
+
+	return SUCCESS;
+}
+
 // format:
 
 // { <character> <type> = <value>
@@ -192,14 +273,76 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 		return SUCCESS;                                                    \
 	}
 
+#define DECLARE_DEFAULT_BYTE_FIELD_HANDLER(name)                           \
+	u8 block_res_##name##_handler(const char *data, block_resources *dest) \
+	{                                                                      \
+		if (strcmp(data, clean_token) == 0)                                \
+		{                                                                  \
+			dest->name = 0;                                                \
+			return SUCCESS;                                                \
+		}                                                                  \
+		dest->name = atoi(data);                                           \
+		return SUCCESS;                                                    \
+	}
+
+#define DECLARE_DEFAULT_LONG_FIELD_HANDLER(name)                           \
+	u8 block_res_##name##_handler(const char *data, block_resources *dest) \
+	{                                                                      \
+		if (strcmp(data, clean_token) == 0)                                \
+		{                                                                  \
+			dest->name = 0;                                                \
+			return SUCCESS;                                                \
+		}                                                                  \
+		dest->name = atol(data);                                           \
+		return SUCCESS;                                                    \
+	}
+
+#define DECLARE_DEFAULT_INCREMENTOR(name)                      \
+	void block_res_##name##_incrementor(block_resources *dest) \
+	{                                                          \
+		dest->name++;                                          \
+	}
+
 const static char clean_token[] = "??clean??";
 
-u8 block_res_id_handler(const char *data, block_resources *dest)
+DECLARE_DEFAULT_LONG_FIELD_HANDLER(id)
+DECLARE_DEFAULT_LONG_FIELD_HANDLER(ranged_id)
+// DECLARE_DEFAULT_LONG_FIELD_HANDLER(id_range_skip)
+
+u8 block_res_id_range_skip_handler(const char *data, block_resources *dest)
 {
-	dest->id = strcmp(data, clean_token) == 0 ? 0 : atoi(data);
+	if (strcmp(data, clean_token) == 0)
+	{
+		if (dest->id_range_skip.data)
+			vec_deinit(&dest->id_range_skip);
+		else
+			vec_init(&dest->id_range_skip);
+
+		return SUCCESS;
+	}
+
+	read_int_list(data, &dest->id_range_skip);
 
 	return SUCCESS;
 }
+
+u8 block_res_id_range_increment_handler(const char *data, block_resources *dest)
+{
+	if (strcmp(data, clean_token) == 0)
+	{
+		if (dest->id_range_increment.data)
+			vec_deinit(&dest->id_range_increment);
+		else
+			vec_init(&dest->id_range_increment);
+	}
+
+	read_str_list(data, &dest->id_range_increment);
+
+	return SUCCESS;
+}
+
+DECLARE_DEFAULT_BYTE_FIELD_HANDLER(override_type)
+DECLARE_DEFAULT_INCREMENTOR(override_type)
 
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
@@ -223,7 +366,7 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
 	CHECK_PTR(b_reg->name)
 
 	char texture_full_path[256] = {};
-	snprintf(texture_full_path, sizeof(texture_full_path), REGISTRIES_FOLDER "/%s/" REGISTRY_TEXTURES_FOLDER "/%s", b_reg->name, data);
+	snprintf(texture_full_path, sizeof(texture_full_path), REGISTRIES_FOLDER SEPARATOR_STR "%s" SEPARATOR_STR REGISTRY_TEXTURES_FOLDER SEPARATOR_STR "%s", b_reg->name, data);
 
 	return texture_load(&dest->block_texture, texture_full_path);
 }
@@ -267,23 +410,34 @@ u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 /* end of block resource handlers */
 
 const static resource_entry_handler res_handlers[] = {
-	{&block_res_id_handler, "id", REQUIRED},
-	{&block_res_texture_handler, "texture", REQUIRED},
+	{NULL, &block_res_id_handler, "id", REQUIRED, {}, {}},
+	{NULL, &block_res_texture_handler, "texture", REQUIRED, {}, {}},
+	// dangerous: will replicate the same block multiple times until it reaches the said id
+	// useful if you just want to have a bunch of blocks with the same texture and locked type
+	{NULL, &block_res_ranged_id_handler, "id_ranged_to", NOT_REQUIRED, {}, {}},
+	// if id accurs on this list while ranging, all increments will pass but no blocks will be pasted
+	{NULL, &block_res_id_range_skip_handler, "id_range_skip", NOT_REQUIRED, {"id_ranged_to"}, {}},
+	// this controls what variables shoud be incremented as id_range progresses forward
+	// triggers them and passes id of current ranged block as a string
+	{NULL, &block_res_id_range_increment_handler, "id_range_increment", NOT_REQUIRED, {"id_ranged_to"}, {}},
 
-	{&block_res_data_handler, "data", NOT_REQUIRED},
+	{NULL, &block_res_data_handler, "data", NOT_REQUIRED, {}, {}},
 
-	//{&block_res_anim_toggle_handler, "is_animated", NOT_REQUIRED, {}, {"frame_controller"}}, //if fps is defined, it is animated
-	{&block_res_fps_handler, "fps", NOT_REQUIRED, {}, {"frame_controller"}},
+	// graphics-related stuff
+	// frames
+	{NULL, &block_res_fps_handler, "fps", NOT_REQUIRED, {}, {"frame_controller"}},
+	{NULL, &block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}}, // directly controls the frame of a texture, so it cant used with fps
+	{NULL, &block_res_position_based_type_handler, "random_frame", NOT_REQUIRED, {}, {"frame_controller"}},			 // randomizes frame of a block based on its location
+	// flips, intested
+	{NULL, &block_res_flip_controller_handler, "flip_controller", NOT_REQUIRED, {"data"}, {}},
+	// untested
+	{NULL, &block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED, {"data"}, {}},
+	// block type things
+	{NULL, &block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {"override_type", "ignore_type"}},						 // reads its type from a block data - can be controlled with scripts
+	{&block_res_override_type_incrementor, &block_res_override_type_handler, "override_type", NOT_REQUIRED, {}, {"type_controller", "ignore_type"}}, // directly sets its type from block resources - solid as rock
+	{NULL, &block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {"type_controller", "override_type"}},									 // ignores type and treats each 16x16 square on a texture as a frame
 
-	{&block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {}},
-	{&block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}}, // directly controls the frame of a texture, so it cant used with fps
-	{&block_res_flip_controller_handler, "flip_controller", NOT_REQUIRED, {"data"}, {}},
-	{&block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED, {"data"}, {}},
-
-	{&block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {}},
-	{&block_res_position_based_type_handler, "random_type", NOT_REQUIRED, {}, {}},
-
-	{&block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}}
+	{NULL, &block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}}
 
 };
 
@@ -375,13 +529,15 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			break;
 		}
 
-		if (res_handlers[i].function(entry.str, dest) != SUCCESS) // handler is beink called here
+		// calling the handler
+
+		if (res_handlers[i].function(entry.str, dest) != SUCCESS)
 		{
 			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s", file_path, res_handlers[i].name, entry.str);
 			status = FAIL;
 			break;
 		}
-		else
+		else // if the handler was successful
 			(void)vec_push(&seen_entries, res_handlers[i].name);
 	}
 
@@ -397,6 +553,37 @@ u32 is_already_in_registry(block_resources_t *reg, block_resources *br)
 	return 0;
 }
 
+void call_increments(block_resources *br_ref)
+{
+	for (u32 j = 0; j < TOTAL_HANDLERS; j++)
+		if (res_handlers[j].increment_fn)								// if no increment function is present, we skip it
+			for (u32 i = 0; i < br_ref->id_range_increment.length; i++) // for each entry we check if its a correct handler
+				if (strcmp(res_handlers[j].name, br_ref->id_range_increment.data[i]) == 0)
+					res_handlers[j].increment_fn(br_ref);
+}
+
+void range_ids(block_resources_t *reg, block_resources *br_ref)
+{
+	for (u32 i = 1; i <= br_ref->ranged_id; i++)
+	{
+		u8 skip_this_one = 0;
+
+		for (u32 j = 0; j < br_ref->id_range_skip.length; j++)
+			if (br_ref->id_range_skip.data[j] == br_ref->id)
+			{
+				skip_this_one = 1;
+				break;
+			}
+
+		if (skip_this_one)
+			call_increments(br_ref);
+
+		call_increments(br_ref);
+		br_ref->id++;
+		(void)vec_push(reg, *br_ref);
+	}
+}
+
 u32 read_block_registry(const char *name, block_registry *registry)
 {
 	CHECK_PTR(registry);
@@ -407,7 +594,7 @@ u32 read_block_registry(const char *name, block_registry *registry)
 	struct dirent *entry;
 
 	char path[64] = {};
-	snprintf(path, sizeof(path), REGISTRIES_FOLDER "/%s/blocks", name);
+	snprintf(path, sizeof(path), REGISTRIES_FOLDER SEPARATOR_STR "%s" SEPARATOR_STR "blocks", name);
 	directory = opendir(path);
 
 	if (directory == NULL)
@@ -432,7 +619,7 @@ u32 read_block_registry(const char *name, block_registry *registry)
 		{
 			block_resources br = {.type_controller = 0, .frames_per_second = 0, .anim_controller = 0, .parent_registry = registry};
 			char file_to_parse[468] = {};
-			snprintf(file_to_parse, sizeof(file_to_parse), "%s/%s", path, entry->d_name);
+			snprintf(file_to_parse, sizeof(file_to_parse), "%s" SEPARATOR_STR "%s", path, entry->d_name);
 
 			if (parse_block_resources_from_file(file_to_parse, &br) == FAIL)
 			{
@@ -448,6 +635,13 @@ u32 read_block_registry(const char *name, block_registry *registry)
 			}
 
 			(void)vec_push(reg, br);
+
+			// check for range thing
+
+			if (br.ranged_id != 0)
+			{
+				range_ids(reg, &br);
+			}
 		}
 	}
 
@@ -536,7 +730,7 @@ u32 read_all_registries(char *folder, vec_registries_t *dest)
 
 			LOG_INFO("Found directory: %s", entry->d_name);
 
-			sprintf(pathbuf, "%s%c%s", folder, SEPARATOR, entry->d_name);
+			sprintf(pathbuf, "%s" SEPARATOR_STR "%s", folder, entry->d_name);
 			LOG_INFO("Reading registry from %s", pathbuf);
 
 			if (read_block_registry(pathbuf, &temp) == FAIL)
