@@ -57,8 +57,8 @@ local function walk_frame(delta)
     return 1 + math.fmod(player.tick, 2)
 end
 
-local function camera_set_target(pos)
-    local slice = render_rules.get_slice(g_render_rules, g_object_layer_index)
+local function camera_set_target(pos, index)
+    local slice = render_rules.get_slice(g_render_rules, index)
 
     local actual_block_width = slice.zoom * g_block_size
     slice.x = (pos.x + 0.5) * actual_block_width - slice.w / 2
@@ -67,7 +67,7 @@ local function camera_set_target(pos)
     slice.x = math.max(slice.x, 0)
     slice.y = math.max(slice.y, 0)
 
-    render_rules.set_slice(g_render_rules, g_object_layer_index, slice)
+    render_rules.set_slice(g_render_rules, index, slice)
 end
 
 local function update_player()
@@ -102,7 +102,8 @@ local function update_player()
             -- print("moving, new pos", player.pos.x, player.pos.y)
         end
 
-        camera_set_target(player.pos)
+        camera_set_target(player.pos, g_object_layer_index)
+        camera_set_target(player.pos, g_floor_layer_index)
     end
 
     player.vars:set_number("v", frame, 1, 0)

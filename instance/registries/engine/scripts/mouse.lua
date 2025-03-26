@@ -41,9 +41,11 @@ blockengine.register_handler(EVENT_IDS.SDL_MOUSEMOTION, function(x, y, state, cl
         return
     end
 
+    local slice = render_rules.get_slice(g_render_rules, g_ui_layer_index)
+
     local new_pos = {
-        x = (x + 8) / g_block_size,
-        y = (y + 8) / g_block_size
+        x = math.floor(x / g_block_size / slice.zoom),
+        y = math.floor(y / g_block_size / slice.zoom)
     }
 
     local delta = {
@@ -57,3 +59,6 @@ blockengine.register_handler(EVENT_IDS.SDL_MOUSEMOTION, function(x, y, state, cl
         mouse.pos = new_pos
     end
 end)
+
+-- TODO: implement clicking and operation changing
+-- TODO: implement scrolling

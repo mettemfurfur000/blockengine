@@ -29,24 +29,26 @@ In summary, developers can create a layer of game logic (marked "d", for example
 - [x] Chunk memory control
 - [x] Saving and Loading 
 - [x] Tests for everything above
-- [ ] Basic game cycle
+- [x] Basic game cycle
    - [ ] Loading or generating a world
-   - [ ] Inactive chunks unloading from memory
-   - [ ] World update and update rate setting
-   - [ ] Test for everything above
+   - [!] Inactive chunks unloading from memory
+      - Chunks are no more
+   - [x] World update and update rate setting
+   - [x] Test for everything above
 - [x] Block Registry
    - [x] Saving and loading
    - [x] Basic managment of duplicated/missing resources
-- [ ] Lua scripting for blocks
+- [x] Lua scripting for blocks
    - [x] Basic passive scripts
    - [x] Functions for simple operations on blocks
    - [x] Block registry block querry
    - [x] Give lua access to rendering rules (camera pos, etc)
-   - [ ] Allow lua to create or delete world layers
-   - [ ] Allow lua to load/unload chunks, forced or on-demand
+   - [x] Allow lua to create or delete world layers
+   - [!] Allow lua to load/unload chunks, forced or on-demand
+       - Chunks are no more, but there is rooms
    - [x] Custom events for block interactions
       - [x] on_set, on_erase, on_move, 
-      - [ ] on_load, on_unload, on_data_create, on_data_remove, on_signal
+      - [x] on_load, on_unload, on_data_create, on_data_remove, on_signal
 - [ ] Graphics
    - [x] Basic static textures
    - [x] Animated textures
@@ -59,8 +61,8 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [x] Pseudorandom texture patterns based on block location
    - [ ] Connectable textures
    - [ ] Lightning?
-- [ ] Sound
-   - [ ] Load and play sounds
+- [x] Sound
+   - [x] Load and play sounds
    - [ ] Allow scripts to play them
 
 That's the list I'm currently aiming for. Hope this helps!

@@ -1,6 +1,7 @@
-id = 10
-id_ranged_to = 14
+id = 6
+id_ranged_to = 20
 id_range_skip = [ 7 ]
 id_range_increment = [ override_frame ]
 texture = dark_brick_wall.png
 override_frame = 0
+ignore_type = 1

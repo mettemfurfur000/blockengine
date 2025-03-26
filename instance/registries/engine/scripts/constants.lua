@@ -1,6 +1,7 @@
 EVENT_IDS = {
     SDL_KEYDOWN         = 768,
     SDL_KEYUP           = 769,
+    SDL_MOUSEMOTION     = 1024,
     SDL_MOUSEBUTTONDOWN = 1025,
     SDL_MOUSEBUTTONUP   = 1026,
     

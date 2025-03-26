@@ -1,4 +1,4 @@
-id = 6
+id = 4
 data = { byte t = 0}
 texture = mouse.png
 script = mouse.lua
