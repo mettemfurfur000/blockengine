@@ -342,8 +342,8 @@ u8 block_res_id_range_increment_handler(const char *data, block_resources *dest)
 	return SUCCESS;
 }
 
-DECLARE_DEFAULT_BYTE_FIELD_HANDLER(override_type)
-DECLARE_DEFAULT_INCREMENTOR(override_type)
+DECLARE_DEFAULT_BYTE_FIELD_HANDLER(override_frame)
+DECLARE_DEFAULT_INCREMENTOR(override_frame)
 
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
@@ -426,17 +426,17 @@ const static resource_entry_handler res_handlers[] = {
 
 	// graphics-related stuff
 	// frames
-	{NULL, &block_res_fps_handler, "fps", NOT_REQUIRED, {}, {"frame_controller"}},
-	{NULL, &block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps"}},		// directly controls the frame of a texture, so it cant used with fps
-	{NULL, &block_res_position_based_type_handler, "random_frame", NOT_REQUIRED, {}, {"frame_controller"}}, // randomizes frame of a block based on its location
+	{NULL, &block_res_fps_handler, "fps", NOT_REQUIRED, {}, {"frame_controller", "override_frame"}},
+	{NULL, &block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps", "override_frame"}},											 // directly controls the frame of a texture, so it cant used with fps
+	{NULL, &block_res_position_based_type_handler, "random_frame", NOT_REQUIRED, {}, {"frame_controller", "override_frame"}},									 // randomizes frame of a block based on its location
+	{&block_res_override_frame_incrementor, &block_res_override_frame_handler, "override_frame", NOT_REQUIRED, {}, {"fps", "frame_controller", "random_frame"}}, // directly sets its type from block resources - solid as rock
 	// flips, intested
 	{NULL, &block_res_flip_controller_handler, "flip_controller", NOT_REQUIRED, {"data"}, {}},
 	// untested
 	{NULL, &block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED, {"data"}, {}},
 	// block type things
-	{NULL, &block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {"override_type", "ignore_type"}},						 // reads its type from a block data - can be controlled with scripts
-	{&block_res_override_type_incrementor, &block_res_override_type_handler, "override_type", NOT_REQUIRED, {}, {"type_controller", "ignore_type"}}, // directly sets its type from block resources - solid as rock
-	{NULL, &block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {"type_controller", "override_type"}},									 // ignores type and treats each 16x16 square on a texture as a frame
+	{NULL, &block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {"ignore_type"}}, // reads its type from a block data - can be controlled with scripts
+	{NULL, &block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {"type_controller"}},			// ignores type and treats each 16x16 square on a texture as a frame
 
 	{NULL, &block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}}
 
@@ -570,7 +570,7 @@ void range_ids(block_resources_t *reg, block_resources *br_ref)
 		u8 skip_this_one = 0;
 
 		for (u32 j = 0; j < br_ref->id_range_skip.length; j++)
-			if (br_ref->id_range_skip.data[j] == br_ref->id)
+			if (br_ref->id_range_skip.data[j] == i)
 			{
 				skip_this_one = 1;
 				break;
@@ -660,8 +660,10 @@ u32 read_block_registry(const char *name, block_registry *registry)
 
 		if (block_prev_id + 1 != block_cur_id)
 		{
-			for (u32 j = block_prev_id; j < block_cur_id - 1; j++)
+			for (u32 j = block_prev_id; j < block_cur_id; j++)
 			{
+				if(j == 0)
+					continue;
 				filler_entry.id = j;
 				LOG_INFO("Adding a filler entry with an id %d", j);
 				(void)vec_push(reg, filler_entry);
@@ -672,6 +674,8 @@ u32 read_block_registry(const char *name, block_registry *registry)
 
 	sort_by_id(registry);
 
+	debug_print_registry(registry);
+
 	closedir(directory);
 
 	return SUCCESS;
@@ -679,7 +683,10 @@ u32 read_block_registry(const char *name, block_registry *registry)
 
 int __b_cmp(const void *a, const void *b)
 {
-	return ((block_resources *)a)->id > ((block_resources *)b)->id;
+	u64 id_a, id_b;
+	id_a = ((block_resources *)a)->id;
+	id_b = ((block_resources *)b)->id;
+	return (id_a > id_b) - (id_a < id_b);
 }
 
 void sort_by_id(block_registry *b_reg)
@@ -756,4 +763,15 @@ block_registry *find_registry(vec_void_t src, char *name)
 			return (block_registry *)src.data[i];
 
 	return NULL;
+}
+
+void debug_print_registry(block_registry *ref)
+{
+	LOG_DEBUG("%s:\n", ref->name);
+
+	for (u32 i = 0; i < ref->resources.length; i++)
+	{
+		block_resources br = ref->resources.data[i];
+		LOG_DEBUG("%d: %s, %d, %x\n", br.id, br.block_texture.filename, br.override_frame, br.flags);
+	}
 }

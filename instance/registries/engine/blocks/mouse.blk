@@ -1,0 +1,6 @@
+id = 6
+data = { byte t = 0}
+texture = mouse.png
+script = mouse.lua
+fps = 2
+type_controller = t

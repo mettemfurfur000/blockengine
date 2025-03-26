@@ -120,14 +120,17 @@ int push_event_args(SDL_Event *e)
         lua_pushinteger(g_L, e->key.state);
         lua_pushinteger(g_L, e->key.repeat);
         return 4;
+    case SDL_MOUSEMOTION:
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
+    case SDL_MOUSEWHEEL:
         lua_pushinteger(g_L, e->button.x);
         lua_pushinteger(g_L, e->button.y);
-        lua_pushinteger(g_L, e->button.button);
+        //lua_pushinteger(g_L, e->motion.type == SDL_MOUSEBUTTONDOWN ? 1 : 0);
+        // lua_pushinteger(g_L, e->button.button);
         lua_pushinteger(g_L, e->button.state);
         lua_pushinteger(g_L, e->button.clicks);
-        return 5;
+        return 4;
     case ENGINE_BLOCK_UDPATE:
     case ENGINE_BLOCK_ERASED:
     case ENGINE_BLOCK_CREATE:

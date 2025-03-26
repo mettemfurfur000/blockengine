@@ -103,6 +103,8 @@ int init_graphics()
 	glClear(GL_COLOR_BUFFER_BIT);
 	glLoadIdentity();
 
+	//SDL_ShowCursor(SDL_DISABLE);
+
 	return SUCCESS;
 }
 
@@ -201,6 +203,8 @@ void free_texture(texture *t)
 // it trusts you to pass valid values in, be careful with frames and types...
 int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width, u8 flip, unsigned short rotation)
 {
+	if(texture->gl_id == 0)
+		return SUCCESS;
 	// frame is an index into one of the frames on a texture
 	frame = frame % texture->total_frames; // wrap frames
 

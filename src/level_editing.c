@@ -6,17 +6,20 @@
 static int lua_uuid_universal(lua_State *L)
 {
     void *ptr = 0;
-    if (ptr = luaL_testudata(L, 1, "Level"))
+    ptr = luaL_testudata(L, 1, "Level");
+    if (ptr != 0)
     {
         lua_pushinteger(L, ((level *)ptr)->uuid);
         return 1;
     }
-    if (ptr = luaL_testudata(L, 1, "Room"))
+    ptr = luaL_testudata(L, 1, "Room");
+    if (ptr != 0)
     {
         lua_pushinteger(L, ((room *)ptr)->uuid);
         return 1;
     }
-    if (ptr = luaL_testudata(L, 1, "Layer"))
+    ptr = luaL_testudata(L, 1, "Layer");
+    if (ptr)
     {
         lua_pushinteger(L, ((layer *)ptr)->uuid);
         return 1;

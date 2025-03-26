@@ -126,6 +126,9 @@ u8 render_layer(layer_slice slice)
                 frame = tile_rand(i, j);
             }
 
+            if (br.override_frame != 0)
+                frame = br.override_frame;
+
             block_render(texture, dest_x, dest_y, frame, type, FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE), local_block_width, flip, rotation);
         }
     }

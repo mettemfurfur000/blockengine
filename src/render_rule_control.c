@@ -104,7 +104,7 @@ static int lua_slice_set(lua_State *L)
     {
         LuaHolder *wrapper = (LuaHolder *)luaL_checkudata(L, -1, "Layer");
         slice.ref = wrapper->l;
-        LOG_DEBUG("putting %p as a ref for a slice", slice.ref);
+        //LOG_DEBUG("putting %p as a ref for a slice", slice.ref);
         lua_pop(L, 1);
     }
     else

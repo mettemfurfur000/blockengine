@@ -37,6 +37,8 @@ u8 var_delete_all(blob *b)
 u8 var_push(blob *b, char letter, u8 size)
 {
 	CHECK_PTR(b);
+	CHECK_PTR(b->ptr);
+	CHECK(b->length == 0)
 
 	if (fdesp(*b, letter) >= 0)
 		return SUCCESS;

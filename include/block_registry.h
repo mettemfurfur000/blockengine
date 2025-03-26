@@ -52,7 +52,7 @@ typedef struct block_resources
 	char type_controller;	  // current animation type / row
 	char flip_controller;	  // current type of flipping
 	char rotation_controller; // current rotation angle
-	u8 override_type;		  // override type of block
+	u8 override_frame;		  // override type of block
 
 	u8 frames_per_second;
 	u8 flags;
@@ -126,5 +126,7 @@ void free_block_registry(block_registry *b_reg);
 
 u32 read_all_registries(char *folder, vec_registries_t *dest);
 block_registry *find_registry(vec_void_t src, char *name);
+
+void debug_print_registry(block_registry *ref);
 
 #endif
