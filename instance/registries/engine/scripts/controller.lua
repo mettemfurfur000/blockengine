@@ -1,4 +1,5 @@
 local constants = require("registries.engine.scripts.constants")
+local cam_utils = require("registries.engine.scripts.camera_utils")
 
 local player_block_id = scripting_current_block_id
 
@@ -11,7 +12,7 @@ local player_states = {
     attack = 3
 }
 
-local player = {
+player = {
     pos = {
         x = 0,
         y = 0
@@ -55,19 +56,6 @@ local function walk_frame(delta)
     end
 
     return 1 + math.fmod(player.tick, 2)
-end
-
-local function camera_set_target(pos, index)
-    local slice = render_rules.get_slice(g_render_rules, index)
-
-    local actual_block_width = slice.zoom * g_block_size
-    slice.x = (pos.x + 0.5) * actual_block_width - slice.w / 2
-    slice.y = (pos.y + 0.5) * actual_block_width - slice.h / 2
-
-    slice.x = math.max(slice.x, 0)
-    slice.y = math.max(slice.y, 0)
-
-    render_rules.set_slice(g_render_rules, index, slice)
 end
 
 local function update_player()
@@ -117,7 +105,7 @@ end
 
 blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
     if new_id ~= player_block_id or layer:uuid() ~= g_object_layer:uuid() then
-        print("ignored a spawn event for " .. x .. "," .. y .. "block " .. new_id)
+        -- print("ignooring block create", new_id, layer:uuid(), g_object_layer:uuid() )
         return
     end
 

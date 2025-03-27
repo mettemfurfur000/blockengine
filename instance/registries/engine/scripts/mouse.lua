@@ -1,4 +1,5 @@
 local constants = require("registries.engine.scripts.constants")
+local cam_utils = require("registries.engine.scripts.camera_utils")
 
 local this_block_id = scripting_current_block_id
 
@@ -20,7 +21,7 @@ blockengine.register_handler(EVENT_IDS.ENGINE_INIT, function()
         y = height / 32
     }
 
-    mouse.home_layer = g_ui_layer
+    mouse.home_layer = g_mouse_layer
     mouse.pos = pos
 
     mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, this_block_id) -- x, y, id
@@ -36,29 +37,68 @@ blockengine.register_handler(EVENT_IDS.ENGINE_INIT, function()
     print("mouse initialized")
 end)
 
+local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
+    local new_pos = {
+        x = math.floor(cur_pos_pixels.x / g_block_size / slice.zoom),
+        y = math.floor(cur_pos_pixels.y / g_block_size / slice.zoom)
+    }
+
+    local delta = {
+        x = new_pos.x - old_pos_blocks.x,
+        y = new_pos.y - old_pos_blocks.y
+    }
+
+    local status = layer:move_block(old_pos_blocks.x, old_pos_blocks.y, delta.x, delta.y)
+
+    if status == true then
+        return new_pos
+    end
+    return old_pos_blocks
+end
+
 blockengine.register_handler(EVENT_IDS.SDL_MOUSEMOTION, function(x, y, state, clicks)
     if mouse.home_layer == nil then
         return
     end
 
-    local slice = render_rules.get_slice(g_render_rules, g_ui_layer_index)
+    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, g_mouse_layer_index), { x = x, y = y }, mouse.pos)
+end)
 
-    local new_pos = {
-        x = math.floor(x / g_block_size / slice.zoom),
-        y = math.floor(y / g_block_size / slice.zoom)
-    }
+zoom_min = 1
+zoom_max = 4
 
-    local delta = {
-        x = new_pos.x - mouse.pos.x,
-        y = new_pos.y - mouse.pos.y
-    }
-
-    local status = mouse.home_layer:move_block(mouse.pos.x, mouse.pos.y, delta.x, delta.y)
-
-    if status == true then
-        mouse.pos = new_pos
+blockengine.register_handler(EVENT_IDS.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
+    if mouse.home_layer == nil then
+        return
     end
+
+    -- print("zooming", y)
+    print("setting camera pos at " .. player.pos.x .. ", " .. player.pos.y)
+
+    for i = 1, #g_slices_affected_by_zoom do
+        local slice = render_rules.get_slice(g_render_rules, g_slices_affected_by_zoom[i])
+
+        local new_zoom = slice.zoom + y
+
+        if new_zoom < zoom_min then
+            new_zoom = zoom_min
+        end
+
+        if new_zoom > zoom_max then
+            new_zoom = zoom_max
+        end
+
+        slice.zoom = new_zoom
+
+        render_rules.set_slice(g_render_rules, g_slices_affected_by_zoom[i], slice)
+
+        if g_slices_affected_by_zoom[i] ~= g_mouse_layer_index then
+            camera_set_target(player.pos, g_slices_affected_by_zoom[i])
+        end
+    end
+
+    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, g_mouse_layer_index), { x = pos_x, y = pos_y }, mouse.pos)
 end)
 
 -- TODO: implement clicking and operation changing
--- TODO: implement scrolling
+

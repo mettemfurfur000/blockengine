@@ -64,36 +64,38 @@ u16 get_lookup_id(u32 type)
         return 2;
     if (type >= SDL_KEYDOWN && type < SDL_MOUSEMOTION) // key events
         return 3;
-    if (type >= SDL_MOUSEMOTION && type < SDL_JOYAXISMOTION) // mouse events
+    if (type >= SDL_MOUSEMOTION && type < SDL_MOUSEWHEEL) // mouse events
         return 4;
-    if (type >= SDL_JOYAXISMOTION && type < SDL_CONTROLLERAXISMOTION) // joystick events
+    if (type >= SDL_MOUSEWHEEL && type < SDL_JOYAXISMOTION) // mouse events
         return 5;
-    if (type >= SDL_CONTROLLERAXISMOTION && type < SDL_FINGERDOWN) // controller events
+    if (type >= SDL_JOYAXISMOTION && type < SDL_CONTROLLERAXISMOTION) // joystick events
         return 6;
-    if (type >= SDL_FINGERDOWN && type < SDL_DOLLARGESTURE) // touch events
+    if (type >= SDL_CONTROLLERAXISMOTION && type < SDL_FINGERDOWN) // controller events
         return 7;
-    if (type >= SDL_DOLLARGESTURE && type < SDL_CLIPBOARDUPDATE) // gesture events
+    if (type >= SDL_FINGERDOWN && type < SDL_DOLLARGESTURE) // touch events
         return 8;
-    if (type >= SDL_CLIPBOARDUPDATE && type < SDL_DROPFILE) // clipboard events
+    if (type >= SDL_DOLLARGESTURE && type < SDL_CLIPBOARDUPDATE) // gesture events
         return 9;
-    if (type >= SDL_DROPFILE && type < SDL_AUDIODEVICEADDED) // drop events
+    if (type >= SDL_CLIPBOARDUPDATE && type < SDL_DROPFILE) // clipboard events
         return 10;
-    if (type >= SDL_AUDIODEVICEADDED && type < SDL_SENSORUPDATE) // audio events
+    if (type >= SDL_DROPFILE && type < SDL_AUDIODEVICEADDED) // drop events
         return 11;
-    if (type >= SDL_SENSORUPDATE && type < SDL_RENDER_TARGETS_RESET) // sensor events
+    if (type >= SDL_AUDIODEVICEADDED && type < SDL_SENSORUPDATE) // audio events
         return 12;
-    if (type >= SDL_RENDER_TARGETS_RESET && type < SDL_POLLSENTINEL) // render events
+    if (type >= SDL_SENSORUPDATE && type < SDL_RENDER_TARGETS_RESET) // sensor events
         return 13;
-    if (type >= SDL_POLLSENTINEL && type < SDL_USEREVENT) // poll events
+    if (type >= SDL_RENDER_TARGETS_RESET && type < SDL_POLLSENTINEL) // render events
         return 14;
-    if (type >= ENGINE_BLOCK_UDPATE && type < ENGINE_BLOCK_SECTION_END) // block events
+    if (type >= SDL_POLLSENTINEL && type < SDL_USEREVENT) // poll events
         return 15;
-    if (type >= ENGINE_BLOB_UPDATE && type < ENGINE_BLOB_SECTION_END) // blob events
+    if (type >= ENGINE_BLOCK_UDPATE && type < ENGINE_BLOCK_SECTION_END) // block events
         return 16;
-    if (type == ENGINE_TICK)
+    if (type >= ENGINE_BLOB_UPDATE && type < ENGINE_BLOB_SECTION_END) // blob events
         return 17;
-    if (type == ENGINE_INIT)
+    if (type == ENGINE_TICK)
         return 18;
+    if (type == ENGINE_INIT)
+        return 19;
     return sizeof(handlers); // unknown event, must be an error
 }
 
@@ -116,13 +118,18 @@ int push_event_args(SDL_Event *e)
     case SDL_MOUSEMOTION:
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
-    case SDL_MOUSEWHEEL:
         lua_pushinteger(g_L, e->button.x);
         lua_pushinteger(g_L, e->button.y);
         // lua_pushinteger(g_L, e->motion.type == SDL_MOUSEBUTTONDOWN ? 1 : 0);
         //  lua_pushinteger(g_L, e->button.button);
         lua_pushinteger(g_L, e->button.state);
         lua_pushinteger(g_L, e->button.clicks);
+        return 4;
+    case SDL_MOUSEWHEEL:
+        lua_pushinteger(g_L, e->wheel.x);
+        lua_pushinteger(g_L, e->wheel.y);
+        lua_pushinteger(g_L, e->wheel.mouseX);
+        lua_pushinteger(g_L, e->wheel.mouseY);
         return 4;
     case ENGINE_BLOCK_UDPATE:
     case ENGINE_BLOCK_ERASED:

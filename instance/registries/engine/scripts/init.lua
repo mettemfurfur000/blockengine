@@ -22,7 +22,10 @@ g_object_layer = safe_layer_create(menu_room, "engine", 2, 2)
 g_object_layer_index = 1
 g_ui_layer = safe_layer_create(menu_room, "engine", 2, 2)
 g_ui_layer_index = 2
+g_mouse_layer = safe_layer_create(menu_room, "engine", 1, 1)
+g_mouse_layer_index = 3
 
+-- pasting a player
 g_object_layer:paste_block(4, 4, 2) -- x, y, id
 
 local w, h = 8, 8
@@ -34,7 +37,7 @@ end
 
 local width, height = render_rules.get_size(g_render_rules)
 
-g_object_layer:bprint(1, 1, 1, width / 16, "test string, 16 chars\n" .. "newline")
+g_ui_layer:bprint(1, 0, 0, width / 16, "test string, 16 chars\n" .. "newline")
 
 local slice_floor = {
     x = 0,
@@ -59,15 +62,27 @@ local slice_ui = {
     y = 0,
     w = width,
     h = height,
-    zoom = 2,
+    zoom = 1,
     ref = g_ui_layer
 }
 
+local slice_mouse = {
+    x = 0,
+    y = 0,
+    w = width,
+    h = height,
+    zoom = 2,
+    ref = g_mouse_layer
+}
+
+g_slices_affected_by_zoom = {0, 1, 3}
+
 try(function()
-    render_rules.set_order(g_render_rules, {0, 1, 2})
+    render_rules.set_order(g_render_rules, {0, 1, 2, 3})
     render_rules.set_slice(g_render_rules, 0, slice_floor)
     render_rules.set_slice(g_render_rules, 1, slice_objects)
     render_rules.set_slice(g_render_rules, 2, slice_ui)
+    render_rules.set_slice(g_render_rules, 3, slice_mouse)
 end, function(e)
     log_error(e)
     os.exit()
