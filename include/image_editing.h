@@ -1,21 +1,7 @@
 #ifndef IMAGE_EDITING_H
 #define IMAGE_EDITING_H
 
-#include "../include/general.h"
-#include "../include/sdl2_basics.h"
-#include "../stb/stb_image.h"
-#include "../stb/stb_image_write.h"
-
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
-
-// Image editing functions for RGBA images
-#include <stdint.h>
+#include "general.h"
 
 typedef struct image
 {
@@ -30,7 +16,6 @@ typedef struct image
 } image;
 
 #define CHANNELS 4
-
 #define ACCESS_CHANNEL(img, x, y, c) (img->data + (((y) * img->width + (x)) * CHANNELS + (c)))
 
 // Basic image manipulation functions
@@ -61,8 +46,5 @@ void overlay_image(image *dst, const image *src, u16 x, u16 y);
 void clear_image(image *img);
 void fill_color(image *img, u8 color[4]);
 
-// lua may be here too
-
-void load_image_editing_library(lua_State *L);
 
 #endif

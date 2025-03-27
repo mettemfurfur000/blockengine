@@ -18,10 +18,12 @@ typedef struct LuaHolder
     union
     {
         void *ptr;
+        block_registry *reg;
         level *lvl;
         room *r;
         layer *l;
         blob *b;
+        sound *s;
     };
 
 } LuaHolder;

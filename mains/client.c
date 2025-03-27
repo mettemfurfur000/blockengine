@@ -3,7 +3,7 @@
 #include "../include/rendering.h"
 #include "../include/block_registry.h"
 #include "../include/scripting.h"
-#include "../include/level_editing.h"
+#include "../include/scripting_bindings.h"
 
 #include <time.h>
 

@@ -44,6 +44,7 @@ typedef struct block_resources
 	vec_str_t id_range_increment;
 
 	texture block_texture;
+	vec_sound_t sounds;
 
 	char *lua_script_filename;
 

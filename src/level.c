@@ -355,12 +355,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
     int x = orig_x;
     int y = orig_y;
 
-    blob vars_space = {};
-    if (var_set_u8(&vars_space, 'v', ' ') != SUCCESS)
-    {
-        LOG_ERROR("bprintf Failed to set a u8 for character block");
-        return;
-    }
+    blob vars_space = l->registry->resources.data[character_block_id].vars;
 
     while (*ptr != 0)
     {

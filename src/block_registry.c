@@ -304,6 +304,26 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 		dest->name++;                                          \
 	}
 
+#define DECLADE_DEFAUALT_STR_VEC_HANDLER(name)                                     \
+	u8 block_res_##name##_vec_str_handler(const char *data, block_resources *dest) \
+	{                                                                              \
+		if (strcmp(data, clean_token) == 0)                                        \
+		{                                                                          \
+			int i;                                                                 \
+			char *val;                                                             \
+			vec_foreach(&dest->name, val, i)                                       \
+			{                                                                      \
+				SAFE_FREE(val);                                                    \
+			}                                                                      \
+			if (dest->name.data)                                                   \
+				vec_deinit(&dest->name);                                           \
+			else                                                                   \
+				vec_init(&dest->name);                                             \
+		}                                                                          \
+		read_str_list(data, &dest->name);                                          \
+		return SUCCESS;                                                            \
+	}
+
 const static char clean_token[] = "??clean??";
 
 DECLARE_DEFAULT_LONG_FIELD_HANDLER(id)
@@ -327,17 +347,35 @@ u8 block_res_id_range_skip_handler(const char *data, block_resources *dest)
 	return SUCCESS;
 }
 
-u8 block_res_id_range_increment_handler(const char *data, block_resources *dest)
+DECLADE_DEFAUALT_STR_VEC_HANDLER(id_range_increment)
+u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 {
 	if (strcmp(data, clean_token) == 0)
 	{
-		if (dest->id_range_increment.data)
-			vec_deinit(&dest->id_range_increment);
+		int i;
+		sound val;
+		vec_foreach(&dest->sounds, val, i)
+		{
+			SAFE_FREE(val.filename);
+			free_sound(&val);
+		}
+
+		if (dest->sounds.data)
+			vec_deinit(&dest->sounds);
 		else
-			vec_init(&dest->id_range_increment);
+			vec_init(&dest->sounds);
 	}
 
-	read_str_list(data, &dest->id_range_increment);
+	vec_str_t tmp = {};
+
+	read_str_list(data, &tmp);
+
+	for (u32 i = 0; i < tmp.length; i++)
+	{
+		sound t = {};
+		sound_load(&t, tmp.data[i]);
+		(void)vec_push(&dest->sounds, t);
+	}
 
 	return SUCCESS;
 }
@@ -413,6 +451,7 @@ u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 const static resource_entry_handler res_handlers[] = {
 	{NULL, &block_res_id_handler, "id", REQUIRED, {}, {}},
 	{NULL, &block_res_texture_handler, "texture", REQUIRED, {}, {}},
+	{NULL, &block_res_sounds_vec_handler, "sounds", NOT_REQUIRED, {}, {}},
 	// dangerous: will replicate the same block multiple times until it reaches the said id
 	// useful if you just want to have a bunch of blocks with the same texture and locked type
 	{NULL, &block_res_ranged_id_handler, "id_ranged_to", NOT_REQUIRED, {}, {}},
@@ -420,7 +459,7 @@ const static resource_entry_handler res_handlers[] = {
 	{NULL, &block_res_id_range_skip_handler, "id_range_skip", NOT_REQUIRED, {"id_ranged_to"}, {}},
 	// this controls what variables shoud be incremented as id_range progresses forward
 	// triggers them and passes id of current ranged block as a string
-	{NULL, &block_res_id_range_increment_handler, "id_range_increment", NOT_REQUIRED, {"id_ranged_to"}, {}},
+	{NULL, &block_res_id_range_increment_vec_str_handler, "id_range_increment", NOT_REQUIRED, {"id_ranged_to"}, {}},
 
 	{NULL, &block_res_data_handler, "data", NOT_REQUIRED, {}, {}},
 
@@ -662,7 +701,7 @@ u32 read_block_registry(const char *name, block_registry *registry)
 		{
 			for (u32 j = block_prev_id; j < block_cur_id; j++)
 			{
-				if(j == 0)
+				if (j == 0)
 					continue;
 				filler_entry.id = j;
 				LOG_INFO("Adding a filler entry with an id %d", j);

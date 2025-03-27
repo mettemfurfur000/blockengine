@@ -6,7 +6,7 @@ ifeq ($(OS),Windows_NT)
 	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32
 endif
 
-LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32
+LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lopengl32
 
 # get shared libs here
 ifeq ($(OS),Windows_NT)

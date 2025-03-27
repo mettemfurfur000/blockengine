@@ -103,7 +103,7 @@ int init_graphics()
 	glClear(GL_COLOR_BUFFER_BIT);
 	glLoadIdentity();
 
-	//SDL_ShowCursor(SDL_DISABLE);
+	// SDL_ShowCursor(SDL_DISABLE);
 
 	return SUCCESS;
 }
@@ -200,10 +200,79 @@ void free_texture(texture *t)
 	glDeleteTextures(1, &t->gl_id);
 }
 
+Uint32 getChunkTimeMilliseconds(Mix_Chunk *chunk)
+{
+	Uint32 points = 0;
+	Uint32 frames = 0;
+	int freq = 0;
+	Uint16 fmt = 0;
+	int chans = 0;
+	if (!Mix_QuerySpec(&freq, &fmt, &chans))
+		return 0;
+	points = (chunk->alen / ((fmt & 0xFF) / 8));
+
+	frames = (points / chans);
+	return (frames * 1000) / freq;
+}
+
+int sound_load(sound *dest, char *path_to_file)
+{
+	dest->obj = Mix_LoadWAV_RW(SDL_RWFromFile(path_to_file, "rb"), 1);
+	if (dest->obj == NULL)
+	{
+		LOG_ERROR("Couldn't load %s: %s\n", path_to_file, SDL_GetError());
+
+		return FAIL;
+	}
+
+	// copy filename for later use
+	char *filename = strrchr(path_to_file, SEPARATOR) + 1;
+	int namelen = strlen(filename);
+
+	dest->filename = (char *)malloc(namelen + 1);
+
+	strcpy(dest->filename, filename);
+
+	return SUCCESS;
+}
+
+void free_sound(sound *s)
+{
+	Mix_FreeChunk(s->obj);
+}
+
+int music_load(music *dest, char *filename)
+{
+	dest->mus = Mix_LoadMUS_RW(SDL_RWFromFile(filename, "rb"), 1);
+	if (dest->mus == NULL)
+	{
+		LOG_ERROR("Couldn't load %s: %s\n", filename, SDL_GetError());
+
+		return FAIL;
+	}
+
+	dest->type = Mix_GetMusicType(dest->mus);
+	dest->length_ms = Mix_MusicDuration(dest->mus) * 1000.0;
+
+	return SUCCESS;
+}
+
+void free_music(music *s)
+{
+	Mix_FreeMusic(s->mus);
+}
+
+// void play_sound_randomly(vec_sound_t sounds)
+// {
+// 	u16 selected = rand() % sounds.length;
+
+// 	Mix_PlayChannel(-1, sounds.data[selected].obj, 0);
+// }
+
 // it trusts you to pass valid values in, be careful with frames and types...
 int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width, u8 flip, unsigned short rotation)
 {
-	if(texture->gl_id == 0)
+	if (texture->gl_id == 0)
 		return SUCCESS;
 	// frame is an index into one of the frames on a texture
 	frame = frame % texture->total_frames; // wrap frames

@@ -1,7 +1,6 @@
 #include "../include/scripting.h"
-#include "../include/level_editing.h"
 #include "../include/image_editing.h"
-#include "../include/render_rule_control.h"
+#include "../include/scripting_bindings.h"
 
 lua_State *g_L = 0;
 
@@ -43,16 +42,10 @@ void scripting_init()
     luaL_openlibs(g_L);
     scripting_register(g_L); /* register all blockengine functions */
 
-    lua_level_register(g_L); /* level editing */
-    lua_room_register(g_L);
-    lua_layer_register(g_L);
-    lua_vars_register(g_L);
+    lua_register_engine_objects(g_L);
 
     lua_logging_register(g_L);
-
-    load_image_editing_library(g_L); /* image editing */
     lua_level_editing_lib_register(g_L);
-
     lua_register_render_rules(g_L); /* client render rules */
 }
 
@@ -126,8 +119,8 @@ int push_event_args(SDL_Event *e)
     case SDL_MOUSEWHEEL:
         lua_pushinteger(g_L, e->button.x);
         lua_pushinteger(g_L, e->button.y);
-        //lua_pushinteger(g_L, e->motion.type == SDL_MOUSEBUTTONDOWN ? 1 : 0);
-        // lua_pushinteger(g_L, e->button.button);
+        // lua_pushinteger(g_L, e->motion.type == SDL_MOUSEBUTTONDOWN ? 1 : 0);
+        //  lua_pushinteger(g_L, e->button.button);
         lua_pushinteger(g_L, e->button.state);
         lua_pushinteger(g_L, e->button.clicks);
         return 4;
