@@ -320,7 +320,7 @@ static int lua_slice_get(lua_State *L)
     client_render_rules *rules = check_light_userdata(L, 1);
     int index = luaL_checkinteger(L, 2);
 
-    if (index > rules->slices.length)
+    if (index >= rules->slices.length)
         luaL_error(L, "Index out of range");
 
     layer_slice slice = rules->slices.data[index];
@@ -343,9 +343,6 @@ static int lua_slice_set(lua_State *L)
 {
     client_render_rules *rules = check_light_userdata(L, 1);
     int index = luaL_checkinteger(L, 2);
-
-    if (index > rules->slices.length)
-        luaL_error(L, "Index out of range");
 
     layer_slice slice = {};
 

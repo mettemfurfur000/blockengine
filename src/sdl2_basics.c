@@ -220,7 +220,7 @@ int sound_load(sound *dest, char *path_to_file)
 	dest->obj = Mix_LoadWAV_RW(SDL_RWFromFile(path_to_file, "rb"), 1);
 	if (dest->obj == NULL)
 	{
-		LOG_ERROR("Couldn't load %s: %s\n", path_to_file, SDL_GetError());
+		LOG_ERROR("Couldn't load %s: %s", path_to_file, SDL_GetError());
 
 		return FAIL;
 	}
@@ -246,7 +246,7 @@ int music_load(music *dest, char *filename)
 	dest->mus = Mix_LoadMUS_RW(SDL_RWFromFile(filename, "rb"), 1);
 	if (dest->mus == NULL)
 	{
-		LOG_ERROR("Couldn't load %s: %s\n", filename, SDL_GetError());
+		LOG_ERROR("Couldn't load %s: %s", filename, SDL_GetError());
 
 		return FAIL;
 	}

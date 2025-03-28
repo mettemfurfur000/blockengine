@@ -54,7 +54,7 @@ int load_properties(const char *filename, hash_node **table)
 	f = fopen(filename, "rb");
 	if (f == NULL)
 	{
-		LOG_ERROR("Cannot open file %s\n", filename);
+		LOG_ERROR("Cannot open file %s", filename);
 		return FAIL;
 	}
 
@@ -81,7 +81,7 @@ int save_properties(const char *filename, hash_node **table)
 
 	if (f == NULL)
 	{
-		LOG_ERROR("Cannot open file %s\n", filename);
+		LOG_ERROR("Cannot open file %s", filename);
 		return FAIL;
 	}
 

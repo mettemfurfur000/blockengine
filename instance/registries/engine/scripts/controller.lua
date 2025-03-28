@@ -90,21 +90,23 @@ local function update_player()
             -- print("moving, new pos", player.pos.x, player.pos.y)
         end
 
-        camera_set_target(player.pos, g_object_layer_index)
-        camera_set_target(player.pos, g_floor_layer_index)
+        camera_set_target(player.pos, g_menu.objects.index)
+        camera_set_target(player.pos, g_menu.floor.index)
     end
 
-    player.vars:set_number("v", frame, 1, 0)
+    if player.vars then
+        player.vars:set_number("v", frame, 1, 0)
 
-    if type ~= nil then
-        player.vars:set_number("t", type, 1, 0)
+        if type ~= nil then
+            player.vars:set_number("t", type, 1, 0)
+        end
     end
 end
 
 -- hook zone
 
 blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
-    if new_id ~= player_block_id or layer:uuid() ~= g_object_layer:uuid() then
+    if new_id ~= player_block_id or layer:uuid() ~= g_menu.objects.layer:uuid() then
         -- print("ignooring block create", new_id, layer:uuid(), g_object_layer:uuid() )
         return
     end

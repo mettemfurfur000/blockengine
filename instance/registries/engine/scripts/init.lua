@@ -2,6 +2,52 @@ require("registries.engine.scripts.wrappers")
 require("registries.engine.scripts.level_editor")
 
 local world_size = 32
+local width, height = render_rules.get_size(g_render_rules)
+
+local function slice_gen(x, y, w, h, z, lay_ref)
+    return {
+        x = x,
+        y = y,
+        h = h,
+        w = w,
+        zoom = z,
+        ref = lay_ref
+    }
+end
+
+local function slice_basic(lay_ref)
+    return slice_gen(0, 0, width, height, 1, lay_ref)
+end
+
+local function layer_new_renderable(table_dest, lay_index, name, lay_ref, is_ui)
+    table_dest[name] = {
+        index = lay_index,
+        name = name,
+        layer = lay_ref,
+        show = true,
+        is_ui = is_ui,
+        slice = slice_basic(lay_ref)
+    }
+end
+
+local function set_render_rule_order(ref_table)
+    local order = {}
+
+    for k, v in pairs(ref_table) do
+        table.insert(order, v.index)
+    end
+
+    print("setting render rule order")
+    print_table(order)
+
+    render_rules.set_order(g_render_rules, order)
+end
+
+local function set_slices(ref_table)
+    for k, v in pairs(ref_table) do
+        render_rules.set_slice(g_render_rules, v.index, v.slice)
+    end
+end
 
 local test_level = le.create_level("test")
 if test_level == nil then
@@ -14,85 +60,22 @@ g_floors = safe_registry_load(test_level, "floors")
 
 menu_room = safe_menu_create(test_level, "menu", world_size, world_size)
 
-g_floor_layer = safe_layer_create(menu_room, "floors", 1, 0)
-g_floor_layer_index = 0
-g_object_layer = safe_layer_create(menu_room, "engine", 1, 2)
-g_object_layer_index = 1
-g_ui_background_layer = safe_layer_create(menu_room, "engine", 1, 0)
-g_ui_background_layer_index = 2
-g_ui_layer = safe_layer_create(menu_room, "engine", 1, 2)
-g_ui_layer_index = 3
-g_mouse_layer = safe_layer_create(menu_room, "engine", 1, 1)
-g_mouse_layer_index = 4
+g_menu = {}
+
+layer_new_renderable(g_menu, 0, "floor", safe_layer_create(menu_room, "floors", 1, 0))
+layer_new_renderable(g_menu, 1, "objects", safe_layer_create(menu_room, "engine", 1, 2))
+layer_new_renderable(g_menu, 2, "ui_back", safe_layer_create(menu_room, "engine", 1, 2), true)
+layer_new_renderable(g_menu, 3, "ui_text", safe_layer_create(menu_room, "engine", 1, 2), true)
+layer_new_renderable(g_menu, 4, "mouse", safe_layer_create(menu_room, "engine", 1, 2), true)
 
 -- pasting a player
-g_object_layer:paste_block(4, 4, 2) -- x, y, id
+g_menu.objects.layer:paste_block(4, 4, 2) -- x, y, id
 
-local w, h = 8, 8
-for i = 1, w do
-    for j = 1, h do
-        g_floor_layer:paste_block(2 + i, 2 + j, 2) -- x, y, id
-    end
-end
-
-local width, height = render_rules.get_size(g_render_rules)
-
-local slice_floor = {
-    x = 0,
-    y = 0,
-    w = width,
-    h = height,
-    zoom = 2,
-    ref = g_floor_layer
-}
-
-local slice_objects = {
-    x = 0,
-    y = 0,
-    w = width,
-    h = height,
-    zoom = 2,
-    ref = g_object_layer
-}
-
-local slice_ui = {
-    x = 0,
-    y = 0,
-    w = width,
-    h = height,
-    zoom = 1,
-    ref = g_ui_layer
-}
-
-local slice_ui_background = {
-    x = 0,
-    y = 0,
-    w = width,
-    h = height,
-    zoom = 1,
-    ref = g_ui_background_layer
-}
-
-local slice_mouse = {
-    x = 0,
-    y = 0,
-    w = width,
-    h = height,
-    zoom = 2,
-    ref = g_mouse_layer
-}
-
-g_slices_affected_by_zoom = {0, 1, 3}
-
-place_ui_init(g_slices_affected_by_zoom)
+place_ui_init()
 
 try(function()
-    render_rules.set_order(g_render_rules, {0, 1, 2, 3, 4})
-    render_rules.set_slice(g_render_rules, 0, slice_floor)
-    render_rules.set_slice(g_render_rules, 1, slice_objects)
-    render_rules.set_slice(g_render_rules, 2, slice_ui)
-    render_rules.set_slice(g_render_rules, 3, slice_ui_background)
-    render_rules.set_slice(g_render_rules, 4, slice_mouse)
+    set_render_rule_order(g_menu)
+    set_slices(g_menu)
 end, function(e)
     log_error(e)
     os.exit()

@@ -806,11 +806,11 @@ block_registry *find_registry(vec_void_t src, char *name)
 
 void debug_print_registry(block_registry *ref)
 {
-	LOG_DEBUG("%s:\n", ref->name);
+	LOG_DEBUG("%s:", ref->name);
 
 	for (u32 i = 0; i < ref->resources.length; i++)
 	{
 		block_resources br = ref->resources.data[i];
-		LOG_DEBUG("%d: %s, %d, %x\n", br.id, br.block_texture.filename, br.override_frame, br.flags);
+		LOG_DEBUG("%d: %s, %d, %x", br.id, br.block_texture.filename, br.override_frame, br.flags);
 	}
 }

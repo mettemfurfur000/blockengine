@@ -14,7 +14,7 @@ end
 local function set_generator(x, y, val)
     return function(mouse)
         print("trigger " .. x .. ", " .. y)
-        g_ui_layer:bprint(1, x, y, 1, "X")
+        g_menu.ui_text.layer:bprint(1, x, y, 1, "X")
         mouse.vars:set_number("t", val, 1, 0) -- 1 for 1 byte and 0 for unsigned
     end
 end
@@ -22,7 +22,7 @@ end
 local function reset_generator(x, y)
     return function(mouse)
         print("untrigger " .. x .. ", " .. y)
-        g_ui_layer:bprint(1, x, y, 1, " ")
+        g_menu.ui_text.layer:bprint(1, x, y, 1, " ")
     end
 end
 
@@ -36,19 +36,22 @@ local function new_button(pos, name, mouse_state)
     }
 end
 
-function place_ui_init(accessible_layers)
+function place_ui_init()
     local width, height = render_rules.get_size(g_render_rules)
 
+    -- setting up availiable mouse modes and layers to select the edition
     local options = ""
-    for i, v in ipairs(accessible_layers) do
-        options = options .. "[" .. i .. "] " .. v .. "\n"
+    for k, v in pairs(g_menu) do
+        if v.is_ui == true then
+            goto continue
+        end
+        options = options .. "[ ] " .. v.index .. " - " .. v.name .. "\n"
+        ::continue::
     end
 
-    -- FIXME
-
     print("placing ui")
-    g_ui_layer:bprint(1, 0, 6, 12, options)
-    g_ui_layer:bprint(1, 0, 0, 12, "Mode:\n[ ]None\n[ ]Place\n[ ]Remove\n[ ]Copy\nLayer:\n")
+    g_menu.ui_text.layer:bprint(1, 0, 0, 16, "Mode:\n[ ]None\n[ ]Place\n[ ]Remove\n[ ]Copy\nLayer:\n")
+    g_menu.ui_text.layer:bprint(1, 0, 6, 16, options)
 
     table.insert(control_points, new_button({
         x = 1,
@@ -67,5 +70,5 @@ function place_ui_init(accessible_layers)
         y = 4
     }, "Copy", 3))
 
-    print_table(control_points)
+    -- print_table(control_points)
 end
