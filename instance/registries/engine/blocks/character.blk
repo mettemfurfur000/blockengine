@@ -1,5 +1,5 @@
-id = 1
-data = { byte v = 32 }
+automatic_id 1
+vars = { byte v = 32 }
 texture = character.png
 frame_controller = v
 ignore_type = 1

@@ -1,7 +1,7 @@
-id = 20
-id_ranged_to = 20
-id_range_skip = [ 7 ]
-id_range_increment = [ id override_frame ]
+automatic_id 1
+repeat_times = 20
+repeat_skip = [ 7 ]
+repeat_increment = [ id override_frame ]
 texture = dark_brick_wall.png
 override_frame = 0
 ignore_type = 1

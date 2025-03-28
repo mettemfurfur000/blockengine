@@ -4,6 +4,21 @@ require("registries.engine.scripts.level_editor")
 local world_size = 32
 local width, height = render_rules.get_size(g_render_rules)
 
+local function find_block(reg_table, filename)
+    for k, v in pairs(reg_table) do
+        if v.all_fields ~= nil then
+            local file_src = v.all_fields.source_filename
+            local match = string.gmatch(file_src, "/(%w+).blk$")()
+            print_table(v.all_fields)
+            print( filename, file_src, match)
+            if match == filename then
+                print("match!")
+                return v.id
+            end
+        end
+    end
+end
+
 local function slice_gen(x, y, w, h, z, lay_ref)
     return {
         x = x,
@@ -58,6 +73,8 @@ end
 g_engine = safe_registry_load(test_level, "engine")
 g_floors = safe_registry_load(test_level, "floors")
 
+g_character_id = find_block(g_engine:to_table(), "character")
+
 menu_room = safe_menu_create(test_level, "menu", world_size, world_size)
 
 g_menu = {}
@@ -67,9 +84,6 @@ layer_new_renderable(g_menu, 1, "objects", safe_layer_create(menu_room, "engine"
 layer_new_renderable(g_menu, 2, "ui_back", safe_layer_create(menu_room, "engine", 1, 2), true)
 layer_new_renderable(g_menu, 3, "ui_text", safe_layer_create(menu_room, "engine", 1, 2), true)
 layer_new_renderable(g_menu, 4, "mouse", safe_layer_create(menu_room, "engine", 1, 2), true)
-
--- pasting a player
-g_menu.objects.layer:paste_block(4, 4, 2) -- x, y, id
 
 place_ui_init()
 

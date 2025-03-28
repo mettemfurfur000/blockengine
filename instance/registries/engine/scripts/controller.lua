@@ -165,3 +165,10 @@ end)
 blockengine.register_handler(EVENT_IDS.ENGINE_TICK, function(code)
     update_player()
 end)
+
+
+blockengine.register_handler(EVENT_IDS.ENGINE_INIT, function(code)
+    -- pasting a player
+    g_menu.objects.layer:paste_block(4, 4, player_block_id) -- x, y, id
+end)
+

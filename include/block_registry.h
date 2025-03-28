@@ -31,6 +31,7 @@
 #define B_RES_FLAG_IGNORE_TYPE 0x01
 #define B_RES_FLAG_RANDOM_POS 0x02
 #define B_RES_FLAG_IS_FILLER 0x04
+#define B_RES_AUTOMATIC_ID 0x08
 
 typedef struct block_resources
 {
@@ -40,8 +41,8 @@ typedef struct block_resources
 	blob vars;
 
 	u64 ranged_id;
-	vec_int_t id_range_skip;
-	vec_str_t id_range_increment;
+	vec_int_t repeat_skip;
+	vec_str_t repeat_increment;
 
 	texture block_texture;
 	vec_sound_t sounds;
@@ -112,8 +113,10 @@ typedef struct
 	u8 (*function)(const char *, block_resources *);
 	char *name;
 	u8 is_critical;
-	char *dependencies[4];
-	char *incompabilities[4];
+	// resource is not pushed, if:
+	char *deps[4];	  // these entries are not present
+	char *incompat[4]; // these entries present
+	char *slots[4];			  // other entries already got said slots
 } resource_entry_handler;
 
 u32 parse_block_resources_from_file(char *file_path, block_resources *dest);

@@ -14,7 +14,7 @@ end
 local function set_generator(x, y, val)
     return function(mouse)
         print("trigger " .. x .. ", " .. y)
-        g_menu.ui_text.layer:bprint(1, x, y, 1, "X")
+        g_menu.ui_text.layer:bprint(g_character_id, x, y, 1, "X")
         mouse.vars:set_number("t", val, 1, 0) -- 1 for 1 byte and 0 for unsigned
     end
 end
@@ -22,7 +22,7 @@ end
 local function reset_generator(x, y)
     return function(mouse)
         print("untrigger " .. x .. ", " .. y)
-        g_menu.ui_text.layer:bprint(1, x, y, 1, " ")
+        g_menu.ui_text.layer:bprint(g_character_id, x, y, 1, " ")
     end
 end
 
@@ -50,8 +50,8 @@ function place_ui_init()
     end
 
     print("placing ui")
-    g_menu.ui_text.layer:bprint(1, 0, 0, 16, "Mode:\n[ ]None\n[ ]Place\n[ ]Remove\n[ ]Copy\nLayer:\n")
-    g_menu.ui_text.layer:bprint(1, 0, 6, 16, options)
+    g_menu.ui_text.layer:bprint(g_character_id, 0, 0, 16, "Mode:\n[ ]None\n[ ]Place\n[ ]Remove\n[ ]Copy\nLayer:\n")
+    g_menu.ui_text.layer:bprint(g_character_id, 0, 6, 16, options)
 
     table.insert(control_points, new_button({
         x = 1,

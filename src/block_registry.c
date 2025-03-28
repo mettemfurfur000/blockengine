@@ -328,26 +328,26 @@ const static char clean_token[] = "??clean??";
 
 DECLARE_DEFAULT_LONG_FIELD_HANDLER(id)
 DECLARE_DEFAULT_LONG_FIELD_HANDLER(ranged_id)
-// DECLARE_DEFAULT_LONG_FIELD_HANDLER(id_range_skip)
+// DECLARE_DEFAULT_LONG_FIELD_HANDLER(repeat_skip)
 
-u8 block_res_id_range_skip_handler(const char *data, block_resources *dest)
+u8 block_res_repeat_skip_handler(const char *data, block_resources *dest)
 {
 	if (strcmp(data, clean_token) == 0)
 	{
-		if (dest->id_range_skip.data)
-			vec_deinit(&dest->id_range_skip);
+		if (dest->repeat_skip.data)
+			vec_deinit(&dest->repeat_skip);
 		else
-			vec_init(&dest->id_range_skip);
+			vec_init(&dest->repeat_skip);
 
 		return SUCCESS;
 	}
 
-	read_int_list(data, &dest->id_range_skip);
+	read_int_list(data, &dest->repeat_skip);
 
 	return SUCCESS;
 }
 
-DECLADE_DEFAUALT_STR_VEC_HANDLER(id_range_increment)
+DECLADE_DEFAUALT_STR_VEC_HANDLER(repeat_increment)
 u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 {
 	if (strcmp(data, clean_token) == 0)
@@ -425,6 +425,7 @@ u8 block_res_fps_handler(const char *data, block_resources *dest)
 
 DECLARE_DEFAULT_FLAG_HANDLER(ignore_type, B_RES_FLAG_IGNORE_TYPE)
 DECLARE_DEFAULT_FLAG_HANDLER(position_based_type, B_RES_FLAG_RANDOM_POS)
+DECLARE_DEFAULT_FLAG_HANDLER(automatic_id, B_RES_AUTOMATIC_ID)
 
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(anim_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(type_controller)
@@ -449,35 +450,41 @@ u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 /* end of block resource handlers */
 
 const static resource_entry_handler res_handlers[] = {
-	{NULL, &block_res_id_handler, "id", REQUIRED, {}, {}},
-	{NULL, &block_res_texture_handler, "texture", REQUIRED, {}, {}},
-	{NULL, &block_res_sounds_vec_handler, "sounds", NOT_REQUIRED, {}, {}},
+	// every block needs an identity, or its just a thin air
+	{NULL, &block_res_id_handler, "id", NOT_REQUIRED, {}, {}, {"identity"}},
+	{NULL, &block_res_automatic_id_handler, "automatic_id", NOT_REQUIRED, {}, {}, {"identity"}},
+	// every block needs a visual representation
+	{NULL, &block_res_texture_handler, "texture", REQUIRED, {}, {}, {}},
+	// TODO
+	// every block needs a sound, right?
+	// may set to REQUIRED later
+	{NULL, &block_res_sounds_vec_handler, "sounds", NOT_REQUIRED, {}, {}, {}},
 	// dangerous: will replicate the same block multiple times until it reaches the said id
 	// useful if you just want to have a bunch of blocks with the same texture and locked type
-	{NULL, &block_res_ranged_id_handler, "id_ranged_to", NOT_REQUIRED, {}, {}},
+	{NULL, &block_res_ranged_id_handler, "repeat_times", NOT_REQUIRED, {}, {}, {}},
 	// if id accurs on this list while ranging, all increments will pass but no blocks will be pasted
-	{NULL, &block_res_id_range_skip_handler, "id_range_skip", NOT_REQUIRED, {"id_ranged_to"}, {}},
+	{NULL, &block_res_repeat_skip_handler, "repeat_skip", NOT_REQUIRED, {"repeat_times"}, {}, {}},
 	// this controls what variables shoud be incremented as id_range progresses forward
 	// triggers them and passes id of current ranged block as a string
-	{NULL, &block_res_id_range_increment_vec_str_handler, "id_range_increment", NOT_REQUIRED, {"id_ranged_to"}, {}},
-
-	{NULL, &block_res_data_handler, "data", NOT_REQUIRED, {}, {}},
+	{NULL, &block_res_repeat_increment_vec_str_handler, "repeat_increment", NOT_REQUIRED, {"repeat_times"}, {}, {}},
+	// unique data goes here. Each block will have a copy of these values on paste
+	{NULL, &block_res_data_handler, "vars", NOT_REQUIRED, {}, {}, {}},
 
 	// graphics-related stuff
 	// frames
-	{NULL, &block_res_fps_handler, "fps", NOT_REQUIRED, {}, {"frame_controller", "override_frame"}},
-	{NULL, &block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"data"}, {"fps", "override_frame"}},											 // directly controls the frame of a texture, so it cant used with fps
-	{NULL, &block_res_position_based_type_handler, "random_frame", NOT_REQUIRED, {}, {"frame_controller", "override_frame"}},									 // randomizes frame of a block based on its location
-	{&block_res_override_frame_incrementor, &block_res_override_frame_handler, "override_frame", NOT_REQUIRED, {}, {"fps", "frame_controller", "random_frame"}}, // directly sets its type from block resources - solid as rock
-	// flips, intested
-	{NULL, &block_res_flip_controller_handler, "flip_controller", NOT_REQUIRED, {"data"}, {}},
+	{NULL, &block_res_fps_handler, "fps", NOT_REQUIRED, {}, {}, {"frame_control"}},														   // changes frame of a block N times per second. Not a float!
+	{NULL, &block_res_anim_controller_handler, "frame_controller", NOT_REQUIRED, {"vars"}, {}, {"frame_control"}},						   // directly controls the frame of a texture, so it cant used with fps
+	{NULL, &block_res_position_based_type_handler, "random_frame", NOT_REQUIRED, {}, {}, {"frame_control"}},							   // randomizes frame of a block based on its location
+	{&block_res_override_frame_incrementor, &block_res_override_frame_handler, "override_frame", NOT_REQUIRED, {}, {}, {"frame_control"}}, // directly sets its type from block resources - solid as rock
+	// flips, untested
+	{NULL, &block_res_flip_controller_handler, "flip_controller", NOT_REQUIRED, {"vars"}, {}, {}},
 	// untested
-	{NULL, &block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED, {"data"}, {}},
+	{NULL, &block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED, {"vars"}, {}, {}},
 	// block type things
-	{NULL, &block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"data"}, {"ignore_type"}}, // reads its type from a block data - can be controlled with scripts
-	{NULL, &block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {"type_controller"}},			// ignores type and treats each 16x16 square on a texture as a frame
-
-	{NULL, &block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}}
+	{NULL, &block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"vars"}, {}, {"type_control"}}, // reads its type from a block data - can be controlled with scripts
+	{NULL, &block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {}, {"type_control"}},				 // ignores type and treats each 16x16 square on a texture as a frame
+	// custom script file, executed on level creation
+	{NULL, &block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}, {}}
 
 };
 
@@ -506,6 +513,9 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 	vec_str_t seen_entries;
 	vec_init(&seen_entries);
 
+	vec_str_t filled_slots;
+	vec_init(&filled_slots);
+
 	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
 	{
 		entry = get_entry(properties, blobify(res_handlers[i].name));
@@ -523,10 +533,10 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 		// fix string to be null terminated
 		// this line of code caused alot of headaches for me, i hate myself
 		entry.str[entry.length - 1] = '\0';
-		// check for dependencies
-		for (u32 j = 0; j < sizeof(res_handlers[i].dependencies) / sizeof(void *); j++)
+		// check for deps
+		for (u32 j = 0; j < sizeof(res_handlers[i].deps) / sizeof(void *); j++)
 		{
-			char *dep = res_handlers[i].dependencies[j];
+			char *dep = res_handlers[i].deps[j];
 			if (!dep)
 				continue;
 
@@ -550,9 +560,9 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 
 		// check for incompatibilities
 		// basicly same as incompatibilities but instead of requiring certain fields it skips them
-		for (u32 j = 0; j < sizeof(res_handlers[i].incompabilities) / sizeof(void *); j++)
+		for (u32 j = 0; j < sizeof(res_handlers[i].incompat) / sizeof(void *); j++)
 		{
-			char *inc = res_handlers[i].incompabilities[j];
+			char *inc = res_handlers[i].incompat[j];
 			if (!inc)
 				continue;
 
@@ -569,6 +579,32 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 			break;
 		}
 
+		// check for slots
+		for (u32 j = 0; j < sizeof(res_handlers[i].slots) / sizeof(void *); j++)
+		{
+			char *slot = res_handlers[i].slots[j];
+			if (!slot)
+				continue;
+
+			u32 ch;
+			char *filled;
+			u8 abort = 0;
+			vec_foreach(&filled_slots, filled, ch)
+			{
+				if (strcmp(filled, slot) == 0)
+				{
+					LOG_ERROR("\"%s\": \"%s\" cant be an \"%s\", slot is already taken", file_path, res_handlers[i].name, slot);
+					abort = 1;
+					break;
+				}
+			}
+
+			if (abort)
+				break;
+
+			(void)vec_push(&filled_slots, slot);
+		}
+
 		// calling the handler
 
 		if (res_handlers[i].function(entry.str, dest) != SUCCESS)
@@ -580,6 +616,9 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 		else // if the handler was successful
 			(void)vec_push(&seen_entries, res_handlers[i].name);
 	}
+
+	vec_deinit(&seen_entries);
+	vec_deinit(&filled_slots);
 
 	return status;
 }
@@ -596,9 +635,9 @@ u32 is_already_in_registry(block_resources_t *reg, block_resources *br)
 void call_increments(block_resources *br_ref)
 {
 	for (u32 j = 0; j < TOTAL_HANDLERS; j++)
-		if (res_handlers[j].increment_fn)								// if no increment function is present, we skip it
-			for (u32 i = 0; i < br_ref->id_range_increment.length; i++) // for each entry we check if its a correct handler
-				if (strcmp(res_handlers[j].name, br_ref->id_range_increment.data[i]) == 0)
+		if (res_handlers[j].increment_fn)							  // if no increment function is present, we skip it
+			for (u32 i = 0; i < br_ref->repeat_increment.length; i++) // for each entry we check if its a correct handler
+				if (strcmp(res_handlers[j].name, br_ref->repeat_increment.data[i]) == 0)
 					res_handlers[j].increment_fn(br_ref);
 }
 
@@ -608,8 +647,8 @@ void range_ids(block_resources_t *reg, block_resources *br_ref)
 	{
 		u8 skip_this_one = 0;
 
-		for (u32 j = 0; j < br_ref->id_range_skip.length; j++)
-			if (br_ref->id_range_skip.data[j] == i)
+		for (u32 j = 0; j < br_ref->repeat_skip.length; j++)
+			if (br_ref->repeat_skip.data[j] == i)
 			{
 				skip_this_one = 1;
 				break;
@@ -669,6 +708,9 @@ u32 read_block_registry(const char *name, block_registry *registry)
 				continue;
 			}
 
+			if (FLAG_GET(br.flags, B_RES_AUTOMATIC_ID))
+				br.id = reg->length;
+
 			if (is_already_in_registry(reg, &br))
 			{
 				LOG_INFO("Found duplicate resource: %s, resource is not pushed!", file_to_parse);
@@ -685,6 +727,8 @@ u32 read_block_registry(const char *name, block_registry *registry)
 			}
 		}
 	}
+
+	// check for holes and fill them
 
 	FLAG_SET(filler_entry.flags, B_RES_FLAG_IS_FILLER, 1)
 
