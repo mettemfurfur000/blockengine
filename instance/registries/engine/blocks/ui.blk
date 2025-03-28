@@ -1,0 +1,6 @@
+id = 10
+id_ranged_to = 9
+id_range_increment = [ id override_frame ]
+texture = ui_background.png
+override_frame = 0
+ignore_type = 1

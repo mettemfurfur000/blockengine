@@ -37,11 +37,15 @@ blockengine.register_handler(EVENT_IDS.ENGINE_INIT, function()
     print("mouse initialized")
 end)
 
-local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
-    local new_pos = {
-        x = math.floor(cur_pos_pixels.x / g_block_size / slice.zoom),
-        y = math.floor(cur_pos_pixels.y / g_block_size / slice.zoom)
+local function block_pos(mouse_pos, zoom)
+    return {
+        x = math.floor(mouse_pos.x / g_block_size / zoom),
+        y = math.floor(mouse_pos.y / g_block_size / zoom)
     }
+end
+
+local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
+    local new_pos = block_pos(cur_pos_pixels, slice.zoom)
 
     local delta = {
         x = new_pos.x - old_pos_blocks.x,
@@ -61,7 +65,34 @@ blockengine.register_handler(EVENT_IDS.SDL_MOUSEMOTION, function(x, y, state, cl
         return
     end
 
-    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, g_mouse_layer_index), { x = x, y = y }, mouse.pos)
+    local cur_slice = render_rules.get_slice(g_render_rules, g_mouse_layer_index);
+    mouse.pos = mouse_move(mouse.home_layer, cur_slice, {
+        x = x,
+        y = y
+    }, mouse.pos)
+
+    if state == 1 then
+        print("clicked at ", mouse.pos.x, mouse.pos.y)
+        if control_points == nil then
+            return
+        end
+        print("valid")
+        print_table(control_points)
+
+        local block_pos = block_pos({
+            x = x,
+            y = y
+        }, cur_slice.zoom)
+
+        for i, v in ipairs(control_points) do
+            print("checking " .. v.x .. ", " .. v.y .. " to " .. block_pos.x .. ", " .. block_pos.y)
+            if block_pos.x == v.x and block_pos.y == v.y then
+                control_points_clear()
+                v.action_set(mouse)
+                print("triggering")
+            end
+        end
+    end
 end)
 
 zoom_min = 1
@@ -97,7 +128,10 @@ blockengine.register_handler(EVENT_IDS.SDL_MOUSEWHEEL, function(x, y, pos_x, pos
         end
     end
 
-    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, g_mouse_layer_index), { x = pos_x, y = pos_y }, mouse.pos)
+    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, g_mouse_layer_index), {
+        x = pos_x,
+        y = pos_y
+    }, mouse.pos)
 end)
 
 -- TODO: implement clicking and operation changing
