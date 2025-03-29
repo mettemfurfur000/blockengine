@@ -53,6 +53,8 @@ function place_ui_init()
     g_menu.ui_text.layer:bprint(g_character_id, 0, 0, 16, "Mode:\n[ ]None\n[ ]Place\n[ ]Remove\n[ ]Copy\nLayer:\n")
     g_menu.ui_text.layer:bprint(g_character_id, 0, 6, 16, options)
 
+    g_menu.ui_text.layer:bprint(g_character_id, width / g_block_size - 14, 0, 16, "Blocks:")
+
     table.insert(control_points, new_button({
         x = 1,
         y = 1

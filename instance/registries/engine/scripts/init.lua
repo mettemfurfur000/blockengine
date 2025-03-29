@@ -1,8 +1,12 @@
 require("registries.engine.scripts.wrappers")
+require("registries.engine.scripts.constants")
 require("registries.engine.scripts.level_editor")
 
-local world_size = 32
 local width, height = render_rules.get_size(g_render_rules)
+
+g_width_blocks, g_height_blocks = width / g_block_size, height / g_block_size
+
+g_camera_limit_x, g_camera_limit_y = g_width_blocks * g_block_size - width, g_height_blocks * g_block_size - height
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     return {
@@ -62,7 +66,7 @@ g_engine_table = g_engine:to_table()
 
 g_character_id = find_block(g_engine_table, "character").id
 
-menu_room = safe_menu_create(test_level, "menu", world_size, world_size)
+menu_room = safe_menu_create(test_level, "menu", g_width_blocks, g_height_blocks)
 
 g_menu = {}
 
