@@ -50,7 +50,7 @@ char *get_folder_path(char *file_path, int bonus_for_str_size)
 
 int init_graphics()
 {
-	const int flags = SDL_INIT_VIDEO;
+	const int flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
 
 	if (SDL_Init(flags))
 	{
@@ -103,6 +103,20 @@ int init_graphics()
 	glClear(GL_COLOR_BUFFER_BIT);
 	glLoadIdentity();
 
+	if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 1, 1024) != 0)
+	{
+		LOG_ERROR("Mix_OpenAudio Error: %s", SDL_GetError());
+		return FAIL;
+	}
+
+	if (Mix_Init(MIX_INIT_MP3) != MIX_INIT_MP3)
+	{
+		LOG_ERROR("Mix_Init Error: %s", SDL_GetError());
+		return FAIL;
+	}
+
+	// Mix_ChannelFinished()
+
 	// SDL_ShowCursor(SDL_DISABLE);
 
 	return SUCCESS;
@@ -116,6 +130,8 @@ int exit_graphics()
 	SDL_GL_DeleteContext(g_gl_context);
 
 	SDL_Quit();
+
+	Mix_Quit();
 
 	return SUCCESS;
 }
@@ -230,6 +246,7 @@ int sound_load(sound *dest, char *path_to_file)
 	int namelen = strlen(filename);
 
 	dest->filename = (char *)malloc(namelen + 1);
+	dest->length_ms = dest->obj->alen;
 
 	strcpy(dest->filename, filename);
 

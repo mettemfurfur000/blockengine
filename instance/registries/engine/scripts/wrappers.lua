@@ -69,3 +69,20 @@ function safe_layer_create(room, registry_name, block_width, var_width)
 
     return layer
 end
+
+function find_block(reg_table, filename)
+    print("searching for " .. filename)
+    for k, v in pairs(reg_table) do
+        print(v)
+        if v.all_fields ~= nil then
+            local file_src = v.all_fields.source_filename
+            local match = string.gmatch(file_src, "/(%w+).blk$")()
+            -- print_table(v.all_fields)
+            -- print(filename, file_src, match)
+            if match == filename then
+                -- print("match!")
+                return v
+            end
+        end
+    end
+end

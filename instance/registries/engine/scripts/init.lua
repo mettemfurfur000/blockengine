@@ -4,21 +4,6 @@ require("registries.engine.scripts.level_editor")
 local world_size = 32
 local width, height = render_rules.get_size(g_render_rules)
 
-local function find_block(reg_table, filename)
-    for k, v in pairs(reg_table) do
-        if v.all_fields ~= nil then
-            local file_src = v.all_fields.source_filename
-            local match = string.gmatch(file_src, "/(%w+).blk$")()
-            print_table(v.all_fields)
-            print( filename, file_src, match)
-            if match == filename then
-                print("match!")
-                return v.id
-            end
-        end
-    end
-end
-
 local function slice_gen(x, y, w, h, z, lay_ref)
     return {
         x = x,
@@ -73,7 +58,9 @@ end
 g_engine = safe_registry_load(test_level, "engine")
 g_floors = safe_registry_load(test_level, "floors")
 
-g_character_id = find_block(g_engine:to_table(), "character")
+g_engine_table = g_engine:to_table()
+
+g_character_id = find_block(g_engine_table, "character").id
 
 menu_room = safe_menu_create(test_level, "menu", world_size, world_size)
 

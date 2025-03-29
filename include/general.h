@@ -34,6 +34,7 @@ static_assert(sizeof(i64) == 8);
 #define REGISTRIES_FOLDER "registries"
 #define REGISTRY_TEXTURES_FOLDER "textures"
 #define SCRIPTS_FOLDER "scripts"
+#define REGISTRY_SOUNDS_FOLDER "sounds"
 
 #define SAFE_FREE(ptr) \
     if (ptr)           \

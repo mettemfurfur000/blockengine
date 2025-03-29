@@ -40,7 +40,7 @@ typedef struct block_resources
 	u64 id;
 	blob vars;
 
-	u64 ranged_id;
+	u64 repeat_times;
 	vec_int_t repeat_skip;
 	vec_str_t repeat_increment;
 

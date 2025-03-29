@@ -444,15 +444,6 @@ static int lua_sound_play(lua_State *L)
     return 1;
 }
 
-static int lua_sound_play_randomly(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Sound, wrapper, 1);
-
-    lua_pushinteger(L, Mix_PlayChannel(-1, wrapper->s->obj, 0));
-
-    return 1;
-}
-
 static int lua_registry_get_name(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, BlockRegistry, wrapper, 1);
@@ -513,20 +504,21 @@ static int lua_cast_to_table(lua_State *L)
         if (r.sounds.length > 0)
         {
             lua_newtable(L);
+
+            sound s;
+            u32 j;
+            vec_foreach(&r.sounds, s, j)
             {
-                sound s;
-                u32 j;
-                vec_foreach(&r.sounds, s, j)
-                {
-                    lua_newtable(L);
-                    STRUCT_GET(L, s, filename, lua_pushstring);
-                    STRUCT_GET(L, s, length_ms, lua_pushinteger);
+                lua_newtable(L);
+                STRUCT_GET(L, s, filename, lua_pushstring);
+                STRUCT_GET(L, s, length_ms, lua_pushinteger);
 
-                    NEW_USER_OBJECT(L, Sound, &r.sounds.data[j]);
+                NEW_USER_OBJECT(L, Sound, &r.sounds.data[j]);
+                lua_setfield(L, -2, "sound");
 
-                    lua_seti(L, -2, j + 1);
-                }
+                lua_seti(L, -2, j + 1);
             }
+
             lua_setfield(L, -2, "sounds");
         }
 

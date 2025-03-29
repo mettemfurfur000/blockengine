@@ -327,7 +327,7 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 const static char clean_token[] = "??clean??";
 
 DECLARE_DEFAULT_LONG_FIELD_HANDLER(id)
-DECLARE_DEFAULT_LONG_FIELD_HANDLER(ranged_id)
+DECLARE_DEFAULT_LONG_FIELD_HANDLER(repeat_times)
 // DECLARE_DEFAULT_LONG_FIELD_HANDLER(repeat_skip)
 
 u8 block_res_repeat_skip_handler(const char *data, block_resources *dest)
@@ -370,10 +370,21 @@ u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 
 	read_str_list(data, &tmp);
 
+	CHECK_PTR(dest->parent_registry)
+
+	block_registry *b_reg = (block_registry *)dest->parent_registry;
+
+	CHECK_PTR(b_reg->name)
+
+	char sound_full_path[256] = {};
+
 	for (u32 i = 0; i < tmp.length; i++)
 	{
 		sound t = {};
-		sound_load(&t, tmp.data[i]);
+
+		snprintf(sound_full_path, sizeof(sound_full_path), REGISTRIES_FOLDER SEPARATOR_STR "%s" SEPARATOR_STR REGISTRY_SOUNDS_FOLDER SEPARATOR_STR "%s", b_reg->name, tmp.data[i]);
+
+		sound_load(&t, sound_full_path);
 		(void)vec_push(&dest->sounds, t);
 	}
 
@@ -461,7 +472,7 @@ const static resource_entry_handler res_handlers[] = {
 	{NULL, &block_res_sounds_vec_handler, "sounds", NOT_REQUIRED, {}, {}, {}},
 	// dangerous: will replicate the same block multiple times until it reaches the said id
 	// useful if you just want to have a bunch of blocks with the same texture and locked type
-	{NULL, &block_res_ranged_id_handler, "repeat_times", NOT_REQUIRED, {}, {}, {}},
+	{NULL, &block_res_repeat_times_handler, "repeat_times", NOT_REQUIRED, {}, {}, {}},
 	// if id accurs on this list while ranging, all increments will pass but no blocks will be pasted
 	{NULL, &block_res_repeat_skip_handler, "repeat_skip", NOT_REQUIRED, {"repeat_times"}, {}, {}},
 	// this controls what variables shoud be incremented as id_range progresses forward
@@ -643,7 +654,7 @@ void call_increments(block_resources *br_ref)
 
 void range_ids(block_resources_t *reg, block_resources *br_ref)
 {
-	for (u32 i = 1; i <= br_ref->ranged_id; i++)
+	for (u32 i = 1; i <= br_ref->repeat_times; i++)
 	{
 		u8 skip_this_one = 0;
 
@@ -721,7 +732,7 @@ u32 read_block_registry(const char *name, block_registry *registry)
 
 			// check for range thing
 
-			if (br.ranged_id != 0)
+			if (br.repeat_times != 0)
 			{
 				range_ids(reg, &br);
 			}

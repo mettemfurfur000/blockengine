@@ -1,0 +1,4 @@
+automatic_id 1
+texture = fish.png
+script = fish.lua
+sounds = [ fish-01.wav fish-02.wav fish-03.wav fish-04.wav ]
