@@ -272,3 +272,24 @@ void fill_color(image *img, u8 color[4])
             for (u8 c = 0; c < CHANNELS; c++)
                 *ACCESS_CHANNEL(img, i, j, c) = color[c];
 }
+
+void get_avg_color_noalpha(image *img, u8 color_out[4])
+{
+    if (img == NULL)
+    {
+        LOG_ERROR("fill_color Error: image is NULL");
+        return;
+    }
+
+    const u32 colors = img->height * img->width;
+
+    u32 color[4] = {};
+
+    for (u32 j = 0; j < img->height; j++)
+        for (u32 i = 0; i < img->width; i++)
+            for (u8 c = 0; c < CHANNELS; c++)
+                color[c] += *ACCESS_CHANNEL(img, i, j, c);
+
+    for (u8 c = 0; c < CHANNELS; c++)
+        color_out[c] = color[c] / colors;
+}

@@ -13,7 +13,7 @@ int test_rand_fill_and_remove()
 	blob val = {};
 	blob ret = {};
 
-	for (int i = 1; i < TESTS; i++)
+	for ( u32 i = 1; i < TESTS; i++)
 	{
 		blob_generate(&key, 5 + i);
 
@@ -63,7 +63,7 @@ int test_hash_table_fill()
 
 	bench_start_time = bench_start();
 
-	for (int i = 0; i < TESTS; i++)
+	for ( u32 i = 0; i < TESTS; i++)
 	{
 		rand_val = rand();
 		blob_generate(&key, rand_val);
@@ -73,11 +73,11 @@ int test_hash_table_fill()
 	filling_time = bench_end(bench_start_time);
 
 #define RUNS 5
-	for (int j = 0; j < RUNS; j++)
+	for ( u32 j = 0; j < RUNS; j++)
 	{
 		bench_start_time = bench_start();
 
-		for (int i = 0; i < TESTS; i++)
+		for ( u32 i = 0; i < TESTS; i++)
 		{
 			rand_val = rand();
 

@@ -36,11 +36,11 @@ static_assert(sizeof(i64) == 8);
 #define SCRIPTS_FOLDER "scripts"
 #define REGISTRY_SOUNDS_FOLDER "sounds"
 
+// LOG_DEBUG("freeing %p", ptr);
 #define SAFE_FREE(ptr) \
     if (ptr)           \
         free(ptr);     \
-    ptr = 0;           \
-    LOG_DEBUG("freeing %p", ptr);
+    ptr = 0;
 
 #define CHECK_PTR(ptr)                                   \
     if (!(ptr))                                          \

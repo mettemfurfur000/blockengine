@@ -4,7 +4,7 @@ unsigned long hash_function(blob key)
 {
 	unsigned long hash = 5381;
 
-	for (int i = 0; i < key.size; i++)
+	for (u32 i = 0; i < key.size; i++)
 		hash = ((hash << 5) + hash) + key.ptr[i];
 
 	return hash % TABLE_SIZE;
@@ -19,7 +19,7 @@ void blob_generate(blob *b, u32 seed)
 
 	srand(seed);
 
-	for (int i = 0; i < b->size; i++)
+	for (u32 i = 0; i < b->size; i++)
 		b->ptr[i] = (char)(rand() % 256);
 }
 
@@ -46,7 +46,7 @@ u8 blob_dup(blob *dest, blob src)
 
 	dest->size = src.size;
 
-	LOG_DEBUG("blob %.*s (%d) copied to %p", src.size, src.ptr, src.size, dest->ptr);
+	// LOG_DEBUG("blob %.*s (%d) copied to %p", src.size, src.ptr, src.size, dest->ptr);
 
 	return SUCCESS;
 }
@@ -59,7 +59,7 @@ u8 blob_cmp(blob a, blob b)
 	if (a.ptr == b.ptr)
 		return 0;
 
-	for (int i = 0; i < a.size; i++)
+	for (u32 i = 0; i < a.size; i++)
 		if (a.ptr[i] != b.ptr[i])
 			return a.ptr[i] - b.ptr[i];
 
@@ -114,7 +114,7 @@ hash_node **alloc_table()
 	hash_node **t = (hash_node **)malloc(TABLE_SIZE * sizeof(hash_node *));
 	memset(t, 0, TABLE_SIZE * sizeof(hash_node *));
 
-	LOG_DEBUG("Allocated table of size %d, ptr %p", TABLE_SIZE, t);
+	// LOG_DEBUG("Allocated table of size %d, ptr %p", TABLE_SIZE, t);
 
 	return t;
 }
@@ -123,12 +123,12 @@ void free_table(hash_node **table)
 {
 	CHECK_PTR_NORET(table);
 
-	LOG_DEBUG("Freeing table of size %d, ptr %p", TABLE_SIZE, table);
+	// LOG_DEBUG("Freeing table of size %d, ptr %p", TABLE_SIZE, table);
 
 	hash_node *node;
 	hash_node *next_node;
 
-	for (int i = 0; i < TABLE_SIZE; ++i)
+	for (u32 i = 0; i < TABLE_SIZE; ++i)
 	{
 		node = table[i];
 		while (node != NULL)
@@ -244,23 +244,23 @@ blob get_entry(hash_node **table, blob key)
 
 void print_node(hash_node *node, const char *context)
 {
-	LOG_DEBUG("%s %.*s [%d] : %.*s [%d], %p -> %p",
-			  context,
-			  node->key.size,
-			  node->key.ptr,
-			  node->key.size,
-			  node->value.size, node->value.ptr,
-			  node->value.size,
-			  node->key.ptr,
-			  node->value.ptr);
+	// LOG_DEBUG("%s %.*s [%d] : %.*s [%d], %p -> %p",
+	// 		  context,
+	// 		  node->key.size,
+	// 		  node->key.ptr,
+	// 		  node->key.size,
+	// 		  node->value.size, node->value.ptr,
+	// 		  node->value.size,
+	// 		  node->key.ptr,
+	// 		  node->value.ptr);
 }
 
 void print_table(hash_node **table)
 {
 	hash_node *node;
-	LOG_DEBUG("table content:");
+	// LOG_DEBUG("table content:");
 
-	for (int i = 0; i < TABLE_SIZE; ++i)
+	for (u32 i = 0; i < TABLE_SIZE; ++i)
 	{
 		node = table[i];
 		while (node != NULL)
@@ -305,7 +305,7 @@ u64 actual_size_of_table(hash_node **table)
 	u64 size = 0;
 	hash_node *node;
 
-	for (int i = 0; i < TABLE_SIZE; ++i) // goes wide
+	for (u32 i = 0; i < TABLE_SIZE; ++i) // goes wide
 	{
 		node = table[i];
 
@@ -327,7 +327,7 @@ u64 table_elements(hash_node **table)
 	u64 count = 0;
 
 	hash_node *node;
-	for (int i = 0; i < TABLE_SIZE; ++i)
+	for (u32 i = 0; i < TABLE_SIZE; ++i)
 	{
 		node = table[i];
 		while (node != NULL)

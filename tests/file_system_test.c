@@ -40,12 +40,12 @@ int test_layer_init()
 
 	u64 id = 0;
 
-	for(int i = 0; i < l->width * l->height; i++)
+	for(u32 i = 0; i < l->width * l->height; i++)
 	{
 		CHECK(block_set_id(l, i % l->width, i / l->width, i))
 	}
 
-	for(int i = 0; i < l->width * l->height; i++)
+	for(u32 i = 0; i < l->width * l->height; i++)
 	{
 		CHECK(block_get_id(l, i % l->width, i / l->width, &id))
 		CHECK(id != i)
@@ -73,7 +73,7 @@ int test_load_level()
 
 	u64 id = 0;
 
-	for(int i = 0; i < l->width * l->height; i++)
+	for(u32 i = 0; i < l->width * l->height; i++)
 	{
 		CHECK(block_get_id(l, i % l->width, i / l->width, &id))
 		CHECK(id != i)

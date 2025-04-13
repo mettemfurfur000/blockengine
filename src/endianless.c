@@ -59,7 +59,7 @@ int flip_bytes_in_place(u8 *bytes, int size)
 	u8 temp;
 	int end_index;
 
-	for (int i = 0; i < sizehalf; i++)
+	for (u32 i = 0; i < sizehalf; i++)
 	{
 		end_index = size - i - 1;
 

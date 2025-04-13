@@ -48,7 +48,7 @@ void print_registry(block_registry bro)
 	block_resources_t br = bro.resources;
 	LOG_INFO("printing registry with size %d:\n", br.length);
 
-	for (int i = 0; i < br.length; i++)
+	for ( u32 i = 0; i < br.length; i++)
 	{
 		LOG_INFO("\t\tblock: %lld,", br.data[i].id);
 

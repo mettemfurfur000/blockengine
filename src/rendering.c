@@ -33,7 +33,7 @@ u8 render_layer(layer_slice slice)
 
     block_registry *b_reg = slice.ref->registry;
 
-    //LOG_DEBUG("finding registry %p", b_reg);
+    // LOG_DEBUG("finding registry %p", b_reg);
 
     const int start_block_x = ((slice.x / local_block_width) - 1);
     const int start_block_y = ((slice.y / local_block_width) - 1);
@@ -54,12 +54,12 @@ u8 render_layer(layer_slice slice)
 
     texture *texture;
 
-    for (int i = start_block_x; i < end_block_x; i++)
+    for (i32 i = start_block_x; i < end_block_x; i++)
     {
         dest_x += local_block_width;
         dest_y = -block_y_offset - local_block_width * 2;
 
-        for (int j = start_block_y; j < end_block_y; j++)
+        for (i32 j = start_block_y; j < end_block_y; j++)
         {
             dest_y += local_block_width;
             // calculate y coordinate of block on screen
@@ -138,7 +138,7 @@ u8 render_layer(layer_slice slice)
 
 u8 client_render(const client_render_rules rules)
 {
-    for (int i = 0; i < rules.draw_order.length; i++)
+    for (u32 i = 0; i < rules.draw_order.length; i++)
     {
         int layer_id = rules.draw_order.data[i];
         render_layer(rules.slices.data[layer_id]);

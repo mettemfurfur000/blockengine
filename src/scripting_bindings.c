@@ -92,6 +92,22 @@ static int apply_color_lua(lua_State *L)
     return 1;
 }
 
+static int get_average_color(lua_State *L)
+{
+    ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
+
+    u8 color_out[4] = {};
+
+    get_avg_color_noalpha(wrapper->img, color_out);
+
+    lua_pushinteger(L, color_out[0]);
+    lua_pushinteger(L, color_out[1]);
+    lua_pushinteger(L, color_out[2]);
+    lua_pushinteger(L, 255);
+
+    return 4;
+}
+
 static int gamma_correction_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
@@ -215,6 +231,7 @@ void load_image_editing_library(lua_State *L)
 
         {"add_brightness", adjust_brightness_lua},
         {"add_color", apply_color_lua},
+        {"get_avg_color", get_average_color},
         {"gamma_correction", gamma_correction_lua},
 
         //{"blend", blend_images_lua},
@@ -276,7 +293,7 @@ static int lua_render_rules_get_order(lua_State *L)
 
     lua_newtable(L);
 
-    for (int i = 0; i < rules->draw_order.length; i++)
+    for (u32 i = 0; i < rules->draw_order.length; i++)
     {
         lua_pushinteger(L, i);
         lua_pushinteger(L, rules->draw_order.data[i]);
@@ -452,7 +469,7 @@ static int lua_registry_get_name(lua_State *L)
     return 1;
 }
 
-static int lua_cast_to_table(lua_State *L)
+static int lua_registry_to_table(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, BlockRegistry, wrapper, 1);
 
@@ -522,11 +539,49 @@ static int lua_cast_to_table(lua_State *L)
             lua_setfield(L, -2, "sounds");
         }
 
+        // if (r.inputs.length > 0)
+        // {
+        //     lua_newtable(L);
+
+        //     input_handler s;
+        //     u32 j;
+        //     vec_foreach(&r.inputs, s, j)
+        //     {
+        //         lua_newtable(L);
+        //         // STRUCT_GET(L, s, filename, lua_pushstring);
+        //         // STRUCT_GET(L, s, length_ms, lua_pushinteger);
+
+        //         // NEW_USER_OBJECT(L, Sound, &r.sounds.data[j]);
+        //         lua_pushstring(L, s.name);
+        //         lua_setfield(L, -2, "name");
+        //         lua_pushstring(L, lua_typename(L, s.lua_type));
+        //         lua_setfield(L, -2, "type");
+        //         lua_rawgeti(L, LUA_REGISTRYINDEX, s.lua_func_ref);
+        //         lua_setfield(L, -2, "function");
+
+        //         lua_seti(L, -2, j + 1);
+        //     }
+
+        //     lua_setfield(L, -2, "inputs");
+        // }
+
         lua_seti(L, -2, i + 1);
     }
 
     return 1;
 }
+
+// static int lua_registry_register_block_input(lua_State *L)
+// {
+//     LUA_CHECK_USER_OBJECT(L, BlockRegistry, wrapper, 1);
+//     luaL_checkany(L, 2);
+//     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+//     u64 id = luaL_checkinteger(L, 3);
+//     const char *name = luaL_checkstring(L, 4);
+
+//     lua_pushboolean(L, scripting_register_block_input(wrapper->reg, id, ref, name) == SUCCESS);
+//     return 1;
+// }
 
 static int lua_level_create(lua_State *L)
 {
@@ -608,7 +663,7 @@ static int lua_level_get_room_by_name(lua_State *L)
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     const char *name = luaL_checkstring(L, 2);
 
-    for (int i = 0; i < wrapper->lvl->rooms.length; i++)
+    for (u32 i = 0; i < wrapper->lvl->rooms.length; i++)
     {
         if (strcmp(((room *)wrapper->lvl->rooms.data[i])->name, name) == 0)
         {
@@ -967,7 +1022,8 @@ void lua_block_registry_register(lua_State *L)
 {
     const static luaL_Reg registry_methods[] = {
         {"get_name", lua_registry_get_name},
-        {"to_table", lua_cast_to_table},
+        {"to_table", lua_registry_to_table},
+        //{"register_input", lua_registry_register_block_input},
         {"uuid", lua_uuid_universal},
         {NULL, NULL},
     };

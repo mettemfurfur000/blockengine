@@ -302,7 +302,7 @@ GETTER_IMP(i64)
 
 // utils
 
-void dbg_data_layout(blob b, char* ret)
+void dbg_data_layout(blob b, char *ret)
 {
 	u8 data_size = b.size;
 
@@ -335,7 +335,7 @@ void dbg_data_layout(blob b, char* ret)
 			sprintf(buf, "\tchar %c[] = %s;\n\t// u8 %c[] = { ", letter, (char *)ptr, letter);
 			strcat(ret, buf);
 
-			for (int i = 0; i < size; i++)
+			for (u32 i = 0; i < size; i++)
 			{
 				if (i != size - 1)
 					sprintf(buf, "0x%02x, ", *(u8 *)(ptr + i));

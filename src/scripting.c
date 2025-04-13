@@ -4,7 +4,7 @@
 
 lua_State *g_L = 0;
 
-vec_int_t handlers[32] = {};
+vec_int_t handlers[128] = {};
 
 static int lua_register_handler(lua_State *L)
 {
@@ -21,6 +21,7 @@ void scripting_register(lua_State *L)
     const static luaL_Reg blockengine_lib[] = {
 
         {"register_handler", lua_register_handler},
+        //{"register_input", lua_register_block_input},
 
         {NULL, NULL}
 
@@ -38,15 +39,108 @@ void *check_light_userdata(lua_State *L, int index)
 
 void scripting_init()
 {
-    g_L = luaL_newstate(); /* opens Lua */
+    /* opens Lua */
+    g_L = luaL_newstate();
     luaL_openlibs(g_L);
-    scripting_register(g_L); /* register all blockengine functions */
+    /* register all blockengine functions */
+    scripting_register(g_L);
 
     lua_register_engine_objects(g_L);
 
+    /* client render rules */
     lua_logging_register(g_L);
     lua_level_editing_lib_register(g_L);
-    lua_register_render_rules(g_L); /* client render rules */
+    lua_register_render_rules(g_L);
+
+    /* push an event enum */
+
+    enum_entry entries[] = {
+        {"ENGINE_BLOCK_UDPATE", ENGINE_BLOCK_UDPATE},
+        {"ENGINE_BLOCK_ERASED", ENGINE_BLOCK_ERASED},
+        {"ENGINE_BLOCK_CREATE", ENGINE_BLOCK_CREATE},
+
+        {"ENGINE_BLOB_UPDATE", ENGINE_BLOB_UPDATE},
+        {"ENGINE_BLOB_ERASED", ENGINE_BLOB_ERASED},
+        {"ENGINE_BLOB_CREATE", ENGINE_BLOB_CREATE},
+
+        {"ENGINE_SPECIAL_SIGNAL", ENGINE_SPECIAL_SIGNAL},
+
+        {"ENGINE_TICK", ENGINE_TICK},
+        {"ENGINE_INIT", ENGINE_INIT},
+
+        {NULL, 0},
+
+    };
+
+    // TODO: sync it wit de script
+
+    scripting_set_global_enum(g_L, entries, "engine_events");
+
+    enum_entry sdl_events[] = {
+        {"SDL_FIRSTEVENT", SDL_FIRSTEVENT},
+        {"SDL_QUIT", SDL_QUIT},
+        {"SDL_APP_TERMINATING", SDL_APP_TERMINATING},
+        {"SDL_APP_LOWMEMORY", SDL_APP_LOWMEMORY},
+        {"SDL_APP_WILLENTERBACKGROUND", SDL_APP_WILLENTERBACKGROUND},
+        {"SDL_APP_DIDENTERBACKGROUND", SDL_APP_DIDENTERBACKGROUND},
+        {"SDL_APP_WILLENTERFOREGROUND", SDL_APP_WILLENTERFOREGROUND},
+        {"SDL_APP_DIDENTERFOREGROUND", SDL_APP_DIDENTERFOREGROUND},
+        {"SDL_LOCALECHANGED", SDL_LOCALECHANGED},
+        {"SDL_DISPLAYEVENT", SDL_DISPLAYEVENT},
+        {"SDL_WINDOWEVENT", SDL_WINDOWEVENT},
+        {"SDL_SYSWMEVENT", SDL_SYSWMEVENT},
+        {"SDL_KEYDOWN", SDL_KEYDOWN},
+        {"SDL_KEYUP", SDL_KEYUP},
+        {"SDL_TEXTEDITING", SDL_TEXTEDITING},
+        {"SDL_TEXTINPUT", SDL_TEXTINPUT},
+        {"SDL_KEYMAPCHANGED", SDL_KEYMAPCHANGED},
+        {"SDL_TEXTEDITING_EXT", SDL_TEXTEDITING_EXT},
+        {"SDL_MOUSEMOTION", SDL_MOUSEMOTION},
+        {"SDL_MOUSEBUTTONDOWN", SDL_MOUSEBUTTONDOWN},
+        {"SDL_MOUSEBUTTONUP", SDL_MOUSEBUTTONUP},
+        {"SDL_MOUSEWHEEL", SDL_MOUSEWHEEL},
+        {"SDL_JOYAXISMOTION", SDL_JOYAXISMOTION},
+        {"SDL_JOYBALLMOTION", SDL_JOYBALLMOTION},
+        {"SDL_JOYHATMOTION", SDL_JOYHATMOTION},
+        {"SDL_JOYBUTTONDOWN", SDL_JOYBUTTONDOWN},
+        {"SDL_JOYBUTTONUP", SDL_JOYBUTTONUP},
+        {"SDL_JOYDEVICEADDED", SDL_JOYDEVICEADDED},
+        {"SDL_JOYDEVICEREMOVED", SDL_JOYDEVICEREMOVED},
+        {"SDL_JOYBATTERYUPDATED", SDL_JOYBATTERYUPDATED},
+        {"SDL_CONTROLLERAXISMOTION", SDL_CONTROLLERAXISMOTION},
+        {"SDL_CONTROLLERBUTTONDOWN", SDL_CONTROLLERBUTTONDOWN},
+        {"SDL_CONTROLLERBUTTONUP", SDL_CONTROLLERBUTTONUP},
+        {"SDL_CONTROLLERDEVICEADDED", SDL_CONTROLLERDEVICEADDED},
+        {"SDL_CONTROLLERDEVICEREMOVED", SDL_CONTROLLERDEVICEREMOVED},
+        {"SDL_CONTROLLERDEVICEREMAPPED", SDL_CONTROLLERDEVICEREMAPPED},
+        {"SDL_CONTROLLERTOUCHPADDOWN", SDL_CONTROLLERTOUCHPADDOWN},
+        {"SDL_CONTROLLERTOUCHPADMOTION", SDL_CONTROLLERTOUCHPADMOTION},
+        {"SDL_CONTROLLERTOUCHPADUP", SDL_CONTROLLERTOUCHPADUP},
+        {"SDL_CONTROLLERSENSORUPDATE", SDL_CONTROLLERSENSORUPDATE},
+        {"SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3", SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3},
+        {"SDL_CONTROLLERSTEAMHANDLEUPDATED", SDL_CONTROLLERSTEAMHANDLEUPDATED},
+        {"SDL_FINGERDOWN", SDL_FINGERDOWN},
+        {"SDL_FINGERUP", SDL_FINGERUP},
+        {"SDL_FINGERMOTION", SDL_FINGERMOTION},
+        {"SDL_DOLLARGESTURE", SDL_DOLLARGESTURE},
+        {"SDL_DOLLARRECORD", SDL_DOLLARRECORD},
+        {"SDL_MULTIGESTURE", SDL_MULTIGESTURE},
+        {"SDL_CLIPBOARDUPDATE", SDL_CLIPBOARDUPDATE},
+        {"SDL_DROPFILE", SDL_DROPFILE},
+        {"SDL_DROPTEXT", SDL_DROPTEXT},
+        {"SDL_DROPBEGIN", SDL_DROPBEGIN},
+        {"SDL_DROPCOMPLETE", SDL_DROPCOMPLETE},
+        {"SDL_AUDIODEVICEADDED", SDL_AUDIODEVICEADDED},
+        {"SDL_AUDIODEVICEREMOVED", SDL_AUDIODEVICEREMOVED},
+        {"SDL_SENSORUPDATE", SDL_SENSORUPDATE},
+        {"SDL_RENDER_TARGETS_RESET", SDL_RENDER_TARGETS_RESET},
+        {"SDL_RENDER_DEVICE_RESET", SDL_RENDER_DEVICE_RESET},
+        {"SDL_POLLSENTINEL", SDL_POLLSENTINEL},
+        {"SDL_USEREVENT", SDL_USEREVENT},
+        {"SDL_LASTEVENT", SDL_LASTEVENT},
+    };
+
+    scripting_set_global_enum(g_L, sdl_events, "sdl_events");
 }
 
 void scripting_close()
@@ -54,49 +148,85 @@ void scripting_close()
     lua_close(g_L);
 }
 
-u16 get_lookup_id(u32 type)
+i32 get_lookup_id(u32 type)
 {
-    if (type >= SDL_QUIT && type < SDL_DISPLAYEVENT) // quit events
-        return 0;
-    if (type >= SDL_DISPLAYEVENT && type < SDL_WINDOWEVENT) // display events
-        return 1;
-    if (type >= SDL_WINDOWEVENT && type < SDL_KEYDOWN) // window events
-        return 2;
-    if (type >= SDL_KEYDOWN && type < SDL_MOUSEMOTION) // key events
-        return 3;
-    if (type >= SDL_MOUSEMOTION && type < SDL_MOUSEWHEEL) // mouse events
-        return 4;
-    if (type >= SDL_MOUSEWHEEL && type < SDL_JOYAXISMOTION) // mouse events
-        return 5;
-    if (type >= SDL_JOYAXISMOTION && type < SDL_CONTROLLERAXISMOTION) // joystick events
-        return 6;
-    if (type >= SDL_CONTROLLERAXISMOTION && type < SDL_FINGERDOWN) // controller events
-        return 7;
-    if (type >= SDL_FINGERDOWN && type < SDL_DOLLARGESTURE) // touch events
-        return 8;
-    if (type >= SDL_DOLLARGESTURE && type < SDL_CLIPBOARDUPDATE) // gesture events
-        return 9;
-    if (type >= SDL_CLIPBOARDUPDATE && type < SDL_DROPFILE) // clipboard events
-        return 10;
-    if (type >= SDL_DROPFILE && type < SDL_AUDIODEVICEADDED) // drop events
-        return 11;
-    if (type >= SDL_AUDIODEVICEADDED && type < SDL_SENSORUPDATE) // audio events
-        return 12;
-    if (type >= SDL_SENSORUPDATE && type < SDL_RENDER_TARGETS_RESET) // sensor events
-        return 13;
-    if (type >= SDL_RENDER_TARGETS_RESET && type < SDL_POLLSENTINEL) // render events
-        return 14;
-    if (type >= SDL_POLLSENTINEL && type < SDL_USEREVENT) // poll events
-        return 15;
-    if (type >= ENGINE_BLOCK_UDPATE && type < ENGINE_BLOCK_SECTION_END) // block events
-        return 16;
-    if (type >= ENGINE_BLOB_UPDATE && type < ENGINE_BLOB_SECTION_END) // blob events
-        return 17;
-    if (type == ENGINE_TICK)
-        return 18;
-    if (type == ENGINE_INIT)
-        return 19;
-    return sizeof(handlers); // unknown event, must be an error
+    const u32 lookup_table[] = {
+        SDL_FIRSTEVENT,
+        SDL_QUIT,
+        SDL_APP_TERMINATING,
+        SDL_APP_LOWMEMORY,
+        SDL_APP_WILLENTERBACKGROUND,
+        SDL_APP_DIDENTERBACKGROUND,
+        SDL_APP_WILLENTERFOREGROUND,
+        SDL_APP_DIDENTERFOREGROUND,
+        SDL_LOCALECHANGED,
+        SDL_DISPLAYEVENT,
+        SDL_WINDOWEVENT,
+        SDL_SYSWMEVENT,
+        SDL_KEYDOWN,
+        SDL_KEYUP,
+        SDL_TEXTEDITING,
+        SDL_TEXTINPUT,
+        SDL_KEYMAPCHANGED,
+        SDL_TEXTEDITING_EXT,
+        SDL_MOUSEMOTION,
+        SDL_MOUSEBUTTONDOWN,
+        SDL_MOUSEBUTTONUP,
+        SDL_MOUSEWHEEL,
+        SDL_JOYAXISMOTION,
+        SDL_JOYBALLMOTION,
+        SDL_JOYHATMOTION,
+        SDL_JOYBUTTONDOWN,
+        SDL_JOYBUTTONUP,
+        SDL_JOYDEVICEADDED,
+        SDL_JOYDEVICEREMOVED,
+        SDL_JOYBATTERYUPDATED,
+        SDL_CONTROLLERAXISMOTION,
+        SDL_CONTROLLERBUTTONDOWN,
+        SDL_CONTROLLERBUTTONUP,
+        SDL_CONTROLLERDEVICEADDED,
+        SDL_CONTROLLERDEVICEREMOVED,
+        SDL_CONTROLLERDEVICEREMAPPED,
+        SDL_CONTROLLERTOUCHPADDOWN,
+        SDL_CONTROLLERTOUCHPADMOTION,
+        SDL_CONTROLLERTOUCHPADUP,
+        SDL_CONTROLLERSENSORUPDATE,
+        SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3,
+        SDL_CONTROLLERSTEAMHANDLEUPDATED,
+        SDL_FINGERDOWN,
+        SDL_FINGERUP,
+        SDL_FINGERMOTION,
+        SDL_DOLLARGESTURE,
+        SDL_DOLLARRECORD,
+        SDL_MULTIGESTURE,
+        SDL_CLIPBOARDUPDATE,
+        SDL_DROPFILE,
+        SDL_DROPTEXT,
+        SDL_DROPBEGIN,
+        SDL_DROPCOMPLETE,
+        SDL_AUDIODEVICEADDED,
+        SDL_AUDIODEVICEREMOVED,
+        SDL_SENSORUPDATE,
+        SDL_RENDER_TARGETS_RESET,
+        SDL_RENDER_DEVICE_RESET,
+        SDL_POLLSENTINEL,
+        SDL_USEREVENT,
+        SDL_LASTEVENT,
+        ENGINE_BLOCK_UDPATE,
+        ENGINE_BLOCK_ERASED,
+        ENGINE_BLOCK_CREATE,
+        ENGINE_BLOB_UPDATE,
+        ENGINE_BLOB_ERASED,
+        ENGINE_BLOB_CREATE,
+        ENGINE_TICK,
+        ENGINE_INIT,
+    };
+
+    for (u32 i = 0; i < sizeof(lookup_table) / sizeof(u32); i++)
+        if (type == lookup_table[i])
+            return i;
+
+    return -1;
 }
 
 int push_event_args(SDL_Event *e)
@@ -131,6 +261,8 @@ int push_event_args(SDL_Event *e)
         lua_pushinteger(g_L, e->wheel.mouseX);
         lua_pushinteger(g_L, e->wheel.mouseY);
         return 4;
+    // case ENGINE_SPECIAL_SIGNAL:
+    //     return 4;
     case ENGINE_BLOCK_UDPATE:
     case ENGINE_BLOCK_ERASED:
     case ENGINE_BLOCK_CREATE:
@@ -177,9 +309,9 @@ int push_event_args(SDL_Event *e)
 
 void call_handlers(SDL_Event e)
 {
-    u16 lookup_id = get_lookup_id(e.type);
+    i32 lookup_id = get_lookup_id(e.type);
 
-    if (lookup_id == sizeof(handlers))
+    if (lookup_id == -1)
     {
         LOG_ERROR("Unknown event type %d", e.type);
         return;
@@ -188,7 +320,7 @@ void call_handlers(SDL_Event e)
     vec_int_t target = handlers[lookup_id];
 
     const int handler_count = target.length;
-    for (int i = 0; i < handler_count; i++)
+    for (u32 i = 0; i < handler_count; i++)
     {
         lua_geti(g_L, LUA_REGISTRYINDEX, target.data[i]);
         luaL_checktype(g_L, -1, LUA_TFUNCTION);
@@ -205,7 +337,7 @@ void call_handlers(SDL_Event e)
 
 void scripting_register_event_handler(int lua_func_ref, int event_type)
 {
-    u16 lookup_id = get_lookup_id(event_type);
+    i32 lookup_id = get_lookup_id(event_type);
 
     LOG_DEBUG("registering %d handler", lookup_id);
 
@@ -216,6 +348,32 @@ void scripting_register_event_handler(int lua_func_ref, int event_type)
     }
 
     (void)vec_push(&handlers[lookup_id], lua_func_ref);
+}
+
+/*
+    Registers said input function to the block registry
+*/
+u8 scripting_register_block_input(block_registry *reg, u64 id, int lua_func_ref, const char *name)
+{
+    CHECK_PTR(reg);
+    CHECK_PTR(name);
+
+    if (id > reg->resources.length)
+    {
+        LOG_ERROR("Invalid block id %d : out of range", id);
+        return FAIL;
+    }
+
+    block_resources *res = &reg->resources.data[id];
+
+    for (u32 i = 0; i < res->inputs.length; i++)
+        if (strcmp(res->inputs.data[i].name, name) == 0)
+        {
+            res->inputs.data[i].lua_func_ref = lua_func_ref;
+            return SUCCESS;
+        }
+
+    return SUCCESS;
 }
 
 int scripting_load_file(const char *reg_name, const char *short_filename)
@@ -233,25 +391,62 @@ int scripting_load_file(const char *reg_name, const char *short_filename)
     return SUCCESS;
 }
 
-void scripting_load_scripts(block_registry *registry)
+u8 scripting_load_scripts(block_registry *registry)
 {
     block_resources_t *reg = &registry->resources;
     const int length = reg->length;
 
     const char *reg_name = registry->name;
 
-    for (int i = 0; i < length; i++)
+    for (u32 i = 0; i < length; i++)
     {
-        const char *lua_file = reg->data[i].lua_script_filename;
+        block_resources *res = &reg->data[i];
+        const char *lua_file = res->lua_script_filename;
 
         if (lua_file)
         {
             LOG_DEBUG("Loading script %s", lua_file);
 
-            lua_pushinteger(g_L, reg->data[i].id);
+            lua_pushinteger(g_L, res->id);
             lua_setglobal(g_L, "scripting_current_block_id");
 
             scripting_load_file(reg_name, lua_file);
         }
+
+        u8 failed = 0;
+
+        for (u32 j = 0; j < res->inputs.length; j++)
+        {
+            input_handler *hnd = &res->inputs.data[j];
+            if (hnd->lua_func_ref == 0)
+            {
+                LOG_ERROR("Input %s of block %d has no handler, register it in your lua script", hnd->name, res->id);
+                failed = 1;
+            }
+        }
+
+        if (failed)
+            return FAIL;
     }
+
+    return SUCCESS;
+}
+
+// creates a lua table out of your array of poitners to enum_entries
+void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *name)
+{
+    lua_newtable(L);
+
+    u32 i = 0;
+    while (entries[i].enum_entry_name != NULL)
+    {
+        enum_entry e = entries[i];
+        lua_pushinteger(L, e.entry);
+        lua_setfield(L, -2, e.enum_entry_name);
+
+        i++;
+    }
+
+    lua_setglobal(L, name);
+    LOG_DEBUG("Pushed enum %s", name);
 }

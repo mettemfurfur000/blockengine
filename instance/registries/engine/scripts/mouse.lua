@@ -9,11 +9,12 @@ local mouse = {
         y = -1
     },
     home_layer = nil,
+    home_layer_index = nil,
     home_room = nil,
     vars = nil
 }
 
-blockengine.register_handler(EVENT_IDS.ENGINE_INIT, function()
+blockengine.register_handler(engine_events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
 
     local pos = {
@@ -22,6 +23,7 @@ blockengine.register_handler(EVENT_IDS.ENGINE_INIT, function()
     }
 
     mouse.home_layer = g_menu.mouse.layer
+    mouse.home_layer_index = g_menu.mouse.index
     mouse.pos = pos
 
     mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, this_block_id) -- x, y, id
@@ -60,7 +62,7 @@ local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
     return old_pos_blocks
 end
 
-blockengine.register_handler(EVENT_IDS.SDL_MOUSEMOTION, function(x, y, state, clicks)
+blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, clicks)
     if mouse.home_layer == nil then
         return
     end
@@ -95,30 +97,28 @@ blockengine.register_handler(EVENT_IDS.SDL_MOUSEMOTION, function(x, y, state, cl
     end
 end)
 
-zoom_min = 1
-zoom_max = 4
-
-blockengine.register_handler(EVENT_IDS.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
+blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
     if mouse.home_layer == nil then
         return
     end
 
-    for k, v in kpairs(g_menu) do
-        if v.is_ui ~= true then
-            local slice = v.slice
+    print("mouse wheel " .. y)
 
-            slice.zoom = math.max(zoom_min, math.min(zoom_max, slice.zoom + y))
+    -- zoming here
 
-            render_rules.set_slice(g_render_rules, v.index, slice)
-            camera_set_target(player.pos, v.index)
-        end
-    end
-
-    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, g_mouse_layer_index), {
+    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, mouse.home_layer_index), {
         x = pos_x,
         y = pos_y
     }, mouse.pos)
 end)
 
 -- TODO: implement clicking and operation changing
+
+blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, pos_x, pos_y)
+    if mouse.home_layer == nil then
+        return
+    end
+
+    print("mouse button down")
+end)
 

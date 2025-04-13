@@ -90,8 +90,7 @@ local function update_player()
             -- print("moving, new pos", player.pos.x, player.pos.y)
         end
 
-        camera_set_target(player.pos, g_menu.objects.index)
-        camera_set_target(player.pos, g_menu.floor.index)
+        -- camera_set_target(player.pos)
     end
 
     if player.vars then
@@ -105,7 +104,7 @@ end
 
 -- hook zone
 
-blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
+blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
     if new_id ~= player_block_id or layer:uuid() ~= g_menu.objects.layer:uuid() then
         -- print("ignooring block create", new_id, layer:uuid(), g_object_layer:uuid() )
         return
@@ -134,7 +133,7 @@ blockengine.register_handler(EVENT_IDS.ENGINE_BLOCK_CREATE, function(room, layer
     print("vars", vars:__tostring())
 end)
 
-blockengine.register_handler(EVENT_IDS.SDL_KEYDOWN, function(keysym, mod, state, rep)
+blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)
     if rep == nil or rep > 0 then
         return
     end
@@ -148,7 +147,7 @@ blockengine.register_handler(EVENT_IDS.SDL_KEYDOWN, function(keysym, mod, state,
     player.keystate[char] = state
 end)
 
-blockengine.register_handler(EVENT_IDS.SDL_KEYUP, function(keysym, mod, state, rep)
+blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, rep)
     if rep == nil or rep > 0 then
         return
     end
@@ -162,12 +161,12 @@ blockengine.register_handler(EVENT_IDS.SDL_KEYUP, function(keysym, mod, state, r
     player.keystate[char] = state
 end)
 
-blockengine.register_handler(EVENT_IDS.ENGINE_TICK, function(code)
+blockengine.register_handler(engine_events.ENGINE_TICK, function(code)
     update_player()
 end)
 
 
-blockengine.register_handler(EVENT_IDS.ENGINE_INIT, function(code)
+blockengine.register_handler(engine_events.ENGINE_INIT, function(code)
     -- pasting a player
     g_menu.objects.layer:paste_block(4, 4, player_block_id) -- x, y, id
 end)

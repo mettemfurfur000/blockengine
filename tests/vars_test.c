@@ -57,13 +57,13 @@ int test_five_hundred_variables()
 
 	u32 src = 0x12345678;
 
-	for (int i = 0; i < 26; i++)
+	for ( u32 i = 0; i < 26; i++)
 	{
 		char letter = 'A' + i;
 		CHECK(var_set_u32(&b, letter, src));
 	}
 
-	for (int i = 0; i < 26; i++)
+	for ( u32 i = 0; i < 26; i++)
 	{
 		char letter = 'A' + i;
 		u32 dest = 0;
@@ -86,7 +86,7 @@ int test_five_hundred_variables()
 
 void fillrand(char *b, int size)
 {
-	for (int i = 0; i < size; i++)
+	for ( u32 i = 0; i < size; i++)
 		b[i] = 'a' + rand() % 26;
 	b[size] = 0;
 }

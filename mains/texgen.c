@@ -4,7 +4,7 @@
 #include "../include/block_registry.h"
 #include "../include/scripting.h"
 
-#include "../include/image_editing.h"
+#include "../include/scripting_bindings.h"
 
 const char *usage = "Usage: %s --script <script_name> --input <input_name> --output <output_name>\n";
 
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	char *output_name = NULL;
 	char *input_name = NULL;
 
-	for (int i = 0; i < argc; i++)
+	for ( u32 i = 0; i < argc; i++)
 	{
 		if (strcmp(argv[i], "--script") == 0)
 			script_name = argv[i + 1];

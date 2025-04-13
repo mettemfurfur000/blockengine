@@ -28,6 +28,15 @@
 
 #define MAX_PATH_LENGTH 512
 
+typedef struct input_handler
+{
+	const char *name;
+	int lua_func_ref;
+	u8 lua_type;
+} input_handler;
+
+typedef vec_t(input_handler) input_handler_vec_t;
+
 #define B_RES_FLAG_IGNORE_TYPE 0x01
 #define B_RES_FLAG_RANDOM_POS 0x02
 #define B_RES_FLAG_IS_FILLER 0x04
@@ -48,6 +57,8 @@ typedef struct block_resources
 	vec_sound_t sounds;
 
 	char *lua_script_filename;
+	// inputs to put bytes in
+	input_handler_vec_t inputs;
 
 	// these are references to internal block data fields, not actual values for a block
 	char anim_controller;	  // current animation frame / column
@@ -112,11 +123,10 @@ typedef struct
 	void (*increment_fn)(block_resources *);
 	u8 (*function)(const char *, block_resources *);
 	char *name;
-	u8 is_critical;
-	// resource is not pushed, if:
-	char *deps[4];	  // these entries are not present
+	u8 is_critical;	   // resource is not pushed if its absend, or if:
+	char *deps[4];	   // these entries are not present
 	char *incompat[4]; // these entries present
-	char *slots[4];			  // other entries already got said slots
+	char *slots[4];	   // other entries already got said slots
 } resource_entry_handler;
 
 u32 parse_block_resources_from_file(char *file_path, block_resources *dest);

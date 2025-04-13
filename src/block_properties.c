@@ -85,7 +85,7 @@ int save_properties(const char *filename, hash_node **table)
 		return FAIL;
 	}
 
-	for (int i = 0; i < TABLE_SIZE; ++i)
+	for (u32 i = 0; i < TABLE_SIZE; ++i)
 	{
 		node = table[i];
 		while (node != NULL)

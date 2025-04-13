@@ -45,6 +45,7 @@ void overlay_image(image *dst, const image *src, u16 x, u16 y);
 // Utility functions
 void clear_image(image *img);
 void fill_color(image *img, u8 color[4]);
+void get_avg_color_noalpha(image *img, u8 color_out[4]);
 
 
 #endif

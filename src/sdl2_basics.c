@@ -358,7 +358,7 @@ neighbours_mask expected layout, bit by bit:
 
 // 	SDL_RenderCopy(g_renderer, texture->ptr, &src, &dest);
 
-// 	for (int i = 1; i < 7; i += 2)
+// 	for ( u32 i = 1; i < 7; i += 2)
 // 	{
 // 		if (i == 5)
 // 			i--;

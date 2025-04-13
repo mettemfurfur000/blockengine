@@ -4,9 +4,8 @@ require("registries.engine.scripts.level_editor")
 
 local width, height = render_rules.get_size(g_render_rules)
 
+-- set world sizes here
 g_width_blocks, g_height_blocks = width / g_block_size, height / g_block_size
-
-g_camera_limit_x, g_camera_limit_y = g_width_blocks * g_block_size - width, g_height_blocks * g_block_size - height
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     return {
@@ -23,13 +22,13 @@ local function slice_basic(lay_ref)
     return slice_gen(0, 0, width, height, 1, lay_ref)
 end
 
-local function layer_new_renderable(table_dest, lay_index, name, lay_ref, is_ui)
-    table_dest[name] = {
+local function layer_new_renderable(table_dest, lay_index, __name, lay_ref, __is_ui)
+    table_dest[__name] = {
         index = lay_index,
-        name = name,
+        name = __name,
         layer = lay_ref,
         show = true,
-        is_ui = is_ui,
+        is_ui = __is_ui or false,
         slice = slice_basic(lay_ref)
     }
 end
@@ -66,6 +65,8 @@ g_floors = safe_registry_load(test_level, "floors")
 
 g_engine_table = g_engine:to_table()
 
+-- print_table(g_engine_table)
+
 g_character_id = find_block(g_engine_table, "character").id
 
 menu_room = safe_menu_create(test_level, "menu", g_width_blocks, g_height_blocks)
@@ -76,7 +77,10 @@ layer_new_renderable(g_menu, 0, "floor", safe_layer_create(menu_room, "floors", 
 layer_new_renderable(g_menu, 1, "objects", safe_layer_create(menu_room, "engine", 1, 2))
 layer_new_renderable(g_menu, 2, "ui_back", safe_layer_create(menu_room, "engine", 1, 2), true)
 layer_new_renderable(g_menu, 3, "ui_text", safe_layer_create(menu_room, "engine", 1, 2), true)
-layer_new_renderable(g_menu, 4, "mouse", safe_layer_create(menu_room, "engine", 1, 2), true)
+layer_new_renderable(g_menu, 4, "mouse", safe_layer_create(menu_room, "engine", 1, 2))
+
+print("menu:")
+print_table(g_menu)
 
 place_ui_init()
 

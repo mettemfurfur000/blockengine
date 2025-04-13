@@ -466,7 +466,6 @@ const static resource_entry_handler res_handlers[] = {
 	{NULL, &block_res_automatic_id_handler, "automatic_id", NOT_REQUIRED, {}, {}, {"identity"}},
 	// every block needs a visual representation
 	{NULL, &block_res_texture_handler, "texture", REQUIRED, {}, {}, {}},
-	// TODO
 	// every block needs a sound, right?
 	// may set to REQUIRED later
 	{NULL, &block_res_sounds_vec_handler, "sounds", NOT_REQUIRED, {}, {}, {}},
@@ -494,8 +493,11 @@ const static resource_entry_handler res_handlers[] = {
 	// block type things
 	{NULL, &block_res_type_controller_handler, "type_controller", NOT_REQUIRED, {"vars"}, {}, {"type_control"}}, // reads its type from a block data - can be controlled with scripts
 	{NULL, &block_res_ignore_type_handler, "ignore_type", NOT_REQUIRED, {}, {}, {"type_control"}},				 // ignores type and treats each 16x16 square on a texture as a frame
+	// block logic zone
 	// custom script file, executed on level creation
-	{NULL, &block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}, {}}
+	{NULL, &block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}, {}},
+	// block inputs
+	{NULL, &block_res_inputs_handler, "inputs", NOT_REQUIRED, {"script"}, {}, {}}
 
 };
 
@@ -521,6 +523,8 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 
 	blob entry = {};
 
+	char copy_buffer[1024] = {};
+
 	vec_str_t seen_entries;
 	vec_init(&seen_entries);
 
@@ -544,6 +548,8 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 		// fix string to be null terminated
 		// this line of code caused alot of headaches for me, i hate myself
 		entry.str[entry.length - 1] = '\0';
+
+		memcpy(copy_buffer, entry.str, entry.length);
 		// check for deps
 		for (u32 j = 0; j < sizeof(res_handlers[i].deps) / sizeof(void *); j++)
 		{
@@ -618,9 +624,9 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 
 		// calling the handler
 
-		if (res_handlers[i].function(entry.str, dest) != SUCCESS)
+		if (res_handlers[i].function(copy_buffer, dest) != SUCCESS)
 		{
-			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s", file_path, res_handlers[i].name, entry.str);
+			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s", file_path, res_handlers[i].name, copy_buffer);
 			status = FAIL;
 			break;
 		}

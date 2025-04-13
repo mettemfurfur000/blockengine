@@ -1,18 +1,54 @@
-function camera_set_target(pos, index, center)
-    local slice = render_rules.get_slice(g_render_rules, index)
-    local width, height = render_rules.get_size(g_render_rules)
+local screen_width, screen_height = render_rules.get_size(g_render_rules)
+local camera_limit_x, camera_limit_y = screen_width, screen_height
 
-    local actual_block_width = slice.zoom * g_block_size
-    if (center ~= nil) then
-        slice.x = (pos.x + 0.5) * actual_block_width - slice.w / 2
-        slice.y = (pos.y + 0.5) * actual_block_width - slice.h / 2
-    else
-        slice.x = (pos.x) * actual_block_width - slice.w / 2
-        slice.y = (pos.y) * actual_block_width - slice.h / 2
+local cur_width, cur_height = render_rules.get_size(g_render_rules)
+local cur_target_x, cur_target_y = 0, 0
+
+local zoom_min = 1
+local zoom_max = 4
+
+local cur_zoom = 1
+
+function recalc_camera_limits()
+    screen_width, screen_height = render_rules.get_size(g_render_rules)
+    camera_limit_x, camera_limit_y = screen_width / cur_zoom, screen_height / cur_zoom
+end
+
+function camera_set_target(pos, do_center)
+    for k, v in pairs(g_menu) do
+        if v.is_ui ~= true and v.show == true then
+            local slice = v.slice
+
+            local actual_block_width = cur_zoom * g_block_size
+
+            if (do_center ~= nil and do_center == true) then
+                pos.x = pos.x + 0.5
+                pos.y = pos.y + 0.5
+            end
+
+            slice.x = (pos.x) * actual_block_width - slice.w / 2
+            slice.y = (pos.y) * actual_block_width - slice.h / 2
+
+            slice.x = math.min(math.max(slice.x, 0), camera_limit_x)
+            slice.y = math.min(math.max(slice.y, 0), camera_limit_y)
+
+            render_rules.set_slice(g_render_rules, v.index, slice)
+        end
+    end
+end
+
+function camera_set_zoom(change_zoom)
+    cur_zoom = math.max(zoom_min, math.min(zoom_max, cur_zoom + change_zoom))
+
+    for k, v in pairs(g_menu) do
+        if v.is_ui == false then
+            local slice = v.slice
+
+            slice.zoom = cur_zoom
+
+            render_rules.set_slice(g_render_rules, v.index, slice)
+        end
     end
 
-    slice.x = math.min(math.max(slice.x, 0), g_camera_limit_x)
-    slice.y = math.min(math.max(slice.y, 0), g_camera_limit_y)
-
-    render_rules.set_slice(g_render_rules, index, slice)
+    recalc_camera_limits()
 end
