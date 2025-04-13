@@ -335,7 +335,7 @@ void call_handlers(SDL_Event e)
     }
 }
 
-void scripting_register_event_handler(int lua_func_ref, int event_type)
+void scripting_register_event_handler(int ref, int event_type)
 {
     i32 lookup_id = get_lookup_id(event_type);
 
@@ -347,13 +347,13 @@ void scripting_register_event_handler(int lua_func_ref, int event_type)
         return;
     }
 
-    (void)vec_push(&handlers[lookup_id], lua_func_ref);
+    (void)vec_push(&handlers[lookup_id], ref);
 }
 
 /*
     Registers said input function to the block registry
 */
-u8 scripting_register_block_input(block_registry *reg, u64 id, int lua_func_ref, const char *name)
+u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const char *name)
 {
     CHECK_PTR(reg);
     CHECK_PTR(name);
@@ -366,14 +366,16 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int lua_func_ref,
 
     block_resources *res = &reg->resources.data[id];
 
-    for (u32 i = 0; i < res->inputs.length; i++)
-        if (strcmp(res->inputs.data[i].name, name) == 0)
+    for (u32 i = 0; i < res->input_names.length; i++)
+        if (strcmp(res->input_names.data[i], name) == 0)
         {
-            res->inputs.data[i].lua_func_ref = lua_func_ref;
+            //res->input_refs.data[i] = ref;
+            (void)vec_push(&res->input_refs, ref);
             return SUCCESS;
         }
-
-    return SUCCESS;
+    
+    LOG_ERROR("Failed to register input %s", name);
+    return FAIL;
 }
 
 int scripting_load_file(const char *reg_name, const char *short_filename)
@@ -409,18 +411,30 @@ u8 scripting_load_scripts(block_registry *registry)
 
             lua_pushinteger(g_L, res->id);
             lua_setglobal(g_L, "scripting_current_block_id");
+            lua_pushcfunction(g_L, lua_light_block_input_register);
+            lua_setglobal(g_L, "scripting_light_block_input_register");
+            lua_pushlightuserdata(g_L, registry);
+            lua_setglobal(g_L, "scripting_current_light_registry");
 
             scripting_load_file(reg_name, lua_file);
         }
 
+        // checking if all inputs hav a handler
+
+        if( res->input_names.length != res->input_refs.length)
+        {
+            LOG_ERROR("Block %d has %d inputs but %d handlers", res->id, res->input_names.length, res->input_refs.length);
+            return FAIL;
+        }
+
         u8 failed = 0;
 
-        for (u32 j = 0; j < res->inputs.length; j++)
+        for (u32 j = 0; j < res->input_refs.length; j++)
         {
-            input_handler *hnd = &res->inputs.data[j];
-            if (hnd->lua_func_ref == 0)
+            int func_ref = res->input_refs.data[j];
+            if (func_ref == 0)
             {
-                LOG_ERROR("Input %s of block %d has no handler, register it in your lua script", hnd->name, res->id);
+                LOG_ERROR("Input %s of block %d has no handler, register it in your lua script", res->input_names.data[j], res->id);
                 failed = 1;
             }
         }
@@ -428,6 +442,14 @@ u8 scripting_load_scripts(block_registry *registry)
         if (failed)
             return FAIL;
     }
+
+    // cleaning up
+    lua_pushnil(g_L);
+    lua_setglobal(g_L, "scripting_current_block_id");
+    lua_pushnil(g_L);
+    lua_setglobal(g_L, "scripting_register_block_input");
+    lua_pushnil(g_L);
+    lua_setglobal(g_L, "scripting_current_light_registry");
 
     return SUCCESS;
 }

@@ -304,7 +304,7 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 		dest->name++;                                          \
 	}
 
-#define DECLADE_DEFAUALT_STR_VEC_HANDLER(name)                                     \
+#define DECLARE_DEFAULT_STR_VEC_HANDLER(name)                                     \
 	u8 block_res_##name##_vec_str_handler(const char *data, block_resources *dest) \
 	{                                                                              \
 		if (strcmp(data, clean_token) == 0)                                        \
@@ -347,7 +347,7 @@ u8 block_res_repeat_skip_handler(const char *data, block_resources *dest)
 	return SUCCESS;
 }
 
-DECLADE_DEFAUALT_STR_VEC_HANDLER(repeat_increment)
+DECLARE_DEFAULT_STR_VEC_HANDLER(repeat_increment)
 u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 {
 	if (strcmp(data, clean_token) == 0)
@@ -458,6 +458,8 @@ u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 	return SUCCESS;
 }
 
+DECLARE_DEFAULT_STR_VEC_HANDLER(input_names)
+
 /* end of block resource handlers */
 
 const static resource_entry_handler res_handlers[] = {
@@ -497,7 +499,7 @@ const static resource_entry_handler res_handlers[] = {
 	// custom script file, executed on level creation
 	{NULL, &block_res_lua_script_handler, "script", NOT_REQUIRED, {}, {}, {}},
 	// block inputs
-	{NULL, &block_res_inputs_handler, "inputs", NOT_REQUIRED, {"script"}, {}, {}}
+	{NULL, &block_res_input_names_vec_str_handler, "inputs", NOT_REQUIRED, {"script"}, {}, {}}
 
 };
 

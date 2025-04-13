@@ -28,15 +28,6 @@
 
 #define MAX_PATH_LENGTH 512
 
-typedef struct input_handler
-{
-	const char *name;
-	int lua_func_ref;
-	u8 lua_type;
-} input_handler;
-
-typedef vec_t(input_handler) input_handler_vec_t;
-
 #define B_RES_FLAG_IGNORE_TYPE 0x01
 #define B_RES_FLAG_RANDOM_POS 0x02
 #define B_RES_FLAG_IS_FILLER 0x04
@@ -58,7 +49,9 @@ typedef struct block_resources
 
 	char *lua_script_filename;
 	// inputs to put bytes in
-	input_handler_vec_t inputs;
+	vec_int_t input_refs;
+	vec_str_t input_names;
+	//input_handler_vec_t inputs;
 
 	// these are references to internal block data fields, not actual values for a block
 	char anim_controller;	  // current animation frame / column

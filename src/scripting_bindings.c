@@ -539,31 +539,29 @@ static int lua_registry_to_table(lua_State *L)
             lua_setfield(L, -2, "sounds");
         }
 
-        // if (r.inputs.length > 0)
-        // {
-        //     lua_newtable(L);
+        if (r.input_names.length > 0)
+        {
+            lua_newtable(L);
 
-        //     input_handler s;
-        //     u32 j;
-        //     vec_foreach(&r.inputs, s, j)
-        //     {
-        //         lua_newtable(L);
-        //         // STRUCT_GET(L, s, filename, lua_pushstring);
-        //         // STRUCT_GET(L, s, length_ms, lua_pushinteger);
+            char *s;
+            u32 j;
+            vec_foreach(&r.input_names, s, j)
+            {
+                lua_newtable(L);
+                // STRUCT_GET(L, s, filename, lua_pushstring);
+                // STRUCT_GET(L, s, length_ms, lua_pushinteger);
 
-        //         // NEW_USER_OBJECT(L, Sound, &r.sounds.data[j]);
-        //         lua_pushstring(L, s.name);
-        //         lua_setfield(L, -2, "name");
-        //         lua_pushstring(L, lua_typename(L, s.lua_type));
-        //         lua_setfield(L, -2, "type");
-        //         lua_rawgeti(L, LUA_REGISTRYINDEX, s.lua_func_ref);
-        //         lua_setfield(L, -2, "function");
+                // NEW_USER_OBJECT(L, Sound, &r.sounds.data[j]);
+                lua_pushstring(L, s);
+                lua_setfield(L, -2, "name");
+                lua_rawgeti(L, LUA_REGISTRYINDEX, r.input_refs.data[j]);
+                lua_setfield(L, -2, "function");
 
-        //         lua_seti(L, -2, j + 1);
-        //     }
+                lua_seti(L, -2, j + 1);
+            }
 
-        //     lua_setfield(L, -2, "inputs");
-        // }
+            lua_setfield(L, -2, "inputs");
+        }
 
         lua_seti(L, -2, i + 1);
     }
@@ -571,17 +569,32 @@ static int lua_registry_to_table(lua_State *L)
     return 1;
 }
 
-// static int lua_registry_register_block_input(lua_State *L)
-// {
-//     LUA_CHECK_USER_OBJECT(L, BlockRegistry, wrapper, 1);
-//     luaL_checkany(L, 2);
-//     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
-//     u64 id = luaL_checkinteger(L, 3);
-//     const char *name = luaL_checkstring(L, 4);
+static int lua_registry_register_block_input(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, BlockRegistry, wrapper, 1);
+    u64 id = luaL_checkinteger(L, 2);
+    const char *name = luaL_checkstring(L, 3);
+    luaL_checkany(L, 4);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-//     lua_pushboolean(L, scripting_register_block_input(wrapper->reg, id, ref, name) == SUCCESS);
-//     return 1;
-// }
+    lua_pushboolean(L, scripting_register_block_input(wrapper->reg, id, ref, name) == SUCCESS);
+    return 1;
+}
+
+// maybe the only function that will be public to the rest of my codebase, since i need it at registry creation
+int lua_light_block_input_register(lua_State *L)
+{
+    if (!lua_islightuserdata(L, 1))
+        luaL_error(L, "Expected lightuserdata as first argument");
+    void *ptr = lua_touserdata(L, 1);
+    u64 id = luaL_checkinteger(L, 2);
+    const char *name = luaL_checkstring(L, 3);
+    luaL_checkany(L, 4);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    lua_pushboolean(L, scripting_register_block_input((block_registry *)ptr, id, ref, name) == SUCCESS);
+    return 0;
+}
 
 static int lua_level_create(lua_State *L)
 {
@@ -603,7 +616,11 @@ static int lua_level_load_registry(lua_State *L)
     {
         (void)vec_push(&wrapper->lvl->registries, r);
 
-        scripting_load_scripts(r);
+        if (scripting_load_scripts(r) != SUCCESS)
+        {
+            lua_pushboolean(L, 0);
+            return 1;
+        }
         NEW_USER_OBJECT(L, BlockRegistry, r);
     }
     else
@@ -797,6 +814,36 @@ static int lua_layer_move_block(lua_State *L)
 
     lua_pushboolean(L, block_move(wrapper->l, x, y, delta_x, delta_y) == SUCCESS);
 
+    return 1;
+}
+
+static int lua_get_block_input_handler(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+    u32 x = luaL_checknumber(L, 2);
+    u32 y = luaL_checknumber(L, 3);
+
+    const char *name = luaL_checkstring(L, 4);
+
+    u64 id = 0;
+    if (block_get_id(wrapper->l, x, y, &id) != SUCCESS)
+    {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    vec_int_t *refs = &wrapper->l->registry->resources.data[id].input_refs;
+    vec_str_t *ref_names = &wrapper->l->registry->resources.data[id].input_names;
+
+    for (u32 i = 0; i < refs->length; i++)
+        if (strcmp(ref_names->data[i], name) == 0)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, refs->data[i]);
+            return 1;
+        }
+
+    lua_pushnil(L);
     return 1;
 }
 
@@ -1023,7 +1070,7 @@ void lua_block_registry_register(lua_State *L)
     const static luaL_Reg registry_methods[] = {
         {"get_name", lua_registry_get_name},
         {"to_table", lua_registry_to_table},
-        //{"register_input", lua_registry_register_block_input},
+        {"register_input", lua_registry_register_block_input},
         {"uuid", lua_uuid_universal},
         {NULL, NULL},
     };
@@ -1079,6 +1126,7 @@ void lua_layer_register(lua_State *L)
         {"set_id", lua_layer_set_id},
         {"get_id", lua_block_get_id},
         {"move_block", lua_layer_move_block},
+        {"get_input_handler", lua_get_block_input_handler},
         {"get_vars", lua_block_get_vars},
         {"set_vars", lua_block_set_vars},
         {"bprint", lua_bprintf},

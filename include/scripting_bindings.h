@@ -40,4 +40,8 @@ void lua_level_editing_lib_register(lua_State *L);
 // includes all above + some extra
 void lua_register_engine_objects(lua_State *L);
 
+// some public lua functions
+
+int lua_light_block_input_register(lua_State *L);
+
 #endif

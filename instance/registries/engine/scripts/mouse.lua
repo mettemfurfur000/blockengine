@@ -119,6 +119,15 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, pos_
         return
     end
 
-    print("mouse button down")
+    local func = g_menu.objects.layer:get_input_handler(mouse.pos.x, mouse.pos.y, "click")
+
+    if func == nil then
+        print("no func handler")
+        return
+    end
+
+    print("mouse button down, calling the handler")
+
+    func(g_menu.objects.layer, x, y, 1)
 end)
 

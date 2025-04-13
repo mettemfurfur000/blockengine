@@ -69,12 +69,12 @@ void scripting_init();
 void scripting_close();
 
 void call_handlers(SDL_Event e);
-void scripting_register_event_handler(int lua_func_ref, int event_type);
+void scripting_register_event_handler(int ref, int event_type);
 
 u8 scripting_load_scripts(block_registry *registry);
 int scripting_load_file(const char *reg_name, const char *short_filename);
 
-u8 scripting_register_block_input(block_registry *reg, u64 id, int lua_func_ref, const char *name);
+u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const char *name);
 
 typedef struct enum_entry
 {
