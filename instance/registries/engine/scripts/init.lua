@@ -41,6 +41,8 @@ local function set_render_rule_order(ref_table)
         table.insert(order, v.index)
     end
 
+    table.sort(order)
+
     print("setting render rule order")
     print_table(order)
 
