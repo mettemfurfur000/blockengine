@@ -112,22 +112,23 @@ blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, po
     }, mouse.pos)
 end)
 
--- TODO: implement clicking and operation changing
-
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, pos_x, pos_y)
     if mouse.home_layer == nil then
         return
     end
 
-    local func = g_menu.objects.layer:get_input_handler(mouse.pos.x, mouse.pos.y, "click")
+    local block_pos_x = math.floor(x / g_block_size)
+    local block_pos_y = math.floor(y / g_block_size)
+
+    local func = g_menu.objects.layer:get_input_handler(block_pos_x, block_pos_y, "click")
 
     if func == nil then
-        print("no func handler")
+        -- print("no func handler")
         return
     end
 
     print("mouse button down, calling the handler")
 
-    func(g_menu.objects.layer, x, y, 1)
+    func(g_menu.objects.layer, block_pos_x, block_pos_y, 1)
 end)
 

@@ -973,59 +973,39 @@ static int lua_vars_set_string(lua_State *L)
     return 1;
 }
 
-static int lua_vars_set_number(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    const char *key = luaL_checkstring(L, 2);
-    lua_Number number = luaL_checknumber(L, 3);
-    u8 bytes = luaL_checkinteger(L, 4);
-    u8 is_signed = luaL_checkinteger(L, 5);
+// static int lua_var_set_i8(lua_State *L)
+// {
+//     LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
+//     const char *key = luaL_checkstring(L, 2);
+//     lua_Number number = luaL_checknumber(L, 3);
 
-    if (strlen(key) > 1)
-        luaL_error(L, "Key must be a single character");
+//     if (strlen(key) > 1)
+//         luaL_error(L, "Key must be a single character");
 
-    u8 status = 0;
-    if (is_signed)
-        switch (bytes)
-        {
-        case 1:
-            status = var_set_i8(wrapper->b, key[0], (i8)number) == SUCCESS;
-            break;
-        case 2:
-            status = var_set_i16(wrapper->b, key[0], (i16)number) == SUCCESS;
-            break;
-        case 3:
-            status = var_set_i32(wrapper->b, key[0], (i32)number) == SUCCESS;
-            break;
-        case 4:
-            status = var_set_i64(wrapper->b, key[0], (i64)number) == SUCCESS;
-            break;
-        default:
-            break;
-        }
-    else
-        switch (bytes)
-        {
-        case 1:
-            status = var_set_u8(wrapper->b, key[0], (u8)number) == SUCCESS;
-            break;
-        case 2:
-            status = var_set_u16(wrapper->b, key[0], (u16)number) == SUCCESS;
-            break;
-        case 3:
-            status = var_set_u32(wrapper->b, key[0], (u32)number) == SUCCESS;
-            break;
-        case 4:
-            status = var_set_u64(wrapper->b, key[0], (u64)number) == SUCCESS;
-            break;
-        default:
-            break;
-        }
+//     lua_pushboolean(L, var_set_i8(wrapper->b, key[0], (i8)number) == SUCCESS);
 
-    lua_pushboolean(L, status);
+//     return 1;
+// }
 
-    return 1;
-}
+DECLARE_LUA_VAR_SETTER(i8)
+DECLARE_LUA_VAR_SETTER(i16)
+DECLARE_LUA_VAR_SETTER(i32)
+DECLARE_LUA_VAR_SETTER(i64)
+
+DECLARE_LUA_VAR_SETTER(u8)
+DECLARE_LUA_VAR_SETTER(u16)
+DECLARE_LUA_VAR_SETTER(u32)
+DECLARE_LUA_VAR_SETTER(u64)
+
+DECLARE_LUA_VAR_GETTER(i8)
+DECLARE_LUA_VAR_GETTER(i16)
+DECLARE_LUA_VAR_GETTER(i32)
+DECLARE_LUA_VAR_GETTER(i64)
+
+DECLARE_LUA_VAR_GETTER(u8)
+DECLARE_LUA_VAR_GETTER(u16)
+DECLARE_LUA_VAR_GETTER(u32)
+DECLARE_LUA_VAR_GETTER(u64)
 
 static int lua_vars_get_size(lua_State *L)
 {
@@ -1146,7 +1126,27 @@ void lua_vars_register(lua_State *L)
         {"get_length", lua_vars_length},
         {"get_string", lua_vars_get_string},
         {"set_string", lua_vars_set_string},
-        {"set_number", lua_vars_set_number},
+
+        SCRIPTING_RECORD(i8, set),
+        SCRIPTING_RECORD(i16, set),
+        SCRIPTING_RECORD(i32, set),
+        SCRIPTING_RECORD(i64, set),
+
+        SCRIPTING_RECORD(u8, set),
+        SCRIPTING_RECORD(u16, set),
+        SCRIPTING_RECORD(u32, set),
+        SCRIPTING_RECORD(u64, set),
+
+        SCRIPTING_RECORD(i8, get),
+        SCRIPTING_RECORD(i16, get),
+        SCRIPTING_RECORD(i32, get),
+        SCRIPTING_RECORD(i64, get),
+
+        SCRIPTING_RECORD(u8, get),
+        SCRIPTING_RECORD(u16, get),
+        SCRIPTING_RECORD(u32, get),
+        SCRIPTING_RECORD(u64, get),
+
         {"get_var", lua_vars_get_var},
         {"get_size", lua_vars_get_size},
         {"__tostring", lua_vars_tostring},

@@ -94,10 +94,12 @@ local function update_player()
     end
 
     if player.vars then
-        player.vars:set_number("v", frame, 1, 0)
+        -- player.vars:set_number("v", frame, 1, 0)
+        player.vars:set_u8("v", frame)
 
         if type ~= nil then
-            player.vars:set_number("t", type, 1, 0)
+            -- player.vars:set_number("t", type, 1, 0)
+            player.vars:set_u8("t", type)
         end
     end
 end
