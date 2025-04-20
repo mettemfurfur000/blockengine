@@ -3,6 +3,8 @@ local cam_utils = require("registries.engine.scripts.camera_utils")
 
 local player_block_id = scripting_current_block_id
 
+local player_exists = false
+
 print("loading a controller block id " .. player_block_id)
 
 local player_states = {
@@ -107,6 +109,10 @@ end
 -- hook zone
 
 blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
+    if player_exists == true then
+        return
+    end
+
     if new_id ~= player_block_id or layer:uuid() ~= g_menu.objects.layer:uuid() then
         -- print("ignooring block create", new_id, layer:uuid(), g_object_layer:uuid() )
         return
@@ -130,12 +136,18 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
 
     player.vars = vars
 
+    player_exists = true
+
     print("initialized and found a player at " .. pos.x .. ", " .. pos.y .. ", room named " .. room:get_name())
 
     print("vars", vars:__tostring())
 end)
 
 blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)
+    if player_exists == false then
+        return
+    end
+
     if rep == nil or rep > 0 then
         return
     end
@@ -150,6 +162,10 @@ blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state
 end)
 
 blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, rep)
+    if player_exists == false then
+        return
+    end
+
     if rep == nil or rep > 0 then
         return
     end
@@ -164,12 +180,14 @@ blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, 
 end)
 
 blockengine.register_handler(engine_events.ENGINE_TICK, function(code)
+    if player_exists == false then
+        return
+    end
     update_player()
 end)
 
-
 blockengine.register_handler(engine_events.ENGINE_INIT, function(code)
     -- pasting a player
-    g_menu.objects.layer:paste_block(4, 4, player_block_id) -- x, y, id
+    -- g_menu.objects.layer:paste_block(4, 4, player_block_id) -- x, y, id
 end)
 

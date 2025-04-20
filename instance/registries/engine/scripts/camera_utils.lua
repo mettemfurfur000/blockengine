@@ -1,8 +1,6 @@
-local screen_width, screen_height = render_rules.get_size(g_render_rules)
-local camera_limit_x, camera_limit_y = screen_width, screen_height
+screen_width, screen_height = render_rules.get_size(g_render_rules)
 
-local cur_width, cur_height = render_rules.get_size(g_render_rules)
-local cur_target_x, cur_target_y = 0, 0
+local camera_limit_x, camera_limit_y = screen_width, screen_height
 
 local zoom_min = 1
 local zoom_max = 4
@@ -16,7 +14,7 @@ end
 
 function camera_set_target(pos, do_center)
     for k, v in pairs(g_menu) do
-        if v.is_ui ~= true and v.show == true then
+        if v.is_ui ~= true then
             local slice = v.slice
 
             local actual_block_width = cur_zoom * g_block_size

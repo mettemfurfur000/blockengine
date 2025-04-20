@@ -20,14 +20,13 @@ int main(int argc, char *argv[])
 
     SDL_Event e;
 
-    int latest_logic_tick = SDL_GetTicks();
-
     // C:\msys64\home\mttffr\blockengine\build\registries\test\textures
 
-    const char *testfile = "registries/test/textures/stone.png";
+    char *testfile = "registries/engine/textures/bug.png";
 
     texture tmp = {};
     texture_load(&tmp, testfile);
+    glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
 
     for (;;)
     {
@@ -37,26 +36,16 @@ int main(int argc, char *argv[])
         {
             switch (e.type) // vanilla sdl event handling
             {
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
-                break;
             case SDL_QUIT:
                 goto logic_exit;
-                break;
-            case SDL_RENDER_TARGETS_RESET:
-                // g_renderer = SDL_CreateRenderer(g_window, -1, 0);
-                // printf("erm, reload textures?");
                 break;
             }
         }
 
-        glClearColor(0.1f, 0.35f, 0.07f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        block_render(&tmp, 0, 0, 0, 0, 0, g_block_width, 0, 0);
-        
+        block_render(&tmp, 0, 0, 0, 0, 0, g_block_width * 4, 0, 0);
+
         SDL_GL_SwapWindow(g_window);
 
         int loop_took = SDL_GetTicks() - frame_begin_tick;

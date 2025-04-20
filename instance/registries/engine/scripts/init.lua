@@ -1,11 +1,10 @@
 require("registries.engine.scripts.wrappers")
 require("registries.engine.scripts.constants")
-require("registries.engine.scripts.level_editor")
+-- require("registries.engine.scripts.level_editor")
 
-local width, height = render_rules.get_size(g_render_rules)
+screen_width, screen_height = render_rules.get_size(g_render_rules)
 
--- set world sizes here
-g_width_blocks, g_height_blocks = width / g_block_size, height / g_block_size
+g_width_blocks, g_height_blocks = screen_width / g_block_size, screen_height / g_block_size
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     return {
@@ -19,7 +18,7 @@ local function slice_gen(x, y, w, h, z, lay_ref)
 end
 
 local function slice_basic(lay_ref)
-    return slice_gen(0, 0, width, height, 1, lay_ref)
+    return slice_gen(0, 0, screen_width, screen_height, 1, lay_ref)
 end
 
 local function layer_new_renderable(table_dest, lay_index, __name, lay_ref, __is_ui)
@@ -27,30 +26,48 @@ local function layer_new_renderable(table_dest, lay_index, __name, lay_ref, __is
         index = lay_index,
         name = __name,
         layer = lay_ref,
-        show = true,
         is_ui = __is_ui or false,
         slice = slice_basic(lay_ref)
     }
 end
 
+local function layer_new_invisible(table_dest, lay_index, __name, lay_ref)
+    table_dest[__name] = {
+        index = lay_index,
+        name = __name,
+        layer = lay_ref,
+        is_ui = false,
+        slice = nil,
+        slice_push_ignore = true
+    }
+end
+
 local function set_render_rule_order(ref_table)
     local order = {}
+    print("setting render rule order")
 
     for k, v in pairs(ref_table) do
-        table.insert(order, v.index)
+        if v.slice_push_ignore ~= true then
+            print("putting " .. v.name .. " at " .. v.index)
+            table.insert(order, v.index)
+        end
     end
 
     table.sort(order)
 
-    print("setting render rule order")
+    print("order:")
     print_table(order)
 
     render_rules.set_order(g_render_rules, order)
 end
 
 local function set_slices(ref_table)
+    print("setting slices")
     for k, v in pairs(ref_table) do
-        render_rules.set_slice(g_render_rules, v.index, v.slice)
+        if v.slice_push_ignore ~= true then
+            print(v.name)
+            render_rules.set_slice(g_render_rules, v.index, v.slice)
+        end
     end
 end
 
@@ -73,16 +90,14 @@ menu_room = safe_menu_create(test_level, "menu", g_width_blocks, g_height_blocks
 
 g_menu = {}
 
-layer_new_renderable(g_menu, 0, "floor", safe_layer_create(menu_room, "floors", 1, 0))
-layer_new_renderable(g_menu, 1, "objects", safe_layer_create(menu_room, "engine", 1, 2))
-layer_new_renderable(g_menu, 2, "ui_back", safe_layer_create(menu_room, "engine", 1, 2), true)
-layer_new_renderable(g_menu, 3, "ui_text", safe_layer_create(menu_room, "engine", 1, 2), true)
-layer_new_renderable(g_menu, 4, "mouse", safe_layer_create(menu_room, "engine", 1, 2))
-
-print("menu:")
-print_table(g_menu)
-
-place_ui_init()
+layer_new_invisible(g_menu, 0, "dev", safe_layer_create(menu_room, "engine", 1, 0))
+layer_new_renderable(g_menu, 1, "floor", safe_layer_create(menu_room, "floors", 1, 0))
+layer_new_renderable(g_menu, 2, "objects", safe_layer_create(menu_room, "engine", 1, 2))
+layer_new_renderable(g_menu, 3, "ui_back", safe_layer_create(menu_room, "engine", 1, 2), true)
+layer_new_renderable(g_menu, 4, "ui_floor_select", safe_layer_create(menu_room, "engine", 1, 0), true)
+layer_new_renderable(g_menu, 5, "ui_engine_select", safe_layer_create(menu_room, "engine", 1, 0), true)
+layer_new_renderable(g_menu, 6, "ui_text", safe_layer_create(menu_room, "engine", 1, 2), true)
+layer_new_renderable(g_menu, 7, "mouse", safe_layer_create(menu_room, "engine", 1, 2))
 
 try(function()
     set_render_rule_order(g_menu)

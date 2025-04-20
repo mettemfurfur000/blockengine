@@ -23,9 +23,9 @@ void blob_generate(blob *b, u32 seed)
 		b->ptr[i] = (char)(rand() % 256);
 }
 
-blob blobify(char *str)
+blob blobify(const char *str)
 {
-	blob b = {.str = str, .length = strlen(str) + 1};
+	blob b = {.str = (char *)str, .length = strlen(str) + 1};
 	return b;
 }
 

@@ -269,7 +269,7 @@ u8 load_level(level *lvl, char *name_in)
 
         sprintf(path, REGISTRIES_FOLDER "/%s", name);
 
-        if (read_block_registry(path, reg) == FAIL)
+        if (read_block_registry(reg, path) == FAIL)
         {
             LOG_WARNING("Failed to load registry %s", name);
             free(name);

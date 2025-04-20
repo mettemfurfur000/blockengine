@@ -304,7 +304,7 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 		dest->name++;                                          \
 	}
 
-#define DECLARE_DEFAULT_STR_VEC_HANDLER(name)                                     \
+#define DECLARE_DEFAULT_STR_VEC_HANDLER(name)                                      \
 	u8 block_res_##name##_vec_str_handler(const char *data, block_resources *dest) \
 	{                                                                              \
 		if (strcmp(data, clean_token) == 0)                                        \
@@ -505,7 +505,7 @@ const static resource_entry_handler res_handlers[] = {
 
 const u32 TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
-u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
+u32 parse_block_resources_from_file(const char *file_path, block_resources *dest)
 {
 	hash_node **properties = alloc_table();
 	u32 status = SUCCESS;
@@ -550,7 +550,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 		// fix string to be null terminated
 		// this line of code caused alot of headaches for me, i hate myself
 		entry.str[entry.length - 1] = '\0';
-
+		// copy string to a buffer so strtok can work without modifying the original string
 		memcpy(copy_buffer, entry.str, entry.length);
 		// check for deps
 		for (u32 j = 0; j < sizeof(res_handlers[i].deps) / sizeof(void *); j++)
@@ -574,7 +574,7 @@ u32 parse_block_resources_from_file(char *file_path, block_resources *dest)
 				break;
 			}
 
-			LOG_DEBUG("\"%s\": Dependency \"%s\" is found for \"%s\"", file_path, dep, res_handlers[i].name);
+			// LOG_DEBUG("\"%s\": Dependency \"%s\" is found for \"%s\"", file_path, dep, res_handlers[i].name);
 		}
 
 		// check for incompatibilities
@@ -682,77 +682,8 @@ void range_ids(block_resources_t *reg, block_resources *br_ref)
 	}
 }
 
-u32 read_block_registry(const char *name, block_registry *registry)
+void registry_fill_gaps(block_resources_t *reg, block_resources filler_entry)
 {
-	CHECK_PTR(registry);
-	registry->name = name;
-	registry->uuid = generate_uuid();
-
-	block_resources_t *reg = &registry->resources;
-	DIR *directory;
-	struct dirent *entry;
-
-	char path[64] = {};
-	snprintf(path, sizeof(path), REGISTRIES_FOLDER SEPARATOR_STR "%s" SEPARATOR_STR "blocks", name);
-	directory = opendir(path);
-
-	if (directory == NULL)
-	{
-		LOG_ERROR("Unable to open directory: %s", path);
-		closedir(directory);
-		return FAIL;
-	}
-
-	LOG_INFO("Reading block registry from %s", path);
-
-	// push a default void block with id 0
-	block_resources filler_entry = {.id = 0, .vars = {{}, {}}, .type_controller = 0, .frames_per_second = 0, .anim_controller = 0};
-	(void)vec_push(reg, filler_entry);
-
-	while ((entry = readdir(directory)) != NULL)
-	{
-		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-			continue;
-
-		if (entry->d_type == DT_REG)
-		{
-			block_resources br = {.type_controller = 0, .frames_per_second = 0, .anim_controller = 0, .parent_registry = registry};
-			char file_to_parse[468] = {};
-			snprintf(file_to_parse, sizeof(file_to_parse), "%s" SEPARATOR_STR "%s", path, entry->d_name);
-
-			if (parse_block_resources_from_file(file_to_parse, &br) == FAIL)
-			{
-				LOG_ERROR("Failed to parse block resources from file: %s", file_to_parse);
-				free_block_resources(&br);
-				continue;
-			}
-
-			if (FLAG_GET(br.flags, B_RES_AUTOMATIC_ID))
-				br.id = reg->length;
-
-			if (is_already_in_registry(reg, &br))
-			{
-				LOG_INFO("Found duplicate resource: %s, resource is not pushed!", file_to_parse);
-				continue;
-			}
-
-			(void)vec_push(reg, br);
-
-			// check for range thing
-
-			if (br.repeat_times != 0)
-			{
-				range_ids(reg, &br);
-			}
-		}
-	}
-
-	// check for holes and fill them
-
-	FLAG_SET(filler_entry.flags, B_RES_FLAG_IS_FILLER, 1)
-
-	sort_by_id(registry);
-
 	u32 orig_length = reg->length;
 
 	for (u32 i = 1; i < orig_length; i++)
@@ -773,12 +704,133 @@ u32 read_block_registry(const char *name, block_registry *registry)
 			break;
 		}
 	}
+}
 
-	sort_by_id(registry);
+// attempts to push a single block to the registry, might fail if something is wrong
+u32 registry_read_block(block_registry *reg_ref, const char *file_path)
+{
+	block_resources br = {};
+	block_resources_t *reg = &reg_ref->resources;
+	br.parent_registry = reg_ref;
 
-	debug_print_registry(registry);
+	if (parse_block_resources_from_file(file_path, &br) == FAIL)
+	{
+		LOG_ERROR("Failed to parse block resources from file: %s", file_path);
+		return FAIL;
+	}
 
-	closedir(directory);
+	if (FLAG_GET(br.flags, B_RES_AUTOMATIC_ID))
+		br.id = reg_ref->resources.length;
+
+	if (is_already_in_registry(reg, &br))
+	{
+		LOG_INFO("Found duplicate resource: %s, resource is not pushed!", file_path);
+		return FAIL;
+	}
+
+	// seems like we have a valid block
+
+	(void)vec_push(reg, br);
+
+	// check for range thing
+
+	if (br.repeat_times != 0)
+	{
+		range_ids(reg, &br);
+	}
+
+	return SUCCESS;
+}
+
+// reads all blocks in a folder and adds them to the registry
+u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
+{
+	CHECK_PTR(reg_ref);
+	DIR *directory;
+	struct dirent *entry;
+
+	char subpath[1024] = {};
+
+	directory = opendir(folder_path);
+
+	if (directory == NULL)
+	{
+		LOG_ERROR("Unable to open directory: %s", folder_path);
+		closedir(directory);
+		return FAIL;
+	}
+
+	LOG_INFO("Reading blocks from %s folder", folder_path);
+
+	while ((entry = readdir(directory)) != NULL)
+	{
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+			continue;
+
+		else if (entry->d_type == DT_REG) // each file will be attempted to be parsed as a block
+		{
+			snprintf(subpath, sizeof(subpath), "%s" SEPARATOR_STR "%s", folder_path, entry->d_name);
+
+			if (registry_read_block(reg_ref, subpath) == FAIL)
+			{
+				LOG_ERROR("Failed to parse block resources from file: %s", subpath);
+				closedir(directory);
+				return FAIL;
+			}
+		}
+
+		else if (entry->d_type == DT_DIR) // each folder will be attempted to be parsed as a folder, full of blocks or other folders
+		{
+			snprintf(subpath, sizeof(subpath), "%s" SEPARATOR_STR "%s", folder_path, entry->d_name);
+
+			if (registry_read_folder(reg_ref, subpath) == FAIL)
+			{
+				LOG_ERROR("Failed to parse block resources from folder: %s", subpath);
+				closedir(directory);
+				return FAIL;
+			}
+		}
+	}
+
+	return SUCCESS;
+}
+
+u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
+{
+	CHECK_PTR(reg_ref);
+	reg_ref->name = folder_name;
+	reg_ref->uuid = generate_uuid();
+
+	char reg_path[1024] = {};
+	snprintf(reg_path, sizeof(reg_path), REGISTRIES_FOLDER SEPARATOR_STR "%s" SEPARATOR_STR "blocks", folder_name);
+
+	LOG_INFO("Reading block registry from %s", reg_path);
+
+	block_resources filler_entry = {.id = 0,
+									.vars = {{}, {}}
+
+	};
+
+	// push a default void block with id 0
+	(void)vec_push(&reg_ref->resources, filler_entry);
+
+	// read the registry recursively
+	if (registry_read_folder(reg_ref, reg_path) == FAIL)
+	{
+		LOG_ERROR("Failed to read block registry from %s", reg_path);
+		return FAIL;
+	}
+
+	// check for holes and fill them
+	FLAG_SET(filler_entry.flags, B_RES_FLAG_IS_FILLER, 1)
+
+	block_resources_t *reg = &reg_ref->resources;
+
+	sort_by_id(reg);
+	registry_fill_gaps(reg, filler_entry);
+	sort_by_id(reg);
+
+	// debug_print_registry(registry);
 
 	return SUCCESS;
 }
@@ -791,9 +843,9 @@ int __b_cmp(const void *a, const void *b)
 	return (id_a > id_b) - (id_a < id_b);
 }
 
-void sort_by_id(block_registry *b_reg)
+void sort_by_id(block_resources_t *reg)
 {
-	qsort(b_reg->resources.data, b_reg->resources.length, sizeof(*b_reg->resources.data), __b_cmp);
+	qsort(reg->data, reg->length, sizeof(*reg->data), __b_cmp);
 }
 
 void free_block_resources(block_resources *b)
@@ -844,7 +896,7 @@ u32 read_all_registries(char *folder, vec_registries_t *dest)
 			sprintf(pathbuf, "%s" SEPARATOR_STR "%s", folder, entry->d_name);
 			LOG_INFO("Reading registry from %s", pathbuf);
 
-			if (read_block_registry(pathbuf, &temp) == FAIL)
+			if (read_block_registry(&temp, pathbuf) == FAIL)
 			{
 				LOG_ERROR("Error reading registry from %s", pathbuf);
 				closedir(directory);

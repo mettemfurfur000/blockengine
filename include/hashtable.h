@@ -38,7 +38,7 @@ unsigned long hash_function(blob key);
 hash_node **alloc_table();
 void blob_generate(blob *b, u32 seed);
 
-blob blobify(char *str);
+blob blobify(const char *str);
 u8 blob_dup(blob *dest, blob src);
 u8 blob_cmp(blob a, blob b);
 

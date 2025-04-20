@@ -609,7 +609,7 @@ static int lua_level_load_registry(lua_State *L)
 
     block_registry *r = calloc(1, sizeof(block_registry));
 
-    int success = read_block_registry(registry_name, r) == SUCCESS;
+    int success = read_block_registry(r, registry_name) == SUCCESS;
     lua_pushboolean(L, success);
 
     if (success)

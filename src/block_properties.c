@@ -65,7 +65,10 @@ int load_properties(const char *filename, hash_node **table)
 	do
 	{
 		status = read_properties(f, key, value);
-		put_entry(table, blobify(key), blobify(value));
+		if (key[0] != '#')
+			put_entry(table, blobify(key), blobify(value));
+		else
+			LOG_DEBUG("Skipping comment: %s : %s", key, value);
 	} while (status);
 
 	fclose(f);

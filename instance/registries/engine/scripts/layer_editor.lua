@@ -16,6 +16,6 @@ end
 function place_ui_init()
     local width, height = render_rules.get_size(g_render_rules)
 
-    -- local edit_modes = {"None", "Place", "Remove", "Copy"}
+    
 
 end
