@@ -234,7 +234,7 @@ int push_event_args(SDL_Event *e)
     if (!e)
         return 0;
 
-    char buf[16] = {};
+    char buf[16] = {}; 
 
     switch (e->type)
     {
@@ -251,10 +251,10 @@ int push_event_args(SDL_Event *e)
         lua_pushinteger(g_L, e->button.x);
         lua_pushinteger(g_L, e->button.y);
         // lua_pushinteger(g_L, e->motion.type == SDL_MOUSEBUTTONDOWN ? 1 : 0);
-        //  lua_pushinteger(g_L, e->button.button);
         lua_pushinteger(g_L, e->button.state);
         lua_pushinteger(g_L, e->button.clicks);
-        return 4;
+        lua_pushinteger(g_L, e->button.button);
+        return 5;
     case SDL_MOUSEWHEEL:
         lua_pushinteger(g_L, e->wheel.x);
         lua_pushinteger(g_L, e->wheel.y);

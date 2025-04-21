@@ -13,6 +13,27 @@ function try(f, catch_f)
     end
 end
 
+function world_print(x, y, width, msg)
+    if type(msg) ~= "string" then
+        msg = tostring(msg)
+    end
+    local spaces = width - #msg
+    local spaces_str = ""
+    for i = 1, spaces do
+        spaces_str = spaces_str .. " "
+    end
+
+    g_menu.ui_text.layer:bprint(g_character_id, x, y, width, msg .. spaces_str)
+end
+
+function tablelength(T)
+    local count = 0
+    for _ in pairs(T) do
+        count = count + 1
+    end
+    return count
+end
+
 function print_table(t, indent)
     indent = indent or 0
     for k, v in pairs(t) do

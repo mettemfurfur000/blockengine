@@ -14,6 +14,16 @@ local mouse = {
     vars = nil
 }
 
+-- local function screen_space_to_world(pos)
+--     local zoom = cam_utils.get_zoom()
+--     local x = (pos.x / zoom) + cam_utils.get_x()
+--     local y = (pos.y / zoom) + cam_utils.get_y()
+--     return {
+--         x = x,
+--         y = y
+--     }
+-- end
+
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
 
@@ -102,10 +112,6 @@ blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, po
         return
     end
 
-    print("mouse wheel " .. y)
-
-    -- zoming here
-
     mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, mouse.home_layer_index), {
         x = pos_x,
         y = pos_y
@@ -122,13 +128,8 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, pos_
 
     local func = g_menu.objects.layer:get_input_handler(block_pos_x, block_pos_y, "click")
 
-    if func == nil then
-        -- print("no func handler")
-        return
+    if func then
+        func(g_menu.objects.layer, block_pos_x, block_pos_y, 1)
     end
-
-    print("mouse button down, calling the handler")
-
-    func(g_menu.objects.layer, block_pos_x, block_pos_y, 1)
 end)
 

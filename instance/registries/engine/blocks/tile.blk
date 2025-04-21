@@ -1,4 +1,4 @@
-id = 2
+automatic_id 1
 texture = dark_floor_tile.png
 random_frame = 1
 ignore_type = 1

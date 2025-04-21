@@ -1,4 +1,4 @@
-id = 3
+automatic_id 1
 texture = grass.png
 random_frame = 1
 ignore_type = 1
