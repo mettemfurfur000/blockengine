@@ -25,17 +25,17 @@ void strip_digit(u8 *dest, u64 value, u32 actual_length)
 
 u32 str_to_enum(char *type_str)
 {
-	if (!strcmp(type_str, "digit"))
+	if (strcmp(type_str, "u?") || strcmp(type_str, "digit") == 0)
 		return T_DIGIT;
-	if (!strcmp(type_str, "long"))
+	if (strcmp(type_str, "u64") || strcmp(type_str, "long") == 0)
 		return T_LONG;
-	if (!strcmp(type_str, "int"))
+	if (strcmp(type_str, "u32") || strcmp(type_str, "int") == 0)
 		return T_INT;
-	if (!strcmp(type_str, "short"))
+	if (strcmp(type_str, "u16") || strcmp(type_str, "short") == 0)
 		return T_SHORT;
-	if (!strcmp(type_str, "byte"))
+	if (strcmp(type_str, "u8") || strcmp(type_str, "byte") == 0)
 		return T_BYTE;
-	if (!strcmp(type_str, "string"))
+	if (strcmp(type_str, "str") || strcmp(type_str, "string") == 0)
 		return T_STRING;
 	return T_UNKNOWN;
 }
@@ -460,10 +460,16 @@ u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 
 DECLARE_DEFAULT_STR_VEC_HANDLER(input_names)
 
+// u8 block_res_parent_handler(const char *data, block_resources *dest)
+// {
+// 	return SUCCESS;
+// }
+
 /* end of block resource handlers */
 
 const static resource_entry_handler res_handlers[] = {
 	// every block needs an identity, or its just a thin air
+	// {NULL, &block_res_parent_handler, "parent", NOT_REQUIRED, {}, {}, {}},
 	{NULL, &block_res_id_handler, "id", NOT_REQUIRED, {}, {}, {"identity"}},
 	{NULL, &block_res_automatic_id_handler, "automatic_id", NOT_REQUIRED, {}, {}, {"identity"}},
 	// every block needs a visual representation
@@ -505,6 +511,73 @@ const static resource_entry_handler res_handlers[] = {
 
 const u32 TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
 
+// this is probably not really required sinc im comparing pointers to string literals, but that might change in the future
+const char *vec_str_find(vec_str_t *vec, const char *str)
+{
+	u32 ch;
+	char *filled;
+	vec_foreach(vec, filled, ch) if (strcmp(filled, str) == 0) return str;
+	return NULL;
+}
+
+// returns an unfilfilled dependency, or null if everything is ok
+const char *check_deps(resource_entry_handler *handler, vec_str_t *seen_entries)
+{
+	for (u32 j = 0; j < sizeof(handler->deps) / sizeof(void *); j++)
+	{
+		char *dep = handler->deps[j];
+		if (!dep)
+			continue;
+
+		if (seen_entries->length == 0)
+			return dep;
+
+		const char *result = vec_str_find(seen_entries, dep);
+		if (result == NULL)
+			return result;
+	}
+
+	return NULL;
+}
+
+// same as above but errors if an entry is present
+const char *check_incompat(resource_entry_handler *handler, vec_str_t *seen_entries)
+{
+	for (u32 j = 0; j < sizeof(handler->incompat) / sizeof(void *); j++)
+	{
+		char *inc = handler->incompat[j];
+		if (!inc)
+			continue;
+
+		if (seen_entries->length == 0) // this entry is first and cant be incompatible with cosmic void
+			return NULL;
+
+		char *result = vec_str_find(seen_entries, inc);
+		if (result)
+			return result;
+	}
+
+	return NULL;
+}
+
+const char *check_slot(resource_entry_handler *handler, vec_str_t *seen_entries, vec_str_t *filled_slots)
+{
+	for (u32 j = 0; j < sizeof(handler->slots) / sizeof(void *); j++)
+	{
+		char *slot = handler->slots[j];
+		if (!slot)
+			continue;
+
+		char *result = vec_str_find(filled_slots, slot);
+		if (result)
+			return result;
+
+		(void)vec_push(filled_slots, slot);
+	}
+
+	return NULL;
+}
+
 u32 parse_block_resources_from_file(const char *file_path, block_resources *dest)
 {
 	hash_node **properties = alloc_table();
@@ -535,13 +608,15 @@ u32 parse_block_resources_from_file(const char *file_path, block_resources *dest
 
 	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
 	{
-		entry = get_entry(properties, blobify(res_handlers[i].name));
+		resource_entry_handler h = res_handlers[i];
+
+		entry = get_entry(properties, blobify(h.name));
 
 		if (!entry.ptr)
 		{
-			if (res_handlers[i].is_critical)
+			if (h.is_critical)
 			{
-				LOG_ERROR("\"%s\" : No \"%s\" entry", file_path, res_handlers[i].name);
+				LOG_ERROR("\"%s\" : critical entry \"%s\" is not present", file_path, h.name);
 				status = FAIL;
 				break;
 			}
@@ -552,88 +627,40 @@ u32 parse_block_resources_from_file(const char *file_path, block_resources *dest
 		entry.str[entry.length - 1] = '\0';
 		// copy string to a buffer so strtok can work without modifying the original string
 		memcpy(copy_buffer, entry.str, entry.length);
-		// check for deps
-		for (u32 j = 0; j < sizeof(res_handlers[i].deps) / sizeof(void *); j++)
+
+		char *dep = check_deps(&h, &seen_entries);
+		if (dep != NULL)
 		{
-			char *dep = res_handlers[i].deps[j];
-			if (!dep)
-				continue;
-
-			if (seen_entries.length == 0)
-			{
-				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\", but seen entries array is empty", file_path, res_handlers[i].name, dep);
-				status = FAIL;
-				break;
-			}
-			u32 k = 0;
-			vec_find(&seen_entries, dep, k);
-			if (k == -1)
-			{
-				LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\"", file_path, res_handlers[i].name, dep);
-				status = FAIL;
-				break;
-			}
-
-			// LOG_DEBUG("\"%s\": Dependency \"%s\" is found for \"%s\"", file_path, dep, res_handlers[i].name);
+			LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\"", file_path, h.name, dep);
+			return FAIL;
 		}
 
 		// check for incompatibilities
-		// basicly same as incompatibilities but instead of requiring certain fields it skips them
-		for (u32 j = 0; j < sizeof(res_handlers[i].incompat) / sizeof(void *); j++)
+		char *inc = check_incompat(&h, &seen_entries);
+		if (inc != NULL)
 		{
-			char *inc = res_handlers[i].incompat[j];
-			if (!inc)
-				continue;
-
-			if (seen_entries.length == 0)
-				continue;
-
-			u32 k = 0;
-			vec_find(&seen_entries, inc, k);
-			if (k == -1)
-				continue;
-
-			LOG_ERROR("\"%s\": \"%s\" is incompatible with \"%s\"", file_path, res_handlers[i].name, inc);
-			status = FAIL;
-			break;
+			LOG_ERROR("\"%s\": \"%s\" is incompatible with \"%s\"", file_path, h.name, inc);
+			return FAIL;
 		}
 
 		// check for slots
-		for (u32 j = 0; j < sizeof(res_handlers[i].slots) / sizeof(void *); j++)
+		char *slot = check_slot(&h, &seen_entries, &seen_entries);
+		if (slot != NULL)
 		{
-			char *slot = res_handlers[i].slots[j];
-			if (!slot)
-				continue;
-
-			u32 ch;
-			char *filled;
-			u8 abort = 0;
-			vec_foreach(&filled_slots, filled, ch)
-			{
-				if (strcmp(filled, slot) == 0)
-				{
-					LOG_ERROR("\"%s\": \"%s\" cant be an \"%s\", slot is already taken", file_path, res_handlers[i].name, slot);
-					abort = 1;
-					break;
-				}
-			}
-
-			if (abort)
-				break;
-
-			(void)vec_push(&filled_slots, slot);
+			LOG_ERROR("\"%s\": \"%s\" cant be an \"%s\", slot is already taken", file_path, h.name, slot);
+			return FAIL;
 		}
 
 		// calling the handler
 
-		if (res_handlers[i].function(copy_buffer, dest) != SUCCESS)
+		if (h.function(copy_buffer, dest) != SUCCESS)
 		{
-			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s", file_path, res_handlers[i].name, copy_buffer);
+			LOG_ERROR("\"%s\": handler \"%s\" failed to process this data: %s", file_path, h.name, copy_buffer);
 			status = FAIL;
 			break;
 		}
 		else // if the handler was successful
-			(void)vec_push(&seen_entries, res_handlers[i].name);
+			(void)vec_push(&seen_entries, h.name);
 	}
 
 	vec_deinit(&seen_entries);

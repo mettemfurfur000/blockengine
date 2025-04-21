@@ -51,7 +51,7 @@ typedef struct block_resources
 	// inputs to put bytes in
 	vec_int_t input_refs;
 	vec_str_t input_names;
-	//input_handler_vec_t inputs;
+	// input_handler_vec_t inputs;
 
 	// these are references to internal block data fields, not actual values for a block
 	char anim_controller;	  // current animation frame / column
