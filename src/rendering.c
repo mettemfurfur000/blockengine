@@ -71,6 +71,7 @@ u8 render_layer(layer_slice slice)
             u64 id = 0;
             if (i >= 0 && j >= 0 && i < slice.ref->width && j < slice.ref->height)
                 block_get_id(slice.ref, i, j, &id);
+            __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
             // check if block is not void
             if (id == 0)
                 continue;

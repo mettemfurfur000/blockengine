@@ -3,11 +3,6 @@
 
 // layer functions
 
-#define BLOCK_ID_PTR(l, x, y) (l->blocks + ((y * l->width) + x) * l->total_bytes_per_block)
-#define MERGE32_TO_64(a, b) (((u64)a << 32) | (u64)b)
-
-#define LAYER_CHECKS(l)
-
 // object pool functions
 
 var_holder *get_inactive(var_object_pool *pool, u32 required_size, u32 *index_out)
@@ -99,13 +94,40 @@ u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
     return SUCCESS;
 }
 
+// u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
+// {
+//     CHECK_PTR(l)
+//     CHECK_PTR(l->blocks)
+//     CHECK(x >= l->width || y >= l->height)
+
+//     memcpy((u8 *)id, BLOCK_ID_PTR(l, x, y), l->block_size);
+
+//     return SUCCESS;
+// }
+
 u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 {
     CHECK_PTR(l)
     CHECK_PTR(l->blocks)
     CHECK(x >= l->width || y >= l->height)
 
-    memcpy((u8 *)id, BLOCK_ID_PTR(l, x, y), l->block_size);
+    switch (l->block_size)
+    {
+    case 1:
+        *id = *(u8 *)BLOCK_ID_PTR(l, x, y);
+        break;
+    case 2:
+        *id = *(u16 *)BLOCK_ID_PTR(l, x, y);
+        break;
+    case 4:
+        *id = *(u32 *)BLOCK_ID_PTR(l, x, y);
+        break;
+    case 8:
+        *id = *(u64 *)BLOCK_ID_PTR(l, x, y);
+        break;
+    default:
+        return FAIL;
+    }
 
     return SUCCESS;
 }
