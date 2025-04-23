@@ -4,3 +4,4 @@ lua/*
 .vscode/*
 gmon.out
 out*
+.env/*
