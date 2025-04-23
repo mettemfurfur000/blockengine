@@ -1,6 +1,6 @@
 #include "../include/file_system.h"
-#include "../include/level.h"
 #include "../include/endianless.h"
+#include "../include/level.h"
 #include "../include/vars.h"
 
 #define WRITE(object, f) endianless_write((u8 *)&object, sizeof(object), f)
@@ -87,14 +87,16 @@ void read_hashtable(hash_node **t, FILE *f)
     READ(elements, f);
 
     if (size != TABLE_SIZE)
-        LOG_WARNING("Table size mismatch, expected %d, got %d", TABLE_SIZE, size);
+        LOG_WARNING("Table size mismatch, expected %d, got %d", TABLE_SIZE,
+                    size);
 
     for (u32 i = 0; i < elements; i++)
     {
         blob key = blob_read(f);
         blob value = blob_read(f);
 
-        put_entry(t, key, value); // i could just put it in place but im not sure about the order of them being called
+        put_entry(t, key, value); // i could just put it in place but im not
+                                  // sure about the order of them being called
     }
 }
 
@@ -147,7 +149,8 @@ void read_layer(layer *l, room *parent, FILE *f)
     {
         if (strcmp(registry_name.str, "no_registry") != 0)
         {
-            l->registry = find_registry(((level *)parent->parent_level)->registries, registry_name.str);
+            l->registry = find_registry(
+                ((level *)parent->parent_level)->registries, registry_name.str);
 
             if (!l->registry)
                 LOG_WARNING("Registry %s not found", registry_name.str);
@@ -219,7 +222,7 @@ void read_room(room *r, FILE *f)
 u8 save_level(level lvl)
 {
     char path[256] = {};
-    sprintf(path, LEVELS_FOLDER "/%s.lvl", lvl.name);
+    sprintf(path, FOLDER_LVL "/%s.lvl", lvl.name);
     FILE *f = fopen(path, "wb");
     if (!f)
         return FAIL;
@@ -253,7 +256,7 @@ u8 save_level(level lvl)
 u8 load_level(level *lvl, char *name_in)
 {
     char path[256] = {};
-    sprintf(path, LEVELS_FOLDER "/%s.lvl", name_in);
+    sprintf(path, FOLDER_LVL "/%s.lvl", name_in);
     FILE *f = fopen(path, "rb");
     if (!f)
         return FAIL;
@@ -269,9 +272,9 @@ u8 load_level(level *lvl, char *name_in)
 
         reg->name = name;
 
-        sprintf(path, REGISTRIES_FOLDER "/%s", name);
+        sprintf(path, FOLDER_REG "/%s", name);
 
-        if (read_block_registry(reg, path)  != SUCCESS)
+        if (read_block_registry(reg, path) != SUCCESS)
         {
             LOG_WARNING("Failed to load registry %s", name);
             free(name);

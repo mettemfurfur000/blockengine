@@ -16,7 +16,8 @@ typedef struct image
 } image;
 
 #define CHANNELS 4
-#define ACCESS_CHANNEL(img, x, y, c) (img->data + (((y) * img->width + (x)) * CHANNELS + (c)))
+#define ACCESS_CHANNEL(img, x, y, c)                                           \
+    (img->data + (((y) * img->width + (x)) * CHANNELS + (c)))
 
 // Basic image manipulation functions
 image *create_image(u16 width, u16 height);
@@ -46,6 +47,5 @@ void overlay_image(image *dst, const image *src, u16 x, u16 y);
 void clear_image(image *img);
 void fill_color(image *img, u8 color[4]);
 void get_avg_color_noalpha(image *img, u8 color_out[4]);
-
 
 #endif

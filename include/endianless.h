@@ -25,11 +25,11 @@ u8* val_arr = (u8*)&value;
 
 val_arr[i] =
 
-	0		1		2		3
-	|		|		|		|
-	v		V		V		V
+        0		1		2		3
+        |		|		|		|
+        v		V		V		V
 
-	[ 12 ]	[ 34 ] 	[ 56 ] 	[ 78 ]
+        [ 12 ]	[ 34 ] 	[ 56 ] 	[ 78 ]
 
 no changes in little endian, but in big makes this:
 
@@ -37,11 +37,11 @@ make_endianless(val_arr,4)
 
 val_arr[i] =
 
-	0		1		2		3
-	|		|		|		|
-	v		V		V		V
+        0		1		2		3
+        |		|		|		|
+        v		V		V		V
 
-	[ 78 ]	[ 56 ] 	[ 34 ] 	[ 12 ]
+        [ 78 ]	[ 56 ] 	[ 34 ] 	[ 12 ]
 
 */
 

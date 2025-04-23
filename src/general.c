@@ -9,7 +9,7 @@ u64 generate_uuid()
 
     for (u8 i = 0; i < 8; i++)
         buh[i] = rand();
-    
+
     ret ^= rand();
 
     return ret;

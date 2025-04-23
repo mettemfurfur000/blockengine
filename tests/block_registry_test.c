@@ -30,7 +30,7 @@ int test_parse_from_file()
 	block_resources br = {};
 
 	char path[256] = {};
-	sprintf(path, "%s/%s/blocks/test.blk", REGISTRIES_FOLDER, TEST_REGISTRY);
+	sprintf(path, "%s/%s/blocks/test.blk", FOLDER_REG, TEST_REGISTRY);
 
 	CHECK(parse_block_resources_from_file(path, &br))
 

@@ -1,9 +1,10 @@
 #ifndef GENERAL_H
 #define GENERAL_H 1
 
+#include "logging.h"
 #include <assert.h>
 #include <stdbool.h>
-#include "logging.h"
+
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -30,44 +31,46 @@ static_assert(sizeof(i64) == 8, "");
 
 #define SUCCESSFUL(op) ((op) == SUCCESS)
 
-#define LEVELS_FOLDER "levels"
-#define REGISTRIES_FOLDER "registries"
-#define REGISTRY_TEXTURES_FOLDER "textures"
-#define SCRIPTS_FOLDER "scripts"
-#define REGISTRY_SOUNDS_FOLDER "sounds"
+#define FOLDER_SHD "shaders"
+#define FOLDER_LVL "levels"
+#define FOLDER_REG "registries"
+// contents of registries
+#define FOLDER_REG_TEX "textures"
+#define FOLDER_REG_SCR "scripts"
+#define FOLDER_REG_SND "sounds"
 
 // LOG_DEBUG("freeing %p", ptr);
-#define SAFE_FREE(ptr) \
-    if (ptr)           \
-        free(ptr);     \
+#define SAFE_FREE(ptr)                                                         \
+    if (ptr)                                                                   \
+        free(ptr);                                                             \
     ptr = 0;
 
-#define CHECK_PTR(ptr)                                   \
-    if (!(ptr))                                          \
-    {                                                    \
-        LOG_ERROR("check failed: '" #ptr "' is NULL\n"); \
-        return FAIL;                                     \
+#define CHECK_PTR(ptr)                                                         \
+    if (!(ptr))                                                                \
+    {                                                                          \
+        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                       \
+        return FAIL;                                                           \
     }
 
-#define CHECK_PTR_NORET(ptr)                             \
-    if (!(ptr))                                          \
-    {                                                    \
-        LOG_ERROR("check failed: '" #ptr "' is NULL\n"); \
-        return;                                          \
+#define CHECK_PTR_NORET(ptr)                                                   \
+    if (!(ptr))                                                                \
+    {                                                                          \
+        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                       \
+        return;                                                                \
     }
 
-#define CHECK(expression)                                           \
-    if (expression)                                                 \
-    {                                                               \
-        LOG_ERROR("check failed: '" #expression " is positive'\n"); \
-        return FAIL;                                                \
+#define CHECK(expression)                                                      \
+    if (expression)                                                            \
+    {                                                                          \
+        LOG_ERROR("check failed: '" #expression " is positive'\n");            \
+        return FAIL;                                                           \
     }
 
-#define CHECK_NORET(expression)                                     \
-    if (expression)                                                 \
-    {                                                               \
-        LOG_ERROR("check failed: '" #expression " is positive'\n"); \
-        return;                                                     \
+#define CHECK_NORET(expression)                                                \
+    if (expression)                                                            \
+    {                                                                          \
+        LOG_ERROR("check failed: '" #expression " is positive'\n");            \
+        return;                                                                \
     }
 
 #endif

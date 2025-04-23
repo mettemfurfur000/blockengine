@@ -1,10 +1,11 @@
 #ifndef LEVEL_H
 #define LEVEL_H 1
 
-#include "hashtable.h"
+#include "../vec/src/vec.h"
 #include "block_registry.h"
 #include "general.h"
-#include "../vec/src/vec.h"
+#include "hashtable.h"
+
 
 #define LAYER_FLAG_HAS_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
@@ -30,22 +31,25 @@ typedef struct layer
 {
     u64 uuid;
     void *parent_room;
-    // hash_node **vars;         // hashtable for block vars - variables, unique for said block.
-    // constant values are stored in the block registry, not here
+    // hash_node **vars;         // hashtable for block vars - variables, unique
+    // for said block. constant values are stored in the block registry, not
+    // here
 
     // hashtables are way too slow for this, using an array instead
-    
+
     var_object_pool var_pool;
-    block_registry *registry; // block registry used by this layer. if NULL, the layer acts as a simple array of ids
+    block_registry *registry; // block registry used by this layer. if NULL, the
+                              // layer acts as a simple array of ids
     u8 *blocks;               // array of blocks, each of size bytes_per_block
 
-    u32 width;  //
-    u32 height; //
-    u8 block_size;            // bytes per block id
-    u8 var_index_size;        // bytes per var index - a special index for the vars array
+    u32 width;         //
+    u32 height;        //
+    u8 block_size;     // bytes per block id
+    u8 var_index_size; // bytes per var index - a special index for the vars
+                       // array
     u8 total_bytes_per_block; // sum of block_size and var_index_size
-    
-    u8 flags;                 //
+
+    u8 flags; //
 } layer;
 
 typedef struct room
@@ -73,7 +77,8 @@ typedef struct level
     u8 flags;
 } level;
 
-#define BLOCK_ID_PTR(l, x, y) (l->blocks + ((y * l->width) + x) * l->total_bytes_per_block)
+#define BLOCK_ID_PTR(l, x, y)                                                  \
+    (l->blocks + ((y * l->width) + x) * l->total_bytes_per_block)
 #define MERGE32_TO_64(a, b) (((u64)a << 32) | (u64)b)
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id);
@@ -85,7 +90,8 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out);
 u8 block_delete_vars(layer *l, u32 x, u32 y);
 u8 block_set_vars(layer *l, u32 x, u32 y, blob vars);
 
-u8 init_layer(layer *l, room *parent_room); // call after setting their resolutions
+u8 init_layer(layer *l,
+              room *parent_room); // call after setting their resolutions
 u8 init_room(room *r, level *parent_level);
 u8 init_level(level *l);
 
@@ -94,12 +100,14 @@ u8 free_room(room *r);
 u8 free_level(level *l);
 
 level *level_create(const char *name);
-room* room_create(level *parent, const char *name, u32 w, u32 h);
-layer* layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags);
+room *room_create(level *parent, const char *name, u32 w, u32 h);
+layer *layer_create(room *parent, block_registry *registry_ref,
+                    u8 bytes_per_block, u8 bytes_per_index, u8 flags);
 // utils
 
 // turns string into formatted block chain
 // supposed to be used with a special character block
-void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...);
+void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y,
+             u32 length_limit, const char *format, ...);
 
 #endif

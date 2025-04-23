@@ -1,8 +1,8 @@
-#include "../include/vars.h"
+#include "../include/block_registry.h"
 #include "../include/level.h"
 #include "../include/rendering.h"
-#include "../include/block_registry.h"
 #include "../include/scripting.h"
+#include "../include/vars.h"
 
 #include <time.h>
 
@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     log_start("client.log");
 
-    if (init_graphics()  != SUCCESS)
+    if (init_graphics() != SUCCESS)
         return 1;
 
     unsigned long frame = 0;

@@ -10,7 +10,8 @@ typedef struct layer_slice
 {
     layer *ref;
 
-    u32 x, y; // coordinates in the world, in pixels ( most of the time 16 per block )
+    u32 x, y; // coordinates in the world, in pixels ( most of the time 16 per
+              // block )
     u32 w, h; // width an height of visible uhhhh
 
     u8 zoom;
@@ -28,7 +29,8 @@ typedef struct client_render_rules
 } client_render_rules;
 
 // moved to level.h since it has no connection to rendering
-//void bprintf(layer *l, int orig_x, int orig_y, int length_limit, char *format, ...);
+// void bprintf(layer *l, int orig_x, int orig_y, int length_limit, char
+// *format, ...);
 
 u8 render_layer(layer_slice slice);
 u8 client_render(const client_render_rules rules);

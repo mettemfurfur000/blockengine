@@ -1,9 +1,10 @@
-#include "../include/image_editing.h"
 #include "../include/scripting_bindings.h"
-#include "../include/rendering.h"
-#include "../include/flags.h"
-#include "../include/vars.h"
 #include "../include/events.h"
+#include "../include/flags.h"
+#include "../include/image_editing.h"
+#include "../include/rendering.h"
+#include "../include/vars.h"
+
 
 // ###############//
 // ###############//
@@ -13,10 +14,11 @@
 // ###############//
 // ###############//
 
-#define PUSHNEWIMAGE(L, i, name)                                                   \
-    ImageWrapper *name = (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper)); \
-    name->img = (i);                                                               \
-    luaL_getmetatable(L, "Image");                                                 \
+#define PUSHNEWIMAGE(L, i, name)                                               \
+    ImageWrapper *name =                                                       \
+        (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper));              \
+    name->img = (i);                                                           \
+    luaL_getmetatable(L, "Image");                                             \
     lua_setmetatable(L, -2);
 
 typedef struct
@@ -82,11 +84,8 @@ static int apply_color_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    u8 color[4] = {
-        luaL_checkinteger(L, 2),
-        luaL_checkinteger(L, 3),
-        luaL_checkinteger(L, 4),
-        luaL_checkinteger(L, 5)
+    u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3),
+                   luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)
 
     };
 
@@ -128,11 +127,8 @@ static int fill_color_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    u8 color[4] = {
-        luaL_checkinteger(L, 2),
-        luaL_checkinteger(L, 3),
-        luaL_checkinteger(L, 4),
-        luaL_checkinteger(L, 5)};
+    u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3),
+                   luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)};
 
     fill_color(wrapper->img, color);
 
@@ -253,9 +249,7 @@ void load_image_editing_library(lua_State *L)
     };
 
     const static luaL_Reg image_editing_lib[] = {
-        {"create", create_image_lua},
-        {"load", load_image_lua},
-        {NULL, NULL}
+        {"create", create_image_lua}, {"load", load_image_lua}, {NULL, NULL}
 
     };
 
@@ -322,8 +316,7 @@ static int lua_render_rules_set_order(lua_State *L)
         {
             int value = lua_tointeger(L, -1);
             (void)vec_push(&rules->draw_order, value);
-        }
-        else
+        } else
         {
             int index = lua_tointeger(L, -2);
             luaL_error(L, "Invalid value in table on index %d", index);
@@ -359,7 +352,8 @@ static int lua_slice_get(lua_State *L)
     return 1;
 }
 
-// packs slice from a lua table back into c structure and then sets it in a render rules
+// packs slice from a lua table back into c structure and then sets it in a
+// render rules
 static int lua_slice_set(lua_State *L)
 {
     client_render_rules *rules = check_light_userdata(L, 1);
@@ -384,8 +378,7 @@ static int lua_slice_set(lua_State *L)
         slice.ref = wrapper->l;
         // LOG_DEBUG("putting %p as a ref for a slice", slice.ref);
         lua_pop(L, 1);
-    }
-    else
+    } else
         luaL_error(L, "STRUCT_SET: expected a "
                       "LUA_TUSERDATA "
                       "for a field "
@@ -581,11 +574,13 @@ static int lua_registry_register_block_input(lua_State *L)
     luaL_checkany(L, 4);
     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    lua_pushboolean(L, scripting_register_block_input(wrapper->reg, id, ref, name) == SUCCESS);
+    lua_pushboolean(L, scripting_register_block_input(wrapper->reg, id, ref,
+                                                      name) == SUCCESS);
     return 1;
 }
 
-// maybe the only function that will be public to the rest of my codebase, since i need it at registry creation
+// maybe the only function that will be public to the rest of my codebase, since
+// i need it at registry creation
 int lua_light_block_input_register(lua_State *L)
 {
     if (!lua_islightuserdata(L, 1))
@@ -596,7 +591,8 @@ int lua_light_block_input_register(lua_State *L)
     luaL_checkany(L, 4);
     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    lua_pushboolean(L, scripting_register_block_input((block_registry *)ptr, id, ref, name) == SUCCESS);
+    lua_pushboolean(L, scripting_register_block_input((block_registry *)ptr, id,
+                                                      ref, name) == SUCCESS);
     return 0;
 }
 
@@ -626,8 +622,7 @@ static int lua_level_load_registry(lua_State *L)
             return 1;
         }
         NEW_USER_OBJECT(L, BlockRegistry, r);
-    }
-    else
+    } else
     {
         free(r);
     }
@@ -667,7 +662,8 @@ static int lua_level_get_room(lua_State *L)
     room *r = wrapper->lvl->rooms.data[index];
 
     NEW_USER_OBJECT(L, Room, r);
-    // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
+    // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc
+    // aware, so it doesn't get freed
 
     return 1;
 }
@@ -689,7 +685,8 @@ static int lua_level_get_room_by_name(lua_State *L)
         if (strcmp(((room *)wrapper->lvl->rooms.data[i])->name, name) == 0)
         {
             NEW_USER_OBJECT(L, Room, wrapper->lvl->rooms.data[i]);
-            // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
+            // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it
+            // as gc aware, so it doesn't get freed
             return 1;
         }
     }
@@ -706,7 +703,8 @@ static int lua_level_new_room(lua_State *L)
     int y = luaL_checkinteger(L, 4);
 
     NEW_USER_OBJECT(L, Room, room_create(wrapper->lvl, name, x, y));
-    // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
+    // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc
+    // aware, so it doesn't get freed
     return 1;
 }
 
@@ -734,12 +732,16 @@ static int lua_room_new_layer(lua_State *L)
     int byte_per_index = luaL_checkinteger(L, 4);
     int flags = luaL_checkinteger(L, 5);
 
-    block_registry *reg = find_registry((((level *)wrapper->r->parent_level)->registries), (char *)registry_name);
+    block_registry *reg =
+        find_registry((((level *)wrapper->r->parent_level)->registries),
+                      (char *)registry_name);
 
     if (!reg)
         luaL_error(L, "Registry %s not found", registry_name);
 
-    NEW_USER_OBJECT(L, Layer, layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags));
+    NEW_USER_OBJECT(
+        L, Layer,
+        layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags));
 
     return 1;
 }
@@ -753,7 +755,8 @@ static int lua_room_get_layer(lua_State *L)
         luaL_error(L, "Index out of range");
 
     NEW_USER_OBJECT(L, Layer, wrapper->r->layers.data[index]);
-    // FLAG_SET(__Layer->l->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc aware, so it doesn't get freed
+    // FLAG_SET(__Layer->l->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc
+    // aware, so it doesn't get freed
     return 1;
 }
 
@@ -816,7 +819,8 @@ static int lua_layer_move_block(lua_State *L)
     u32 delta_x = luaL_checknumber(L, 4);
     u32 delta_y = luaL_checknumber(L, 5);
 
-    lua_pushboolean(L, block_move(wrapper->l, x, y, delta_x, delta_y) == SUCCESS);
+    lua_pushboolean(L,
+                    block_move(wrapper->l, x, y, delta_x, delta_y) == SUCCESS);
 
     return 1;
 }
@@ -838,7 +842,8 @@ static int lua_get_block_input_handler(lua_State *L)
     }
 
     vec_int_t *refs = &wrapper->l->registry->resources.data[id].input_refs;
-    vec_str_t *ref_names = &wrapper->l->registry->resources.data[id].input_names;
+    vec_str_t *ref_names =
+        &wrapper->l->registry->resources.data[id].input_names;
 
     for (u32 i = 0; i < refs->length; i++)
         if (strcmp(ref_names->data[i], name) == 0)
@@ -900,7 +905,8 @@ static int lua_block_set_vars(lua_State *L)
     u32 y = luaL_checknumber(L, 3);
     LUA_CHECK_USER_OBJECT(L, Vars, wrapper_vars, 4);
 
-    lua_pushboolean(L, block_set_vars(wrapper->l, x, y, *wrapper_vars->b) == SUCCESS);
+    lua_pushboolean(L, block_set_vars(wrapper->l, x, y, *wrapper_vars->b) ==
+                           SUCCESS);
 
     return 1;
 }
@@ -986,7 +992,8 @@ static int lua_vars_set_string(lua_State *L)
 //     if (strlen(key) > 1)
 //         luaL_error(L, "Key must be a single character");
 
-//     lua_pushboolean(L, var_set_i8(wrapper->b, key[0], (i8)number) == SUCCESS);
+//     lua_pushboolean(L, var_set_i8(wrapper->b, key[0], (i8)number) ==
+//     SUCCESS);
 
 //     return 1;
 // }

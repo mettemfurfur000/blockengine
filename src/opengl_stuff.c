@@ -10,7 +10,6 @@ void setup_opengl(u16 width, u16 height)
     glOrtho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
 }
@@ -36,7 +35,7 @@ u32 load_shader(char *shader_path, GLenum shader_type)
 
     unsigned int ShaderID = glCreateShader(shader_type);
 
-    glShaderSource(ShaderID, 1, (const GLchar * const*)shader_source, NULL);
+    glShaderSource(ShaderID, 1, (const char *const *)&shader_source, NULL);
     glCompileShader(ShaderID);
 
     return ShaderID;

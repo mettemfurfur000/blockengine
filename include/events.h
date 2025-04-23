@@ -89,8 +89,8 @@ static_assert(sizeof(blob_update_event) <= sizeof(SDL_Event), "");
 
 // static_assert(sizeof(special_event) <= sizeof(SDL_Event));
 
-
 #define IS_ENGINE_EVENT(id) (id >= SDL_USEREVENT && id < ENGINE_LAST_EVENT)
-#define IS_BLOCK_EVENT(id) (id > ENGINE_BLOCK_SECTION_START && id < ENGINE_BLOCK_SECTION_END)
+#define IS_BLOCK_EVENT(id)                                                     \
+    (id > ENGINE_BLOCK_SECTION_START && id < ENGINE_BLOCK_SECTION_END)
 
 #endif

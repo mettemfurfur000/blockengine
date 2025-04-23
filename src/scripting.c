@@ -1,7 +1,8 @@
 #include "../include/scripting.h"
 // #include "../include/image_editing.h"
-#include "../include/scripting_bindings.h"
 #include "../include/events.h"
+#include "../include/scripting_bindings.h"
+
 
 lua_State *g_L = 0;
 
@@ -28,14 +29,19 @@ void scripting_register(lua_State *L)
 
     };
 
-    luaL_newlib(L, blockengine_lib); // creates a table with blockengine functions
-    lua_setglobal(L, "blockengine"); // sets the table as global variable "blockengine"
-                                     // 0 objects on stack now
+    luaL_newlib(L,
+                blockengine_lib); // creates a table with blockengine functions
+    lua_setglobal(L, "blockengine"); // sets the table as global variable
+                                     // "blockengine" 0 objects on stack now
 }
 
 void *check_light_userdata(lua_State *L, int index)
 {
-    return lua_islightuserdata(L, index) ? lua_touserdata(L, index) : (void *)0 + luaL_error(L, "Expected light userdata at index %d", index);
+    return lua_islightuserdata(L, index)
+               ? lua_touserdata(L, index)
+               : (void *)0 + luaL_error(L,
+                                        "Expected light userdata at index %d",
+                                        index);
 }
 
 void scripting_init()
@@ -118,7 +124,8 @@ void scripting_init()
         {"SDL_CONTROLLERTOUCHPADMOTION", SDL_CONTROLLERTOUCHPADMOTION},
         {"SDL_CONTROLLERTOUCHPADUP", SDL_CONTROLLERTOUCHPADUP},
         {"SDL_CONTROLLERSENSORUPDATE", SDL_CONTROLLERSENSORUPDATE},
-        {"SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3", SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3},
+        {"SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3",
+         SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3},
         {"SDL_CONTROLLERSTEAMHANDLEUPDATED", SDL_CONTROLLERSTEAMHANDLEUPDATED},
         {"SDL_FINGERDOWN", SDL_FINGERDOWN},
         {"SDL_FINGERUP", SDL_FINGERUP},
@@ -144,10 +151,7 @@ void scripting_init()
     scripting_set_global_enum(g_L, sdl_events, "sdl_events");
 }
 
-void scripting_close()
-{
-    lua_close(g_L);
-}
+void scripting_close() { lua_close(g_L); }
 
 i32 get_lookup_id(u32 type)
 {
@@ -235,7 +239,7 @@ int push_event_args(SDL_Event *e)
     if (!e)
         return 0;
 
-    char buf[16] = {}; 
+    char buf[16] = {};
 
     switch (e->type)
     {
@@ -330,7 +334,8 @@ void call_handlers(SDL_Event e)
 
         if (lua_pcall(g_L, args, 0, 0) != 0)
         {
-            LOG_ERROR("Error calling a handler, id %d: %s", lookup_id, lua_tostring(g_L, -1));
+            LOG_ERROR("Error calling a handler, id %d: %s", lookup_id,
+                      lua_tostring(g_L, -1));
             lua_pop(g_L, 1);
         }
     }
@@ -354,7 +359,8 @@ void scripting_register_event_handler(int ref, int event_type)
 /*
     Registers said input function to the block registry
 */
-u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const char *name)
+u8 scripting_register_block_input(block_registry *reg, u64 id, int ref,
+                                  const char *name)
 {
     CHECK_PTR(reg);
     CHECK_PTR(name);
@@ -370,11 +376,11 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
     for (u32 i = 0; i < res->input_names.length; i++)
         if (strcmp(res->input_names.data[i], name) == 0)
         {
-            //res->input_refs.data[i] = ref;
+            // res->input_refs.data[i] = ref;
             (void)vec_push(&res->input_refs, ref);
             return SUCCESS;
         }
-    
+
     LOG_ERROR("Failed to register input %s", name);
     return FAIL;
 }
@@ -382,12 +388,14 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
 int scripting_load_file(const char *reg_name, const char *short_filename)
 {
     char filename[MAX_PATH_LENGTH] = {};
-    snprintf(filename, MAX_PATH_LENGTH, REGISTRIES_FOLDER "/%s/" SCRIPTS_FOLDER "/%s", reg_name, short_filename);
+    snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG "/%s/" FOLDER_REG_SCR "/%s",
+             reg_name, short_filename);
     int status = luaL_dofile(g_L, filename);
 
     if (status != LUA_OK)
     {
-        fprintf(stderr, "Lua error in %s : %s", filename, lua_tostring(g_L, -1));
+        fprintf(stderr, "Lua error in %s : %s", filename,
+                lua_tostring(g_L, -1));
         return FAIL;
     }
 
@@ -422,9 +430,10 @@ u8 scripting_load_scripts(block_registry *registry)
 
         // checking if all inputs hav a handler
 
-        if( res->input_names.length != res->input_refs.length)
+        if (res->input_names.length != res->input_refs.length)
         {
-            LOG_ERROR("Block %d has %d inputs but %d handlers", res->id, res->input_names.length, res->input_refs.length);
+            LOG_ERROR("Block %d has %d inputs but %d handlers", res->id,
+                      res->input_names.length, res->input_refs.length);
             return FAIL;
         }
 
@@ -435,7 +444,9 @@ u8 scripting_load_scripts(block_registry *registry)
             int func_ref = res->input_refs.data[j];
             if (func_ref == 0)
             {
-                LOG_ERROR("Input %s of block %d has no handler, register it in your lua script", res->input_names.data[j], res->id);
+                LOG_ERROR("Input %s of block %d has no handler, register it in "
+                          "your lua script",
+                          res->input_names.data[j], res->id);
                 failed = 1;
             }
         }
@@ -456,7 +467,8 @@ u8 scripting_load_scripts(block_registry *registry)
 }
 
 // creates a lua table out of your array of poitners to enum_entries
-void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *name)
+void scripting_set_global_enum(lua_State *L, enum_entry entries[],
+                               const char *name)
 {
     lua_newtable(L);
 

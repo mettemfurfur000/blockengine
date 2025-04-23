@@ -1,4 +1,4 @@
-#include "../include/general.h"
+// #include "../include/general.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../stb/stb_image_write.h"

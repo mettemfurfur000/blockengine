@@ -3,7 +3,7 @@
 
 int test_basic_io()
 {
-	char *file = REGISTRIES_FOLDER "/" TEST_REGISTRY "/test.prop";
+	char *file = FOLDER_REG "/" TEST_REGISTRY "/test.prop";
 
 	hash_node **table = alloc_table();
 

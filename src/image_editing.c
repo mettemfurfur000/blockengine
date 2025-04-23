@@ -41,9 +41,11 @@ image *copy_image(const image *src)
 
 #define CHANNEL_MULTIPLY(a, b) (u8)((a / 255.0f) * (b / 255.0f))
 #define CHANNEL_BLEND(a, b) (u8)(255 - ((255 - a) * (255 - b) / 255.0f))
-#define CHANNEL_OVERLAY(a, b) a < 128 ? 2 * a *b / 255.0f : 255 - 2 * (255 - a) * (255 - b) / 255.0f
+#define CHANNEL_OVERLAY(a, b)                                                  \
+    a < 128 ? 2 * a *b / 255.0f : 255 - 2 * (255 - a) * (255 - b) / 255.0f
 
-#define CHANNEL_GAMMA_CORRECTION(a, gamma) (u8)(pow(a / 255.0f, 1.0f / gamma) * 255.0f)
+#define CHANNEL_GAMMA_CORRECTION(a, gamma)                                     \
+    (u8)(pow(a / 255.0f, 1.0f / gamma) * 255.0f)
 
 // file system
 
@@ -52,9 +54,11 @@ image *load_image(const char *filename)
     i32 width, height, channels;
     u8 *image_data;
 
-    if (!(image_data = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha)))
+    if (!(image_data =
+              stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha)))
     {
-        LOG_ERROR("texture_load Error: stbi_load failed, no such file: %s", filename);
+        LOG_ERROR("texture_load Error: stbi_load failed, no such file: %s",
+                  filename);
         return NULL;
     }
 
@@ -76,7 +80,8 @@ void save_image(const image *img, const char *filename)
 {
     LOG_DEBUG("save_image: %s", filename);
 
-    stbi_write_png(filename, img->width, img->height, CHANNELS, img->pixels, img->width * CHANNELS);
+    stbi_write_png(filename, img->width, img->height, CHANNELS, img->pixels,
+                   img->width * CHANNELS);
 }
 
 // funny part
@@ -86,17 +91,20 @@ void adjust_brightness(image *img, float factor)
     for (u32 j = 0; j < img->height; j++)
         for (u32 i = 0; i < img->width; i++)
             for (u32 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, i, j, c) = KEEPINLIMITS(*ACCESS_CHANNEL(img, i, j, c) * factor, 0x00, 0xff);
+                *ACCESS_CHANNEL(img, i, j, c) = KEEPINLIMITS(
+                    *ACCESS_CHANNEL(img, i, j, c) * factor, 0x00, 0xff);
 }
 
 void apply_color(image *img, u8 color[4])
 {
-    LOG_DEBUG("apply_color: %d %d %d %d", color[0], color[1], color[2], color[3]);
+    LOG_DEBUG("apply_color: %d %d %d %d", color[0], color[1], color[2],
+              color[3]);
 
     for (u32 j = 0; j < img->height; j++)
         for (u32 i = 0; i < img->width; i++)
             for (u32 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, i, j, c) = CHANNEL_BLEND(color[c], *ACCESS_CHANNEL(img, i, j, c));
+                *ACCESS_CHANNEL(img, i, j, c) =
+                    CHANNEL_BLEND(color[c], *ACCESS_CHANNEL(img, i, j, c));
 }
 
 void gamma_correction(image *img, float gamma)
@@ -104,7 +112,8 @@ void gamma_correction(image *img, float gamma)
     for (u32 j = 0; j < img->height; j++)
         for (u32 i = 0; i < img->width; i++)
             for (u32 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, i, j, c) = CHANNEL_GAMMA_CORRECTION(*ACCESS_CHANNEL(img, i, j, c), gamma);
+                *ACCESS_CHANNEL(img, i, j, c) = CHANNEL_GAMMA_CORRECTION(
+                    *ACCESS_CHANNEL(img, i, j, c), gamma);
 }
 
 image *crop_image(const image *src, u16 x, u16 y, u16 width, u16 height)
@@ -135,7 +144,8 @@ image *crop_image(const image *src, u16 x, u16 y, u16 width, u16 height)
     for (u32 j = y; j < end_y; j++)
         for (u32 i = x; i < end_x; i++)
             for (u32 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, i - x, j - y, c) = *ACCESS_CHANNEL(src, i, j, c);
+                *ACCESS_CHANNEL(img, i - x, j - y, c) =
+                    *ACCESS_CHANNEL(src, i, j, c);
 
     return img;
 }
@@ -186,7 +196,8 @@ image *rotate_image(const image *src, i8 clockwise_rotations)
             }
 
             for (u8 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, dest_x, dest_y, c) = *ACCESS_CHANNEL(src, i, j, c);
+                *ACCESS_CHANNEL(img, dest_x, dest_y, c) =
+                    *ACCESS_CHANNEL(src, i, j, c);
         }
 
     return img;
@@ -199,7 +210,8 @@ image *flip_image_horizontal(const image *src)
     for (u32 j = 0; j < src->height; j++)
         for (u32 i = 0; i < src->width; i++)
             for (u8 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, i, j, c) = *ACCESS_CHANNEL(src, src->width - i - 1, j, c);
+                *ACCESS_CHANNEL(img, i, j, c) =
+                    *ACCESS_CHANNEL(src, src->width - i - 1, j, c);
 
     return img;
 }
@@ -211,7 +223,8 @@ image *flip_image_vertical(const image *src)
     for (u32 j = 0; j < src->height; j++)
         for (u32 i = 0; i < src->width; i++)
             for (u8 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, i, j, c) = *ACCESS_CHANNEL(src, i, src->height - j - 1, c);
+                *ACCESS_CHANNEL(img, i, j, c) =
+                    *ACCESS_CHANNEL(src, i, src->height - j - 1, c);
 
     return img;
 }
@@ -244,7 +257,9 @@ void overlay_image(image *dst, const image *src, u16 x, u16 y)
     for (u32 j = y; j < end_y; j++)
         for (u32 i = x; i < end_x; i++)
             for (u8 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(dst, i, j, c) = CHANNEL_BLEND(*ACCESS_CHANNEL(src, i - x, j - y, c), *ACCESS_CHANNEL(dst, i, j, c));
+                *ACCESS_CHANNEL(dst, i, j, c) =
+                    CHANNEL_BLEND(*ACCESS_CHANNEL(src, i - x, j - y, c),
+                                  *ACCESS_CHANNEL(dst, i, j, c));
 }
 
 // Utility functions

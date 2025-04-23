@@ -9,14 +9,14 @@
 #define FLAG_ON(f, mask) ((f) |= (mask));
 #define FLAG_OFF(f, mask) ((f) &= ~(mask));
 
-#define FLAG_SET(f, mask, val)      \
-    if (FLAG_GET(f, mask) != (val)) \
+#define FLAG_SET(f, mask, val)                                                 \
+    if (FLAG_GET(f, mask) != (val))                                            \
     FLAG_FLIP(f, mask)
 
-#define FLAG_CONFIGURE(f, mask, v, condition) \
-    if (condition)                            \
-        FLAG_OFF(f, mask)                     \
-    else                                      \
+#define FLAG_CONFIGURE(f, mask, v, condition)                                  \
+    if (condition)                                                             \
+        FLAG_OFF(f, mask)                                                      \
+    else                                                                       \
         FLAG_SET(f, mask, v)
 
 #endif

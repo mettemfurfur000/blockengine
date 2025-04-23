@@ -4,9 +4,10 @@
 // vscode itellisense wants this define so bad...
 #define _DEFAULT_SOURCE 1
 
-#include "hashtable.h"
 #include "general.h"
+#include "hashtable.h"
 #include "sdl2_basics.h"
+
 
 #include "../vec/src/vec.h"
 
@@ -19,43 +20,44 @@
 
 typedef struct block_resources
 {
-	hash_node **all_fields;
-	void *parent_registry;
-	u64 id;
-	blob vars;
+    hash_node **all_fields;
+    void *parent_registry;
+    u64 id;
+    blob vars;
 
-	u64 repeat_times;
-	vec_int_t repeat_skip;
-	vec_str_t repeat_increment;
+    u64 repeat_times;
+    vec_int_t repeat_skip;
+    vec_str_t repeat_increment;
 
-	texture block_texture;
-	vec_sound_t sounds;
+    texture block_texture;
+    vec_sound_t sounds;
 
-	char *lua_script_filename;
-	// inputs to put bytes in
-	vec_int_t input_refs;
-	vec_str_t input_names;
-	// input_handler_vec_t inputs;
+    char *lua_script_filename;
+    // inputs to put bytes in
+    vec_int_t input_refs;
+    vec_str_t input_names;
+    // input_handler_vec_t inputs;
 
-	// these are references to internal block data fields, not actual values for a block
-	char anim_controller;	  // current animation frame / column
-	char type_controller;	  // current animation type / row
-	char flip_controller;	  // current type of flipping
-	char rotation_controller; // current rotation angle
-	u8 override_frame;		  // override type of block
+    // these are references to internal block data fields, not actual values for
+    // a block
+    char anim_controller;     // current animation frame / column
+    char type_controller;     // current animation type / row
+    char flip_controller;     // current type of flipping
+    char rotation_controller; // current rotation angle
+    u8 override_frame;        // override type of block
 
-	u8 frames_per_second;
-	u8 flags;
+    u8 frames_per_second;
+    u8 flags;
 } block_resources;
 
 typedef vec_t(block_resources) block_resources_t;
 
 typedef struct block_registry
 {
-	block_resources_t resources;
+    block_resources_t resources;
 
-	const char *name;
-	u64 uuid;
+    const char *name;
+    u64 uuid;
 } block_registry;
 
 typedef vec_t(block_registry) vec_registries_t;
@@ -89,7 +91,8 @@ u32 get_length_to_alloc(u64 value, u32 type);
 //
 // digits will be stripped for saving space, keep it in mind
 //
-// other numerical types will save their length in bytes, even if you pass it with value of 0
+// other numerical types will save their length in bytes, even if you pass it
+// with value of 0
 u8 make_block_data_from_string(const char *str_to_cpy, blob *b);
 
 #define NOT_REQUIRED 0
@@ -97,13 +100,13 @@ u8 make_block_data_from_string(const char *str_to_cpy, blob *b);
 
 typedef struct
 {
-	void (*increment_fn)(block_resources *);
-	u8 (*function)(const char *, block_resources *);
-	char *name;
-	u8 is_critical;	   // resource is not pushed if its absend, or if:
-	char *deps[4];	   // these entries are not present
-	char *incompat[4]; // these entries present
-	char *slots[4];	   // other entries already got said slots
+    void (*increment_fn)(block_resources *);
+    u8 (*function)(const char *, block_resources *);
+    char *name;
+    u8 is_critical;    // resource is not pushed if its absend, or if:
+    char *deps[4];     // these entries are not present
+    char *incompat[4]; // these entries present
+    char *slots[4];    // other entries already got said slots
 } resource_entry_handler;
 
 void free_block_resources(block_resources *b);
