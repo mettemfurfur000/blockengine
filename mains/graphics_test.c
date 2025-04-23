@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     log_start("client.log");
 
-    if (init_graphics() == FAIL)
+    if (init_graphics()  != SUCCESS)
         return 1;
 
     unsigned long frame = 0;
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
         glClear(GL_COLOR_BUFFER_BIT);
 
-        block_render(&tmp, 0, 0, 0, 0, 0, g_block_width * 4, 0, 0);
+        // block_render(&tmp, 0, 0, 0, 0, 0, g_block_width * 4, 0, 0);
 
         SDL_GL_SwapWindow(g_window);
 

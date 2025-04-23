@@ -77,7 +77,7 @@ void free_sound(sound *s);
 int music_load(music *dest, char *filename);
 void free_music(music *s);
 
-void play_sound_randomly(vec_sound_t sounds);
+// void play_sound_randomly(vec_sound_t sounds);
 
 int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width, u8 flip, unsigned short rotation);
 

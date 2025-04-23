@@ -173,7 +173,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 	CHECK(needed_size == 0);
 	// if tag is not existink yet, create it
 	if (b->ptr == 0 || fdesp(*b, letter) < 0)
-		if (var_push(b, letter, needed_size) == FAIL) // failed to create
+		if (var_push(b, letter, needed_size)  != SUCCESS) // failed to create
 			return FAIL;
 		else
 			return fdesp(*b, letter); // created, returning the index
@@ -183,7 +183,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 	i32 old_pos = fdesp(*b, letter); // it exists
 
 	if (VAR_SIZE(b->ptr, old_pos) < needed_size) // if size is smaller than needed, resize
-		if (var_resize(b, letter, needed_size) == FAIL)
+		if (var_resize(b, letter, needed_size)  != SUCCESS)
 			return FAIL;
 		else
 			return fdesp(*b, letter);
@@ -203,7 +203,7 @@ i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
 	if (pos < 0)
 		return FAIL;
 
-	if (make_endianless(src, size) == FAIL)
+	if (make_endianless(src, size)  != SUCCESS)
 		return FAIL;
 
 	memcpy(VAR_VALUE(b->ptr, pos), src, size);
@@ -228,7 +228,7 @@ i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
 
 	memcpy(dest, VAR_VALUE(b.ptr, pos), var_size);
 
-	if (make_endianless(dest, var_size) == FAIL)
+	if (make_endianless(dest, var_size)  != SUCCESS)
 		return FAIL;
 
 	return SUCCESS;

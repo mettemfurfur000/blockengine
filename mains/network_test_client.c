@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
 	int ret = init_client(&mysocket, &servaddr);
 
-	if (ret == FAIL)
+	if (ret  != SUCCESS)
 	{
 		printf("Error in init_client\n");
 		ErrorExit(TEXT("GetProcessId"));

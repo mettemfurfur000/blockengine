@@ -1,3 +1,4 @@
+#include "../include/opengl_stuff.h"
 #include "../include/sdl2_basics.h"
 
 int SCREEN_WIDTH = 640;
@@ -71,12 +72,7 @@ int init_graphics()
 	g_gl_context = SDL_GL_CreateContext(g_window);
 
 	// Setup OpenGL for 2D rendering
-	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0.0f, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, -1.0f, 1.0f);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	setup_opengl(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	int result = SDL_RegisterEvents(TOTAL_ENGINE_EVENTS);
 	if (result == (Uint32)-1)
@@ -99,9 +95,6 @@ int init_graphics()
 		LOG_ERROR("SDL_OpenAudio Error: %s", SDL_GetError());
 		return FAIL;
 	}
-
-	glClear(GL_COLOR_BUFFER_BIT);
-	glLoadIdentity();
 
 	if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 1, 1024) != 0)
 	{
@@ -151,11 +144,11 @@ int texture_load(texture *dest, char *path_to_file)
 		return FAIL;
 	}
 
-	if (strlen(path_to_file) >= MAX_PATH)
-	{
-		LOG_ERROR("texture_load Error: Path to file too long: %s", path_to_file);
-		return FAIL;
-	}
+	// if (strlen(path_to_file) >= MAX_PATH)
+	// {
+	// 	LOG_ERROR("texture_load Error: Path to file too long: %s", path_to_file);
+	// 	return FAIL;
+	// }
 
 	// Load image
 

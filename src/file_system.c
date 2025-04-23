@@ -114,7 +114,7 @@ void write_layer(layer *l, FILE *f)
     for (u32 y = 0; y < l->height; y++)
         for (u32 x = 0; x < l->width; x++)
         {
-            if (block_get_id(l, x, y, &id) == FAIL)
+            if (block_get_id(l, x, y, &id) != SUCCESS)
                 continue;
             endianless_write((u8 *)&id, l->block_size, f);
         }
@@ -161,7 +161,7 @@ void read_layer(layer *l, room *parent, FILE *f)
         for (u32 x = 0; x < l->width; x++)
         {
             endianless_read((u8 *)&id, l->block_size, f);
-            if (block_set_id(l, x, y, id) == FAIL)
+            if (block_set_id(l, x, y, id) != SUCCESS)
             {
                 LOG_WARNING("Failed to read block at %d, %d", x, y);
                 block_set_id(l, x, y, 0);
@@ -269,7 +269,7 @@ u8 load_level(level *lvl, char *name_in)
 
         sprintf(path, REGISTRIES_FOLDER "/%s", name);
 
-        if (read_block_registry(reg, path) == FAIL)
+        if (read_block_registry(reg, path)  != SUCCESS)
         {
             LOG_WARNING("Failed to load registry %s", name);
             free(name);

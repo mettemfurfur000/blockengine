@@ -552,7 +552,7 @@ const char *check_incompat(resource_entry_handler *handler, vec_str_t *seen_entr
 		if (seen_entries->length == 0) // this entry is first and cant be incompatible with cosmic void
 			return NULL;
 
-		char *result = vec_str_find(seen_entries, inc);
+		const char *result = vec_str_find(seen_entries, inc);
 		if (result)
 			return result;
 	}
@@ -568,7 +568,7 @@ const char *check_slot(resource_entry_handler *handler, vec_str_t *seen_entries,
 		if (!slot)
 			continue;
 
-		char *result = vec_str_find(filled_slots, slot);
+		const char *result = vec_str_find(filled_slots, slot);
 		if (result)
 			return result;
 
@@ -583,7 +583,7 @@ u32 parse_block_resources_from_file(const char *file_path, block_resources *dest
 	hash_node **properties = alloc_table();
 	u32 status = SUCCESS;
 
-	if (load_properties(file_path, properties) == FAIL)
+	if (load_properties(file_path, properties)  != SUCCESS)
 	{
 		LOG_ERROR("Error loading properties: %s", file_path);
 
@@ -628,7 +628,7 @@ u32 parse_block_resources_from_file(const char *file_path, block_resources *dest
 		// copy string to a buffer so strtok can work without modifying the original string
 		memcpy(copy_buffer, entry.str, entry.length);
 
-		char *dep = check_deps(&h, &seen_entries);
+		const char *dep = check_deps(&h, &seen_entries);
 		if (dep != NULL)
 		{
 			LOG_ERROR("\"%s\": \"%s\" is dependent on \"%s\"", file_path, h.name, dep);
@@ -636,7 +636,7 @@ u32 parse_block_resources_from_file(const char *file_path, block_resources *dest
 		}
 
 		// check for incompatibilities
-		char *inc = check_incompat(&h, &seen_entries);
+		const char *inc = check_incompat(&h, &seen_entries);
 		if (inc != NULL)
 		{
 			LOG_ERROR("\"%s\": \"%s\" is incompatible with \"%s\"", file_path, h.name, inc);
@@ -644,7 +644,7 @@ u32 parse_block_resources_from_file(const char *file_path, block_resources *dest
 		}
 
 		// check for slots
-		char *slot = check_slot(&h, &seen_entries, &seen_entries);
+		const char *slot = check_slot(&h, &seen_entries, &seen_entries);
 		if (slot != NULL)
 		{
 			LOG_ERROR("\"%s\": \"%s\" cant be an \"%s\", slot is already taken", file_path, h.name, slot);
@@ -740,7 +740,7 @@ u32 registry_read_block(block_registry *reg_ref, const char *file_path)
 	block_resources_t *reg = &reg_ref->resources;
 	br.parent_registry = reg_ref;
 
-	if (parse_block_resources_from_file(file_path, &br) == FAIL)
+	if (parse_block_resources_from_file(file_path, &br)  != SUCCESS)
 	{
 		LOG_ERROR("Failed to parse block resources from file: %s", file_path);
 		return FAIL;
@@ -798,7 +798,7 @@ u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
 		{
 			snprintf(subpath, sizeof(subpath), "%s" SEPARATOR_STR "%s", folder_path, entry->d_name);
 
-			if (registry_read_block(reg_ref, subpath) == FAIL)
+			if (registry_read_block(reg_ref, subpath)  != SUCCESS)
 			{
 				LOG_ERROR("Failed to parse block resources from file: %s", subpath);
 				closedir(directory);
@@ -810,7 +810,7 @@ u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
 		{
 			snprintf(subpath, sizeof(subpath), "%s" SEPARATOR_STR "%s", folder_path, entry->d_name);
 
-			if (registry_read_folder(reg_ref, subpath) == FAIL)
+			if (registry_read_folder(reg_ref, subpath)  != SUCCESS)
 			{
 				LOG_ERROR("Failed to parse block resources from folder: %s", subpath);
 				closedir(directory);
@@ -842,7 +842,7 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
 	(void)vec_push(&reg_ref->resources, filler_entry);
 
 	// read the registry recursively
-	if (registry_read_folder(reg_ref, reg_path) == FAIL)
+	if (registry_read_folder(reg_ref, reg_path)  != SUCCESS)
 	{
 		LOG_ERROR("Failed to read block registry from %s", reg_path);
 		return FAIL;
@@ -923,7 +923,7 @@ u32 read_all_registries(char *folder, vec_registries_t *dest)
 			sprintf(pathbuf, "%s" SEPARATOR_STR "%s", folder, entry->d_name);
 			LOG_INFO("Reading registry from %s", pathbuf);
 
-			if (read_block_registry(&temp, pathbuf) == FAIL)
+			if (read_block_registry(&temp, pathbuf)  != SUCCESS)
 			{
 				LOG_ERROR("Error reading registry from %s", pathbuf);
 				closedir(directory);

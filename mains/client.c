@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 {
 	log_start("client.log");
 
-	if (init_graphics() == FAIL)
+	if (init_graphics() != SUCCESS)
 		return 1;
 
 	unsigned long frame = 0;
