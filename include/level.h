@@ -1,11 +1,8 @@
 #ifndef LEVEL_H
 #define LEVEL_H 1
 
-#include "vars.h"
 #include "hashtable.h"
-#include "endianless.h"
 #include "block_registry.h"
-#include "flags.h"
 #include "general.h"
 #include "../vec/src/vec.h"
 

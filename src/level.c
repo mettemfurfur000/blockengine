@@ -1,5 +1,8 @@
 #include "../include/level.h"
 #include "../include/uuid.h"
+#include "../include/vars.h"
+// #include "../include/endianless.h"
+#include "../include/flags.h"
 
 // layer functions
 

@@ -1,14 +1,15 @@
 #ifndef SCRIPTING_H
 #define SCRIPTING_H
 
-#include <stdio.h>
-#include <string.h>
+// #include <stdio.h>
+// #include <string.h>
+// #include "events.h"
+
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
 
 #include "block_registry.h"
-#include "events.h"
 #include "level.h"
 
 #include <SDL2/SDL_events.h>

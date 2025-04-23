@@ -6,7 +6,7 @@
 #include <SDL2/SDL_mixer.h>
 
 #include "general.h"
-#include "events.h"
+// #include "events.h"
 #include "../vec/src/vec.h"
 
 #include "../stb/stb_image.h"

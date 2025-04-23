@@ -1,5 +1,8 @@
 #include "../include/hashtable.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 unsigned long hash_function(blob key)
 {
 	unsigned long hash = 5381;

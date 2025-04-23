@@ -1,11 +1,6 @@
-#include "../include/vars.h"
-#include "../include/level.h"
 #include "../include/rendering.h"
-#include "../include/block_registry.h"
 #include "../include/scripting.h"
-#include "../include/scripting_bindings.h"
-
-#include <time.h>
+#include "../include/events.h"
 
 int main(int argc, char *argv[])
 {
@@ -89,7 +84,7 @@ int main(int argc, char *argv[])
 		int chill_time = ms_per_s - loop_took;
 		total_ms_took += loop_took;
 
-		SDL_Delay(max(1, chill_time));
+		SDL_Delay(fmax(1, chill_time));
 
 		if (frame % 600 == 0)
 		{

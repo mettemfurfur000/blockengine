@@ -1,5 +1,19 @@
 #include "../include/block_registry.h"
+#include "../include/endianless.h"
 #include "../include/uuid.h"
+#include "../include/block_properties.h"
+#include "../include/flags.h"
+#include "../include/vars.h"
+
+#ifdef _WIN64
+#include "../dirent/include/dirent.h"
+#else
+#include <dirent.h>
+#endif
+
+// #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define EVAL_SIZE_MATCH(v, t) v >> (sizeof(t) * 8 - 8)
 #define RETURN_MATCHING_SIZE(v, t) \

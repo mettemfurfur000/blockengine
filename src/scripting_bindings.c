@@ -1,5 +1,9 @@
 #include "../include/image_editing.h"
 #include "../include/scripting_bindings.h"
+#include "../include/rendering.h"
+#include "../include/flags.h"
+#include "../include/vars.h"
+#include "../include/events.h"
 
 // ###############//
 // ###############//

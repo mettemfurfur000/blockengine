@@ -2,14 +2,14 @@
 #define SCRIPTING_BINDINGS_H 1
 
 #include "scripting.h"
-#include "rendering.h"
-#include "level.h"
-#include "rendering.h"
-#include "block_registry.h"
+// #include "rendering.h"
+// #include "level.h"
+// #include "rendering.h"
+// #include "block_registry.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+// #include <math.h>
+// #include <stdio.h>
+// #include <stdlib.h>
 #include <stdint.h>
 
 #include <lua.h>

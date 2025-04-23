@@ -1,15 +1,15 @@
 #ifndef vars_MANIPULATIONS_H
 #define vars_MANIPULATIONS_H 1
 
-#include <stdlib.h>
-#include <string.h>
+// #include <stdlib.h>
+// #include <string.h>
 #ifdef _WIN64
 #include <winsock.h>
 #else
 #include <arpa/inet.h>
 #endif
 
-#include "endianless.h"
+// #include "endianless.h"
 #include "hashtable.h"
 
 #define VAR_LETTER(blob, pos) *(char *)(blob + pos)

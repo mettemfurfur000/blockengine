@@ -3,9 +3,7 @@
 
 #include <stdio.h>
 
-#include "endianless.h"
 #include "general.h"
-#include "vars.h"
 #include "level.h"
 
 void blob_write(blob b, FILE *f);

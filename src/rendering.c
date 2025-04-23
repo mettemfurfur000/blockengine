@@ -1,4 +1,6 @@
 #include "../include/rendering.h"
+#include "../include/vars.h"
+#include "../include/flags.h"
 
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313, 6307353, 1532671, 6233633, 873473, 685613};
 const u8 funny_shifts[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 10};

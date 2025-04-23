@@ -1,9 +1,9 @@
 #ifndef RENDERING_H
 #define RENDERING_H
 
-#include "sdl2_basics.h"
-#include "block_registry.h"
-#include "vars.h"
+// #include "sdl2_basics.h"
+// #include "block_registry.h"
+// #include "vars.h"
 #include "level.h"
 
 typedef struct layer_slice

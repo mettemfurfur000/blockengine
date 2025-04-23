@@ -1,6 +1,8 @@
 #include "../include/logging.h"
+#include "../include/general.h"
+#include <lauxlib.h>
 #include <pthread.h>
-#include "../include/scripting.h"
+#include <string.h>
 
 int log_enabled = 0;
 FILE *log_file = NULL;

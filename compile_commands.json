@@ -1,0 +1,304 @@
+[
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-o",
+   "obj/vec.o",
+   "-c",
+   "vec/src/vec.c",
+   "-Wall",
+   "-Wextra",
+   "-Ivec/src"
+  ],
+  "file": "vec/src/vec.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./benchmarking.c",
+   "-o",
+   "obj/./benchmarking.o"
+  ],
+  "file": "src/./benchmarking.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./block_properties.c",
+   "-o",
+   "obj/./block_properties.o"
+  ],
+  "file": "src/./block_properties.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./block_registry.c",
+   "-o",
+   "obj/./block_registry.o"
+  ],
+  "file": "src/./block_registry.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./endianless.c",
+   "-o",
+   "obj/./endianless.o"
+  ],
+  "file": "src/./endianless.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./file_system.c",
+   "-o",
+   "obj/./file_system.o"
+  ],
+  "file": "src/./file_system.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./general.c",
+   "-o",
+   "obj/./general.o"
+  ],
+  "file": "src/./general.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./hashtable.c",
+   "-o",
+   "obj/./hashtable.o"
+  ],
+  "file": "src/./hashtable.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./image_editing.c",
+   "-o",
+   "obj/./image_editing.o"
+  ],
+  "file": "src/./image_editing.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./level.c",
+   "-o",
+   "obj/./level.o"
+  ],
+  "file": "src/./level.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./logging.c",
+   "-o",
+   "obj/./logging.o"
+  ],
+  "file": "src/./logging.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./opengl_stuff.c",
+   "-o",
+   "obj/./opengl_stuff.o"
+  ],
+  "file": "src/./opengl_stuff.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./rendering.c",
+   "-o",
+   "obj/./rendering.o"
+  ],
+  "file": "src/./rendering.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./scripting.c",
+   "-o",
+   "obj/./scripting.o"
+  ],
+  "file": "src/./scripting.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./scripting_bindings.c",
+   "-o",
+   "obj/./scripting_bindings.o"
+  ],
+  "file": "src/./scripting_bindings.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./sdl2_basics.c",
+   "-o",
+   "obj/./sdl2_basics.o"
+  ],
+  "file": "src/./sdl2_basics.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./stb_implementation.c",
+   "-o",
+   "obj/./stb_implementation.o"
+  ],
+  "file": "src/./stb_implementation.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./vars.c",
+   "-o",
+   "obj/./vars.o"
+  ],
+  "file": "src/./vars.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-o",
+   "obj/client.o",
+   "-c",
+   "mains/client.c",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main"
+  ],
+  "file": "mains/client.c"
+ }
+]

@@ -1,5 +1,6 @@
 #include "../include/opengl_stuff.h"
 #include "../include/sdl2_basics.h"
+#include "../include/events.h"
 
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
@@ -298,9 +299,9 @@ int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, 
 	float frame_y = 0.0f;
 
 	if (ignore_type)
-		frame_y = (frame / texture->frames) / (float)texture->types;
+		frame_y = (u8)(frame / texture->frames) / (float)texture->types;
 	else
-		frame_y = (type % texture->types) / (float)texture->types;
+		frame_y = (u8)(type % texture->types) / (float)texture->types;
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);

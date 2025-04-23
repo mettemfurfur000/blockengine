@@ -1,4 +1,5 @@
 #include "../include/vars.h"
+#include "../include/endianless.h"
 
 i32 fdesp(blob b, char letter)
 {

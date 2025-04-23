@@ -1,9 +1,6 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H 1
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 #define HASHTABLE_DEBUG_LOGGING 0

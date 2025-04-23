@@ -1,7 +1,9 @@
 build/*
 obj/*
 lua/*
-.vscode/*
 gmon.out
 out*
-.env/*
+# .vscode/*
+# .env/*
+# .cache/*
+.*/*

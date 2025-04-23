@@ -1,4 +1,5 @@
 #include "../include/opengl_stuff.h"
+#include <stdlib.h>
 
 void setup_opengl(u16 width, u16 height)
 {

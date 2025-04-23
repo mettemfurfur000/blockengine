@@ -1,7 +1,7 @@
 #ifndef EVENTS_H
 #define EVENTS_H 1
 
-#include "flags.h"
+// #include "flags.h"
 #include "general.h"
 
 #include <SDL2/SDL.h>
@@ -48,7 +48,7 @@ typedef struct block_update_event
     u32 y;
 } block_update_event;
 
-static_assert(sizeof(block_update_event) <= sizeof(SDL_Event));
+static_assert(sizeof(block_update_event) <= sizeof(SDL_Event), "");
 
 typedef struct blob_update_event
 {
@@ -69,7 +69,7 @@ typedef struct blob_update_event
     // 28
 } blob_update_event;
 
-static_assert(sizeof(blob_update_event) <= sizeof(SDL_Event));
+static_assert(sizeof(blob_update_event) <= sizeof(SDL_Event), "");
 
 // typedef struct special_event
 // {
