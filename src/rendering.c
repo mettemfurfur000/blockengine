@@ -75,7 +75,8 @@ u8 render_layer(layer_slice slice)
         dest_x = -block_x_offset - local_block_width * 2;
         // also minus 1 full block back to fill the gap
 
-        // LOG_DEBUG("preparing to render block texture gl id %d", texture->gl_id);
+        // LOG_DEBUG("preparing to render block texture gl id %d",
+        // texture->gl_id);
 
         block_resources br = b_reg->resources.data[b];
 
@@ -98,7 +99,9 @@ u8 render_layer(layer_slice slice)
                 u64 id = 0;
                 if (i >= 0 && j >= 0 && i < slice.ref->width &&
                     j < slice.ref->height)
-                    block_get_id(slice.ref, i, j, &id);
+                    id = *BLOCK_ID_PTR(slice.ref, i, j);
+
+                // block_get_id(slice.ref, i, j, &id);
                 __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
                 // TODO: merge all textures in de same atlas textures
                 // check for block filter sinc we cant render blocks with
