@@ -94,11 +94,11 @@ menu_room = safe_menu_create(test_level, "menu", g_width_blocks, g_height_blocks
 
 g_menu = {}
 
-layer_new_invisible(g_menu, "dev", safe_layer_create(menu_room, "engine", 1, 0))
-layer_new_renderable(g_menu, "ui_text", safe_layer_create(menu_room, "engine", 1, 2), true)
-layer_new_renderable(g_menu, "pallete", safe_layer_create(menu_room, "engine", 1, 0))
+-- layer_new_invisible(g_menu, "dev", safe_layer_create(menu_room, "engine", 1, 0))
 layer_new_renderable(g_menu, "floor", safe_layer_create(menu_room, "engine", 1, 0))
 layer_new_renderable(g_menu, "objects", safe_layer_create(menu_room, "engine", 1, 2))
+layer_new_renderable(g_menu, "pallete", safe_layer_create(menu_room, "engine", 1, 0))
+layer_new_renderable(g_menu, "text", safe_layer_create(menu_room, "engine", 1, 2), true)
 layer_new_renderable(g_menu, "mouse", safe_layer_create(menu_room, "engine", 1, 2))
 -- layer_new_renderable(g_menu, "ui_back", safe_layer_create(menu_room, "engine", 1, 2), true)
 -- layer_new_renderable(g_menu, "ui_floor_select", safe_layer_create(menu_room, "engine", 1, 0), true)

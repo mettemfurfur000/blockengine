@@ -102,7 +102,7 @@ u8 render_layer(layer_slice slice)
                     id = *BLOCK_ID_PTR(slice.ref, i, j);
 
                 // block_get_id(slice.ref, i, j, &id);
-                __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
+                // __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
                 // TODO: merge all textures in de same atlas textures
                 // check for block filter sinc we cant render blocks with
                 if (id != b)

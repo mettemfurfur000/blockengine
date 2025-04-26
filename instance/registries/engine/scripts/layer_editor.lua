@@ -57,6 +57,9 @@ end
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
     editor.pallete_layer = g_menu.pallete
 
+    -- editor.layer_being_edited = get_layer_by_id(0)
+    -- editor.layer_being_edited_index = 0
+
     place_pallete(editor.hide_palette)
 end)
 

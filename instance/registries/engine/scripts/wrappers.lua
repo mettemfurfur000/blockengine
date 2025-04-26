@@ -23,7 +23,7 @@ function world_print(x, y, width, msg)
         spaces_str = spaces_str .. " "
     end
 
-    g_menu.ui_text.layer:bprint(g_character_id, x, y, width, msg .. spaces_str)
+    g_menu.text.layer:bprint(g_character_id, x, y, width, msg .. spaces_str)
 end
 
 function tablelength(T)
