@@ -1,4 +1,6 @@
 #include "../include/opengl_stuff.h"
+#include "../include/block_renderer.h"
+// #include "SDL_opengl.h"
 #include <stdlib.h>
 
 void setup_opengl(u16 width, u16 height)
@@ -12,9 +14,11 @@ void setup_opengl(u16 width, u16 height)
     glLoadIdentity();
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
+
+    block_renderer_init(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-u32 load_shader(char *shader_path, GLenum shader_type)
+u32 load_shader(const char *shader_path, GLenum shader_type)
 {
     // Load and compile the shader
     FILE *shader_file = fopen(shader_path, "r");
@@ -28,15 +32,104 @@ u32 load_shader(char *shader_path, GLenum shader_type)
     long shader_size = ftell(shader_file);
     fseek(shader_file, 0, SEEK_SET);
 
-    char *shader_source = (char *)malloc(shader_size + 1);
+    char *shader_source = (char *)calloc(shader_size + 1, 1);
     fread(shader_source, 1, shader_size, shader_file);
     shader_source[shader_size] = '\0';
     fclose(shader_file);
 
-    unsigned int ShaderID = glCreateShader(shader_type);
+    // replace \r's with \n's
+    for (u32 i = 0; i < shader_size; i++)
+        if (shader_source[i] == '\r')
+            shader_source[i] = '\n';
+
+    u32 ShaderID = glCreateShader(shader_type);
 
     glShaderSource(ShaderID, 1, (const char *const *)&shader_source, NULL);
     glCompileShader(ShaderID);
 
+    int success;
+    char infoLog[512];
+    glGetShaderiv(ShaderID, GL_COMPILE_STATUS, &success);
+
+    if (!success)
+    {
+        glGetShaderInfoLog(ShaderID, 512, NULL, infoLog);
+        LOG_ERROR("Failed to load %s shader : %s", shader_path, infoLog);
+        LOG_ERROR("Shader source: %s", shader_source);
+        free(shader_source);
+        return 0;
+    }
+
+    free(shader_source);
+
     return ShaderID;
+}
+
+u32 compile_shader_program(u32 *shaders, u8 len)
+{
+    if (len > 3)
+    {
+        LOG_ERROR("compile_shader_program: too much boy!");
+        return 0;
+    }
+
+    u32 shaderProgram;
+    shaderProgram = glCreateProgram();
+    for (u8 i = 0; i < len; i++)
+        glAttachShader(shaderProgram, shaders[i]);
+
+    glLinkProgram(shaderProgram);
+
+    for (u8 i = 0; i < len; i++)
+        glDeleteShader(shaders[i]);
+
+    int success;
+    char infoLog[512];
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        LOG_ERROR("TS PMO : %s", infoLog);
+        return 0;
+    }
+
+    return shaderProgram;
+}
+
+u32 assemble_shader(const char *shader_name)
+{
+    u32 shaders[3] = {};
+    u8 len = 3;
+    char path_buf[MAX_PATH_LENGTH] = {};
+
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD "%s." FOLDER_SHD_VERT_EXT,
+             shader_name);
+
+    if ((shaders[0] = load_shader(path_buf, GL_VERTEX_SHADER)) == 0)
+    {
+        LOG_ERROR("no shaders found");
+        return 0;
+    }
+
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD "%s." FOLDER_SHD_FRAG_EXT,
+             shader_name);
+
+    if ((shaders[1] = load_shader(path_buf, GL_FRAGMENT_SHADER)) == 0)
+    {
+        LOG_ERROR("no fragment shader");
+        return 0;
+    }
+
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD "%s." FOLDER_SHD_GEOM_EXT,
+             shader_name);
+
+    if ((shaders[2] = load_shader(path_buf, GL_GEOMETRY_SHADER)) == 0)
+    {
+        // its actually fine we just set size to 2
+        len = 2;
+        // LOG_ERROR("no shaders found");
+        // return 0;
+    }
+
+    return compile_shader_program(shaders, len);
 }

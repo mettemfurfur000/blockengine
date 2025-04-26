@@ -222,7 +222,7 @@ void read_room(room *r, FILE *f)
 u8 save_level(level lvl)
 {
     char path[256] = {};
-    sprintf(path, FOLDER_LVL "/%s.lvl", lvl.name);
+    sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", lvl.name);
     FILE *f = fopen(path, "wb");
     if (!f)
         return FAIL;
@@ -256,7 +256,7 @@ u8 save_level(level lvl)
 u8 load_level(level *lvl, char *name_in)
 {
     char path[256] = {};
-    sprintf(path, FOLDER_LVL "/%s.lvl", name_in);
+    sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
     FILE *f = fopen(path, "rb");
     if (!f)
         return FAIL;
@@ -272,7 +272,7 @@ u8 load_level(level *lvl, char *name_in)
 
         reg->name = name;
 
-        sprintf(path, FOLDER_REG "/%s", name);
+        sprintf(path, FOLDER_REG SEPARATOR_STR "%s", name);
 
         if (read_block_registry(reg, path) != SUCCESS)
         {

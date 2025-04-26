@@ -388,7 +388,7 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref,
 int scripting_load_file(const char *reg_name, const char *short_filename)
 {
     char filename[MAX_PATH_LENGTH] = {};
-    snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG "/%s/" FOLDER_REG_SCR "/%s",
+    snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
              reg_name, short_filename);
     int status = luaL_dofile(g_L, filename);
 

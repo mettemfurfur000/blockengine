@@ -3,16 +3,17 @@
 
 int test_basic_io()
 {
-	char *file = FOLDER_REG "/" TEST_REGISTRY "/test.prop";
+    char *file =
+        FOLDER_REG SEPARATOR_STR TEST_REGISTRY SEPARATOR_STR "test.prop";
 
-	hash_node **table = alloc_table();
+    hash_node **table = alloc_table();
 
-	CHECK(load_properties(file, table))
-	CHECK(save_properties(file, table))
+    CHECK(load_properties(file, table))
+    CHECK(save_properties(file, table))
 
-	free_table(table);
+    free_table(table);
 
-	return SUCCESS;
+    return SUCCESS;
 }
 
 INIT_TESTING(test_block_props_all)

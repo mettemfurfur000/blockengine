@@ -8,10 +8,7 @@
 #include "hashtable.h"
 #include "sdl2_basics.h"
 
-
 #include "../vec/src/vec.h"
-
-#define MAX_PATH_LENGTH 512
 
 #define B_RES_FLAG_IGNORE_TYPE 0x01
 #define B_RES_FLAG_RANDOM_POS 0x02

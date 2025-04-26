@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <stdbool.h>
 
-
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
@@ -29,12 +28,18 @@ static_assert(sizeof(i64) == 8, "");
 #define SUCCESS 0
 #define FAIL -1
 
+#define MAX_PATH_LENGTH 512
+
 #define SUCCESSFUL(op) ((op) == SUCCESS)
 
 #define FOLDER_SHD "shaders"
+#define FOLDER_SHD_FRAG_EXT "frag"
+#define FOLDER_SHD_VERT_EXT "vert"
+#define FOLDER_SHD_GEOM_EXT "geom"
+//
 #define FOLDER_LVL "levels"
+//
 #define FOLDER_REG "registries"
-// contents of registries
 #define FOLDER_REG_TEX "textures"
 #define FOLDER_REG_SCR "scripts"
 #define FOLDER_REG_SND "sounds"

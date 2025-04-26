@@ -1,4 +1,5 @@
 #include "../include/rendering.h"
+#include "../include/block_renderer.h"
 #include "../include/flags.h"
 #include "../include/vars.h"
 
@@ -67,90 +68,98 @@ u8 render_layer(layer_slice slice)
     // local_block_width);
     // }
 
-    texture *texture;
-
-    for (i32 i = start_block_x; i < end_block_x; i++)
+    for (u64 b = 1; b < b_reg->resources.length; b++)
     {
-        dest_x += local_block_width;
-        dest_y = -block_y_offset - local_block_width * 2;
+        texture *texture = &b_reg->resources.data[b].block_texture;
+        if (!texture)
+            continue;
 
-        for (i32 j = start_block_y; j < end_block_y; j++)
+        block_resources br = b_reg->resources.data[b];
+
+        block_renderer_begin_batch();
+
+        for (i32 i = start_block_x; i < end_block_x; i++)
         {
-            dest_y += local_block_width;
-            // calculate y coordinate of block on screen
+            dest_x += local_block_width;
+            dest_y = -block_y_offset - local_block_width * 2;
 
-            if (i > slice.ref->width || j > slice.ref->height)
-                continue;
-
-            // get block
-            u64 id = 0;
-            if (i >= 0 && j >= 0 && i < slice.ref->width &&
-                j < slice.ref->height)
-                block_get_id(slice.ref, i, j, &id);
-            __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
-            // check if block is not void
-            if (id == 0)
-                continue;
-            // check if block could exist in registry
-            if (id >= b_reg->resources.length)
-                continue;
-
-            if (b_reg->resources.length <= 0)
+            for (i32 j = start_block_y; j < end_block_y; j++)
             {
-                LOG_DEBUG("weird\n");
-                continue;
+                dest_y += local_block_width;
+                // calculate y coordinate of block on screen
+
+                if (i > slice.ref->width || j > slice.ref->height)
+                    continue;
+
+                // get block
+                u64 id = 0;
+                if (i >= 0 && j >= 0 && i < slice.ref->width &&
+                    j < slice.ref->height)
+                    block_get_id(slice.ref, i, j, &id);
+                __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
+                // check if block is not void
+                if (id == 0)
+                    continue;
+                // check for block filter sinc we cant render blocks with
+                // different textures yet
+                // TODO: merge all textures in de same atlas
+                if (id != b)
+                    continue;
+                // check if block could exist in registry
+                if (id >= b_reg->resources.length)
+                    continue;
+
+                // get block vars
+                u8 frame = 0;
+                u8 type = 0;
+                u8 flip = 0;
+                u16 rotation = 0;
+
+                blob *var = NULL;
+                if (block_get_vars(slice.ref, i, j, &var) == SUCCESS &&
+                    var != NULL && var->length != 0 && var->ptr != NULL)
+                {
+                    if (br.type_controller != 0)
+                        var_get_u8(*var, br.type_controller, &type);
+
+                    if (br.flip_controller != 0)
+                        var_get_u8(*var, br.flip_controller, &flip);
+
+                    if (br.rotation_controller != 0)
+                        var_get_u16(*var, br.rotation_controller, &rotation);
+
+                    if (br.anim_controller != 0)
+                        var_get_u8(*var, br.anim_controller, &frame);
+                }
+
+                if (br.frames_per_second > 1)
+                {
+                    float seconds_since_start = SDL_GetTicks() / 1000.0f;
+                    int fps = br.frames_per_second;
+                    frame = (u8)(seconds_since_start * fps);
+                }
+
+                if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
+                {
+                    frame = tile_rand(i, j);
+                }
+
+                if (br.override_frame != 0)
+                    frame = br.override_frame;
+
+                // block_render(texture, dest_x, dest_y, frame, type,
+                // FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE),
+                // local_block_width, flip, rotation);
+                block_render_instanced(
+                    texture, dest_x, dest_y, frame, type,
+                    FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE),
+                    local_block_width, flip, rotation);
             }
-
-            block_resources br = b_reg->resources.data[id];
-
-            // get texture
-            texture = &br.block_texture;
-            if (!texture)
-                continue;
-
-            // get block vars
-
-            u8 frame = 0;
-            u8 type = 0;
-            u8 flip = 0;
-            u16 rotation = 0;
-
-            blob *var = NULL;
-            if (block_get_vars(slice.ref, i, j, &var) == SUCCESS &&
-                var != NULL && var->length != 0 && var->ptr != NULL)
-            {
-                if (br.type_controller != 0)
-                    var_get_u8(*var, br.type_controller, &type);
-
-                if (br.flip_controller != 0)
-                    var_get_u8(*var, br.flip_controller, &flip);
-
-                if (br.rotation_controller != 0)
-                    var_get_u16(*var, br.rotation_controller, &rotation);
-
-                if (br.anim_controller != 0)
-                    var_get_u8(*var, br.anim_controller, &frame);
-            }
-
-            if (br.frames_per_second > 1)
-            {
-                float seconds_since_start = SDL_GetTicks() / 1000.0f;
-                int fps = br.frames_per_second;
-                frame = (u8)(seconds_since_start * fps);
-            }
-
-            if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
-            {
-                frame = tile_rand(i, j);
-            }
-
-            if (br.override_frame != 0)
-                frame = br.override_frame;
-
-            block_render(texture, dest_x, dest_y, frame, type,
-                         FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE),
-                         local_block_width, flip, rotation);
         }
+
+        block_renderer_end_batch(texture, local_block_width);
+
+        // block_renderer_shutdown();
     }
 
     return SUCCESS;

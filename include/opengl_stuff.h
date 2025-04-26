@@ -9,4 +9,8 @@
 
 void setup_opengl(u16 width, u16 height);
 
+u32 load_shader(const char *shader_path, GLenum shader_type);
+u32 compile_shader_program(u32 *shaders, u8 len);
+u32 assemble_shader(const char *shader_name);
+
 #endif

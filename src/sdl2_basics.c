@@ -60,8 +60,8 @@ int init_graphics()
         return FAIL;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
     g_window = SDL_CreateWindow(
         window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -380,12 +380,15 @@ neighbours_mask expected layout, bit by bit:
 // 		}
 
 // 		src.x = (neighbours_mask & (0b10000000 >> i)) ? half_w : half_w
-// + quart_w; 		src.y = 0; 		src.h = half_w; 		src.w = quart_w;
+// + quart_w; 		src.y = 0; 		src.h = half_w;
+// src.w = quart_w;
 
 // 		dest.x = x + (i == 1 || i == 6 ? quart_w
 // 					  : i == 4		   ?
-// three_quarts_w 									   : 0); 		dest.y = y + (i == 1   ? 0 					  : i == 6 ? three_quarts_w 							   :
-// quart_w); 		dest.h = half_w; 		dest.w = quart_w;
+// three_quarts_w
+// : 0); 		dest.y = y + (i == 1   ? 0
+// : i == 6 ? three_quarts_w : quart_w); 		dest.h = half_w;
+// dest.w = quart_w;
 
 // 		rotation_center.x = 0;
 // 		rotation_center.y = 0;

@@ -388,7 +388,7 @@ u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 
     CHECK_PTR(b_reg->name)
 
-    char sound_full_path[256] = {};
+    char sound_full_path[MAX_PATH_LENGTH] = {};
 
     for (u32 i = 0; i < tmp.length; i++)
     {
@@ -430,7 +430,7 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
 
     CHECK_PTR(b_reg->name)
 
-    char texture_full_path[256] = {};
+    char texture_full_path[MAX_PATH_LENGTH] = {};
     snprintf(texture_full_path, sizeof(texture_full_path),
              FOLDER_REG SEPARATOR_STR
              "%s" SEPARATOR_STR FOLDER_REG_TEX SEPARATOR_STR "%s",
@@ -897,7 +897,7 @@ u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
     DIR *directory;
     struct dirent *entry;
 
-    char subpath[1024] = {};
+    char subpath[MAX_PATH_LENGTH] = {};
 
     directory = opendir(folder_path);
 
@@ -956,7 +956,7 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
     reg_ref->name = folder_name;
     reg_ref->uuid = generate_uuid();
 
-    char reg_path[1024] = {};
+    char reg_path[MAX_PATH_LENGTH] = {};
     snprintf(reg_path, sizeof(reg_path),
              FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR "blocks", folder_name);
 
