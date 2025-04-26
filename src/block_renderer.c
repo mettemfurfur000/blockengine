@@ -137,11 +137,14 @@ void block_renderer_add_block(int x, int y, u8 frame, u8 type,
     // Ensure we have enough capacity
     if (renderer.instanceCount >= renderer.instanceCapacity)
     {
+        LOG_DEBUG("not enough instances, increasing to %d", renderer.instanceCount * 4);
         renderer.instanceCapacity *= 2;
         renderer.instanceData =
             (float *)realloc(renderer.instanceData,
                              renderer.instanceCapacity * 4 * sizeof(float));
     }
+
+    // LOG_DEBUG("add_block %d %d %d %d", x, y, frame, type);
 
     // Add instance data: x, y, frame, type
     int idx = renderer.instanceCount * 4;

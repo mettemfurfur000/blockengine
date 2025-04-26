@@ -56,11 +56,6 @@ u8 render_layer(layer_slice slice)
         local_block_width; /* offset in pixels for smooth rendering of blocks */
     const int block_y_offset = slice.y % local_block_width;
 
-    float dest_x, dest_y;
-    dest_x =
-        -block_x_offset -
-        local_block_width * 2; // also minus 1 full block back to fill the gap
-
     // if (layer_index == 0)
     // {
     // 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ",
@@ -73,6 +68,14 @@ u8 render_layer(layer_slice slice)
         texture *texture = &b_reg->resources.data[b].block_texture;
         if (!texture)
             continue;
+        if (texture->gl_id == 0)
+            continue;
+
+        float dest_x, dest_y;
+        dest_x = -block_x_offset - local_block_width * 2;
+        // also minus 1 full block back to fill the gap
+
+        // LOG_DEBUG("preparing to render block texture gl id %d", texture->gl_id);
 
         block_resources br = b_reg->resources.data[b];
 
@@ -97,16 +100,9 @@ u8 render_layer(layer_slice slice)
                     j < slice.ref->height)
                     block_get_id(slice.ref, i, j, &id);
                 __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
-                // check if block is not void
-                if (id == 0)
-                    continue;
+                // TODO: merge all textures in de same atlas textures
                 // check for block filter sinc we cant render blocks with
-                // different textures yet
-                // TODO: merge all textures in de same atlas
                 if (id != b)
-                    continue;
-                // check if block could exist in registry
-                if (id >= b_reg->resources.length)
                     continue;
 
                 // get block vars

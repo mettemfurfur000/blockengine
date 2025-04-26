@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
-#include <SDL2/SDL_opengl.h>
+#include <epoxy/gl.h>
 
 #include "general.h"
 // #include "events.h"

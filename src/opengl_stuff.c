@@ -6,14 +6,17 @@
 void setup_opengl(u16 width, u16 height)
 {
     // Setup OpenGL for 2D rendering
-    glViewport(0, 0, width, height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glClear(GL_COLOR_BUFFER_BIT);
-    glLoadIdentity();
+    // glViewport(0, 0, width, height);
+    // glMatrixMode(GL_PROJECTION);
+    // glLoadIdentity();
+    // glOrtho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+    // glMatrixMode(GL_MODELVIEW);
+    // glLoadIdentity();
+    // glClear(GL_COLOR_BUFFER_BIT);
+    // glLoadIdentity();
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     block_renderer_init(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
