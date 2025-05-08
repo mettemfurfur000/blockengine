@@ -12,7 +12,7 @@ out vec2 TexCoord;
 void main()
 {
     // Calculate position based on instance data
-    vec2 position = aPos * uBlockWidth + vec2(aInstance.x, aInstance.y);
+    vec2 position = aPos * uBlockWidth + vec2(aInstance.y, aInstance.x);
     gl_Position = uProjection * vec4(position, 0.0, 1.0);
     
     // Calculate texture coordinates based on frame and type

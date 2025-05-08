@@ -1,27 +1,47 @@
 #ifndef BLOCK_RENDERER_H
-#define BLOCK_RENDERER_H
+#define BLOCK_RENDERER_H 1
 
+// #include "block_registry.h"
 #include "general.h"
 #include "sdl2_basics.h"
 
-// Initialize the block renderer
-int block_renderer_init(int screenWidth, int screenHeight);
+typedef struct block_renderer
+{
+    GLuint vao;
+    GLuint vbo;
+    GLuint ebo;
+    GLuint instanceVBO;
+    GLuint shaderProgram;
+    GLuint projectionLoc;
+    GLuint frameCountLoc;
+    GLuint blockWidthLoc;
+    GLuint textureLoc;
 
-// Begin a new batch of blocks
-void block_renderer_begin_batch();
+    // Instance data buffer
+    float *instanceData;
+    int instanceCapacity;
+    int instanceCount;
 
-// Add a block to the current batch
-void block_renderer_add_block(int x, int y, u8 frame, u8 type, u8 local_block_width);
+    // A texture associated with this renderer
+    texture *tex;
+    u64 id; // block registry block id
+    u8 local_block_width;
+} block_renderer;
 
-// Render all blocks in the current batch with the given texture
-void block_renderer_end_batch(texture *tex, u8 local_block_width);
+typedef vec_t(block_renderer) renderers_t;
 
-// Clean up resources
-void block_renderer_shutdown();
+int block_renderer_init(block_renderer *renderer, texture *tex, int screenWidth,
+                        int screenHeight);
+
+void block_renderer_begin_batch(renderers_t renderers);
+void block_renderer_end_batch(renderers_t renderers);
 
 // Replacement for the original block_render function
-int block_render_instanced(texture *texture, const int x, const int y, u8 frame, u8 type,
-                 u8 ignore_type, u8 local_block_width, u8 flip,
-                 unsigned short rotation);
+int block_render_instanced(renderers_t renderers, const u64 id, const i32 x,
+                           const i32 y, u8 frame, u8 type, u8 ignore_type,
+                           u8 flip, u16 rotation);
+
+// renderers_t block_renderers_generate(block_registry *reg);
+// void block_renderers_close(renderers_t renderers);
 
 #endif // BLOCK_RENDERER_H

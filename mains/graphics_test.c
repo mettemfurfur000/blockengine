@@ -46,29 +46,6 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
         // block_render(&tmp, 0, 0, 0, 0, 0, g_block_width * 4, 0, 0);
-        // TODO
-        {
-            // During initialization
-            block_renderer_init(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-            // During rendering
-            texture *current_texture = &some_texture;
-            block_renderer_begin_batch();
-
-            // Add all blocks that use the same texture
-            for (int i = 0; i < num_blocks; i++)
-            {
-                block_render_instanced(current_texture, blocks[i].x,
-                                       blocks[i].y, blocks[i].frame,
-                                       blocks[i].type, 0, g_block_width, 0, 0);
-            }
-
-            // Render all blocks at once
-            block_renderer_end_batch(current_texture, g_block_width);
-
-            // During shutdown
-            block_renderer_shutdown();
-        }
 
         SDL_GL_SwapWindow(g_window);
 

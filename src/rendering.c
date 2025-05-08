@@ -19,6 +19,7 @@ static unsigned short tile_rand(const int x, const int y)
            0x7fff;
 }
 
+// TODO: move it in a shader completely
 u8 render_layer(layer_slice slice)
 {
     CHECK(slice.zoom == 0)
@@ -32,134 +33,103 @@ u8 render_layer(layer_slice slice)
     if (!slice.ref)
         return SUCCESS;
 
-    // if (slice.ref->bytes_per_block == 1)
-    // {
-    //     bprintf(slice.ref, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
-    //     bprintf(slice.ref, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
-    //     // bprintf(slice.ref, 0, 4, 32, "%d    %d    %d    %d    ",
-    //     start_block_x / chunk_width, start_block_y / chunk_width, 1 +
-    //     end_block_x / chunk_width, 1 + end_block_y / chunk_width);
-    // }
-
     block_registry *b_reg = slice.ref->registry;
 
-    // LOG_DEBUG("finding registry %p", b_reg);
-
-    const int start_block_x = ((slice.x / local_block_width) - 1);
-    const int start_block_y = ((slice.y / local_block_width) - 1);
-
-    const int end_block_x = start_block_x + width + 2;
-    const int end_block_y = start_block_y + height + 2;
+    const i32 start_block_x = ((slice.x / local_block_width) - 1);
+    const i32 start_block_y = ((slice.y / local_block_width) - 1);
+    const i32 end_block_x = (start_block_x + width + 2);
+    const i32 end_block_y = (start_block_y + height + 2);
 
     const int block_x_offset =
         slice.x %
         local_block_width; /* offset in pixels for smooth rendering of blocks */
     const int block_y_offset = slice.y % local_block_width;
 
-    // if (layer_index == 0)
-    // {
-    // 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ",
-    // -block_x_offset - local_block_width, -block_y_offset -
-    // local_block_width);
-    // }
+    const u32 bytes_per_line =
+        slice.ref->width * slice.ref->total_bytes_per_block;
 
-    for (u64 b = 1; b < b_reg->resources.length; b++)
+    i32 dest_x, dest_y;
+    dest_x = -block_x_offset - local_block_width * 2;
+    // also minus 1 full block back to fill the gap
+
+    for (u32 i = 1; i < b_reg->resources.length; i++)
+        block_renderer_begin_batch(b_reg->renderers);
+
+    for (i32 i = start_block_x; i < end_block_x; i++)
     {
-        texture *texture = &b_reg->resources.data[b].block_texture;
-        if (!texture)
+        dest_x += local_block_width;
+        dest_y = -block_y_offset - local_block_width * 2;
+
+        if (i >= slice.ref->width)
             continue;
-        if (texture->gl_id == 0)
-            continue;
 
-        float dest_x, dest_y;
-        dest_x = -block_x_offset - local_block_width * 2;
-        // also minus 1 full block back to fill the gap
+        const u8 *line_start_ptr = slice.ref->blocks + i * bytes_per_line;
 
-        // LOG_DEBUG("preparing to render block texture gl id %d",
-        // texture->gl_id);
-
-        block_resources br = b_reg->resources.data[b];
-
-        block_renderer_begin_batch();
-
-        for (i32 i = start_block_x; i < end_block_x; i++)
+        for (i32 j = start_block_y; j < end_block_y; j++)
         {
-            dest_x += local_block_width;
-            dest_y = -block_y_offset - local_block_width * 2;
+            dest_y += local_block_width;
+            // calculate y coordinate of block on screen
 
-            for (i32 j = start_block_y; j < end_block_y; j++)
+            if (j >= slice.ref->height || i >= slice.ref->width)
+                continue;
+
+            // get block
+            u64 id = 0;
+            id = *(line_start_ptr + j * slice.ref->total_bytes_per_block);
+
+            if (id == 0)
+                continue;
+
+            block_resources *br = &b_reg->resources.data[id];
+
+            // get block vars
+            u8 frame = 0;
+            u8 type = 0;
+            u8 flip = 0;
+            u16 rotation = 0;
+
+            blob *var = NULL;
+            if (block_get_vars(slice.ref, i, j, &var) == SUCCESS &&
+                var != NULL && var->length != 0 && var->ptr != NULL)
             {
-                dest_y += local_block_width;
-                // calculate y coordinate of block on screen
+                if (br->type_controller != 0)
+                    var_get_u8(*var, br->type_controller, &type);
 
-                if (i > slice.ref->width || j > slice.ref->height)
-                    continue;
+                if (br->flip_controller != 0)
+                    var_get_u8(*var, br->flip_controller, &flip);
 
-                // get block
-                u64 id = 0;
-                if (i >= 0 && j >= 0 && i < slice.ref->width &&
-                    j < slice.ref->height)
-                    id = *BLOCK_ID_PTR(slice.ref, i, j);
+                if (br->rotation_controller != 0)
+                    var_get_u16(*var, br->rotation_controller, &rotation);
 
-                // block_get_id(slice.ref, i, j, &id);
-                // __builtin_prefetch(BLOCK_ID_PTR(slice.ref, i, j + 1), 0, 1);
-                // TODO: merge all textures in de same atlas textures
-                // check for block filter sinc we cant render blocks with
-                if (id != b)
-                    continue;
-
-                // get block vars
-                u8 frame = 0;
-                u8 type = 0;
-                u8 flip = 0;
-                u16 rotation = 0;
-
-                blob *var = NULL;
-                if (block_get_vars(slice.ref, i, j, &var) == SUCCESS &&
-                    var != NULL && var->length != 0 && var->ptr != NULL)
-                {
-                    if (br.type_controller != 0)
-                        var_get_u8(*var, br.type_controller, &type);
-
-                    if (br.flip_controller != 0)
-                        var_get_u8(*var, br.flip_controller, &flip);
-
-                    if (br.rotation_controller != 0)
-                        var_get_u16(*var, br.rotation_controller, &rotation);
-
-                    if (br.anim_controller != 0)
-                        var_get_u8(*var, br.anim_controller, &frame);
-                }
-
-                if (br.frames_per_second > 1)
-                {
-                    float seconds_since_start = SDL_GetTicks() / 1000.0f;
-                    int fps = br.frames_per_second;
-                    frame = (u8)(seconds_since_start * fps);
-                }
-
-                if (FLAG_GET(br.flags, B_RES_FLAG_RANDOM_POS))
-                {
-                    frame = tile_rand(i, j);
-                }
-
-                if (br.override_frame != 0)
-                    frame = br.override_frame;
-
-                // block_render(texture, dest_x, dest_y, frame, type,
-                // FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE),
-                // local_block_width, flip, rotation);
-                block_render_instanced(
-                    texture, dest_x, dest_y, frame, type,
-                    FLAG_GET(br.flags, B_RES_FLAG_IGNORE_TYPE),
-                    local_block_width, flip, rotation);
+                if (br->anim_controller != 0)
+                    var_get_u8(*var, br->anim_controller, &frame);
             }
+
+            if (br->frames_per_second > 1)
+            {
+                float seconds_since_start = SDL_GetTicks() / 1000.0f;
+                int fps = br->frames_per_second;
+                frame = (u8)(seconds_since_start * fps);
+            }
+
+            if (FLAG_GET(br->flags, B_RES_FLAG_RANDOM_POS))
+            {
+                frame = tile_rand(i, j);
+            }
+
+            if (br->override_frame != 0)
+                frame = br->override_frame;
+
+            block_render_instanced(
+                b_reg->renderers, id, dest_x, dest_y, frame, type,
+                FLAG_GET(br->flags, B_RES_FLAG_IGNORE_TYPE), flip, rotation);
         }
-
-        block_renderer_end_batch(texture, local_block_width);
-
-        // block_renderer_shutdown();
     }
+
+    for (u32 i = 1; i < b_reg->resources.length; i++)
+        block_renderer_end_batch(b_reg->renderers);
+
+    // block_renderer_shutdown();
 
     return SUCCESS;
 }

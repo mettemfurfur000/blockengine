@@ -95,6 +95,10 @@ int main(int argc, char *argv[])
         }
 
         frame++;
+        {
+            // debug only: render a single frame and quit
+            break;
+        }
     }
 logic_exit:
     LOG_INFO("exiting...");

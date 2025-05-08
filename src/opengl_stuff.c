@@ -1,5 +1,5 @@
 #include "../include/opengl_stuff.h"
-#include "../include/block_renderer.h"
+// #include "../include/block_renderer.h"
 // #include "SDL_opengl.h"
 #include <stdlib.h>
 
@@ -18,7 +18,7 @@ void setup_opengl(u16 width, u16 height)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    block_renderer_init(SCREEN_WIDTH, SCREEN_HEIGHT);
+    // block_renderer_init(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 u32 load_shader(const char *shader_path, GLenum shader_type)

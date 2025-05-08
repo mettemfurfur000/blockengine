@@ -1,5 +1,6 @@
 #include "../include/block_registry.h"
 #include "../include/block_properties.h"
+#include "../include/block_renderer.h"
 #include "../include/endianless.h"
 #include "../include/flags.h"
 #include "../include/uuid.h"
@@ -40,7 +41,7 @@ void strip_digit(u8 *dest, u64 value, u32 actual_length)
 
 u32 str_to_enum(char *type_str)
 {
-    if (strcmp(type_str, "u?") || strcmp(type_str, "digit") == 0)
+    if (strcmp(type_str, "u?") || strcmp(type_str, "auto") == 0)
         return T_DIGIT;
     if (strcmp(type_str, "u64") || strcmp(type_str, "long") == 0)
         return T_LONG;
@@ -436,7 +437,13 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
              "%s" SEPARATOR_STR FOLDER_REG_TEX SEPARATOR_STR "%s",
              b_reg->name, data);
 
-    return texture_load(&dest->block_texture, texture_full_path);
+    u8 result = texture_load(&dest->block_texture, texture_full_path);
+
+    // if(block_renderer_init(&dest->renderer, SCREEN_WIDTH, SCREEN_HEIGHT) !=
+    // SUCCESS)
+    //     return FAIL;
+
+    return result;
 }
 
 u8 block_res_fps_handler(const char *data, block_resources *dest)
@@ -950,6 +957,37 @@ u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
     return SUCCESS;
 }
 
+renderers_t block_renderers_generate(block_registry *reg)
+{
+    renderers_t renderers = {};
+
+    (void)vec_init(&renderers);
+
+    for (u32 i = 1; i < reg->resources.length; i++)
+    {
+        if (reg->resources.data[i].repeat_times == 0)
+        {
+            block_renderer new = {};
+
+            texture *tex = &reg->resources.data[i].block_texture;
+
+            block_renderer_init(&new, tex, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+            new.local_block_width =
+                g_block_width; // might change depending on different registry
+                               // configurations
+            new.id = i;
+            new.tex = tex;
+
+            LOG_DEBUG("generated %d renderer", i);
+
+            (void)vec_push(&renderers, new);
+        }
+    }
+
+    return renderers;
+}
+
 u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
 {
     CHECK_PTR(reg_ref);
@@ -986,6 +1024,8 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
     sort_by_id(reg);
 
     // debug_print_registry(registry);
+
+    reg_ref->renderers = block_renderers_generate(reg_ref);
 
     return SUCCESS;
 }

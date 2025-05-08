@@ -6,6 +6,7 @@
 
 #include "general.h"
 #include "hashtable.h"
+#include "block_renderer.h"
 #include "sdl2_basics.h"
 
 #include "../vec/src/vec.h"
@@ -52,6 +53,7 @@ typedef vec_t(block_resources) block_resources_t;
 typedef struct block_registry
 {
     block_resources_t resources;
+    renderers_t renderers;
 
     const char *name;
     u64 uuid;
