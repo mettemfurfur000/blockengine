@@ -14,14 +14,16 @@ void block_renderer_begin_batch();
 void block_renderer_add_block(int x, int y, u8 frame, u8 type, u8 local_block_width);
 
 // Render all blocks in the current batch with the given texture
-void block_renderer_end_batch(texture *tex, u8 local_block_width);
+// void block_renderer_end_batch(texture *tex, u8 local_block_width);
+// TODO: mak in shaders
 
 // Clean up resources
 void block_renderer_shutdown();
 
 // Replacement for the original block_render function
-int block_render_instanced(texture *texture, const int x, const int y, u8 frame, u8 type,
-                 u8 ignore_type, u8 local_block_width, u8 flip,
-                 unsigned short rotation);
+// int block_render_instanced(texture *texture, const int x, const int y, u8 frame, u8 type,
+//                  u8 ignore_type, u8 local_block_width, u8 flip,
+//                  unsigned short rotation);
+// TODO: mak with atlases
 
 #endif // BLOCK_RENDERER_H

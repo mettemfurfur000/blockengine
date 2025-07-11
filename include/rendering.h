@@ -32,7 +32,7 @@ typedef struct client_render_rules
 // void bprintf(layer *l, int orig_x, int orig_y, int length_limit, char
 // *format, ...);
 
-u8 render_layer(layer_slice slice);
+// u8 render_layer(layer_slice slice);
 u8 client_render(const client_render_rules rules);
 
 #endif

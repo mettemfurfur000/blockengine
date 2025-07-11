@@ -11,9 +11,13 @@ typedef struct image
         u8 *pixels;
     };
 
-    u16 width;
-    u16 height;
+    // char* filename;
+
+    i32 width;
+    i32 height;
 } image;
+
+// expected to be RGBA, i dunno bout any other formats mate!
 
 #define CHANNELS 4
 #define ACCESS_CHANNEL(img, x, y, c)                                           \

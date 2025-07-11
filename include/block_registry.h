@@ -10,10 +10,11 @@
 
 #include "../vec/src/vec.h"
 
-#define B_RES_FLAG_IGNORE_TYPE 0x01
-#define B_RES_FLAG_RANDOM_POS 0x02
-#define B_RES_FLAG_IS_FILLER 0x04
-#define B_RES_AUTOMATIC_ID 0x08
+#define RESOURCE_FLAG_IGNORE_TYPE 0x01
+#define RESOURCE_FLAG_RANDOM_POS 0x02
+#define RESOURCE_FLAG_IS_FILLER 0x04
+#define RESOURCE_FLAG_AUTO_ID 0x08
+#define RESOURCE_FLAG_RANGED 0x10
 
 typedef struct block_resources
 {
@@ -26,7 +27,12 @@ typedef struct block_resources
     vec_int_t repeat_skip;
     vec_str_t repeat_increment;
 
-    texture block_texture;
+    // texture block_texture; // texture can be taken from the parent registry
+
+    image *img;
+    atlas_info info;
+    char* texture_filename;
+
     vec_sound_t sounds;
 
     char *lua_script_filename;
@@ -54,6 +60,8 @@ typedef struct block_registry
     block_resources_t resources;
 
     const char *name;
+    // texture *atlas;
+    GLuint atlas_texture_uid;
     u64 uuid;
 } block_registry;
 

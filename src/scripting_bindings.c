@@ -5,7 +5,6 @@
 #include "../include/rendering.h"
 #include "../include/vars.h"
 
-
 // ###############//
 // ###############//
 // ###############//
@@ -501,19 +500,34 @@ static int lua_registry_to_table(lua_State *L)
             lua_setfield(L, -2, "all_fields");
         }
 
-        texture t = r.block_texture;
+        image *img = r.img;
+
+        if (img)
+        {
+            lua_newtable(L);
+            {
+                // STRUCT_GET(L, (*img), filename, lua_pushstring);
+                // STRUCT_GET(L, (*img), gl_id, lua_pushinteger);
+                STRUCT_GET(L, (*img), width, lua_pushinteger);
+                STRUCT_GET(L, (*img), height, lua_pushinteger);
+                // STRUCT_GET(L, (*img), frames, lua_pushinteger);
+                // STRUCT_GET(L, (*img), types, lua_pushinteger);
+                // STRUCT_GET(L, (*img), total_frames, lua_pushinteger);
+            }
+            lua_setfield(L, -2, "texture");
+        }
 
         lua_newtable(L);
         {
-            STRUCT_GET(L, t, filename, lua_pushstring);
-            STRUCT_GET(L, t, gl_id, lua_pushinteger);
-            STRUCT_GET(L, t, width, lua_pushinteger);
-            STRUCT_GET(L, t, height, lua_pushinteger);
-            STRUCT_GET(L, t, frames, lua_pushinteger);
-            STRUCT_GET(L, t, types, lua_pushinteger);
-            STRUCT_GET(L, t, total_frames, lua_pushinteger);
+            STRUCT_GET(L, r.info, width, lua_pushinteger);
+            STRUCT_GET(L, r.info, height, lua_pushinteger);
+            STRUCT_GET(L, r.info, atlas_offset_x, lua_pushinteger);
+            STRUCT_GET(L, r.info, atlas_offset_y, lua_pushinteger);
+            STRUCT_GET(L, r.info, frames, lua_pushinteger);
+            STRUCT_GET(L, r.info, types, lua_pushinteger);
+            STRUCT_GET(L, r.info, total_frames, lua_pushinteger);
         }
-        lua_setfield(L, -2, "texture");
+        lua_setfield(L, -2, "atlas_info");
 
         if (r.sounds.length > 0)
         {

@@ -1,6 +1,7 @@
-#include "../include/opengl_stuff.h"
 #include "../include/sdl2_basics.h"
 #include "../include/events.h"
+#include "../include/opengl_stuff.h"
+#include <string.h>
 
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
@@ -132,88 +133,169 @@ int exit_graphics()
     return SUCCESS;
 }
 
-int texture_load(texture *dest, char *path_to_file)
+// int texture_bind(image *img, texture *tex)
+// {
+//     GLuint texture_id;
+
+//     glGenTextures(1, &texture_id);
+//     glBindTexture(GL_TEXTURE_2D, texture_id);
+
+//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0,
+//                  GL_RGBA, GL_UNSIGNED_BYTE, img->data);
+
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+//     // tex
+// }
+
+// int texture_load(void *dest, char *path_to_file)
+// {
+//     // Alot of error checking here.
+//     if (!dest)
+//     {
+//         LOG_ERROR("texture_load Error: No desination texture");
+//         return FAIL;
+//     }
+
+//     if (!path_to_file)
+//     {
+//         LOG_ERROR("texture_load Error: No path to file");
+//         return FAIL;
+//     }
+
+//     // if (strlen(path_to_file) >= MAX_PATH)
+//     // {
+//     // 	LOG_ERROR("texture_load Error: Path to file too long: %s",
+//     // path_to_file); 	return FAIL;
+//     // }
+
+//     // Load image
+
+//     u8 *image_data;
+//     int channels;
+
+//     if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height,
+//                                  &channels, STBI_rgb_alpha)))
+//     {
+//         stbi_image_free(image_data);
+//         LOG_ERROR("texture_load Error: stbi_load failed, no such file: %s",
+//                   path_to_file);
+//         return FAIL;
+//     }
+
+//     if (dest->width <= 0 || dest->height <= 0)
+//     {
+//         stbi_image_free(image_data);
+//         LOG_ERROR("texture_load Error: stbi_load failed, invalid size: %s",
+//                   path_to_file);
+//         return FAIL;
+//     }
+
+//     GLuint texture_id;
+
+//     // Create and bind texture
+
+//     glGenTextures(1, &texture_id);
+//     glBindTexture(GL_TEXTURE_2D, texture_id);
+
+//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dest->width, dest->height, 0,
+//                  GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+//     // Free image data
+//     stbi_image_free(image_data);
+
+//     // Store all the values in the texture struct
+//     dest->gl_id = texture_id;
+
+//     dest->frames = dest->width / g_block_width;
+//     dest->types = dest->height / g_block_width;
+//     dest->total_frames = dest->frames * dest->types;
+
+//     // copy filename for later use
+//     char *filename = strrchr(path_to_file, SEPARATOR) + 1;
+//     int namelen = strlen(filename);
+
+//     dest->filename = (char *)malloc(namelen + 1);
+
+//     strcpy(dest->filename, filename);
+
+//     return SUCCESS;
+// }
+
+// int load_image_alt(image *img_dst, atlas_info *atlas_info,  char
+// *path_to_file)
+// {
+//     CHECK_PTR(img_dst)
+//     CHECK_PTR(atlas_info)
+//     CHECK_PTR(path_to_file)
+
+//     u8 *image_data;
+//     int channels;
+
+//     if (!(image_data = stbi_load(path_to_file, &img_dst->width,
+//                                  &img_dst->height, &channels,
+//                                  STBI_rgb_alpha)))
+//     {
+//         stbi_image_free(image_data);
+//         LOG_ERROR("texture_load Error: stbi_load failed, no such file: %s",
+//                   path_to_file);
+//         return FAIL;
+//     }
+
+//     if (img_dst->width <= 0 || img_dst->height <= 0)
+//     {
+//         stbi_image_free(image_data);
+//         LOG_ERROR("texture_load Error: stbi_load failed, invalid size: %s",
+//                   path_to_file);
+//         return FAIL;
+//     }
+
+//     img_dst->data = image_data;
+
+//     // partially fill out de texture fields, we will need em later
+
+//     atlas_info->width = atlas_info->width;
+//     atlas_info->height = atlas_info->height;
+
+//     atlas_info->frames = atlas_info->width / g_block_width;
+//     atlas_info->types = atlas_info->height / g_block_width;
+
+//     atlas_info->total_frames = atlas_info->frames * atlas_info->types;
+
+//     // copy filename for later use
+//     char *filename = strrchr(path_to_file, SEPARATOR) + 1;
+//     atlas_info->filename = strdup(filename);
+
+//     return SUCCESS;
+// }
+
+// void free_texture(texture *t)
+// {
+//     SAFE_FREE(t->filename);
+
+//     if (t->gl_id)
+//         glDeleteTextures(1, &t->gl_id);
+// }
+
+int record_atlas_info(atlas_info *atlas_info, image *img)
 {
-    // Alot of error checking here.
-    if (!dest)
-    {
-        LOG_ERROR("texture_load Error: No desination texture");
-        return FAIL;
-    }
+    atlas_info->width = img->width;
+    atlas_info->height = img->height;
 
-    if (!path_to_file)
-    {
-        LOG_ERROR("texture_load Error: No path to file");
-        return FAIL;
-    }
+    atlas_info->frames = img->width / g_block_width;
+    atlas_info->types = img->height / g_block_width;
 
-    // if (strlen(path_to_file) >= MAX_PATH)
-    // {
-    // 	LOG_ERROR("texture_load Error: Path to file too long: %s",
-    // path_to_file); 	return FAIL;
-    // }
-
-    // Load image
-
-    u8 *image_data;
-    int channels;
-
-    if (!(image_data = stbi_load(path_to_file, &dest->width, &dest->height,
-                                 &channels, STBI_rgb_alpha)))
-    {
-        stbi_image_free(image_data);
-        LOG_ERROR("texture_load Error: stbi_load failed, no such file: %s",
-                  path_to_file);
-        return FAIL;
-    }
-
-    if (dest->width <= 0 || dest->height <= 0)
-    {
-        stbi_image_free(image_data);
-        LOG_ERROR("texture_load Error: stbi_load failed, invalid size: %s",
-                  path_to_file);
-        return FAIL;
-    }
-
-    GLuint texture_id;
-
-    // Create and bind texture
-
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dest->width, dest->height, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, image_data);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    // Free image data
-    stbi_image_free(image_data);
-
-    // Store all the values in the texture struct
-    dest->gl_id = texture_id;
-
-    dest->frames = dest->width / g_block_width;
-    dest->types = dest->height / g_block_width;
-    dest->total_frames = dest->frames * dest->types;
+    atlas_info->total_frames = atlas_info->frames * atlas_info->types;
 
     // copy filename for later use
-    char *filename = strrchr(path_to_file, SEPARATOR) + 1;
-    int namelen = strlen(filename);
-
-    dest->filename = (char *)malloc(namelen + 1);
-
-    strcpy(dest->filename, filename);
+    // char *filename = strrchr(path_to_file, SEPARATOR) + 1;
+    // atlas_info->filename = strdup(filename);
 
     return SUCCESS;
-}
-
-void free_texture(texture *t)
-{
-    SAFE_FREE(t->filename);
-
-    glDeleteTextures(1, &t->gl_id);
 }
 
 Uint32 getChunkTimeMilliseconds(Mix_Chunk *chunk)
@@ -281,56 +363,56 @@ void free_music(music *s) { Mix_FreeMusic(s->mus); }
 // }
 
 // it trusts you to pass valid values in, be careful with frames and types...
-int block_render(texture *texture, const int x, const int y, u8 frame, u8 type,
-                 u8 ignore_type, u8 local_block_width, u8 flip,
-                 unsigned short rotation)
-{
-    if (texture->gl_id == 0)
-        return SUCCESS;
-    // frame is an index into one of the frames on a texture
-    frame = frame % texture->total_frames; // wrap frames
+// int block_render(texture *texture, const int x, const int y, u8 frame, u8 type,
+//                  u8 ignore_type, u8 local_block_width, u8 flip,
+//                  unsigned short rotation)
+// {
+//     if (texture->gl_id == 0)
+//         return SUCCESS;
+//     // frame is an index into one of the frames on a texture
+//     frame = frame % texture->total_frames; // wrap frames
 
-    // get texture coordinates of a frame
+//     // get texture coordinates of a frame
 
-    // int frame_x = (frame % texture->frames) * g_block_width;
-    // int frame_y = 0;
+//     // int frame_x = (frame % texture->frames) * g_block_width;
+//     // int frame_y = 0;
 
-    // now in floats for opengl, also normalized
+//     // now in floats for opengl, also normalized
 
-    float frame_x = (frame % texture->frames) / (float)texture->frames;
-    float frame_y = 0.0f;
+//     float frame_x = (frame % texture->frames) / (float)texture->frames;
+//     float frame_y = 0.0f;
 
-    if (ignore_type)
-        frame_y = (u8)(frame / texture->frames) / (float)texture->types;
-    else
-        frame_y = (u8)(type % texture->types) / (float)texture->types;
+//     if (ignore_type)
+//         frame_y = (u8)(frame / texture->frames) / (float)texture->types;
+//     else
+//         frame_y = (u8)(type % texture->types) / (float)texture->types;
 
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//     glEnable(GL_TEXTURE_2D);
+//     glEnable(GL_BLEND);
+//     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glBindTexture(GL_TEXTURE_2D, texture->gl_id);
+//     glBindTexture(GL_TEXTURE_2D, texture->gl_id);
 
-    glBegin(GL_QUADS);
-    {
-        // top left
-        glTexCoord2f(frame_x, frame_y);
-        glVertex2i(x, y);
-        // top right
-        glTexCoord2f(frame_x + 1.0f / texture->frames, frame_y);
-        glVertex2i(x + local_block_width, y);
-        // bottom right
-        glTexCoord2f(frame_x + 1.0f / texture->frames,
-                     frame_y + 1.0f / texture->types);
-        glVertex2i(x + local_block_width, y + local_block_width);
-        // bottom left
-        glTexCoord2f(frame_x, frame_y + 1.0f / texture->types);
-        glVertex2i(x, y + local_block_width);
-    }
-    glEnd();
+//     glBegin(GL_QUADS);
+//     {
+//         // top left
+//         glTexCoord2f(frame_x, frame_y);
+//         glVertex2i(x, y);
+//         // top right
+//         glTexCoord2f(frame_x + 1.0f / texture->frames, frame_y);
+//         glVertex2i(x + local_block_width, y);
+//         // bottom right
+//         glTexCoord2f(frame_x + 1.0f / texture->frames,
+//                      frame_y + 1.0f / texture->types);
+//         glVertex2i(x + local_block_width, y + local_block_width);
+//         // bottom left
+//         glTexCoord2f(frame_x, frame_y + 1.0f / texture->types);
+//         glVertex2i(x, y + local_block_width);
+//     }
+//     glEnd();
 
-    return SUCCESS;
-}
+//     return SUCCESS;
+// }
 // TODO:
 
 /*

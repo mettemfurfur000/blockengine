@@ -1,4 +1,5 @@
 #include "../include/block_registry.h"
+#include "../include/atlas_builder.h"
 #include "../include/block_properties.h"
 #include "../include/endianless.h"
 #include "../include/flags.h"
@@ -420,7 +421,11 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
 {
     if (strcmp(data, clean_token) == 0)
     {
-        free_texture(&dest->block_texture);
+        free_image(dest->img);
+        dest->img = 0;
+
+        SAFE_FREE(dest->texture_filename);
+
         return SUCCESS;
     }
 
@@ -436,7 +441,27 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
              "%s" SEPARATOR_STR FOLDER_REG_TEX SEPARATOR_STR "%s",
              b_reg->name, data);
 
-    return texture_load(&dest->block_texture, texture_full_path);
+    // old way makes it a texture right away and frees ma precius pixels! we
+    // need deez image pixels to make some useful work in the atlas_builder
+    // later!
+
+    // return texture_load(&dest->block_texture, texture_full_path);
+    // return load_image_alt(&dest->img, &dest->block_texture,
+    // texture_full_path);
+
+    dest->img = load_image(texture_full_path);
+
+    if (dest->img == NULL)
+    {
+        LOG_ERROR("block_res_texture_handler : failed to load an image for the texture: %s", texture_full_path);
+        return FAIL;
+    }
+
+    record_atlas_info(&dest->info, dest->img);
+
+    dest->texture_filename = strdup(texture_full_path);
+
+    return SUCCESS;
 }
 
 u8 block_res_fps_handler(const char *data, block_resources *dest)
@@ -452,9 +477,9 @@ u8 block_res_fps_handler(const char *data, block_resources *dest)
     return SUCCESS;
 }
 
-DECLARE_DEFAULT_FLAG_HANDLER(ignore_type, B_RES_FLAG_IGNORE_TYPE)
-DECLARE_DEFAULT_FLAG_HANDLER(position_based_type, B_RES_FLAG_RANDOM_POS)
-DECLARE_DEFAULT_FLAG_HANDLER(automatic_id, B_RES_AUTOMATIC_ID)
+DECLARE_DEFAULT_FLAG_HANDLER(ignore_type, RESOURCE_FLAG_IGNORE_TYPE)
+DECLARE_DEFAULT_FLAG_HANDLER(position_based_type, RESOURCE_FLAG_RANDOM_POS)
+DECLARE_DEFAULT_FLAG_HANDLER(automatic_id, RESOURCE_FLAG_AUTO_ID)
 
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(anim_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(type_controller)
@@ -812,7 +837,8 @@ void range_ids(block_resources_t *reg, block_resources *br_ref)
     {
         u8 skip_this_one = 0;
 
-        for (u32 j = 0; j < br_ref->repeat_skip.length; j++)
+        for (u32 j = 0; j < br_ref->repeat_skip.length;
+             j++) // if an index appears on out repeat skip list, we skip it
             if (br_ref->repeat_skip.data[j] == i)
             {
                 skip_this_one = 1;
@@ -824,7 +850,11 @@ void range_ids(block_resources_t *reg, block_resources *br_ref)
 
         call_increments(br_ref);
         br_ref->id++;
+
+        FLAG_SET(br_ref->flags, RESOURCE_FLAG_RANGED,
+                 1); // mark as ranged and then fix the original resource
         (void)vec_push(reg, *br_ref);
+        FLAG_SET(br_ref->flags, RESOURCE_FLAG_RANGED, 0);
     }
 }
 
@@ -866,7 +896,7 @@ u32 registry_read_block(block_registry *reg_ref, const char *file_path)
         return FAIL;
     }
 
-    if (FLAG_GET(br.flags, B_RES_AUTOMATIC_ID))
+    if (FLAG_GET(br.flags, RESOURCE_FLAG_AUTO_ID))
         br.id = reg_ref->resources.length;
 
     if (is_already_in_registry(reg, &br))
@@ -962,9 +992,7 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
 
     LOG_INFO("Reading block registry from %s", reg_path);
 
-    block_resources filler_entry = {.id = 0, .vars = {{}, {}}
-
-    };
+    block_resources filler_entry = {.id = 0, .vars = {{}, {}}};
 
     // push a default void block with id 0
     (void)vec_push(&reg_ref->resources, filler_entry);
@@ -977,7 +1005,7 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
     }
 
     // check for holes and fill them
-    FLAG_SET(filler_entry.flags, B_RES_FLAG_IS_FILLER, 1)
+    FLAG_SET(filler_entry.flags, RESOURCE_FLAG_IS_FILLER, 1)
 
     block_resources_t *reg = &reg_ref->resources;
 
@@ -986,6 +1014,8 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
     sort_by_id(reg);
 
     // debug_print_registry(registry);
+
+    build_atlas(reg_ref);
 
     return SUCCESS;
 }
@@ -1011,7 +1041,7 @@ void free_block_resources(block_resources *b)
                       "resources",
                       b->id, res_handlers[i].name);
 
-    if (b->id != 0 && FLAG_GET(b->flags, B_RES_FLAG_IS_FILLER) ==
+    if (b->id != 0 && FLAG_GET(b->flags, RESOURCE_FLAG_IS_FILLER) ==
                           0) // ignore filler blocks and an air block, they are
                              // created by engine
         free_table(b->all_fields);
@@ -1085,7 +1115,7 @@ void debug_print_registry(block_registry *ref)
     for (u32 i = 0; i < ref->resources.length; i++)
     {
         block_resources br = ref->resources.data[i];
-        LOG_DEBUG("%d: %s, %d, %x", br.id, br.block_texture.filename,
+        LOG_DEBUG("%d: %s, %d, %x", br.id, br.texture_filename,
                   br.override_frame, br.flags);
     }
 }

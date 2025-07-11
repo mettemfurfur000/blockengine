@@ -250,8 +250,9 @@ void overlay_image(image *dst, const image *src, u16 x, u16 y)
 
     if (end_x > dst->width || end_y > dst->height)
     {
-        LOG_ERROR("overlay_image Error: out of bounds");
-        return;
+        // instead of erroring we just clip the image to fit in the destination area
+        end_x = dst->width;
+        end_y = dst->height;
     }
 
     for (u32 j = y; j < end_y; j++)

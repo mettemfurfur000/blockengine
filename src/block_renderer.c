@@ -156,31 +156,31 @@ void block_renderer_add_block(int x, int y, u8 frame, u8 type,
     renderer.instanceCount++;
 }
 
-void block_renderer_end_batch(texture *tex, u8 local_block_width)
-{
-    if (renderer.instanceCount == 0)
-        return;
+// void block_renderer_end_batch(texture *tex, u8 local_block_width)
+// {
+//     if (renderer.instanceCount == 0)
+//         return;
 
-    glUseProgram(renderer.shaderProgram);
+//     glUseProgram(renderer.shaderProgram);
 
-    // Bind texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex->gl_id);
+//     // Bind texture
+//     glActiveTexture(GL_TEXTURE0);
+//     glBindTexture(GL_TEXTURE_2D, tex->gl_id);
 
-    // Update uniforms
-    glUniform2f(renderer.frameCountLoc, (float)tex->frames, (float)tex->types);
-    glUniform1f(renderer.blockWidthLoc, (float)local_block_width);
+//     // Update uniforms
+//     glUniform2f(renderer.frameCountLoc, (float)tex->frames, (float)tex->types);
+//     glUniform1f(renderer.blockWidthLoc, (float)local_block_width);
 
-    // Update instance data
-    glBindBuffer(GL_ARRAY_BUFFER, renderer.instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, renderer.instanceCount * 4 * sizeof(float),
-                 renderer.instanceData, GL_DYNAMIC_DRAW);
+//     // Update instance data
+//     glBindBuffer(GL_ARRAY_BUFFER, renderer.instanceVBO);
+//     glBufferData(GL_ARRAY_BUFFER, renderer.instanceCount * 4 * sizeof(float),
+//                  renderer.instanceData, GL_DYNAMIC_DRAW);
 
-    // Draw instances
-    glBindVertexArray(renderer.vao);
-    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0,
-                            renderer.instanceCount);
-}
+//     // Draw instances
+//     glBindVertexArray(renderer.vao);
+//     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0,
+//                             renderer.instanceCount);
+// }
 
 void block_renderer_shutdown()
 {
@@ -194,23 +194,23 @@ void block_renderer_shutdown()
 }
 
 // Replacement for the original block_render function
-int block_render_instanced(texture *texture, const int x, const int y, u8 frame,
-                           u8 type, u8 ignore_type, u8 local_block_width,
-                           u8 flip, unsigned short rotation)
-{
-    if (texture->gl_id == 0)
-        return SUCCESS;
+// int block_render_instanced(texture *texture, const int x, const int y, u8 frame,
+//                            u8 type, u8 ignore_type, u8 local_block_width,
+//                            u8 flip, unsigned short rotation)
+// {
+//     if (texture->gl_id == 0)
+//         return SUCCESS;
 
-    // frame is an index into one of the frames on a texture
-    frame = frame % texture->total_frames; // wrap frames
+//     // frame is an index into one of the frames on a texture
+//     frame = frame % texture->total_frames; // wrap frames
 
-    // Calculate the actual type based on ignore_type flag
-    u8 actual_type =
-        ignore_type ? (u8)(frame / texture->frames) : (type % texture->types);
+//     // Calculate the actual type based on ignore_type flag
+//     u8 actual_type =
+//         ignore_type ? (u8)(frame / texture->frames) : (type % texture->types);
 
-    // Add this block to the batch
-    block_renderer_add_block(x, y, frame % texture->frames, actual_type,
-                             local_block_width);
+//     // Add this block to the batch
+//     block_renderer_add_block(x, y, frame % texture->frames, actual_type,
+//                              local_block_width);
 
-    return SUCCESS;
-}
+//     return SUCCESS;
+// }

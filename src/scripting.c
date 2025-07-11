@@ -3,7 +3,6 @@
 #include "../include/events.h"
 #include "../include/scripting_bindings.h"
 
-
 lua_State *g_L = 0;
 
 vec_int_t handlers[128] = {};
@@ -146,6 +145,7 @@ void scripting_init()
         {"SDL_POLLSENTINEL", SDL_POLLSENTINEL},
         {"SDL_USEREVENT", SDL_USEREVENT},
         {"SDL_LASTEVENT", SDL_LASTEVENT},
+        {NULL, 0},
     };
 
     scripting_set_global_enum(g_L, sdl_events, "sdl_events");
@@ -236,6 +236,8 @@ i32 get_lookup_id(u32 type)
 
 int push_event_args(SDL_Event *e)
 {
+    block_update_event *block_event = NULL;
+    blob_update_event *blob_event = NULL;
     if (!e)
         return 0;
 
@@ -271,7 +273,7 @@ int push_event_args(SDL_Event *e)
     case ENGINE_BLOCK_UDPATE:
     case ENGINE_BLOCK_ERASED:
     case ENGINE_BLOCK_CREATE:
-        block_update_event *block_event = (block_update_event *)e;
+        block_event = (block_update_event *)e;
 
         NEW_USER_OBJECT(g_L, Room, block_event->room_ptr);
         NEW_USER_OBJECT(g_L, Layer, block_event->layer_ptr);
@@ -286,7 +288,7 @@ int push_event_args(SDL_Event *e)
     case ENGINE_BLOB_UPDATE:
     case ENGINE_BLOB_ERASED:
     case ENGINE_BLOB_CREATE:
-        blob_update_event *blob_event = (blob_update_event *)e;
+        blob_event = (blob_update_event *)e;
 
         NEW_USER_OBJECT(g_L, Room, blob_event->room_ptr);
         NEW_USER_OBJECT(g_L, Layer, blob_event->layer_ptr);
@@ -388,7 +390,9 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref,
 int scripting_load_file(const char *reg_name, const char *short_filename)
 {
     char filename[MAX_PATH_LENGTH] = {};
-    snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
+    snprintf(filename, MAX_PATH_LENGTH,
+             FOLDER_REG SEPARATOR_STR
+             "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
              reg_name, short_filename);
     int status = luaL_dofile(g_L, filename);
 
