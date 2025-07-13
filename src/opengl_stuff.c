@@ -1,6 +1,7 @@
 #include "../include/opengl_stuff.h"
 #include "../include/block_renderer.h"
 // #include "SDL_opengl.h"
+#include <epoxy/gl_generated.h>
 #include <stdlib.h>
 
 void setup_opengl(u16 width, u16 height)
@@ -137,46 +138,26 @@ u32 assemble_shader(const char *shader_name)
     return compile_shader_program(shaders, len);
 }
 
-// int gl_bind_texture(texture* dest, image *src)
-// {
-//     // Alot of error checking here.
-//     if (!dest)
-//     {
-//         LOG_ERROR("texture_load Error: No desination texture");
-//         return FAIL;
-//     }
+GLuint gl_bind_texture(image *src)
+{
+    if (!src)
+    {
+        LOG_ERROR("texture_load Error: No source image");
+        return FAIL;
+    }
 
-//     if (!src)
-//     {
-//         LOG_ERROR("texture_load Error: No source image");
-//         return FAIL;
-//     }
+    GLuint texture_id;
 
-//     GLuint texture_id;
+    // Create and bind texture
 
-//     // Create and bind texture
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
 
-//     glGenTextures(1, &texture_id);
-//     glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, src->width, src->height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, src->data);
 
-//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, src->width, src->height, 0,
-//                  GL_RGBA, GL_UNSIGNED_BYTE, src->data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-//     // stbi_image_free(image_data);
-
-//     // Store all the values in the texture struct
-//     dest->gl_id = texture_id;
-
-//     // copy filename for later use
-//     char *filename = strrchr(path_to_file, SEPARATOR) + 1;
-//     int namelen = strlen(filename);
-
-//     dest->filename = (char *)malloc(namelen + 1);
-
-//     strcpy(dest->filename, filename);
-
-//     return SUCCESS;
-// }
+    return texture_id;
+}

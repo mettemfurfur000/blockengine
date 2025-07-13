@@ -1,6 +1,7 @@
-#include "../include/opengl_stuff.h"
 #include "../include/block_renderer.h"
+#include "../include/opengl_stuff.h"
 
+#include <epoxy/gl_generated.h>
 #include <stdlib.h>
 
 // produced mostly by Claude 3.7 Sonnet
@@ -10,10 +11,12 @@ typedef struct
     GLuint vao;
     GLuint vbo;
     GLuint ebo;
+
     GLuint instanceVBO;
     GLuint shaderProgram;
+
     GLuint projectionLoc;
-    GLuint frameCountLoc;
+    GLuint atlasResizeFactor;
     GLuint blockWidthLoc;
     GLuint textureLoc;
 
@@ -50,8 +53,8 @@ int block_renderer_init(int screenWidth, int screenHeight)
     // Get uniform locations
     renderer.projectionLoc =
         glGetUniformLocation(renderer.shaderProgram, "uProjection");
-    renderer.frameCountLoc =
-        glGetUniformLocation(renderer.shaderProgram, "uFrameCount");
+    renderer.atlasResizeFactor =
+        glGetUniformLocation(renderer.shaderProgram, "uResizeRatio");
     renderer.blockWidthLoc =
         glGetUniformLocation(renderer.shaderProgram, "uBlockWidth");
     renderer.textureLoc =
@@ -100,16 +103,15 @@ int block_renderer_init(int screenWidth, int screenHeight)
     glGenBuffers(1, &renderer.instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, renderer.instanceVBO);
 
-    // Instance attribute (position, frame, type)
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                          (void *)0);
+    // Instance attribute
+    glVertexAttribPointer(2, INSTANCE_FIELDS_COUNT, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1); // Tell OpenGL this is an instanced attribute
 
     // Initialize instance data
     renderer.instanceCapacity = 1000; // Start with space for 1000 instances
-    renderer.instanceData =
-        (float *)malloc(renderer.instanceCapacity * 4 * sizeof(float));
+    renderer.instanceData = (float *)malloc(
+        renderer.instanceCapacity * INSTANCE_FIELDS_COUNT * sizeof(float));
     renderer.instanceCount = 0;
 
     // Set up orthographic projection
@@ -131,56 +133,67 @@ int block_renderer_init(int screenWidth, int screenHeight)
 
 void block_renderer_begin_batch() { renderer.instanceCount = 0; }
 
-void block_renderer_add_block(int x, int y, u8 frame, u8 type,
+// void block_renderer_add_block(int x, int y, u8 frame, u8 type, u8 a_offset_x,
+//                               u8 a_offset_y)
+// {
+//     // Ensure we have enough capacity
+//     if (renderer.instanceCount >= renderer.instanceCapacity)
+//     {
+//         LOG_DEBUG("not enough instances, increasing to %d",
+//                   renderer.instanceCount * INSTANCE_FIELDS_COUNT);
+//         renderer.instanceCapacity *= 2;
+//         renderer.instanceData = (float *)realloc(
+//             renderer.instanceData,
+//             renderer.instanceCapacity * INSTANCE_FIELDS_COUNT *
+//             sizeof(float));
+//     }
+
+//     // LOG_DEBUG("add_block %d %d %d %d", x, y, frame, type);
+
+//     // Add instance data: x, y, frame, type
+//     int idx = renderer.instanceCount * INSTANCE_FIELDS_COUNT;
+//     renderer.instanceData[idx + 0] = (float)x;
+//     renderer.instanceData[idx + 1] = (float)y;
+//     renderer.instanceData[idx + 2] = (float)(a_offset_x + frame);
+//     renderer.instanceData[idx + 3] = (float)(a_offset_y + type);
+
+//     LOG_DEBUG("%d %d %d %d", x, y, (a_offset_x + frame), (a_offset_y +
+//     type));
+
+//     renderer.instanceCount++;
+// }
+
+void block_renderer_end_batch(image* atlas_img, GLuint atlas,
                               u8 local_block_width)
 {
-    // Ensure we have enough capacity
-    if (renderer.instanceCount >= renderer.instanceCapacity)
-    {
-        LOG_DEBUG("not enough instances, increasing to %d", renderer.instanceCount * 4);
-        renderer.instanceCapacity *= 2;
-        renderer.instanceData =
-            (float *)realloc(renderer.instanceData,
-                             renderer.instanceCapacity * 4 * sizeof(float));
-    }
+    if (renderer.instanceCount == 0)
+        return;
 
-    // LOG_DEBUG("add_block %d %d %d %d", x, y, frame, type);
+    // exit(0);
 
-    // Add instance data: x, y, frame, type
-    int idx = renderer.instanceCount * 4;
-    renderer.instanceData[idx + 0] = (float)x;
-    renderer.instanceData[idx + 1] = (float)y;
-    renderer.instanceData[idx + 2] = (float)frame;
-    renderer.instanceData[idx + 3] = (float)type;
+    glUseProgram(renderer.shaderProgram);
 
-    renderer.instanceCount++;
+    // Bind texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, atlas);
+
+    // Update uniforms
+    // ?????
+    // TODO
+    glUniform2f(renderer.atlasResizeFactor, (float)atlas_img->width / g_block_width, (float)atlas_img->height / g_block_width);
+    glUniform1f(renderer.blockWidthLoc, (float)local_block_width);
+
+    // Update instance data
+    glBindBuffer(GL_ARRAY_BUFFER, renderer.instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER,
+                 renderer.instanceCount * INSTANCE_FIELDS_COUNT * sizeof(float),
+                 renderer.instanceData, GL_DYNAMIC_DRAW);
+
+    // Draw instances
+    glBindVertexArray(renderer.vao);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0,
+                            renderer.instanceCount);
 }
-
-// void block_renderer_end_batch(texture *tex, u8 local_block_width)
-// {
-//     if (renderer.instanceCount == 0)
-//         return;
-
-//     glUseProgram(renderer.shaderProgram);
-
-//     // Bind texture
-//     glActiveTexture(GL_TEXTURE0);
-//     glBindTexture(GL_TEXTURE_2D, tex->gl_id);
-
-//     // Update uniforms
-//     glUniform2f(renderer.frameCountLoc, (float)tex->frames, (float)tex->types);
-//     glUniform1f(renderer.blockWidthLoc, (float)local_block_width);
-
-//     // Update instance data
-//     glBindBuffer(GL_ARRAY_BUFFER, renderer.instanceVBO);
-//     glBufferData(GL_ARRAY_BUFFER, renderer.instanceCount * 4 * sizeof(float),
-//                  renderer.instanceData, GL_DYNAMIC_DRAW);
-
-//     // Draw instances
-//     glBindVertexArray(renderer.vao);
-//     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0,
-//                             renderer.instanceCount);
-// }
 
 void block_renderer_shutdown()
 {
@@ -194,23 +207,34 @@ void block_renderer_shutdown()
 }
 
 // Replacement for the original block_render function
-// int block_render_instanced(texture *texture, const int x, const int y, u8 frame,
-//                            u8 type, u8 ignore_type, u8 local_block_width,
-//                            u8 flip, unsigned short rotation)
-// {
-//     if (texture->gl_id == 0)
-//         return SUCCESS;
+int block_render_instanced(atlas_info info, const int x, const int y, u8 frame,
+                           u8 type, u8 ignore_type, u8 flip)
+{
+    u8 actual_frame = frame % info.frames; 
+    u8 actual_type =
+        ignore_type ? (u8)(frame / info.frames) : (type % info.types);
 
-//     // frame is an index into one of the frames on a texture
-//     frame = frame % texture->total_frames; // wrap frames
+    // Ensure we have enough capacity
+    if (renderer.instanceCount >= renderer.instanceCapacity)
+    {
+        LOG_DEBUG("not enough instances, increasing to %d",
+                  renderer.instanceCount * INSTANCE_FIELDS_COUNT);
+        renderer.instanceCapacity *= 2;
+        renderer.instanceData = (float *)realloc(
+            renderer.instanceData,
+            renderer.instanceCapacity * INSTANCE_FIELDS_COUNT * sizeof(float));
+    }
 
-//     // Calculate the actual type based on ignore_type flag
-//     u8 actual_type =
-//         ignore_type ? (u8)(frame / texture->frames) : (type % texture->types);
+    // Add instance data: x, y, frame, type
+    int idx = renderer.instanceCount * INSTANCE_FIELDS_COUNT;
+    renderer.instanceData[idx + 0] = (float)x;
+    renderer.instanceData[idx + 1] = (float)y;
+    renderer.instanceData[idx + 2] = (float)(info.atlas_offset_x + actual_frame);
+    renderer.instanceData[idx + 3] = (float)(info.atlas_offset_y + actual_type);
 
-//     // Add this block to the batch
-//     block_renderer_add_block(x, y, frame % texture->frames, actual_type,
-//                              local_block_width);
+    // LOG_DEBUG("pos: %dx%d, offset: %dx%d, t&f: %dx%d", x, y, info.atlas_offset_x, info.atlas_offset_y, frame, actual_type);
 
-//     return SUCCESS;
-// }
+    renderer.instanceCount++;
+
+    return SUCCESS;
+}

@@ -75,8 +75,8 @@ end
 ui_width = 20
 ui_offset_layer_name = 0
 ui_offset_mode = 1
-ui_offset_block_name = 2
-ui_offset_preview = 3
+ui_offset_block_name = 3
+ui_offset_preview = 5
 
 local function ui_update(do_erase)
     if do_erase then

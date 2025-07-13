@@ -62,7 +62,7 @@ image *load_image(const char *filename)
         return NULL;
     }
 
-    LOG_DEBUG("load_image: %s %dx%d", filename, width, height);
+    // LOG_DEBUG("load_image: %s %dx%d", filename, width, height);
 
     // image *img = create_image(width, height, channels);
 

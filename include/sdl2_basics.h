@@ -26,14 +26,6 @@ extern int g_block_width;
 #define TEXTURE_TYPE_REGULAR 1
 #define TEXTURE_TYPE_CONNECTED 2
 
-// typedef struct texture
-// {
-//     // SDL_Texture *ptr;
-//     GLuint gl_id;
-//     char *filename;
-
-// } texture;
-
 // ts contains all the info dat is needed to access the block texture on the atlas
 typedef struct atlas_info
 {

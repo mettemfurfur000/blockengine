@@ -60,7 +60,7 @@ typedef struct block_registry
     block_resources_t resources;
 
     const char *name;
-    // texture *atlas;
+    image *atlas;
     GLuint atlas_texture_uid;
     u64 uuid;
 } block_registry;
