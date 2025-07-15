@@ -154,11 +154,15 @@ u8 render_layer(layer_slice slice)
 
 u8 client_render(const client_render_rules rules)
 {
+    block_renderer_begin_frame();
+
     for (u32 i = 0; i < rules.draw_order.length; i++)
     {
         int layer_id = rules.draw_order.data[i];
         render_layer(rules.slices.data[layer_id]);
     }
+
+    block_renderer_end_frame();
 
     return SUCCESS;
 }

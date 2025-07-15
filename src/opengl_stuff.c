@@ -77,27 +77,27 @@ u32 compile_shader_program(u32 *shaders, u8 len)
         return 0;
     }
 
-    u32 shaderProgram;
-    shaderProgram = glCreateProgram();
+    u32 shaderDefault;
+    shaderDefault = glCreateProgram();
     for (u8 i = 0; i < len; i++)
-        glAttachShader(shaderProgram, shaders[i]);
+        glAttachShader(shaderDefault, shaders[i]);
 
-    glLinkProgram(shaderProgram);
+    glLinkProgram(shaderDefault);
 
     for (u8 i = 0; i < len; i++)
         glDeleteShader(shaders[i]);
 
     int success;
     char infoLog[512];
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    glGetProgramiv(shaderDefault, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        glGetProgramInfoLog(shaderDefault, 512, NULL, infoLog);
         LOG_ERROR("TS PMO : %s", infoLog);
         return 0;
     }
 
-    return shaderProgram;
+    return shaderDefault;
 }
 
 u32 assemble_shader(const char *shader_name)
@@ -106,7 +106,7 @@ u32 assemble_shader(const char *shader_name)
     u8 len = 3;
     char path_buf[MAX_PATH_LENGTH] = {};
 
-    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD "%s." FOLDER_SHD_VERT_EXT,
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_VERT_EXT,
              shader_name);
 
     if ((shaders[0] = load_shader(path_buf, GL_VERTEX_SHADER)) == 0)
@@ -115,7 +115,7 @@ u32 assemble_shader(const char *shader_name)
         return 0;
     }
 
-    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD "%s." FOLDER_SHD_FRAG_EXT,
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_FRAG_EXT,
              shader_name);
 
     if ((shaders[1] = load_shader(path_buf, GL_FRAGMENT_SHADER)) == 0)
@@ -124,7 +124,7 @@ u32 assemble_shader(const char *shader_name)
         return 0;
     }
 
-    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD "%s." FOLDER_SHD_GEOM_EXT,
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_GEOM_EXT,
              shader_name);
 
     if ((shaders[2] = load_shader(path_buf, GL_GEOMETRY_SHADER)) == 0)

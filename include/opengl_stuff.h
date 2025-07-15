@@ -7,7 +7,7 @@
 
 #include "image_editing.h"
 
-// for stuff that only requires opengl and not sdl2
+// for stuff that mostly requires opengl 
 
 void setup_opengl(u16 width, u16 height);
 

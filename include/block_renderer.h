@@ -26,4 +26,7 @@ void block_renderer_shutdown();
 int block_render_instanced(atlas_info info, const int x, const int y, u8 frame,
                            u8 type, u8 ignore_type, u8 flip);
 
+void block_renderer_begin_frame();
+void block_renderer_end_frame();
+
 #endif // BLOCK_RENDERER_H
