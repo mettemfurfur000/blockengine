@@ -106,8 +106,7 @@ u32 assemble_shader(const char *shader_name)
     u8 len = 3;
     char path_buf[MAX_PATH_LENGTH] = {};
 
-    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_VERT_EXT,
-             shader_name);
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_VERT_EXT, shader_name);
 
     if ((shaders[0] = load_shader(path_buf, GL_VERTEX_SHADER)) == 0)
     {
@@ -115,8 +114,7 @@ u32 assemble_shader(const char *shader_name)
         return 0;
     }
 
-    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_FRAG_EXT,
-             shader_name);
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_FRAG_EXT, shader_name);
 
     if ((shaders[1] = load_shader(path_buf, GL_FRAGMENT_SHADER)) == 0)
     {
@@ -124,8 +122,7 @@ u32 assemble_shader(const char *shader_name)
         return 0;
     }
 
-    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_GEOM_EXT,
-             shader_name);
+    snprintf(path_buf, sizeof(path_buf), FOLDER_SHD SEPARATOR_STR "%s." FOLDER_SHD_GEOM_EXT, shader_name);
 
     if ((shaders[2] = load_shader(path_buf, GL_GEOMETRY_SHADER)) == 0)
     {
@@ -153,8 +150,7 @@ GLuint gl_bind_texture(image *src)
     glGenTextures(1, &texture_id);
     glBindTexture(GL_TEXTURE_2D, texture_id);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, src->width, src->height, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, src->data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, src->width, src->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, src->data);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

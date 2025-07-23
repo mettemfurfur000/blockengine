@@ -23,8 +23,7 @@ int __img_cmp(const void *a, const void *b)
 // smollest go to de end
 void sort_by_volume(block_registry *reg)
 {
-    qsort(reg->resources.data, reg->resources.length,
-          sizeof(*reg->resources.data), __img_cmp);
+    qsort(reg->resources.data, reg->resources.length, sizeof(*reg->resources.data), __img_cmp);
 }
 
 bool will_fit(u8 *obuf, u32 obuf_w, u32 obuf_h, u32 x, u32 y, u32 w, u32 h)
@@ -78,8 +77,7 @@ void build_atlas(block_registry *reg)
             continue;
         }
 
-        if (r->img->width == 0 || r->img->height == 0 || r->id == 0 ||
-            FLAG_GET(r->flags, RESOURCE_FLAG_IS_FILLER) ||
+        if (r->img->width == 0 || r->img->height == 0 || r->id == 0 || FLAG_GET(r->flags, RESOURCE_FLAG_IS_FILLER) ||
             FLAG_GET(r->flags, RESOURCE_FLAG_RANGED))
             continue;
 
@@ -87,8 +85,7 @@ void build_atlas(block_registry *reg)
         total_width += r->img->width;
         total_pixels += r->img->height * r->img->width;
 
-        LOG_DEBUG("appending %dx%d from %s", r->img->height, r->img->width,
-                  r->texture_filename);
+        LOG_DEBUG("appending %dx%d from %s", r->img->height, r->img->width, r->texture_filename);
     }
 
     u32 min_side = sqrt(total_pixels);
@@ -134,8 +131,7 @@ void build_atlas(block_registry *reg)
             // skip completely empty textures, fillers, void, and ranged
             // textures
 
-            if (img->width == 0 || img->height == 0 || r->id == 0 ||
-                FLAG_GET(r->flags, RESOURCE_FLAG_IS_FILLER) ||
+            if (img->width == 0 || img->height == 0 || r->id == 0 || FLAG_GET(r->flags, RESOURCE_FLAG_IS_FILLER) ||
                 FLAG_GET(r->flags, RESOURCE_FLAG_RANGED))
             {
                 index++;
@@ -147,10 +143,9 @@ void build_atlas(block_registry *reg)
             u32 tex_h = img->height / g_block_width;
 
             // if not taken and will fit
-            if (obuf[j * obuf_w + i] == 0 &&
-                will_fit(obuf, obuf_w, obuf_h, i, j, tex_w, tex_h))
+            if (obuf[j * obuf_w + i] == 0 && will_fit(obuf, obuf_w, obuf_h, i, j, tex_w, tex_h))
             {
-                LOG_DEBUG("atlas gen successful fit: %s at %d,%d : %dx%d",r->texture_filename, i, j, tex_w, tex_h);
+                LOG_DEBUG("atlas gen successful fit: %s at %d,%d : %dx%d", r->texture_filename, i, j, tex_w, tex_h);
                 // mark as taken and put it on da atlas
                 mark_taken(obuf, obuf_w, obuf_h, i, j, tex_w, tex_h);
                 overlay_image(atlas, img, i * g_block_width, j * g_block_width);
@@ -167,8 +162,7 @@ void build_atlas(block_registry *reg)
                     block_resources *blk = &reg->resources.data[b];
 
                     if (FLAG_GET(blk->flags, RESOURCE_FLAG_RANGED) &&
-                        (strcmp(blk->texture_filename, r->texture_filename) ==
-                         0))
+                        (strcmp(blk->texture_filename, r->texture_filename) == 0))
                     {
                         blk->info = r->info;
                         // LOG_DEBUG("replicated atlas info to %d block", blk->id);

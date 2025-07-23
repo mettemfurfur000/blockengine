@@ -63,6 +63,6 @@ In summary, developers can create a layer of game logic (marked "d", for example
    - [ ] Lightning?
 - [x] Sound
    - [x] Load and play sounds
-   - [ ] Allow scripts to play them
+   - [x] Allow scripts to play them
 
 That's the list I'm currently aiming for. Hope this helps!

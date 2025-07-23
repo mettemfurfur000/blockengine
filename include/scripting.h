@@ -29,36 +29,35 @@ typedef struct LuaHolder
 
 } LuaHolder;
 
-#define LUA_EXPECT_UNSIGNED(L)                                                 \
-    if (lua_tointeger(L, -1) < 0)                                              \
+#define LUA_EXPECT_UNSIGNED(L)                                                                                         \
+    if (lua_tointeger(L, -1) < 0)                                                                                      \
         luaL_error(L, "STRUCT_SET: expected an unsigned integer for a field");
 
-#define LUA_CHECK_USER_OBJECT(L, type, name, index)                            \
-    LuaHolder *name = (LuaHolder *)luaL_checkudata(L, index, #type);
+#define LUA_CHECK_USER_OBJECT(L, type, name, index) LuaHolder *name = (LuaHolder *)luaL_checkudata(L, index, #type);
 
-#define NEW_USER_OBJECT(L, type, pointer)                                      \
-    ((LuaHolder *)lua_newuserdata(L, sizeof(void *)))->ptr = (pointer);        \
-    luaL_getmetatable(L, #type);                                               \
+#define NEW_USER_OBJECT(L, type, pointer)                                                                              \
+    ((LuaHolder *)lua_newuserdata(L, sizeof(void *)))->ptr = (pointer);                                                \
+    luaL_getmetatable(L, #type);                                                                                       \
     lua_setmetatable(L, -2);
 
-#define LUA_SET_GLOBAL_OBJECT(name, ptr)                                       \
-    {                                                                          \
-        lua_pushlightuserdata(g_L, ptr);                                       \
-        lua_setglobal(g_L, name);                                              \
+#define LUA_SET_GLOBAL_OBJECT(name, ptr)                                                                               \
+    {                                                                                                                  \
+        lua_pushlightuserdata(g_L, ptr);                                                                               \
+        lua_setglobal(g_L, name);                                                                                      \
     }
 
-#define STRUCT_GET(L, object, field, pusher)                                   \
-    pusher(L, object.field);                                                   \
+#define STRUCT_GET(L, object, field, pusher)                                                                           \
+    pusher(L, object.field);                                                                                           \
     lua_setfield(L, -2, #field);
 
-#define STRUCT_SET(L, object, field, expected_type, converter)                 \
-    if (lua_getfield(L, -1, #field) == expected_type)                          \
-    {                                                                          \
-        object.field = converter(L, -1);                                       \
-        lua_pop(L, 1);                                                         \
-    } else                                                                     \
-        luaL_error(L, "STRUCT_SET: expected a " #expected_type                 \
-                      " for a field " #field)
+#define STRUCT_SET(L, object, field, expected_type, converter)                                                         \
+    if (lua_getfield(L, -1, #field) == expected_type)                                                                  \
+    {                                                                                                                  \
+        object.field = converter(L, -1);                                                                               \
+        lua_pop(L, 1);                                                                                                 \
+    }                                                                                                                  \
+    else                                                                                                               \
+        luaL_error(L, "STRUCT_SET: expected a " #expected_type " for a field " #field)
 
 extern lua_State *g_L;
 
@@ -75,8 +74,7 @@ void scripting_register_event_handler(int ref, int event_type);
 u8 scripting_load_scripts(block_registry *registry);
 int scripting_load_file(const char *reg_name, const char *short_filename);
 
-u8 scripting_register_block_input(block_registry *reg, u64 id, int ref,
-                                  const char *name);
+u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const char *name);
 
 typedef struct enum_entry
 {
@@ -84,7 +82,6 @@ typedef struct enum_entry
     u64 entry;
 } enum_entry;
 
-void scripting_set_global_enum(lua_State *L, enum_entry entries[],
-                               const char *name);
+void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *name);
 
 #endif

@@ -3,9 +3,8 @@
 #include "../include/flags.h"
 #include "../include/vars.h"
 
-const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063,
-                                     8858313, 6307353, 1532671, 6233633,
-                                     873473,  685613};
+const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,
+                                     6307353, 1532671, 6233633, 873473,  685613};
 const u8 funny_shifts[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 10};
 
 static unsigned short tile_rand(const int x, const int y)
@@ -13,10 +12,7 @@ static unsigned short tile_rand(const int x, const int y)
     int prime = x % 10;
     int antiprime = 9 - (y % 10);
     int midprime = (prime + antiprime) / 2;
-    return ((funny_primes[prime] +
-             funny_shifts[antiprime] * funny_primes[midprime]) >>
-            funny_shifts[prime]) &
-           0x7fff;
+    return ((funny_primes[prime] + funny_shifts[antiprime] * funny_primes[midprime]) >> funny_shifts[prime]) & 0x7fff;
 }
 
 u8 render_layer(layer_slice slice)
@@ -24,9 +20,7 @@ u8 render_layer(layer_slice slice)
     CHECK(slice.zoom == 0)
     const int local_block_width = (g_block_width * slice.zoom);
 
-    const int width =
-        slice.w /
-        local_block_width; // exact amowunt of lboks to render o nscren
+    const int width = slice.w / local_block_width; // exact amowunt of lboks to render o nscren
     const int height = slice.h / local_block_width;
 
     if (!slice.ref)
@@ -53,9 +47,7 @@ u8 render_layer(layer_slice slice)
     const int end_block_x = start_block_x + width + 2;
     const int end_block_y = start_block_y + height + 2;
 
-    const int block_x_offset =
-        slice.x %
-        local_block_width; /* offset in pixels for smooth rendering of blocks */
+    const int block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
     const int block_y_offset = slice.y % local_block_width;
 
     // if (layer_index == 0)
@@ -91,11 +83,10 @@ u8 render_layer(layer_slice slice)
 
             // get block
             u64 id = 0;
-            if (i >= 0 && j >= 0 && i < slice.ref->width &&
-                j < slice.ref->height)
+            if (i >= 0 && j >= 0 && i < slice.ref->width && j < slice.ref->height)
                 id = *BLOCK_ID_PTR(slice.ref, i, j);
-            
-            if(id == 0)
+
+            if (id == 0)
                 continue;
 
             // get block vars
@@ -107,8 +98,7 @@ u8 render_layer(layer_slice slice)
             block_resources br = b_reg->resources.data[id];
 
             blob *var = NULL;
-            if (block_get_vars(slice.ref, i, j, &var) == SUCCESS &&
-                var != NULL && var->length != 0 && var->ptr != NULL)
+            if (block_get_vars(slice.ref, i, j, &var) == SUCCESS && var != NULL && var->length != 0 && var->ptr != NULL)
             {
                 if (br.type_controller != 0)
                     var_get_u8(*var, br.type_controller, &type);
@@ -141,9 +131,8 @@ u8 render_layer(layer_slice slice)
             // block_render(texture, dest_x, dest_y, frame, type,
             // FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE),
             // local_block_width, flip, rotation);
-            block_render_instanced(
-                br.info, dest_x, dest_y, frame, type,
-                FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE), flip);
+            block_render_instanced(br.info, dest_x, dest_y, frame, type, FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE),
+                                   flip);
         }
     }
 

@@ -6,7 +6,6 @@
 #include "general.h"
 #include "hashtable.h"
 
-
 #define LAYER_FLAG_HAS_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
 
@@ -42,11 +41,11 @@ typedef struct layer
                               // layer acts as a simple array of ids
     u8 *blocks;               // array of blocks, each of size bytes_per_block
 
-    u32 width;         //
-    u32 height;        //
-    u8 block_size;     // bytes per block id
-    u8 var_index_size; // bytes per var index - a special index for the vars
-                       // array
+    u32 width;                //
+    u32 height;               //
+    u8 block_size;            // bytes per block id
+    u8 var_index_size;        // bytes per var index - a special index for the vars
+                              // array
     u8 total_bytes_per_block; // sum of block_size and var_index_size
 
     u8 flags; //
@@ -77,8 +76,7 @@ typedef struct level
     u8 flags;
 } level;
 
-#define BLOCK_ID_PTR(l, x, y)                                                  \
-    (l->blocks + ((y * l->width) + x) * l->total_bytes_per_block)
+#define BLOCK_ID_PTR(l, x, y) (l->blocks + ((y * l->width) + x) * l->total_bytes_per_block)
 #define MERGE32_TO_64(a, b) (((u64)a << 32) | (u64)b)
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id);
@@ -101,13 +99,11 @@ u8 free_level(level *l);
 
 level *level_create(const char *name);
 room *room_create(level *parent, const char *name, u32 w, u32 h);
-layer *layer_create(room *parent, block_registry *registry_ref,
-                    u8 bytes_per_block, u8 bytes_per_index, u8 flags);
+layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags);
 // utils
 
 // turns string into formatted block chain
 // supposed to be used with a special character block
-void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y,
-             u32 length_limit, const char *format, ...);
+void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...);
 
 #endif

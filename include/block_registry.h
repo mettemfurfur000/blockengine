@@ -31,7 +31,7 @@ typedef struct block_resources
 
     image *img;
     atlas_info info;
-    char* texture_filename;
+    char *texture_filename;
 
     vec_sound_t sounds;
 

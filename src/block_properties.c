@@ -2,8 +2,7 @@
 
 char *strtok_take_whole_line()
 {
-    char *token =
-        strtok(NULL, "\n\r"); // take everything until first newline character
+    char *token = strtok(NULL, "\n\r"); // take everything until first newline character
     if (!token)
         return 0;
 

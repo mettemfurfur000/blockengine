@@ -14,8 +14,7 @@ SDL_GLContext *g_gl_context = NULL;
 int g_block_width = 16;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define KEEPINLIMITS(x, min, max)                                              \
-    ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
+#define KEEPINLIMITS(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
 
 int greatest_common_divisor(int a, int b)
 {
@@ -41,7 +40,8 @@ char *get_folder_path(char *file_path, int bonus_for_str_size)
     {
         // if there is a slash, terminate the string after it
         *last_slash = '\0';
-    } else
+    }
+    else
     {
         // if there is no slash, return NULL
         free(folder_path);
@@ -64,9 +64,8 @@ int init_graphics()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
-    g_window = SDL_CreateWindow(
-        window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+    g_window = SDL_CreateWindow(window_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
+                                SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
     if (!g_window)
     {
         LOG_ERROR("SDL_CreateWindow() error:[%s]", SDL_GetError());
@@ -335,7 +334,10 @@ int sound_load(sound *dest, char *path_to_file)
     return SUCCESS;
 }
 
-void free_sound(sound *s) { Mix_FreeChunk(s->obj); }
+void free_sound(sound *s)
+{
+    Mix_FreeChunk(s->obj);
+}
 
 int music_load(music *dest, char *filename)
 {
@@ -353,7 +355,10 @@ int music_load(music *dest, char *filename)
     return SUCCESS;
 }
 
-void free_music(music *s) { Mix_FreeMusic(s->mus); }
+void free_music(music *s)
+{
+    Mix_FreeMusic(s->mus);
+}
 
 // void play_sound_randomly(vec_sound_t sounds)
 // {

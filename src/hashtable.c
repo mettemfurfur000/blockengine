@@ -70,7 +70,10 @@ u8 blob_cmp(blob a, blob b)
     return 0;
 }
 
-hash_node *alloc_node() { return (hash_node *)calloc(1, sizeof(hash_node)); }
+hash_node *alloc_node()
+{
+    return (hash_node *)calloc(1, sizeof(hash_node));
+}
 
 void free_node(hash_node *node)
 {
@@ -167,8 +170,7 @@ void move_node(hash_node **table, blob key_from, blob key_to)
     // then we move it
     unsigned long hash_to = hash_function(key_to);
     hash_node *node_dest = table[hash_to];
-    if (node_dest ==
-        NULL) // if there is no node at the destination, we just move the node
+    if (node_dest == NULL) // if there is no node at the destination, we just move the node
     {
         table[hash_to] = node_to_move;
         return;

@@ -87,8 +87,7 @@ void read_hashtable(hash_node **t, FILE *f)
     READ(elements, f);
 
     if (size != TABLE_SIZE)
-        LOG_WARNING("Table size mismatch, expected %d, got %d", TABLE_SIZE,
-                    size);
+        LOG_WARNING("Table size mismatch, expected %d, got %d", TABLE_SIZE, size);
 
     for (u32 i = 0; i < elements; i++)
     {
@@ -149,8 +148,7 @@ void read_layer(layer *l, room *parent, FILE *f)
     {
         if (strcmp(registry_name.str, "no_registry") != 0)
         {
-            l->registry = find_registry(
-                ((level *)parent->parent_level)->registries, registry_name.str);
+            l->registry = find_registry(((level *)parent->parent_level)->registries, registry_name.str);
 
             if (!l->registry)
                 LOG_WARNING("Registry %s not found", registry_name.str);

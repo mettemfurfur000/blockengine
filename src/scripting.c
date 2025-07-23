@@ -24,23 +24,19 @@ void scripting_register(lua_State *L)
         {"register_handler", lua_register_handler},
         //{"register_input", lua_register_block_input},
 
-        {NULL, NULL}
-
+        {              NULL,                 NULL}
     };
 
     luaL_newlib(L,
-                blockengine_lib); // creates a table with blockengine functions
+                blockengine_lib);    // creates a table with blockengine functions
     lua_setglobal(L, "blockengine"); // sets the table as global variable
                                      // "blockengine" 0 objects on stack now
 }
 
 void *check_light_userdata(lua_State *L, int index)
 {
-    return lua_islightuserdata(L, index)
-               ? lua_touserdata(L, index)
-               : (void *)0 + luaL_error(L,
-                                        "Expected light userdata at index %d",
-                                        index);
+    return lua_islightuserdata(L, index) ? lua_touserdata(L, index)
+                                         : (void *)0 + luaL_error(L, "Expected light userdata at index %d", index);
 }
 
 void scripting_init()
@@ -61,21 +57,20 @@ void scripting_init()
     /* push an event enum */
 
     enum_entry entries[] = {
-        {"ENGINE_BLOCK_UDPATE", ENGINE_BLOCK_UDPATE},
-        {"ENGINE_BLOCK_ERASED", ENGINE_BLOCK_ERASED},
-        {"ENGINE_BLOCK_CREATE", ENGINE_BLOCK_CREATE},
+        {  "ENGINE_BLOCK_UDPATE",   ENGINE_BLOCK_UDPATE},
+        {  "ENGINE_BLOCK_ERASED",   ENGINE_BLOCK_ERASED},
+        {  "ENGINE_BLOCK_CREATE",   ENGINE_BLOCK_CREATE},
 
-        {"ENGINE_BLOB_UPDATE", ENGINE_BLOB_UPDATE},
-        {"ENGINE_BLOB_ERASED", ENGINE_BLOB_ERASED},
-        {"ENGINE_BLOB_CREATE", ENGINE_BLOB_CREATE},
+        {   "ENGINE_BLOB_UPDATE",    ENGINE_BLOB_UPDATE},
+        {   "ENGINE_BLOB_ERASED",    ENGINE_BLOB_ERASED},
+        {   "ENGINE_BLOB_CREATE",    ENGINE_BLOB_CREATE},
 
         {"ENGINE_SPECIAL_SIGNAL", ENGINE_SPECIAL_SIGNAL},
 
-        {"ENGINE_TICK", ENGINE_TICK},
-        {"ENGINE_INIT", ENGINE_INIT},
+        {          "ENGINE_TICK",           ENGINE_TICK},
+        {          "ENGINE_INIT",           ENGINE_INIT},
 
-        {NULL, 0},
-
+        {                   NULL,                     0},
     };
 
     // TODO: sync it wit de script
@@ -83,75 +78,77 @@ void scripting_init()
     scripting_set_global_enum(g_L, entries, "engine_events");
 
     enum_entry sdl_events[] = {
-        {"SDL_FIRSTEVENT", SDL_FIRSTEVENT},
-        {"SDL_QUIT", SDL_QUIT},
-        {"SDL_APP_TERMINATING", SDL_APP_TERMINATING},
-        {"SDL_APP_LOWMEMORY", SDL_APP_LOWMEMORY},
-        {"SDL_APP_WILLENTERBACKGROUND", SDL_APP_WILLENTERBACKGROUND},
-        {"SDL_APP_DIDENTERBACKGROUND", SDL_APP_DIDENTERBACKGROUND},
-        {"SDL_APP_WILLENTERFOREGROUND", SDL_APP_WILLENTERFOREGROUND},
-        {"SDL_APP_DIDENTERFOREGROUND", SDL_APP_DIDENTERFOREGROUND},
-        {"SDL_LOCALECHANGED", SDL_LOCALECHANGED},
-        {"SDL_DISPLAYEVENT", SDL_DISPLAYEVENT},
-        {"SDL_WINDOWEVENT", SDL_WINDOWEVENT},
-        {"SDL_SYSWMEVENT", SDL_SYSWMEVENT},
-        {"SDL_KEYDOWN", SDL_KEYDOWN},
-        {"SDL_KEYUP", SDL_KEYUP},
-        {"SDL_TEXTEDITING", SDL_TEXTEDITING},
-        {"SDL_TEXTINPUT", SDL_TEXTINPUT},
-        {"SDL_KEYMAPCHANGED", SDL_KEYMAPCHANGED},
-        {"SDL_TEXTEDITING_EXT", SDL_TEXTEDITING_EXT},
-        {"SDL_MOUSEMOTION", SDL_MOUSEMOTION},
-        {"SDL_MOUSEBUTTONDOWN", SDL_MOUSEBUTTONDOWN},
-        {"SDL_MOUSEBUTTONUP", SDL_MOUSEBUTTONUP},
-        {"SDL_MOUSEWHEEL", SDL_MOUSEWHEEL},
-        {"SDL_JOYAXISMOTION", SDL_JOYAXISMOTION},
-        {"SDL_JOYBALLMOTION", SDL_JOYBALLMOTION},
-        {"SDL_JOYHATMOTION", SDL_JOYHATMOTION},
-        {"SDL_JOYBUTTONDOWN", SDL_JOYBUTTONDOWN},
-        {"SDL_JOYBUTTONUP", SDL_JOYBUTTONUP},
-        {"SDL_JOYDEVICEADDED", SDL_JOYDEVICEADDED},
-        {"SDL_JOYDEVICEREMOVED", SDL_JOYDEVICEREMOVED},
-        {"SDL_JOYBATTERYUPDATED", SDL_JOYBATTERYUPDATED},
-        {"SDL_CONTROLLERAXISMOTION", SDL_CONTROLLERAXISMOTION},
-        {"SDL_CONTROLLERBUTTONDOWN", SDL_CONTROLLERBUTTONDOWN},
-        {"SDL_CONTROLLERBUTTONUP", SDL_CONTROLLERBUTTONUP},
-        {"SDL_CONTROLLERDEVICEADDED", SDL_CONTROLLERDEVICEADDED},
-        {"SDL_CONTROLLERDEVICEREMOVED", SDL_CONTROLLERDEVICEREMOVED},
-        {"SDL_CONTROLLERDEVICEREMAPPED", SDL_CONTROLLERDEVICEREMAPPED},
-        {"SDL_CONTROLLERTOUCHPADDOWN", SDL_CONTROLLERTOUCHPADDOWN},
-        {"SDL_CONTROLLERTOUCHPADMOTION", SDL_CONTROLLERTOUCHPADMOTION},
-        {"SDL_CONTROLLERTOUCHPADUP", SDL_CONTROLLERTOUCHPADUP},
-        {"SDL_CONTROLLERSENSORUPDATE", SDL_CONTROLLERSENSORUPDATE},
-        {"SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3",
-         SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3},
-        {"SDL_CONTROLLERSTEAMHANDLEUPDATED", SDL_CONTROLLERSTEAMHANDLEUPDATED},
-        {"SDL_FINGERDOWN", SDL_FINGERDOWN},
-        {"SDL_FINGERUP", SDL_FINGERUP},
-        {"SDL_FINGERMOTION", SDL_FINGERMOTION},
-        {"SDL_DOLLARGESTURE", SDL_DOLLARGESTURE},
-        {"SDL_DOLLARRECORD", SDL_DOLLARRECORD},
-        {"SDL_MULTIGESTURE", SDL_MULTIGESTURE},
-        {"SDL_CLIPBOARDUPDATE", SDL_CLIPBOARDUPDATE},
-        {"SDL_DROPFILE", SDL_DROPFILE},
-        {"SDL_DROPTEXT", SDL_DROPTEXT},
-        {"SDL_DROPBEGIN", SDL_DROPBEGIN},
-        {"SDL_DROPCOMPLETE", SDL_DROPCOMPLETE},
-        {"SDL_AUDIODEVICEADDED", SDL_AUDIODEVICEADDED},
-        {"SDL_AUDIODEVICEREMOVED", SDL_AUDIODEVICEREMOVED},
-        {"SDL_SENSORUPDATE", SDL_SENSORUPDATE},
-        {"SDL_RENDER_TARGETS_RESET", SDL_RENDER_TARGETS_RESET},
-        {"SDL_RENDER_DEVICE_RESET", SDL_RENDER_DEVICE_RESET},
-        {"SDL_POLLSENTINEL", SDL_POLLSENTINEL},
-        {"SDL_USEREVENT", SDL_USEREVENT},
-        {"SDL_LASTEVENT", SDL_LASTEVENT},
-        {NULL, 0},
+        {                                "SDL_FIRSTEVENT",                                 SDL_FIRSTEVENT},
+        {                                      "SDL_QUIT",                                       SDL_QUIT},
+        {                           "SDL_APP_TERMINATING",                            SDL_APP_TERMINATING},
+        {                             "SDL_APP_LOWMEMORY",                              SDL_APP_LOWMEMORY},
+        {                   "SDL_APP_WILLENTERBACKGROUND",                    SDL_APP_WILLENTERBACKGROUND},
+        {                    "SDL_APP_DIDENTERBACKGROUND",                     SDL_APP_DIDENTERBACKGROUND},
+        {                   "SDL_APP_WILLENTERFOREGROUND",                    SDL_APP_WILLENTERFOREGROUND},
+        {                    "SDL_APP_DIDENTERFOREGROUND",                     SDL_APP_DIDENTERFOREGROUND},
+        {                             "SDL_LOCALECHANGED",                              SDL_LOCALECHANGED},
+        {                              "SDL_DISPLAYEVENT",                               SDL_DISPLAYEVENT},
+        {                               "SDL_WINDOWEVENT",                                SDL_WINDOWEVENT},
+        {                                "SDL_SYSWMEVENT",                                 SDL_SYSWMEVENT},
+        {                                   "SDL_KEYDOWN",                                    SDL_KEYDOWN},
+        {                                     "SDL_KEYUP",                                      SDL_KEYUP},
+        {                               "SDL_TEXTEDITING",                                SDL_TEXTEDITING},
+        {                                 "SDL_TEXTINPUT",                                  SDL_TEXTINPUT},
+        {                             "SDL_KEYMAPCHANGED",                              SDL_KEYMAPCHANGED},
+        {                           "SDL_TEXTEDITING_EXT",                            SDL_TEXTEDITING_EXT},
+        {                               "SDL_MOUSEMOTION",                                SDL_MOUSEMOTION},
+        {                           "SDL_MOUSEBUTTONDOWN",                            SDL_MOUSEBUTTONDOWN},
+        {                             "SDL_MOUSEBUTTONUP",                              SDL_MOUSEBUTTONUP},
+        {                                "SDL_MOUSEWHEEL",                                 SDL_MOUSEWHEEL},
+        {                             "SDL_JOYAXISMOTION",                              SDL_JOYAXISMOTION},
+        {                             "SDL_JOYBALLMOTION",                              SDL_JOYBALLMOTION},
+        {                              "SDL_JOYHATMOTION",                               SDL_JOYHATMOTION},
+        {                             "SDL_JOYBUTTONDOWN",                              SDL_JOYBUTTONDOWN},
+        {                               "SDL_JOYBUTTONUP",                                SDL_JOYBUTTONUP},
+        {                            "SDL_JOYDEVICEADDED",                             SDL_JOYDEVICEADDED},
+        {                          "SDL_JOYDEVICEREMOVED",                           SDL_JOYDEVICEREMOVED},
+        {                         "SDL_JOYBATTERYUPDATED",                          SDL_JOYBATTERYUPDATED},
+        {                      "SDL_CONTROLLERAXISMOTION",                       SDL_CONTROLLERAXISMOTION},
+        {                      "SDL_CONTROLLERBUTTONDOWN",                       SDL_CONTROLLERBUTTONDOWN},
+        {                        "SDL_CONTROLLERBUTTONUP",                         SDL_CONTROLLERBUTTONUP},
+        {                     "SDL_CONTROLLERDEVICEADDED",                      SDL_CONTROLLERDEVICEADDED},
+        {                   "SDL_CONTROLLERDEVICEREMOVED",                    SDL_CONTROLLERDEVICEREMOVED},
+        {                  "SDL_CONTROLLERDEVICEREMAPPED",                   SDL_CONTROLLERDEVICEREMAPPED},
+        {                    "SDL_CONTROLLERTOUCHPADDOWN",                     SDL_CONTROLLERTOUCHPADDOWN},
+        {                  "SDL_CONTROLLERTOUCHPADMOTION",                   SDL_CONTROLLERTOUCHPADMOTION},
+        {                      "SDL_CONTROLLERTOUCHPADUP",                       SDL_CONTROLLERTOUCHPADUP},
+        {                    "SDL_CONTROLLERSENSORUPDATE",                     SDL_CONTROLLERSENSORUPDATE},
+        {"SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3", SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3},
+        {              "SDL_CONTROLLERSTEAMHANDLEUPDATED",               SDL_CONTROLLERSTEAMHANDLEUPDATED},
+        {                                "SDL_FINGERDOWN",                                 SDL_FINGERDOWN},
+        {                                  "SDL_FINGERUP",                                   SDL_FINGERUP},
+        {                              "SDL_FINGERMOTION",                               SDL_FINGERMOTION},
+        {                             "SDL_DOLLARGESTURE",                              SDL_DOLLARGESTURE},
+        {                              "SDL_DOLLARRECORD",                               SDL_DOLLARRECORD},
+        {                              "SDL_MULTIGESTURE",                               SDL_MULTIGESTURE},
+        {                           "SDL_CLIPBOARDUPDATE",                            SDL_CLIPBOARDUPDATE},
+        {                                  "SDL_DROPFILE",                                   SDL_DROPFILE},
+        {                                  "SDL_DROPTEXT",                                   SDL_DROPTEXT},
+        {                                 "SDL_DROPBEGIN",                                  SDL_DROPBEGIN},
+        {                              "SDL_DROPCOMPLETE",                               SDL_DROPCOMPLETE},
+        {                          "SDL_AUDIODEVICEADDED",                           SDL_AUDIODEVICEADDED},
+        {                        "SDL_AUDIODEVICEREMOVED",                         SDL_AUDIODEVICEREMOVED},
+        {                              "SDL_SENSORUPDATE",                               SDL_SENSORUPDATE},
+        {                      "SDL_RENDER_TARGETS_RESET",                       SDL_RENDER_TARGETS_RESET},
+        {                       "SDL_RENDER_DEVICE_RESET",                        SDL_RENDER_DEVICE_RESET},
+        {                              "SDL_POLLSENTINEL",                               SDL_POLLSENTINEL},
+        {                                 "SDL_USEREVENT",                                  SDL_USEREVENT},
+        {                                 "SDL_LASTEVENT",                                  SDL_LASTEVENT},
+        {                                            NULL,                                              0},
     };
 
     scripting_set_global_enum(g_L, sdl_events, "sdl_events");
 }
 
-void scripting_close() { lua_close(g_L); }
+void scripting_close()
+{
+    lua_close(g_L);
+}
 
 i32 get_lookup_id(u32 type)
 {
@@ -336,8 +333,7 @@ void call_handlers(SDL_Event e)
 
         if (lua_pcall(g_L, args, 0, 0) != 0)
         {
-            LOG_ERROR("Error calling a handler, id %d: %s", lookup_id,
-                      lua_tostring(g_L, -1));
+            LOG_ERROR("Error calling a handler, id %d: %s", lookup_id, lua_tostring(g_L, -1));
             lua_pop(g_L, 1);
         }
     }
@@ -361,8 +357,7 @@ void scripting_register_event_handler(int ref, int event_type)
 /*
     Registers said input function to the block registry
 */
-u8 scripting_register_block_input(block_registry *reg, u64 id, int ref,
-                                  const char *name)
+u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const char *name)
 {
     CHECK_PTR(reg);
     CHECK_PTR(name);
@@ -390,16 +385,13 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref,
 int scripting_load_file(const char *reg_name, const char *short_filename)
 {
     char filename[MAX_PATH_LENGTH] = {};
-    snprintf(filename, MAX_PATH_LENGTH,
-             FOLDER_REG SEPARATOR_STR
-             "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
+    snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
              reg_name, short_filename);
     int status = luaL_dofile(g_L, filename);
 
     if (status != LUA_OK)
     {
-        fprintf(stderr, "Lua error in %s : %s", filename,
-                lua_tostring(g_L, -1));
+        fprintf(stderr, "Lua error in %s : %s", filename, lua_tostring(g_L, -1));
         return FAIL;
     }
 
@@ -436,8 +428,8 @@ u8 scripting_load_scripts(block_registry *registry)
 
         if (res->input_names.length != res->input_refs.length)
         {
-            LOG_ERROR("Block %d has %d inputs but %d handlers", res->id,
-                      res->input_names.length, res->input_refs.length);
+            LOG_ERROR("Block %d has %d inputs but %d handlers", res->id, res->input_names.length,
+                      res->input_refs.length);
             return FAIL;
         }
 
@@ -471,8 +463,7 @@ u8 scripting_load_scripts(block_registry *registry)
 }
 
 // creates a lua table out of your array of poitners to enum_entries
-void scripting_set_global_enum(lua_State *L, enum_entry entries[],
-                               const char *name)
+void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *name)
 {
     lua_newtable(L);
 

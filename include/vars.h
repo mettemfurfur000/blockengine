@@ -16,8 +16,8 @@
 #define VAR_SIZE(blob, pos) *(u8 *)(blob + pos + 1)
 #define VAR_VALUE(blob, pos) (blob + pos + 2)
 
-#define VAR_FOREACH(blob, code)                                                \
-    for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)                         \
+#define VAR_FOREACH(blob, code)                                                                                        \
+    for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)                                                                 \
     code
 
 /*
@@ -63,28 +63,27 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 #define SETTER_NAME(type) VAR_ACCESSOR_NAME(type, set)
 
 #define GETTER_DEF(type) u8 GETTER_NAME(type)(blob b, char letter, type *dest);
-#define GETTER_IMP(type)                                                       \
-    u8 GETTER_NAME(type)(blob b, char letter, type *dest)                      \
-    {                                                                          \
-        CHECK_PTR(dest);                                                       \
-        int pos = fdesp(b, letter);                                            \
-        if (pos < 0)                                                           \
-            return FAIL;                                                       \
-        *dest = *(type *)VAR_VALUE(b.ptr, pos);                                \
-        return SUCCESS;                                                        \
+#define GETTER_IMP(type)                                                                                               \
+    u8 GETTER_NAME(type)(blob b, char letter, type *dest)                                                              \
+    {                                                                                                                  \
+        CHECK_PTR(dest);                                                                                               \
+        int pos = fdesp(b, letter);                                                                                    \
+        if (pos < 0)                                                                                                   \
+            return FAIL;                                                                                               \
+        *dest = *(type *)VAR_VALUE(b.ptr, pos);                                                                        \
+        return SUCCESS;                                                                                                \
     }
 
-#define SETTER_DEF(type)                                                       \
-    u8 SETTER_NAME(type)(blob * b, char letter, type value);
-#define SETTER_IMP(type)                                                       \
-    u8 SETTER_NAME(type)(blob * b, char letter, type value)                    \
-    {                                                                          \
-        CHECK_PTR(b);                                                          \
-        int pos = ensure_tag(b, letter, sizeof(type));                         \
-        if (pos < 0)                                                           \
-            return FAIL;                                                       \
-        *(type *)VAR_VALUE(b->ptr, pos) = value;                               \
-        return SUCCESS;                                                        \
+#define SETTER_DEF(type) u8 SETTER_NAME(type)(blob * b, char letter, type value);
+#define SETTER_IMP(type)                                                                                               \
+    u8 SETTER_NAME(type)(blob * b, char letter, type value)                                                            \
+    {                                                                                                                  \
+        CHECK_PTR(b);                                                                                                  \
+        int pos = ensure_tag(b, letter, sizeof(type));                                                                 \
+        if (pos < 0)                                                                                                   \
+            return FAIL;                                                                                               \
+        *(type *)VAR_VALUE(b->ptr, pos) = value;                                                                       \
+        return SUCCESS;                                                                                                \
     }
 
 // var info

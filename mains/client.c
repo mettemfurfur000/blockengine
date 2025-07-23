@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     call_handlers(e);
 
     u32 total_ms_took = 0;
-    u32 perf_report_start = SDL_GetTicks();
+    const u32 perf_check_each = 60;
 
     for (;;)
     {
@@ -85,13 +85,10 @@ int main(int argc, char *argv[])
 
         SDL_Delay(fmax(1, chill_time));
 
-        if (frame % 600 == 0)
+        if (frame % perf_check_each == 0)
         {
-            u32 ms_since_report = SDL_GetTicks() - perf_report_start;
-            LOG_INFO("perf: %dms / %dms", total_ms_took, ms_since_report);
+            LOG_INFO("perf: %dms for %d frames", total_ms_took, perf_check_each);
             total_ms_took = 0;
-
-            perf_report_start = SDL_GetTicks();
         }
 
         frame++;

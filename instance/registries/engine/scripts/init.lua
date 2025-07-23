@@ -18,7 +18,7 @@ local function slice_gen(x, y, w, h, z, lay_ref)
 end
 
 local function slice_basic(lay_ref)
-    return slice_gen(0, 0, screen_width, screen_height, 1, lay_ref)
+    return slice_gen(0, 0, screen_width, screen_height, global_zoom, lay_ref) -- todo: fix mouse scaled position calculation
 end
 
 last_layer_element_index = 0

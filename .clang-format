@@ -1,3 +1,7 @@
+BasedOnStyle: Microsoft
+PackConstructorInitializers: Never
+AlignArrayOfStructures: Right
+PointerAlignment: Right
 IndentWidth:     4
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -11,9 +15,3 @@ BraceWrapping:
   AfterObjCDeclaration: true
   AfterStruct:     true
   AfterUnion:      true
-  # BeforeLambdaBody: false
-  # BeforeWhile:     true
-  # IndentBraces:    true
-  # SplitEmptyFunction: true
-  # SplitEmptyRecord: true
-  # SplitEmptyNamespace: true

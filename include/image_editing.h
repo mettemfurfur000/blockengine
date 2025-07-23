@@ -20,8 +20,7 @@ typedef struct image
 // expected to be RGBA, i dunno bout any other formats mate!
 
 #define CHANNELS 4
-#define ACCESS_CHANNEL(img, x, y, c)                                           \
-    (img->data + (((y) * img->width + (x)) * CHANNELS + (c)))
+#define ACCESS_CHANNEL(img, x, y, c) (img->data + (((y) * img->width + (x)) * CHANNELS + (c)))
 
 // Basic image manipulation functions
 image *create_image(u16 width, u16 height);

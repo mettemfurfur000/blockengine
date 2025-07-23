@@ -1,5 +1,6 @@
 local constants = require("registries.engine.scripts.constants")
 local cam_utils = require("registries.engine.scripts.camera_utils")
+local mouse = require("registries.engine.scripts.mouse")
 -- local input = require("registries.engine.scripts.input")
 -- local renderer = require("registries.engine.scripts.renderer")
 
@@ -41,15 +42,17 @@ end
 
 local function mouse_action(x, y, button)
     if button == 1 then
-        local blk_x = math.floor(x / g_block_size)
-        local blk_y = math.floor(y / g_block_size)
+        local blk = block_pos({
+            x = x,
+            y = y
+        })
 
         if editor.mode == "place" then
-            editor.layer_being_edited.layer:paste_block(blk_x, blk_y, editor.selected_block.id)
+            editor.layer_being_edited.layer:paste_block(blk.x, blk.y, editor.selected_block.id)
         end
 
         if editor.mode == "remove" then
-            editor.layer_being_edited.layer:paste_block(blk_x, blk_y, 0)
+            editor.layer_being_edited.layer:paste_block(blk.x, blk.y, 0)
         end
     end
 end
@@ -116,15 +119,17 @@ end)
 
 -- clicks on the pallete choose the tile
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
-    local blk_x = math.floor(x / g_block_size)
-    local blk_y = math.floor(y / g_block_size)
+    local blk = block_pos({
+        x = x,
+        y = y
+    })
 
     if editor.hide_palette == false then -- attempt to select a block if pallete is visible
-        if blk_x > pallete_width then
+        if blk.x > pallete_width then
             goto attempt_select_layer_skip
         end
 
-        local id = blk_x + blk_y * pallete_width
+        local id = blk.x + blk.y * pallete_width
 
         if id >= g_total_blocks then
             -- print("out of bounds")

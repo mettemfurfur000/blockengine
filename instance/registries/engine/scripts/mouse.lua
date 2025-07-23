@@ -3,7 +3,7 @@ local cam_utils = require("registries.engine.scripts.camera_utils")
 
 local this_block_id = scripting_current_block_id
 
-local mouse = {
+mouse = {
     pos = {
         x = -1,
         y = -1
@@ -14,20 +14,20 @@ local mouse = {
     vars = nil
 }
 
--- local function screen_space_to_world(pos)
---     local zoom = cam_utils.get_zoom()
---     local x = (pos.x / zoom) + cam_utils.get_x()
---     local y = (pos.y / zoom) + cam_utils.get_y()
---     return {
---         x = x,
---         y = y
---     }
--- end
+
+function block_pos(mouse_pos, zoom)
+    zoom = zoom or render_rules.get_slice(g_render_rules, g_menu.mouse.index).zoom
+    return {
+        x = math.floor(mouse_pos.x / g_block_size / zoom),
+        y = math.floor(mouse_pos.y / g_block_size / zoom)
+    }
+end
+
 
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
 
-    local pos = {
+    local pos = { -- puts it just wherevr
         x = width / 32,
         y = height / 32
     }
@@ -48,13 +48,6 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
 
     print("mouse initialized")
 end)
-
-local function block_pos(mouse_pos, zoom)
-    return {
-        x = math.floor(mouse_pos.x / g_block_size / zoom),
-        y = math.floor(mouse_pos.y / g_block_size / zoom)
-    }
-end
 
 local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
     local new_pos = block_pos(cur_pos_pixels, slice.zoom)
@@ -118,18 +111,23 @@ blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, po
     }, mouse.pos)
 end)
 
-blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, pos_x, pos_y)
+blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
     if mouse.home_layer == nil then
         return
     end
 
-    local block_pos_x = math.floor(x / g_block_size)
-    local block_pos_y = math.floor(y / g_block_size)
+    local cur_slice = render_rules.get_slice(g_render_rules, g_menu.mouse.index);
+    local actual_pos = block_pos({
+        x = x,
+        y = y
+    }, cur_slice.zoom)
 
-    local func = g_menu.objects.layer:get_input_handler(block_pos_x, block_pos_y, "click")
+    -- print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
+
+    local func = g_menu.objects.layer:get_input_handler(actual_pos.x, actual_pos.y, "click")
 
     if func then
-        func(g_menu.objects.layer, block_pos_x, block_pos_y, 1)
+        func(g_menu.objects.layer, actual_pos.x, actual_pos.y, 1)
     end
 end)
 

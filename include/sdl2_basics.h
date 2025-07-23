@@ -60,8 +60,7 @@ typedef struct music
 } music;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define KEEPINLIMITS(x, min, max)                                              \
-    ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
+#define KEEPINLIMITS(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
 
 int greatest_common_divisor(int a, int b);
 char *get_folder_path(char *file_path, int bonus_for_str_size);
@@ -85,6 +84,7 @@ void free_music(music *s);
 
 // void play_sound_randomly(vec_sound_t sounds);
 
-// int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width, u8 flip, unsigned short rotation);
+// int block_render(texture *texture, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 local_block_width,
+// u8 flip, unsigned short rotation);
 
 #endif

@@ -8,8 +8,7 @@
 
 // object pool functions
 
-var_holder *get_inactive(var_object_pool *pool, u32 required_size,
-                         u32 *index_out)
+var_holder *get_inactive(var_object_pool *pool, u32 required_size, u32 *index_out)
 {
     for (u32 i = 1; i < pool->vars.length; i++)
     {
@@ -27,15 +26,13 @@ var_holder *get_inactive(var_object_pool *pool, u32 required_size,
 
 var_holder *get_variable(var_object_pool *pool, u32 index)
 {
-    if (index == 0 ||
-        index >= pool->vars.length) // block is referencing to an invalid var
+    if (index == 0 || index >= pool->vars.length) // block is referencing to an invalid var
         return NULL;
 
     return &pool->vars.data[index];
 }
 
-var_holder new_variable(var_object_pool *pool, u32 required_size,
-                        u32 *index_out)
+var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out)
 {
     if (pool->inactive_count > pool->inactive_limit)
     {
@@ -48,7 +45,8 @@ var_holder new_variable(var_object_pool *pool, u32 required_size,
             if (!pool->vars.data[i].active)
             {
                 SAFE_FREE(pool->vars.data[i].b);
-            } else
+            }
+            else
             {
                 (void)vec_push(&new_vars, pool->vars.data[i]);
             }
@@ -145,8 +143,7 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
     CHECK(x >= l->width || y >= l->height)
 
     u64 var_index = 0;
-    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size,
-           l->var_index_size);
+    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
     var_holder *h = get_variable(&l->var_pool, var_index);
 
@@ -187,9 +184,9 @@ u8 block_set_vars(layer *l, u32 x, u32 y, blob vars)
         var_holder new = new_variable(&l->var_pool, vars.size, &var_index);
         memcpy(new.b->ptr, vars.ptr, vars.size);
         new.b->size = vars.size;
-        memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&var_index,
-               l->var_index_size);
-    } else
+        memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&var_index, l->var_index_size);
+    }
+    else
     {
         h->b->size = vars.size;
         memcpy(h->b->ptr, vars.ptr, vars.size);
@@ -355,8 +352,7 @@ room *room_create(level *parent, const char *name, u32 w, u32 h)
     return r;
 }
 
-layer *layer_create(room *parent, block_registry *registry_ref,
-                    u8 bytes_per_block, u8 bytes_per_index, u8 flags)
+layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags)
 {
     layer *l = calloc(1, sizeof(layer));
 
@@ -375,8 +371,7 @@ layer *layer_create(room *parent, block_registry *registry_ref,
     return l;
 }
 
-void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y,
-             u32 length_limit, const char *format, ...)
+void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
 {
     char buffer[1024] = {};
     va_list args;
@@ -405,8 +400,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y,
 
         if (var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr))
         {
-            LOG_ERROR(
-                "bprintf Failed to set a u8 for character block in a loop");
+            LOG_ERROR("bprintf Failed to set a u8 for character block in a loop");
             return;
         }
 

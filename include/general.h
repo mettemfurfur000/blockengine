@@ -45,37 +45,37 @@ static_assert(sizeof(i64) == 8, "");
 #define FOLDER_REG_SND "sounds"
 
 // LOG_DEBUG("freeing %p", ptr);
-#define SAFE_FREE(ptr)                                                         \
-    if (ptr)                                                                   \
-        free(ptr);                                                             \
+#define SAFE_FREE(ptr)                                                                                                 \
+    if (ptr)                                                                                                           \
+        free(ptr);                                                                                                     \
     ptr = 0;
 
-#define CHECK_PTR(ptr)                                                         \
-    if (!(ptr))                                                                \
-    {                                                                          \
-        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                       \
-        return FAIL;                                                           \
+#define CHECK_PTR(ptr)                                                                                                 \
+    if (!(ptr))                                                                                                        \
+    {                                                                                                                  \
+        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                                                               \
+        return FAIL;                                                                                                   \
     }
 
-#define CHECK_PTR_NORET(ptr)                                                   \
-    if (!(ptr))                                                                \
-    {                                                                          \
-        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                       \
-        return;                                                                \
+#define CHECK_PTR_NORET(ptr)                                                                                           \
+    if (!(ptr))                                                                                                        \
+    {                                                                                                                  \
+        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                                                               \
+        return;                                                                                                        \
     }
 
-#define CHECK(expression)                                                      \
-    if (expression)                                                            \
-    {                                                                          \
-        LOG_ERROR("check failed: '" #expression " is positive'\n");            \
-        return FAIL;                                                           \
+#define CHECK(expression)                                                                                              \
+    if (expression)                                                                                                    \
+    {                                                                                                                  \
+        LOG_ERROR("check failed: '" #expression " is positive'\n");                                                    \
+        return FAIL;                                                                                                   \
     }
 
-#define CHECK_NORET(expression)                                                \
-    if (expression)                                                            \
-    {                                                                          \
-        LOG_ERROR("check failed: '" #expression " is positive'\n");            \
-        return;                                                                \
+#define CHECK_NORET(expression)                                                                                        \
+    if (expression)                                                                                                    \
+    {                                                                                                                  \
+        LOG_ERROR("check failed: '" #expression " is positive'\n");                                                    \
+        return;                                                                                                        \
     }
 
 #endif

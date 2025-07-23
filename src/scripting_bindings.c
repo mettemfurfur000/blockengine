@@ -13,11 +13,10 @@
 // ###############//
 // ###############//
 
-#define PUSHNEWIMAGE(L, i, name)                                               \
-    ImageWrapper *name =                                                       \
-        (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper));              \
-    name->img = (i);                                                           \
-    luaL_getmetatable(L, "Image");                                             \
+#define PUSHNEWIMAGE(L, i, name)                                                                                       \
+    ImageWrapper *name = (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper));                                     \
+    name->img = (i);                                                                                                   \
+    luaL_getmetatable(L, "Image");                                                                                     \
     lua_setmetatable(L, -2);
 
 typedef struct
@@ -83,8 +82,7 @@ static int apply_color_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3),
-                   luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)
+    u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)
 
     };
 
@@ -126,8 +124,7 @@ static int fill_color_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3),
-                   luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)};
+    u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)};
 
     fill_color(wrapper->img, color);
 
@@ -223,33 +220,33 @@ static int crop_image_lua(lua_State *L)
 void load_image_editing_library(lua_State *L)
 {
     const static luaL_Reg image_methods[] = {
-        {"crop", crop_image_lua},
-        {"rotate", rotate_image_lua},
-        {"flip_horizontal", flip_image_horizontal_lua},
-        {"flip_vertical", flip_image_vertical_lua},
+        {            "crop",            crop_image_lua},
+        {          "rotate",          rotate_image_lua},
+        { "flip_horizontal", flip_image_horizontal_lua},
+        {   "flip_vertical",   flip_image_vertical_lua},
 
-        {"add_brightness", adjust_brightness_lua},
-        {"add_color", apply_color_lua},
-        {"get_avg_color", get_average_color},
-        {"gamma_correction", gamma_correction_lua},
+        {  "add_brightness",     adjust_brightness_lua},
+        {       "add_color",           apply_color_lua},
+        {   "get_avg_color",         get_average_color},
+        {"gamma_correction",      gamma_correction_lua},
 
         //{"blend", blend_images_lua},
-        {"size", image_size_lua},
-        {"overlay", overlay_image_lua},
+        {            "size",            image_size_lua},
+        {         "overlay",         overlay_image_lua},
 
-        {"clear", clear_image_lua},
-        {"fill", fill_color_lua},
-        {"copy", copy_image_lua},
+        {           "clear",           clear_image_lua},
+        {            "fill",            fill_color_lua},
+        {            "copy",            copy_image_lua},
 
-        {"save", save_image_lua},
+        {            "save",            save_image_lua},
 
-        {NULL, NULL}
-
+        {              NULL,                      NULL}
     };
 
     const static luaL_Reg image_editing_lib[] = {
-        {"create", create_image_lua}, {"load", load_image_lua}, {NULL, NULL}
-
+        {"create", create_image_lua},
+        {  "load",   load_image_lua},
+        {    NULL,             NULL}
     };
 
     // Create metatable for Image userdata
@@ -315,7 +312,8 @@ static int lua_render_rules_set_order(lua_State *L)
         {
             int value = lua_tointeger(L, -1);
             (void)vec_push(&rules->draw_order, value);
-        } else
+        }
+        else
         {
             int index = lua_tointeger(L, -2);
             luaL_error(L, "Invalid value in table on index %d", index);
@@ -377,7 +375,8 @@ static int lua_slice_set(lua_State *L)
         slice.ref = wrapper->l;
         // LOG_DEBUG("putting %p as a ref for a slice", slice.ref);
         lua_pop(L, 1);
-    } else
+    }
+    else
         luaL_error(L, "STRUCT_SET: expected a "
                       "LUA_TUSERDATA "
                       "for a field "
@@ -396,12 +395,13 @@ static int lua_slice_set(lua_State *L)
 void lua_register_render_rules(lua_State *L)
 {
     const static luaL_Reg render_rules_lib[] = {
-        {"get_size", lua_render_rules_get_size},
+        { "get_size",  lua_render_rules_get_size},
         {"get_order", lua_render_rules_get_order},
         {"set_order", lua_render_rules_set_order},
-        {"get_slice", lua_slice_get},
-        {"set_slice", lua_slice_set},
-        {NULL, NULL}};
+        {"get_slice",              lua_slice_get},
+        {"set_slice",              lua_slice_set},
+        {       NULL,                       NULL}
+    };
 
     luaL_newlib(L, render_rules_lib);
     lua_setglobal(L, "render_rules");
@@ -588,8 +588,7 @@ static int lua_registry_register_block_input(lua_State *L)
     luaL_checkany(L, 4);
     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    lua_pushboolean(L, scripting_register_block_input(wrapper->reg, id, ref,
-                                                      name) == SUCCESS);
+    lua_pushboolean(L, scripting_register_block_input(wrapper->reg, id, ref, name) == SUCCESS);
     return 1;
 }
 
@@ -605,8 +604,7 @@ int lua_light_block_input_register(lua_State *L)
     luaL_checkany(L, 4);
     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    lua_pushboolean(L, scripting_register_block_input((block_registry *)ptr, id,
-                                                      ref, name) == SUCCESS);
+    lua_pushboolean(L, scripting_register_block_input((block_registry *)ptr, id, ref, name) == SUCCESS);
     return 0;
 }
 
@@ -636,7 +634,8 @@ static int lua_level_load_registry(lua_State *L)
             return 1;
         }
         NEW_USER_OBJECT(L, BlockRegistry, r);
-    } else
+    }
+    else
     {
         free(r);
     }
@@ -746,16 +745,12 @@ static int lua_room_new_layer(lua_State *L)
     int byte_per_index = luaL_checkinteger(L, 4);
     int flags = luaL_checkinteger(L, 5);
 
-    block_registry *reg =
-        find_registry((((level *)wrapper->r->parent_level)->registries),
-                      (char *)registry_name);
+    block_registry *reg = find_registry((((level *)wrapper->r->parent_level)->registries), (char *)registry_name);
 
     if (!reg)
         luaL_error(L, "Registry %s not found", registry_name);
 
-    NEW_USER_OBJECT(
-        L, Layer,
-        layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags));
+    NEW_USER_OBJECT(L, Layer, layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags));
 
     return 1;
 }
@@ -833,8 +828,7 @@ static int lua_layer_move_block(lua_State *L)
     u32 delta_x = luaL_checknumber(L, 4);
     u32 delta_y = luaL_checknumber(L, 5);
 
-    lua_pushboolean(L,
-                    block_move(wrapper->l, x, y, delta_x, delta_y) == SUCCESS);
+    lua_pushboolean(L, block_move(wrapper->l, x, y, delta_x, delta_y) == SUCCESS);
 
     return 1;
 }
@@ -856,8 +850,7 @@ static int lua_get_block_input_handler(lua_State *L)
     }
 
     vec_int_t *refs = &wrapper->l->registry->resources.data[id].input_refs;
-    vec_str_t *ref_names =
-        &wrapper->l->registry->resources.data[id].input_names;
+    vec_str_t *ref_names = &wrapper->l->registry->resources.data[id].input_names;
 
     for (u32 i = 0; i < refs->length; i++)
         if (strcmp(ref_names->data[i], name) == 0)
@@ -919,8 +912,7 @@ static int lua_block_set_vars(lua_State *L)
     u32 y = luaL_checknumber(L, 3);
     LUA_CHECK_USER_OBJECT(L, Vars, wrapper_vars, 4);
 
-    lua_pushboolean(L, block_set_vars(wrapper->l, x, y, *wrapper_vars->b) ==
-                           SUCCESS);
+    lua_pushboolean(L, block_set_vars(wrapper->l, x, y, *wrapper_vars->b) == SUCCESS);
 
     return 1;
 }
@@ -1061,7 +1053,7 @@ void lua_sound_register(lua_State *L)
 {
     const static luaL_Reg sound_methods[] = {
         {"play", lua_sound_play},
-        {NULL, NULL},
+        {  NULL,           NULL},
     };
 
     luaL_newmetatable(L, "Sound");
@@ -1073,11 +1065,11 @@ void lua_sound_register(lua_State *L)
 void lua_block_registry_register(lua_State *L)
 {
     const static luaL_Reg registry_methods[] = {
-        {"get_name", lua_registry_get_name},
-        {"to_table", lua_registry_to_table},
+        {      "get_name",             lua_registry_get_name},
+        {      "to_table",             lua_registry_to_table},
         {"register_input", lua_registry_register_block_input},
-        {"uuid", lua_uuid_universal},
-        {NULL, NULL},
+        {          "uuid",                lua_uuid_universal},
+        {            NULL,                              NULL},
     };
 
     luaL_newmetatable(L, "BlockRegistry");
@@ -1089,15 +1081,15 @@ void lua_block_registry_register(lua_State *L)
 void lua_level_register(lua_State *L)
 {
     const static luaL_Reg level_methods[] = {
-        {"__gc", lua_level_gc},
-        {"load_registry", lua_level_load_registry},
-        {"get_name", lua_level_get_name},
-        {"get_room", lua_level_get_room},
-        {"get_room_count", lua_level_get_room_count},
-        {"find_room", lua_level_get_room_by_name},
-        {"new_room", lua_level_new_room},
-        {"uuid", lua_uuid_universal},
-        {NULL, NULL},
+        {          "__gc",               lua_level_gc},
+        { "load_registry",    lua_level_load_registry},
+        {      "get_name",         lua_level_get_name},
+        {      "get_room",         lua_level_get_room},
+        {"get_room_count",   lua_level_get_room_count},
+        {     "find_room", lua_level_get_room_by_name},
+        {      "new_room",         lua_level_new_room},
+        {          "uuid",         lua_uuid_universal},
+        {            NULL,                       NULL},
     };
 
     luaL_newmetatable(L, "Level");
@@ -1109,13 +1101,13 @@ void lua_level_register(lua_State *L)
 void lua_room_register(lua_State *L)
 {
     const static luaL_Reg room_methods[] = {
-        {"get_name", lua_room_get_name},
-        {"get_size", lua_room_get_size},
-        {"get_layer", lua_room_get_layer},
+        {       "get_name",        lua_room_get_name},
+        {       "get_size",        lua_room_get_size},
+        {      "get_layer",       lua_room_get_layer},
         {"get_layer_count", lua_room_get_layer_count},
-        {"new_layer", lua_room_new_layer},
-        {"uuid", lua_uuid_universal},
-        {NULL, NULL},
+        {      "new_layer",       lua_room_new_layer},
+        {           "uuid",       lua_uuid_universal},
+        {             NULL,                     NULL},
     };
 
     luaL_newmetatable(L, "Room");
@@ -1127,16 +1119,16 @@ void lua_room_register(lua_State *L)
 void lua_layer_register(lua_State *L)
 {
     const static luaL_Reg layer_methods[] = {
-        {"paste_block", lua_layer_paste_block},
-        {"set_id", lua_layer_set_id},
-        {"get_id", lua_block_get_id},
-        {"move_block", lua_layer_move_block},
+        {      "paste_block",       lua_layer_paste_block},
+        {           "set_id",            lua_layer_set_id},
+        {           "get_id",            lua_block_get_id},
+        {       "move_block",        lua_layer_move_block},
         {"get_input_handler", lua_get_block_input_handler},
-        {"get_vars", lua_block_get_vars},
-        {"set_vars", lua_block_set_vars},
-        {"bprint", lua_bprintf},
-        {"uuid", lua_uuid_universal},
-        {NULL, NULL},
+        {         "get_vars",          lua_block_get_vars},
+        {         "set_vars",          lua_block_set_vars},
+        {           "bprint",                 lua_bprintf},
+        {             "uuid",          lua_uuid_universal},
+        {               NULL,                        NULL},
     };
 
     luaL_newmetatable(L, "Layer");
@@ -1148,34 +1140,26 @@ void lua_layer_register(lua_State *L)
 void lua_vars_register(lua_State *L)
 {
     const static luaL_Reg vars_methods[] = {
-        {"get_length", lua_vars_length},
+        {"get_length",     lua_vars_length},
         {"get_string", lua_vars_get_string},
         {"set_string", lua_vars_set_string},
 
-        SCRIPTING_RECORD(i8, set),
-        SCRIPTING_RECORD(i16, set),
-        SCRIPTING_RECORD(i32, set),
-        SCRIPTING_RECORD(i64, set),
+        SCRIPTING_RECORD(i8, set),           SCRIPTING_RECORD(i16, set),
+        SCRIPTING_RECORD(i32, set),          SCRIPTING_RECORD(i64, set),
 
-        SCRIPTING_RECORD(u8, set),
-        SCRIPTING_RECORD(u16, set),
-        SCRIPTING_RECORD(u32, set),
-        SCRIPTING_RECORD(u64, set),
+        SCRIPTING_RECORD(u8, set),           SCRIPTING_RECORD(u16, set),
+        SCRIPTING_RECORD(u32, set),          SCRIPTING_RECORD(u64, set),
 
-        SCRIPTING_RECORD(i8, get),
-        SCRIPTING_RECORD(i16, get),
-        SCRIPTING_RECORD(i32, get),
-        SCRIPTING_RECORD(i64, get),
+        SCRIPTING_RECORD(i8, get),           SCRIPTING_RECORD(i16, get),
+        SCRIPTING_RECORD(i32, get),          SCRIPTING_RECORD(i64, get),
 
-        SCRIPTING_RECORD(u8, get),
-        SCRIPTING_RECORD(u16, get),
-        SCRIPTING_RECORD(u32, get),
-        SCRIPTING_RECORD(u64, get),
+        SCRIPTING_RECORD(u8, get),           SCRIPTING_RECORD(u16, get),
+        SCRIPTING_RECORD(u32, get),          SCRIPTING_RECORD(u64, get),
 
-        {"get_var", lua_vars_get_var},
-        {"get_size", lua_vars_get_size},
-        {"__tostring", lua_vars_tostring},
-        {NULL, NULL},
+        {   "get_var",    lua_vars_get_var},
+        {  "get_size",   lua_vars_get_size},
+        {"__tostring",   lua_vars_tostring},
+        {        NULL,                NULL},
     };
 
     luaL_newmetatable(L, "Vars");
@@ -1188,7 +1172,7 @@ void lua_level_editing_lib_register(lua_State *L)
 {
     const static luaL_Reg level_editing_methods[] = {
         {"create_level", lua_level_create},
-        {NULL, NULL},
+        {          NULL,             NULL},
     };
 
     luaL_newlib(L, level_editing_methods);
