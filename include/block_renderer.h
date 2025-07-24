@@ -4,7 +4,16 @@
 #include "general.h"
 #include "sdl2_basics.h"
 
-#define INSTANCE_FIELDS_COUNT 4 // cannot be more than 4
+// Instance data structure
+typedef struct {
+    float x, y;           // Position (8 bytes)
+    float scaleX, scaleY; // Scale factors for stretching (8 bytes)
+    float rotation;       // Rotation in radians (4 bytes)
+    u8 frame;            // Current animation frame (1 byte)
+    u8 type;             // Block type (1 byte)
+    u8 flags;            // Bit flags for flip, special effects etc (1 byte)
+    u8 padding;          // Padding for alignment (1 byte)
+} BlockInstanceData;      // Total: 24 bytes
 
 // Initialize the block renderer
 int block_renderer_init(int screenWidth, int screenHeight);
@@ -12,16 +21,16 @@ int block_renderer_init(int screenWidth, int screenHeight);
 // Begin a new batch of blocks
 void block_renderer_begin_batch();
 
-// Add a block to the current batch
-void block_renderer_add_block(int x, int y, u8 frame, u8 type, u8 a_offset_x, u8 a_offset_y);
-
 void block_renderer_end_batch(image *atlas_img, GLuint atlas, u8 local_block_width);
 
 // Clean up resources
 void block_renderer_shutdown();
 
-// Replacement for the original block_render function
-int block_render_instanced(atlas_info info, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 flip);
+// Create a new block instance at the specified position
+int block_renderer_create_instance(atlas_info info, int x, int y);
+
+// Configure properties for the last created instance
+void block_renderer_set_instance_properties(u8 frame, u8 type, u8 flags, float scaleX, float scaleY, float rotation);
 
 void block_renderer_begin_frame();
 void block_renderer_end_frame();

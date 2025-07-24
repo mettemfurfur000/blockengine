@@ -1,68 +1,92 @@
 # blockengine
 
-This project is for fun and aims to create a little engine with the following main ideas:
+A lightweight 2D block-based engine focusing on efficient rendering and scriptable block behavior.
 
-## About the Data
-- Everything consists of blocks on a two-dimensional square grid.
-- Creatures in the world are bound to the grid, although this may change in the future for better game play.
-- The world is composed of two-dimensional layers, each marked with one letter (symbol), and has their own constant dimensions (functions can be written to change the dimensions).
-- Each layer is divided into chunks which are square and have their own size.
-- Each chunk contains the blocks themselves.
+## Core Features
 
-## World Behavior
-- Block behavior is determined either by Lua scripts or C functions (for better performance).
-- The world is updated ten times per second. Each block in a loaded chunk runs its own update function, if it has one.
-- Only loaded chunks are updated. Inactive chunks (for example, those without updates for 100 ticks) are unloaded to disk.
-- If a chunk attempts to access a block from an unloaded chunk during a chunk update, it is loaded and marked as active.
-- A given block can access any block in the current world and can do anything with it.
+### World Structure
+- Grid-based 2D world composed of blocks
+- Multi-layered world system with independent layers
+- Room-based world organization for efficient memory management
+- Flexible block properties system with variable storage
 
-## Graphics and More
-- Blocks can interact with SDL2 (you would have to register functions for Lua), allowing for control over what the player sees and hears.
-- Blocks can decide which textures to use to render themselves on the screen.
+### Graphics Engine
+- Hardware-accelerated rendering using OpenGL
+- Efficient instanced rendering for blocks
+- Texture atlas support for optimized memory usage
+- Rich block visualization features:
+  - Animation support with configurable FPS
+  - Rotation support (0-360 degrees)
+  - Texture flipping (horizontal/vertical)
+  - Scale and stretching capabilities
+  - Location-based pseudo-random patterns
+  - Frame and type variations per block
+
+### Block System
+- Comprehensive block registry system
+- Robust resource management (loading/saving)
+- Variable-based block properties
+- Advanced animation controls:
+  - Frame-based animations
+  - Time-based animations (FPS control)
+  - Random frame selection
+  - Frame override capability
+
+### Scripting System
+- Lua integration for block behavior
+- Extensive event system including:
+  - Block lifecycle events (set, erase, move)
+  - Data management events (create, remove)
+  - Custom signal handling
+- Direct access to rendering parameters
+- World manipulation capabilities
+- Sound system integration
+
+### Audio System
+- Sound loading and playback support
+- Script-controlled audio playback
+- Integration with SDL2_mixer
 
 In summary, developers can create a layer of game logic (marked "d", for example) and build a "mechanism" from the blocks that accepts user input and moves the player around on the game layer, as well as create other mechanisms for monsters, interfaces, and more.
 
-## Roadmap
+## Technical Details
 
-- [x] Basic operations on blocks
-- [x] Block memory control
-- [x] Chunk memory control
-- [x] Saving and Loading 
-- [x] Tests for everything above
-- [x] Basic game cycle
-   - [ ] Loading or generating a world
-   - [!] Inactive chunks unloading from memory
-      - Chunks are no more
-   - [x] World update and update rate setting
-   - [x] Test for everything above
-- [x] Block Registry
-   - [x] Saving and loading
-   - [x] Basic managment of duplicated/missing resources
-- [x] Lua scripting for blocks
-   - [x] Basic passive scripts
-   - [x] Functions for simple operations on blocks
-   - [x] Block registry block querry
-   - [x] Give lua access to rendering rules (camera pos, etc)
-   - [x] Allow lua to create or delete world layers
-   - [!] Allow lua to load/unload chunks, forced or on-demand
-       - Chunks are no more, but there is rooms
-   - [x] Custom events for block interactions
-      - [x] on_set, on_erase, on_move, 
-      - [x] on_load, on_unload, on_data_create, on_data_remove, on_signal
-- [ ] Graphics
-   - [x] Basic static textures
-   - [x] Animated textures
-      - [x] FPS setting
-   - [x] Data-driven texture selection for individual blocks
-   - [x] Animation-compatible data-driven textures
-   - [ ] Particles
-   - [x] Rotatable block textures, for turrets/cogs/valves
-   - [x] Flippable textures for some memory economy
-   - [x] Pseudorandom texture patterns based on block location
-   - [ ] Connectable textures
-   - [ ] Lightning?
-- [x] Sound
-   - [x] Load and play sounds
-   - [x] Allow scripts to play them
+### Rendering System
+- OpenGL-based rendering pipeline
+- Efficient instanced rendering with attribute system:
+  - Position (float x, y)
+  - Scale (float scaleX, scaleY)
+  - Rotation (float, radians)
+  - Frame/Type indices (uint8)
+  - Flags for effects (uint8)
+- Post-processing support
+- Frame buffer abstraction
 
-That's the list I'm currently aiming for. Hope this helps!
+### Block Properties
+- Variable-based block data storage
+- Controllers for:
+  - Animation frames
+  - Block types/variations
+  - Rotation
+  - Flip states
+- Frame override capability
+- Random positioning system
+
+### Room System
+- Replaced chunk system for better memory management
+- Dynamic room loading/unloading
+- Efficient block access and modification
+
+## Potential Future Features
+- Particle system using block instances
+- Connected textures for blocks
+- Lighting system
+- Basic entity system (if needed)
+
+## Dependencies
+- OpenGL (via epoxy)
+- SDL2 and SDL2_mixer
+- Lua for scripting
+
+## Note
+The engine is designed to be lightweight and efficient, focusing on 2D block-based games and simulations. While it could support entities and physics through Box2D integration, the current focus is on block-based mechanics and efficient rendering.

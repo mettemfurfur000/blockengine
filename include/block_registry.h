@@ -47,6 +47,9 @@ typedef struct block_resources
     char type_controller;     // current animation type / row
     char flip_controller;     // current type of flipping
     char rotation_controller; // current rotation angle
+    char offset_x_controller; // controls offset on de screen if needed
+    char offset_y_controller; // 
+
     u8 override_frame;        // override type of block
 
     u8 frames_per_second;

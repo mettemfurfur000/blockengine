@@ -32,7 +32,7 @@ typedef struct
     GLuint textureLoc;
 
     // Instance data buffer
-    float *instanceData;
+    BlockInstanceData *instanceData;
     int instanceCapacity;
     int instanceCount;
 } BlockRenderer;
@@ -127,14 +127,42 @@ int block_renderer_init(int screenWidth, int screenHeight)
     glGenBuffers(1, &renderer.instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, renderer.instanceVBO);
 
-    // Instance attribute
-    glVertexAttribPointer(2, INSTANCE_FIELDS_COUNT, GL_FLOAT, GL_FALSE, 0, 0);
+    // Set up instance attributes
+    size_t stride = sizeof(BlockInstanceData);
+    
+    // Position (vec2)
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BlockInstanceData, x));
     glEnableVertexAttribArray(2);
-    glVertexAttribDivisor(2, 1); // Tell OpenGL this is an instanced attribute
+    glVertexAttribDivisor(2, 1);
+    
+    // Scale (vec2)
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BlockInstanceData, scaleX));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+    
+    // Rotation (float)
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BlockInstanceData, rotation));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);
+    
+    // Frame (uint8)
+    glVertexAttribIPointer(5, 1, GL_UNSIGNED_BYTE, stride, (void*)offsetof(BlockInstanceData, frame));
+    glEnableVertexAttribArray(5);
+    glVertexAttribDivisor(5, 1);
+    
+    // Type (uint8)
+    glVertexAttribIPointer(6, 1, GL_UNSIGNED_BYTE, stride, (void*)offsetof(BlockInstanceData, type));
+    glEnableVertexAttribArray(6);
+    glVertexAttribDivisor(6, 1);
+    
+    // Flags (uint8)
+    glVertexAttribIPointer(7, 1, GL_UNSIGNED_BYTE, stride, (void*)offsetof(BlockInstanceData, flags));
+    glEnableVertexAttribArray(7);
+    glVertexAttribDivisor(7, 1);
 
     // Initialize instance data
     renderer.instanceCapacity = 1000; // Start with space for 1000 instances
-    renderer.instanceData = (float *)malloc(renderer.instanceCapacity * INSTANCE_FIELDS_COUNT * sizeof(float));
+    renderer.instanceData = (BlockInstanceData*)malloc(renderer.instanceCapacity * sizeof(BlockInstanceData));
     renderer.instanceCount = 0;
 
     // Set up orthographic projection
@@ -213,7 +241,7 @@ void block_renderer_end_batch(image *atlas_img, GLuint atlas, u8 local_block_wid
 
     // Update instance data
     glBindBuffer(GL_ARRAY_BUFFER, renderer.instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, renderer.instanceCount * INSTANCE_FIELDS_COUNT * sizeof(float), renderer.instanceData,
+    glBufferData(GL_ARRAY_BUFFER, renderer.instanceCount * sizeof(BlockInstanceData), renderer.instanceData,
                  GL_DYNAMIC_DRAW);
 
     // Draw instances
@@ -232,34 +260,53 @@ void block_renderer_shutdown()
     glDeleteProgram(renderer.shaderDefault);
 }
 
-// Replacement for the original block_render function
-int block_render_instanced(atlas_info info, const int x, const int y, u8 frame, u8 type, u8 ignore_type, u8 flip)
+// Create a new block instance at the specified position
+int block_renderer_create_instance(atlas_info info, int x, int y)
 {
-    u8 actual_frame = frame % info.frames;
-    u8 actual_type = ignore_type ? (u8)(frame / info.frames) : (type % info.types);
-
     // Ensure we have enough capacity
     if (renderer.instanceCount >= renderer.instanceCapacity)
     {
-        LOG_DEBUG("not enough instances, increasing to %d", renderer.instanceCount * INSTANCE_FIELDS_COUNT);
+        LOG_DEBUG("not enough instances, increasing to %d", renderer.instanceCapacity * 2);
         renderer.instanceCapacity *= 2;
         renderer.instanceData =
-            (float *)realloc(renderer.instanceData, renderer.instanceCapacity * INSTANCE_FIELDS_COUNT * sizeof(float));
+            (BlockInstanceData *)realloc(renderer.instanceData, renderer.instanceCapacity * sizeof(BlockInstanceData));
+        
+        if (!renderer.instanceData) {
+            LOG_ERROR("Failed to allocate memory for instance data");
+            return FAIL;
+        }
     }
 
-    // Add instance data: x, y, frame, type
-    int idx = renderer.instanceCount * INSTANCE_FIELDS_COUNT;
-    renderer.instanceData[idx + 0] = (float)x;
-    renderer.instanceData[idx + 1] = (float)y;
-    renderer.instanceData[idx + 2] = (float)(info.atlas_offset_x + actual_frame);
-    renderer.instanceData[idx + 3] = (float)(info.atlas_offset_y + actual_type);
-
-    // LOG_DEBUG("pos: %dx%d, offset: %dx%d, t&f: %dx%d", x, y,
-    // info.atlas_offset_x, info.atlas_offset_y, frame, actual_type);
-
+    // Add instance data with default properties
+    BlockInstanceData *instance = &renderer.instanceData[renderer.instanceCount];
+    instance->x = (float)x;
+    instance->y = (float)y;
+    instance->scaleX = 1.0f;
+    instance->scaleY = 1.0f;
+    instance->rotation = 0.0f;
+    instance->frame = info.atlas_offset_x;
+    instance->type = info.atlas_offset_y;
+    instance->flags = 0;
+    
     renderer.instanceCount++;
-
     return SUCCESS;
+}
+
+// Configure properties for the last created instance
+void block_renderer_set_instance_properties(u8 frame, u8 type, u8 flags, float scaleX, float scaleY, float rotation)
+{
+    if (renderer.instanceCount == 0) {
+        LOG_ERROR("No instance to configure properties for");
+        return;
+    }
+    
+    BlockInstanceData *instance = &renderer.instanceData[renderer.instanceCount - 1];
+    instance->frame = frame;
+    instance->type = type;
+    instance->flags = flags;
+    instance->scaleX = scaleX;
+    instance->scaleY = scaleY;
+    instance->rotation = rotation;
 }
 
 void block_renderer_begin_frame()

@@ -26,18 +26,7 @@ u8 render_layer(layer_slice slice)
     if (!slice.ref)
         return SUCCESS;
 
-    // if (slice.ref->bytes_per_block == 1)
-    // {
-    //     bprintf(slice.ref, 0, 1, 32, "%d    %d    ", slice.x, slice.y);
-    //     bprintf(slice.ref, 0, 2, 32, "%d    %d    ", slice.w, slice.h);
-    //     // bprintf(slice.ref, 0, 4, 32, "%d    %d    %d    %d    ",
-    //     start_block_x / chunk_width, start_block_y / chunk_width, 1 +
-    //     end_block_x / chunk_width, 1 + end_block_y / chunk_width);
-    // }
-
     block_registry *b_reg = slice.ref->registry;
-
-    // LOG_DEBUG("finding registry %p", b_reg);
 
     // compute teh render area
 
@@ -50,22 +39,11 @@ u8 render_layer(layer_slice slice)
     const int block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
     const int block_y_offset = slice.y % local_block_width;
 
-    // if (layer_index == 0)
-    // {
-    // 	bprintf(w, b_reg, 0, 0, 2, 32, "start coords: %d    %d    ",
-    // -block_x_offset - local_block_width, -block_y_offset -
-    // local_block_width);
-    // }
-
     GLuint texture = b_reg->atlas_texture_uid;
 
     float dest_x, dest_y;
     dest_x = -block_x_offset - local_block_width * 2;
     // also minus 1 full block back to fill the gap
-
-    // LOG_DEBUG("preparing to render block texture gl id %d",
-    // texture->gl_id);
-
     block_renderer_begin_batch();
 
     for (i32 i = start_block_x; i < end_block_x; i++)
@@ -93,7 +71,7 @@ u8 render_layer(layer_slice slice)
             u8 frame = 0;
             u8 type = 0;
             u8 flip = 0;
-            // u16 rotation = 0;
+            u16 rotation = 0;
 
             block_resources br = b_reg->resources.data[id];
 
@@ -106,8 +84,8 @@ u8 render_layer(layer_slice slice)
                 if (br.flip_controller != 0)
                     var_get_u8(*var, br.flip_controller, &flip);
 
-                // if (br.rotation_controller != 0)
-                //     var_get_u16(*var, br.rotation_controller, &rotation);
+                if (br.rotation_controller != 0)
+                    var_get_u16(*var, br.rotation_controller, &rotation);
 
                 if (br.anim_controller != 0)
                     var_get_u8(*var, br.anim_controller, &frame);
@@ -128,11 +106,17 @@ u8 render_layer(layer_slice slice)
             if (br.override_frame != 0)
                 frame = br.override_frame;
 
-            // block_render(texture, dest_x, dest_y, frame, type,
-            // FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE),
-            // local_block_width, flip, rotation);
-            block_render_instanced(br.info, dest_x, dest_y, frame, type, FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE),
-                                   flip);
+            block_renderer_create_instance(br.info, dest_x, dest_y);
+
+            if (frame || type || flip || rotation)
+            { // only set properties if they are not default
+                u8 actual_frame = frame % br.info.frames;
+                u8 actual_type = FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(frame / br.info.frames)
+                                                                               : (type % br.info.types);
+                block_renderer_set_instance_properties(br.info.atlas_offset_x + actual_frame,
+                                                       br.info.atlas_offset_y + actual_type, flip, 1.0f, 1.0f,
+                                                       (float)rotation * (M_PI / 180.0f));
+            }
         }
     }
 
