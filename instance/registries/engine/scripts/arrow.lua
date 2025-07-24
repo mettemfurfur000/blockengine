@@ -35,7 +35,7 @@ end)
 
 blockengine.register_handler(engine_events.ENGINE_TICK, function(code)  -- iterate over all arrows and set their rotation towards the player
     if not player or not player.state == 0 then
-        print("player does not exist, skipping arrow rotation")
+        -- print("player does not exist, skipping arrow rotation")
         return
     end
 
@@ -47,7 +47,7 @@ blockengine.register_handler(engine_events.ENGINE_TICK, function(code)  -- itera
         if delta_x ~= 0 or delta_y ~= 0 then
             local angle = math.atan2(delta_y, delta_x)
             arrow.vars:set_i16("r", math.deg(angle))
-            print("calculated angle for arrow at " .. arrow.pos.x .. ", " .. arrow.pos.y .. ": " .. math.deg(angle))
+            -- print("calculated angle for arrow at " .. arrow.pos.x .. ", " .. arrow.pos.y .. ": " .. math.deg(angle))
         end
     end
 

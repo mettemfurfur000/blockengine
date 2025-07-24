@@ -373,7 +373,7 @@ static int lua_slice_set(lua_State *L)
     {
         LuaHolder *wrapper = (LuaHolder *)luaL_checkudata(L, -1, "Layer");
         slice.ref = wrapper->l;
-        // LOG_DEBUG("putting %p as a ref for a slice", slice.ref);
+
         lua_pop(L, 1);
     }
     else
@@ -800,8 +800,11 @@ static int lua_layer_paste_block(lua_State *L)
     u64 old_id = 0;
     u8 status = block_get_id(wrapper->l, x, y, &old_id) == SUCCESS;
 
-    status = block_set_id(wrapper->l, x, y, id) == SUCCESS;
-    status &= block_set_vars(wrapper->l, x, y, res->vars) == SUCCESS;
+    status &= block_set_id(wrapper->l, x, y, id) == SUCCESS;
+    if (id == 0)
+        status &= block_delete_vars(wrapper->l, x, y) == SUCCESS;
+    else
+        status &= block_set_vars(wrapper->l, x, y, res->vars) == SUCCESS;
 
     block_update_event e = {
         .type = ENGINE_BLOCK_CREATE,
@@ -812,8 +815,6 @@ static int lua_layer_paste_block(lua_State *L)
         .layer_ptr = wrapper->l,
         .room_ptr = wrapper->l->parent_room,
     };
-
-    // LOG_DEBUG("Pasting block %s at (%d, %d) with ID %llu", res->texture_filename, x, y, id);
 
     SDL_PushEvent((SDL_Event *)&e);
 

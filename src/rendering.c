@@ -26,6 +26,9 @@ u8 render_layer(layer_slice slice)
     if (!slice.ref)
         return SUCCESS;
 
+    if (!slice.ref->blocks)
+        return SUCCESS;
+
     block_registry *b_reg = slice.ref->registry;
 
     // compute teh render area
@@ -92,7 +95,7 @@ u8 render_layer(layer_slice slice)
 
                 if (br.offset_x_controller != 0)
                     var_get_u16(*var, br.offset_x_controller, &dest_x);
-                
+
                 if (br.offset_y_controller != 0)
                     var_get_u16(*var, br.offset_y_controller, &dest_y);
             }

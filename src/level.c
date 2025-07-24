@@ -164,6 +164,16 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
     CHECK_PTR(l->blocks)
     CHECK(x >= l->width || y >= l->height)
 
+    u64 var_index = 0;
+    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+
+    var_holder *h = get_variable(&l->var_pool, var_index);
+    if (h)
+        remove_variable(&l->var_pool, h);
+
+    // Clear the var index in the block
+    memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, l->var_index_size);
+
     return SUCCESS;
 }
 
@@ -198,12 +208,15 @@ u8 block_set_vars(layer *l, u32 x, u32 y, blob vars)
 u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
 {
     CHECK_PTR(l)
-    CHECK_PTR(l->blocks)
+    // CHECK_PTR(l->blocks)
+    if (!(l->blocks))
+    {
+        LOG_ERROR("check failed: 'l->blocks' is NULL\n");
+        return FAIL;
+    }
     u32 dest_x = x + dx;
     u32 dest_y = y + dy;
     CHECK(x >= l->width || y >= l->height)
-    // CHECK(dest_x >= l->width || dest_y >= l->height) // it was annoying to
-    // see a bunch of move errors in the console
     if (dest_x >= l->width || dest_y >= l->height)
         return FAIL;
 
@@ -235,7 +248,14 @@ u8 init_layer(layer *l, room *parent_room)
     CHECK((l->block_size + l->var_index_size) == 0)
     l->total_bytes_per_block = l->block_size + l->var_index_size;
 
-    l->blocks = calloc(l->width * l->width, l->block_size + l->var_index_size);
+    l->blocks = calloc(l->width * l->height, l->block_size + l->var_index_size);
+
+    if (l->blocks == NULL)
+    {
+        LOG_ERROR("Failed to allocate memory for blocks");
+        return FAIL;
+    }
+    // l->blocks = calloc(l->width * l->width, l->block_size + l->var_index_size);
 
     if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
     {
@@ -313,7 +333,8 @@ u8 free_level(level *lvl)
 {
     CHECK_PTR(lvl)
 
-    // LOG_DEBUG("Freeing a level");
+    for (u32 i = 0; i < lvl->rooms.length; i++)
+        free_room(lvl->rooms.data[i]);
 
     vec_deinit(&lvl->rooms);
     vec_deinit(&lvl->registries);

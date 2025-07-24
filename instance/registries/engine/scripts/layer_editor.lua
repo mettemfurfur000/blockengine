@@ -48,7 +48,11 @@ local function mouse_action(x, y, button)
         })
 
         if editor.mode == "place" then
-            editor.layer_being_edited.layer:paste_block(blk.x, blk.y, editor.selected_block.id)
+            local _, id = editor.layer_being_edited.layer:get_id(blk.x, blk.y)
+            print("id found " .. id)
+            if id == 0 then
+                editor.layer_being_edited.layer:paste_block(blk.x, blk.y, editor.selected_block.id)
+            end
         end
 
         if editor.mode == "remove" then
@@ -167,6 +171,10 @@ local function keybind_handle(keysym, char)
 
     if char == 'c' then
         editor.mode = "place"
+    end
+
+    if char == 'x' then
+        editor.mode = "none"
     end
 
     if keysym == 1073742048 then -- left control
