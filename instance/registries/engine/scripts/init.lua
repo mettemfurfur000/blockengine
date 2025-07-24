@@ -75,7 +75,7 @@ local function set_slices(ref_table)
     end
 end
 
-local test_level = le.create_level("test")
+test_level = le.create_level("test") 
 if test_level == nil then
     log_error("error creating level")
     os.exit()

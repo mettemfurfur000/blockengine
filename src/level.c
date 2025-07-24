@@ -164,6 +164,12 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
     CHECK_PTR(l->blocks)
     CHECK(x >= l->width || y >= l->height)
 
+    if(l->var_index_size == 0)
+    {
+        LOG_ERROR("block_delete_vars: var_index_size is 0, cannot delete vars");
+        return FAIL;
+    }
+
     u64 var_index = 0;
     memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
@@ -332,6 +338,8 @@ u8 free_room(room *r)
 u8 free_level(level *lvl)
 {
     CHECK_PTR(lvl)
+
+    LOG_DEBUG("Freeing level %s", lvl->name);
 
     for (u32 i = 0; i < lvl->rooms.length; i++)
         free_room(lvl->rooms.data[i]);
