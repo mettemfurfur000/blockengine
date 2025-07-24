@@ -19,13 +19,19 @@ void main() {
     // Apply scaling
     vec2 scaledPos = aPos * aInstanceScale;
     
-    // Apply rotation
+    // Center the position before rotation (move to origin)
+    vec2 centered = scaledPos - vec2(0.5, 0.5) * aInstanceScale;
+    
+    // Apply rotation around center
     float cosR = cos(aInstanceRotation);
     float sinR = sin(aInstanceRotation);
     vec2 rotatedPos = vec2(
-        scaledPos.x * cosR - scaledPos.y * sinR,
-        scaledPos.x * sinR + scaledPos.y * cosR
+        centered.x * cosR - centered.y * sinR,
+        centered.x * sinR + centered.y * cosR
     );
+    
+    // Move back from origin
+    rotatedPos += vec2(0.5, 0.5) * aInstanceScale;
 
     // Apply position and block width
     vec2 finalPos = rotatedPos * uBlockWidth + aInstancePos;

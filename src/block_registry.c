@@ -41,17 +41,17 @@ void strip_digit(u8 *dest, u64 value, u32 actual_length)
 
 u32 str_to_enum(char *type_str)
 {
-    if (strcmp(type_str, "u?") || strcmp(type_str, "digit") == 0)
+    if (strcmp(type_str, "u?") == 0 || strcmp(type_str, "digit") == 0)
         return T_DIGIT;
-    if (strcmp(type_str, "u64") || strcmp(type_str, "long") == 0)
+    if (strcmp(type_str, "u64") == 0 || strcmp(type_str, "long") == 0)
         return T_LONG;
-    if (strcmp(type_str, "u32") || strcmp(type_str, "int") == 0)
+    if (strcmp(type_str, "u32") == 0 || strcmp(type_str, "int") == 0)
         return T_INT;
-    if (strcmp(type_str, "u16") || strcmp(type_str, "short") == 0)
+    if (strcmp(type_str, "u16") == 0 || strcmp(type_str, "short") == 0)
         return T_SHORT;
-    if (strcmp(type_str, "u8") || strcmp(type_str, "byte") == 0)
+    if (strcmp(type_str, "u8") == 0 || strcmp(type_str, "byte") == 0)
         return T_BYTE;
-    if (strcmp(type_str, "str") || strcmp(type_str, "string") == 0)
+    if (strcmp(type_str, "str") == 0 || strcmp(type_str, "string") == 0)
         return T_STRING;
     return T_UNKNOWN;
 }
@@ -488,6 +488,8 @@ DECLARE_DEFAULT_CHAR_FIELD_HANDLER(anim_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(type_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(flip_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(rotation_controller)
+DECLARE_DEFAULT_CHAR_FIELD_HANDLER(offset_x_controller)
+DECLARE_DEFAULT_CHAR_FIELD_HANDLER(offset_y_controller)
 
 u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 {
@@ -563,6 +565,8 @@ const static resource_entry_handler res_handlers[] = {
     {                                 NULL,          &block_res_flip_controller_handler,     "flip_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
     // untested
     {                                 NULL,      &block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
+    {                                 NULL,      &block_res_offset_x_controller_handler, "offset_x_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
+    {                                 NULL,      &block_res_offset_y_controller_handler, "offset_y_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
     // block type things
     {                                 NULL,          &block_res_type_controller_handler,     "type_controller", NOT_REQUIRED,         {"vars"}, {},  {"type_control"}},
     // reads its type from a block data - can be controlled

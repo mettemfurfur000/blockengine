@@ -1,0 +1,5 @@
+automatic_id 1
+texture = arrow.png
+script = arrow.lua
+vars = { u16 r = 0}
+rotation_controller = r

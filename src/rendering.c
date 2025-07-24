@@ -41,7 +41,7 @@ u8 render_layer(layer_slice slice)
 
     GLuint texture = b_reg->atlas_texture_uid;
 
-    float dest_x, dest_y;
+    u16 dest_x, dest_y;
     dest_x = -block_x_offset - local_block_width * 2;
     // also minus 1 full block back to fill the gap
     block_renderer_begin_batch();
@@ -71,7 +71,7 @@ u8 render_layer(layer_slice slice)
             u8 frame = 0;
             u8 type = 0;
             u8 flip = 0;
-            u16 rotation = 0;
+            i16 rotation = 0;
 
             block_resources br = b_reg->resources.data[id];
 
@@ -85,10 +85,16 @@ u8 render_layer(layer_slice slice)
                     var_get_u8(*var, br.flip_controller, &flip);
 
                 if (br.rotation_controller != 0)
-                    var_get_u16(*var, br.rotation_controller, &rotation);
+                    var_get_i16(*var, br.rotation_controller, &rotation);
 
                 if (br.anim_controller != 0)
                     var_get_u8(*var, br.anim_controller, &frame);
+
+                if (br.offset_x_controller != 0)
+                    var_get_u16(*var, br.offset_x_controller, &dest_x);
+                
+                if (br.offset_y_controller != 0)
+                    var_get_u16(*var, br.offset_y_controller, &dest_y);
             }
 
             if (br.frames_per_second > 1)

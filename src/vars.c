@@ -38,7 +38,6 @@ u8 var_delete_all(blob *b)
 u8 var_push(blob *b, char letter, u8 size)
 {
     CHECK_PTR(b);
-    CHECK_PTR(b->ptr);
     CHECK(b->length == 0)
 
     if (fdesp(*b, letter) >= 0)
@@ -47,7 +46,11 @@ u8 var_push(blob *b, char letter, u8 size)
     u32 old_size = b->size;
     u32 new_data_size = old_size + size + 2; // 1 byte for letter and 1 byte for size
 
-    b->ptr = b->ptr ? realloc(b->ptr, new_data_size) : calloc(new_data_size, 1);
+    void *new_ptr = b->ptr ? realloc(b->ptr, new_data_size) : calloc(new_data_size, 1);
+    if (!new_ptr)
+        return FAIL;
+
+    b->ptr = new_ptr;
     b->ptr[old_size] = letter;
     b->ptr[old_size + 1] = size;
 
@@ -107,59 +110,25 @@ u8 var_resize(blob *b, char letter, u8 new_size)
     i32 pos = fdesp(*b, letter);
     if (pos < 0)
         return FAIL;
-#if 0
-	u8 cur_var_size = b->ptr[pos + 1];
-	i16 diff = new_size - cur_var_size;
+    // instead of reallocating, just remove and push again
 
-	u64 blob_size = b->size;
-	u64 new_data_length = blob_size + diff;
-	u16 bytes_to_skip_size = 2 + b->ptr[pos + 1];
+    if (new_size == b->ptr[pos + 1]) // no need to resize
+        return SUCCESS;
+    
+    u8* old_ptr = b->ptr;
 
-	u8 *new_data = (u8 *)calloc(new_data_length, 1);
-
-	memcpy(new_data, b->ptr, pos);
-	memcpy(new_data + pos,
-		   b->ptr + pos + bytes_to_skip_size,
-		   blob_size - pos - bytes_to_skip_size);
-
-	new_data[new_data_length - new_size - 2] = letter; // <, stupit
-	new_data[new_data_length - new_size - 1] = new_size;
-	memcpy(new_data + new_data_length - new_size + 1, b->ptr + pos + 2, new_size);
-
-	b->size = new_data_length;
-
-	SAFE_FREE(b->ptr);
-	b->ptr = new_data;
-#endif
-    u8 cur_var_size = b->ptr[pos + 1];
-    i16 diff = new_size - cur_var_size;
-
-    u64 blob_size = b->size;
-    u64 new_data_length = blob_size + diff;
-    u16 bytes_to_skip_size = 2 + cur_var_size;
-
-    u8 *new_data = (u8 *)calloc(new_data_length, 1);
+    u8 *new_data = (u8 *)calloc(b->size - 2 + new_size, 1);
     if (!new_data)
         return FAIL;
+    memcpy(new_data, b->ptr, pos);
+    memcpy(new_data + pos, b->ptr + pos + 2, b->size - pos - 2);
 
-    // Copy data before tag
-    if (pos > 0)
-        memcpy(new_data, b->ptr, pos);
-
-    // Copy data after tag
-    if (pos + bytes_to_skip_size < blob_size)
-        memcpy(new_data + pos + 2 + new_size, b->ptr + pos + bytes_to_skip_size, blob_size - pos - bytes_to_skip_size);
-
-    // Write new tag header
     new_data[pos] = letter;
     new_data[pos + 1] = new_size;
-
-    // Copy tag content
-    memcpy(new_data + pos + 2, b->ptr + pos + 2, (new_size < cur_var_size) ? new_size : cur_var_size);
-
-    SAFE_FREE(b->ptr);
+    b->size = b->size - 2 + new_size;
     b->ptr = new_data;
-    b->size = new_data_length;
+
+    SAFE_FREE(old_ptr);
 
     return SUCCESS;
 }

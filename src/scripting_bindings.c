@@ -813,6 +813,8 @@ static int lua_layer_paste_block(lua_State *L)
         .room_ptr = wrapper->l->parent_room,
     };
 
+    // LOG_DEBUG("Pasting block %s at (%d, %d) with ID %llu", res->texture_filename, x, y, id);
+
     SDL_PushEvent((SDL_Event *)&e);
 
     lua_pushboolean(L, status);

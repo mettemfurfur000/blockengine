@@ -321,15 +321,25 @@ void call_handlers(SDL_Event e)
         return;
     }
 
-    vec_int_t target = handlers[lookup_id];
+    vec_int_t target = handlers[lookup_id]; // Get the list of handlers for this event type
 
     const int handler_count = target.length;
     for (u32 i = 0; i < handler_count; i++)
     {
-        lua_geti(g_L, LUA_REGISTRYINDEX, target.data[i]);
-        luaL_checktype(g_L, -1, LUA_TFUNCTION);
+        lua_geti(g_L, LUA_REGISTRYINDEX, target.data[i]); // Get the function reference from the registry
+        if (!lua_isfunction(g_L, -1))
+        {
+            LOG_ERROR("Handler %d for event type %d is not a function", target.data[i], lookup_id);
+            lua_pop(g_L, 1); // Remove the non-function from the stack
+            // maybe even unregister the handler so it doesn't get called again
+            vec_remove(&target, i);
+            continue;
+        }
+        // luaL_checktype(g_L, -1, LUA_TFUNCTION);
 
         u16 args = push_event_args(&e);
+
+        LOG_DEBUG("Calling handler %d for event type %d with %d args", target.data[i], lookup_id, args);
 
         if (lua_pcall(g_L, args, 0, 0) != 0)
         {
@@ -343,7 +353,7 @@ void scripting_register_event_handler(int ref, int event_type)
 {
     i32 lookup_id = get_lookup_id(event_type);
 
-    LOG_DEBUG("registering %d handler", lookup_id);
+    LOG_DEBUG("registering %d handler, event id %d", lookup_id, event_type);
 
     if (lookup_id == sizeof(handlers))
     {

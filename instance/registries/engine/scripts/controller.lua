@@ -114,7 +114,6 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
     end
 
     if new_id ~= player_block_id or layer:uuid() ~= g_menu.objects.layer:uuid() then
-        -- print("ignooring block create", new_id, layer:uuid(), g_object_layer:uuid() )
         return
     end
 
@@ -139,6 +138,8 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
     player_exists = true
 
     print("initialized and found a player at " .. pos.x .. ", " .. pos.y .. ", room named " .. room:get_name())
+
+    g_menu.objects.player = player
 
     print("vars", vars:__tostring())
 end)
