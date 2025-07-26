@@ -17,7 +17,7 @@ int test_read_from_string()
 
 	// actually my cool data type is just pascal strings, sad.
 
-	CHECK(make_block_data_from_string(test_string, &data_out))
+	CHECK(vars_parse(test_string, &data_out))
 	CHECK(memcmp(data_out.ptr, (const char *)data_must_be, data_out.size))
 
 	free(data_out.ptr);

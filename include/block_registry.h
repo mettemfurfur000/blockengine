@@ -70,20 +70,6 @@ typedef struct block_registry
 
 typedef vec_t(block_registry) vec_registries_t;
 
-#define T_UNKNOWN 0
-#define T_DIGIT 1
-#define T_LONG 2
-#define T_INT 3
-#define T_SHORT 4
-#define T_BYTE 5
-#define T_STRING 6
-
-u8 length(u64 value);
-
-void strip_digit(u8 *dest, u64 value, u32 actual_length);
-u32 str_to_enum(char *type_str);
-u32 get_length_to_alloc(u64 value, u32 type);
-
 // format:
 
 // { <character> <type> = <value>
@@ -101,7 +87,7 @@ u32 get_length_to_alloc(u64 value, u32 type);
 //
 // other numerical types will save their length in bytes, even if you pass it
 // with value of 0
-u8 make_block_data_from_string(const char *str_to_cpy, blob *b);
+// u8 vars_parse(const char *str_to_cpy, blob *b);
 
 #define NOT_REQUIRED 0
 #define REQUIRED 1

@@ -1,8 +1,6 @@
 automatic_id 1
-#vars = { byte v = 0 byte t = 0 byte r = 0}
-vars = { byte v = 0 byte t = 0 }
+vars = { u8 v = 0 u8 t = 0 }
 texture = dev.png
 script = controller.lua
 frame_controller = v
 type_controller = t
-# rotation_controller = r

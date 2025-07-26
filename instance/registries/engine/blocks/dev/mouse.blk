@@ -1,5 +1,5 @@
 automatic_id 1
-vars = { byte t = 0}
+vars = { u8 t = 0 }
 texture = mouse.png
 script = mouse.lua
 fps = 2

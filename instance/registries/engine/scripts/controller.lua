@@ -112,8 +112,21 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
     if player_exists == true then
         return
     end
+    -- records newly created player block
+    if layer:uuid() ~= g_menu.objects.layer:uuid() then
+        return
+    end
 
-    if new_id ~= player_block_id or layer:uuid() ~= g_menu.objects.layer:uuid() then
+    if old_id == player_block_id and new_id == 0 then
+        -- the player block was destroyed, so we remove it
+        player_exists = false
+        player.state = player_states.dead
+        print("removed player at " .. x .. ", " .. y)
+        g_menu.objects.player = nil
+        return
+    end
+
+    if new_id ~= player_block_id then
         return
     end
 

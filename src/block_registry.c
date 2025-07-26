@@ -1,10 +1,10 @@
 #include "../include/block_registry.h"
 #include "../include/atlas_builder.h"
 #include "../include/block_properties.h"
-#include "../include/endianless.h"
 #include "../include/flags.h"
 #include "../include/uuid.h"
 #include "../include/vars.h"
+#include "../include/vars_utils.h"
 
 #ifdef _WIN64
 #include "../dirent/include/dirent.h"
@@ -15,65 +15,6 @@
 // #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define EVAL_SIZE_MATCH(v, t) v >> (sizeof(t) * 8 - 8)
-#define RETURN_MATCHING_SIZE(v, t)                                                                                     \
-    if (EVAL_SIZE_MATCH(v, t))                                                                                         \
-        return sizeof(t);
-// some kind of runtime type detection... returns amout of bytes, occupied by a
-// number
-u8 length(u64 value)
-{
-    RETURN_MATCHING_SIZE(value, long long)
-    RETURN_MATCHING_SIZE(value, long)
-    RETURN_MATCHING_SIZE(value, int)
-    RETURN_MATCHING_SIZE(value, short)
-
-    return 1;
-}
-
-void strip_digit(u8 *dest, u64 value, u32 actual_length)
-{
-    u8 *value_p = (u8 *)&value;
-    for (u32 i = 0; i < actual_length; i++)
-        dest[i] = value_p[i];
-}
-
-u32 str_to_enum(char *type_str)
-{
-    if (strcmp(type_str, "u?") == 0 || strcmp(type_str, "digit") == 0)
-        return T_DIGIT;
-    if (strcmp(type_str, "u64") == 0 || strcmp(type_str, "long") == 0)
-        return T_LONG;
-    if (strcmp(type_str, "u32") == 0 || strcmp(type_str, "int") == 0)
-        return T_INT;
-    if (strcmp(type_str, "u16") == 0 || strcmp(type_str, "short") == 0)
-        return T_SHORT;
-    if (strcmp(type_str, "u8") == 0 || strcmp(type_str, "byte") == 0)
-        return T_BYTE;
-    if (strcmp(type_str, "str") == 0 || strcmp(type_str, "string") == 0)
-        return T_STRING;
-    return T_UNKNOWN;
-}
-
-u32 get_length_to_alloc(u64 value, u32 type)
-{
-    switch (type)
-    {
-    case T_DIGIT:
-        return length(value);
-    case T_LONG:
-        return sizeof(u64);
-    case T_INT:
-        return sizeof(u32);
-    case T_SHORT:
-        return sizeof(u16);
-    case T_BYTE:
-        return sizeof(u8);
-    default:
-        return length(value);
-    }
-}
 
 u8 read_int_list(const char *str, vec_int_t *dest)
 {
@@ -152,114 +93,6 @@ u8 read_str_list(const char *str, vec_str_t *dest)
     }
 
     free(dup);
-
-    return SUCCESS;
-}
-
-// format:
-
-// { <character> <type> = <value>
-//   <character> <type> = <value>
-//   ...
-//   <character> <type> = <value> }
-
-// acceptable types: digit, long, int, short, byte, string
-//
-// strings ends with \n character, rember
-//
-// if type donesnt match, value will be copied as strings
-//
-// digits will be stripped for saving space, keep it in mind
-//
-// other numerical types will save their length in bytes, even if you pass it
-// with value of 0
-
-u8 make_block_data_from_string(const char *str_to_cpy, blob *b)
-{
-    CHECK_PTR(str_to_cpy)
-    CHECK_PTR(b)
-
-    char character;
-    u8 data_buffer[256] = {0};
-    u8 data_to_load[256] = {0};
-
-    data_to_load[0] = 0;   // size byte
-    u32 data_iterator = 0; // starts with 1 because of size u8 at start
-
-    u64 value;
-    u32 value_length;
-
-    char *str = strdup(str_to_cpy);
-    strcpy(str, str_to_cpy);
-
-    char *token = strtok(str, " \n"); // consume start token
-    if (strcmp(token, "{") != 0)
-        goto block_data_exit;
-
-    while (1)
-    {
-        token = strtok(NULL, " \n"); // type, or end token..
-
-        if (!token)
-            goto block_data_exit;
-
-        if (strcmp(token, "}") == 0)
-            goto block_data_exit;
-
-        u32 type = str_to_enum(token);
-
-        token = strtok(NULL, " \n"); // character
-
-        if (!token)
-            goto block_data_exit;
-
-        character = token[0]; // copy just 1 character
-
-        memset(data_buffer, 0, 256);
-        value = 0;
-        value_length = 0;
-
-        // special cases for strings or unknown types
-        if (type == T_STRING || type == T_UNKNOWN)
-        {
-            token = strtok_take_whole_line();
-            value_length = strlen(token);
-            memcpy(data_buffer, token, value_length + 1);
-        }
-        else
-        {
-            token = strtok(NULL, " =\n"); // value
-
-            if (!token)
-                goto block_data_exit;
-            value = atoll(token);
-
-            value_length = get_length_to_alloc(value, type);
-
-            make_endianless((u8 *)&value, value_length);
-            memcpy(data_buffer, &value, value_length);
-            strip_digit(data_buffer, value, value_length);
-        }
-
-        data_to_load[data_iterator] = character;
-        data_iterator++;
-        data_to_load[data_iterator] = value_length;
-        data_iterator++;
-        for (u32 i = 0; i < value_length; i++, data_iterator++)
-            data_to_load[data_iterator] = data_buffer[i];
-    }
-block_data_exit:
-    if (data_iterator == 0) // ok, no data
-        return SUCCESS;
-
-    // data_to_load[0] = data_iterator - 1; // writing size byte
-    b->size = data_iterator;
-
-    b->ptr = (u8 *)malloc(data_iterator);
-
-    memcpy(b->ptr, data_to_load, data_iterator);
-
-    free(str);
 
     return SUCCESS;
 }
@@ -416,8 +249,8 @@ DECLARE_DEFAULT_INCREMENTOR(override_frame)
 
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
-    return strcmp(data, clean_token) == 0 ? var_delete_all(&dest->vars)
-                                          : make_block_data_from_string(data, &dest->vars);
+    return strcmp(data, clean_token) == 0 ? vars_free(&dest->vars)
+                                          : vars_parse(data, &dest->vars);
 }
 
 u8 block_res_texture_handler(const char *data, block_resources *dest)

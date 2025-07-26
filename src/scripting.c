@@ -339,7 +339,7 @@ void call_handlers(SDL_Event e)
 
         u16 args = push_event_args(&e);
 
-        LOG_DEBUG("Calling handler %d for event type %d with %d args", target.data[i], lookup_id, args);
+        // LOG_DEBUG("Calling handler %d for event type %d with %d args", target.data[i], lookup_id, args);
 
         if (lua_pcall(g_L, args, 0, 0) != 0)
         {

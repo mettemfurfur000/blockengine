@@ -1,33 +1,43 @@
 #include "../include/vars.h"
 #include "../include/endianless.h"
 
-i32 fdesp(blob b, char letter)
+i32 vars_pos(const blob b, const char letter)
 {
     if (b.size == 0 || b.ptr == 0)
         return FAIL;
 
-    VAR_FOREACH(b, if (b.ptr[i] == letter) return i;) // found
+    // Expands to
+    for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)
+        if (b.ptr[i] == letter)
+            return i;
 
     return FAIL; // not found
 }
 
-blob var_get(blob b, char letter)
+i16 var_size(blob b, char letter)
 {
-    blob ret = {};
-    i32 index = fdesp(b, letter);
+    CHECK_PTR(b.ptr);
+    int pos = vars_pos(b, letter);
+    if (pos < 0)
+        return FAIL;
 
-    if (index < 0)
-        return ret;
-
-    ret.ptr = VAR_VALUE(b.ptr, index);
-    ret.size = VAR_SIZE(b.ptr, index);
-
-    return ret;
+    return VAR_SIZE(b.ptr, pos);
 }
 
-u8 var_delete_all(blob *b)
+void *var_offset(const blob b, const char letter)
+{
+    u32 offset = vars_pos(b, letter);
+    if (offset < 0)
+        return NULL;
+    return b.ptr + offset + 2;
+}
+
+u8 vars_free(blob *b)
 {
     CHECK_PTR(b);
+
+    if (b->ptr)
+        LOG_DEBUG("freed vars %p", b->ptr);
 
     SAFE_FREE(b->ptr);
     b->size = 0;
@@ -35,12 +45,12 @@ u8 var_delete_all(blob *b)
     return SUCCESS;
 }
 
-u8 var_push(blob *b, char letter, u8 size)
+u8 var_add(blob *b, char letter, u8 size)
 {
     CHECK_PTR(b);
-    CHECK(b->length == 0)
+    CHECK(size == 0)
 
-    if (fdesp(*b, letter) >= 0)
+    if (vars_pos(*b, letter) >= 0) // make sure it doesn exist first
         return SUCCESS;
 
     u32 old_size = b->size;
@@ -48,7 +58,10 @@ u8 var_push(blob *b, char letter, u8 size)
 
     void *new_ptr = b->ptr ? realloc(b->ptr, new_data_size) : calloc(new_data_size, 1);
     if (!new_ptr)
+    {
+        LOG_ERROR("Failed to allocate memory for a var: %c with size %d, final size: %d", letter, size, new_data_size);
         return FAIL;
+    }
 
     b->ptr = new_ptr;
     b->ptr[old_size] = letter;
@@ -59,105 +72,105 @@ u8 var_push(blob *b, char letter, u8 size)
     return SUCCESS;
 }
 
-u8 var_delete(blob *b, char letter)
-{
-    CHECK_PTR(b);
+// u8 var_delete(blob *b, char letter)
+// {
+//     CHECK_PTR(b);
 
-    u64 blob_size = b->size;
-    i32 element_pos = fdesp(*b, letter);
-    u32 pos_before_element = element_pos - 1;
+//     u64 blob_size = b->size;
+//     i32 element_pos = fdesp(*b, letter);
+//     u32 pos_before_element = element_pos - 1;
 
-    if (element_pos < 0)
-        return FAIL;
+//     if (element_pos < 0)
+//         return FAIL;
 
-    u16 bytes_to_skip_size = 2 + b->ptr[element_pos + 1];
-    u64 new_data_size = blob_size - bytes_to_skip_size;
+//     u16 bytes_to_skip_size = 2 + b->ptr[element_pos + 1];
+//     u64 new_data_size = blob_size - bytes_to_skip_size;
 
-    if (new_data_size == 0)
-    {
-        SAFE_FREE(b->ptr);
-        return SUCCESS;
-    }
+//     if (new_data_size == 0)
+//     {
+//         SAFE_FREE(b->ptr);
+//         return SUCCESS;
+//     }
 
-    u8 *new_data = (u8 *)calloc(new_data_size, 1);
+//     u8 *new_data = (u8 *)calloc(new_data_size, 1);
 
-    if (pos_before_element <= 0) // first
-        memcpy(new_data, b->ptr + bytes_to_skip_size, new_data_size);
-    else if (pos_before_element + bytes_to_skip_size == blob_size - 1) // last
-        memcpy(new_data, b->ptr, new_data_size);
-    else // somethere in middle
-    {
+//     if (pos_before_element <= 0) // first
+//         memcpy(new_data, b->ptr + bytes_to_skip_size, new_data_size);
+//     else if (pos_before_element + bytes_to_skip_size == blob_size - 1) // last
+//         memcpy(new_data, b->ptr, new_data_size);
+//     else // somethere in middle
+//     {
 
-        // copy elements before skipped element
-        memcpy(new_data, b->ptr, pos_before_element);
-        // cope elements after
-        memcpy(new_data + pos_before_element + bytes_to_skip_size, b->ptr, new_data_size - pos_before_element);
-    }
+//         // copy elements before skipped element
+//         memcpy(new_data, b->ptr, pos_before_element);
+//         // cope elements after
+//         memcpy(new_data + pos_before_element + bytes_to_skip_size, b->ptr, new_data_size - pos_before_element);
+//     }
 
-    new_data[0] = new_data_size;
+//     new_data[0] = new_data_size;
 
-    b->ptr = new_data;
+//     b->ptr = new_data;
 
-    SAFE_FREE(b->ptr);
+//     SAFE_FREE(b->ptr);
 
-    return SUCCESS;
-}
+//     return SUCCESS;
+// }
 
-u8 var_resize(blob *b, char letter, u8 new_size)
-{
-    CHECK_PTR(b);
+// u8 var_resize(blob *b, char letter, u8 new_size)
+// {
+//     CHECK_PTR(b);
 
-    i32 pos = fdesp(*b, letter);
-    if (pos < 0)
-        return FAIL;
-    // instead of reallocating, just remove and push again
+//     i32 pos = fdesp(*b, letter);
+//     if (pos < 0)
+//         return FAIL;
+//     // instead of reallocating, just remove and push again
 
-    if (new_size == b->ptr[pos + 1]) // no need to resize
-        return SUCCESS;
-    
-    u8* old_ptr = b->ptr;
+//     if (new_size == b->ptr[pos + 1]) // no need to resize
+//         return SUCCESS;
 
-    u8 *new_data = (u8 *)calloc(b->size - 2 + new_size, 1);
-    if (!new_data)
-        return FAIL;
-    memcpy(new_data, b->ptr, pos);
-    memcpy(new_data + pos, b->ptr + pos + 2, b->size - pos - 2);
+//     u8* old_ptr = b->ptr;
 
-    new_data[pos] = letter;
-    new_data[pos + 1] = new_size;
-    b->size = b->size - 2 + new_size;
-    b->ptr = new_data;
+//     u8 *new_data = (u8 *)calloc(b->size - 2 + new_size, 1);
+//     if (!new_data)
+//         return FAIL;
+//     memcpy(new_data, b->ptr, pos);
+//     memcpy(new_data + pos, b->ptr + pos + 2, b->size - pos - 2);
 
-    SAFE_FREE(old_ptr);
+//     new_data[pos] = letter;
+//     new_data[pos + 1] = new_size;
+//     b->size = b->size - 2 + new_size;
+//     b->ptr = new_data;
 
-    return SUCCESS;
-}
+//     SAFE_FREE(old_ptr);
 
-i32 ensure_tag(blob *b, const int letter, const int needed_size)
-{
-    CHECK_PTR(b);
-    CHECK(needed_size == 0);
-    // if tag is not existink yet, create it
-    if (b->ptr == 0 || fdesp(*b, letter) < 0)
-        if (var_push(b, letter, needed_size) != SUCCESS) // failed to create
-            return FAIL;
-        else
-            return fdesp(*b, letter); // created, returning the index
-    else
-        ;
+//     return SUCCESS;
+// }
 
-    i32 old_pos = fdesp(*b, letter); // it exists
+// i32 ensure_tag(blob *b, const int letter, const int needed_size)
+// {
+//     CHECK_PTR(b);
+//     CHECK(needed_size == 0);
+//     // if tag is not existink yet, create it
+//     if (b->ptr == 0 || fdesp(*b, letter) < 0)
+//         if (var_push(b, letter, needed_size) != SUCCESS) // failed to create
+//             return FAIL;
+//         else
+//             return fdesp(*b, letter); // created, returning the index
+//     else
+//         ;
 
-    if (VAR_SIZE(b->ptr, old_pos) < needed_size) // if size is smaller than needed, resize
-        if (var_resize(b, letter, needed_size) != SUCCESS)
-            return FAIL;
-        else
-            return fdesp(*b, letter);
-    else
-        ;
+//     i32 old_pos = fdesp(*b, letter); // it exists
 
-    return old_pos;
-}
+//     if (VAR_SIZE(b->ptr, old_pos) < needed_size) // if size is smaller than needed, resize
+//         if (var_resize(b, letter, needed_size) != SUCCESS)
+//             return FAIL;
+//         else
+//             return fdesp(*b, letter);
+//     else
+//         ;
+
+//     return old_pos;
+// }
 
 // will affect src
 i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
@@ -165,7 +178,7 @@ i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
     CHECK_PTR(b);
     CHECK_PTR(src);
 
-    int pos = ensure_tag(b, letter, size);
+    int pos = vars_pos(*b, letter);
     if (pos < 0)
         return FAIL;
 
@@ -183,7 +196,7 @@ i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
     if (!dest)
         return FAIL;
 
-    int pos = fdesp(b, letter);
+    int pos = vars_pos(b, letter);
     if (pos < 0)
         return FAIL;
 
@@ -200,18 +213,6 @@ i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
     return SUCCESS;
 }
 
-// info
-
-i16 var_size(blob b, char letter)
-{
-    CHECK_PTR(b.ptr);
-    int pos = fdesp(b, letter);
-    if (pos < 0)
-        return FAIL;
-
-    return VAR_SIZE(b.ptr, pos);
-}
-
 // set
 
 u8 var_set_str(blob *b, char letter, const char *str)
@@ -220,8 +221,9 @@ u8 var_set_str(blob *b, char letter, const char *str)
     CHECK_PTR(str);
     u32 len = strlen(str);
     CHECK(len == 0);
+    CHECK(len >= 0xff - 1);
 
-    int pos = ensure_tag(b, letter, len + 1);
+    int pos = vars_pos(*b, letter);
     if (pos < 0)
         return FAIL;
 
@@ -247,7 +249,7 @@ u8 var_get_str(blob b, char letter, char **dest)
     if (!dest)
         return FAIL;
 
-    int pos = fdesp(b, letter);
+    int pos = vars_pos(b, letter);
     if (pos < 0)
         return FAIL;
 
@@ -289,16 +291,16 @@ void dbg_data_layout(blob b, char *ret)
         void *ptr = VAR_VALUE(b.ptr, index);
 
         if (size == 1)
-            sprintf(buf, "\tu8 %c = %d;\n", letter, *(u8 *)ptr);
+            sprintf(buf, "\ti8 %c = %d;\n", letter, *(u8 *)ptr);
         else if (size == 2)
-            sprintf(buf, "\tu16 %c = %d;\n", letter, *(u16 *)ptr);
+            sprintf(buf, "\ti16 %c = %d;\n", letter, *(u16 *)ptr);
         else if (size == 4)
-            sprintf(buf, "\tu32 %c = %d;\n", letter, *(u32 *)ptr);
+            sprintf(buf, "\ti32 %c = %d;\n", letter, *(u32 *)ptr);
         else if (size == 8)
-            sprintf(buf, "\tu64 %c = %lld;\n", letter, *(u64 *)ptr);
+            sprintf(buf, "\ti64 %c = %lld;\n", letter, *(u64 *)ptr);
         else
         {
-            sprintf(buf, "\tchar %c[] = %s;\n\t// u8 %c[] = { ", letter, (char *)ptr, letter);
+            sprintf(buf, "\tchar %c[] = %.*s;\n\t// u8 %c[] = { ", letter, size, (char *)ptr, letter);
             strcat(ret, buf);
 
             for (u32 i = 0; i < size; i++)

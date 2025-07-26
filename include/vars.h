@@ -1,15 +1,13 @@
-#ifndef vars_MANIPULATIONS_H
-#define vars_MANIPULATIONS_H 1
+#ifndef VARS_H
+#define VARS_H 1
 
-// #include <stdlib.h>
-// #include <string.h>
+
 #ifdef _WIN64
 #include <winsock.h>
 #else
 #include <arpa/inet.h>
 #endif
 
-// #include "endianless.h"
 #include "hashtable.h"
 
 #define VAR_LETTER(blob, pos) *(char *)(blob + pos)
@@ -21,7 +19,7 @@
     code
 
 /*
-Find Data Element Start Position
+// Find Data Element Start Position
 returns index of a letter
 
 blob holds the size
@@ -36,27 +34,21 @@ an example) indexes =  0  1  2  3  4  5  6  7  8  9  10 11 12 13 #  %  -  -  #
  %  - size of variable
 "-" - actual data
 
-fdesp(example,'c') returns 11
-fdesp(example,'a') returns 0
-fdesp(example,'g') returns -1 (Failure)
+vars_pos(example,'c') returns 11
+vars_pos(example,'a') returns 0
+vars_pos(example,'g') returns -1 (Failure)
 
 blobs store values natively to the system
 */
 
-i32 fdesp(blob b, char letter);
+i32 vars_pos(const blob b, const char letter);
+void *var_offset(const blob b, const char letter);
+i16 var_size(blob b, char letter);
 
-// vars
+u8 var_add(blob *b, char letter, u8 size);
+u8 vars_free(blob *b);
 
-blob var_get(blob b, char letter);
-
-// memory
-
-u8 var_push(blob *b, char letter, u8 size);
-u8 var_delete(blob *b, char letter);
-u8 var_delete_all(blob *b);
-
-u8 var_resize(blob *b, char letter, u8 new_size);
-i32 ensure_tag(blob *b, const int letter, const int needed_size);
+// macros to mass-produce getters and setters
 
 #define VAR_ACCESSOR_NAME(type, op) var_##op##_##type
 #define GETTER_NAME(type) VAR_ACCESSOR_NAME(type, get)
@@ -67,7 +59,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
     u8 GETTER_NAME(type)(blob b, char letter, type *dest)                                                              \
     {                                                                                                                  \
         CHECK_PTR(dest);                                                                                               \
-        int pos = fdesp(b, letter);                                                                                    \
+        int pos = vars_pos(b, letter);                                                                                    \
         if (pos < 0)                                                                                                   \
             return FAIL;                                                                                               \
         *dest = *(type *)VAR_VALUE(b.ptr, pos);                                                                        \
@@ -79,21 +71,14 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
     u8 SETTER_NAME(type)(blob * b, char letter, type value)                                                            \
     {                                                                                                                  \
         CHECK_PTR(b);                                                                                                  \
-        int pos = ensure_tag(b, letter, sizeof(type));                                                                 \
+        int pos = vars_pos(*b, letter);                                                                                   \
         if (pos < 0)                                                                                                   \
             return FAIL;                                                                                               \
         *(type *)VAR_VALUE(b->ptr, pos) = value;                                                                       \
         return SUCCESS;                                                                                                \
     }
 
-// var info
-
-i16 var_size(blob b, char letter);
-
-// set
-
 u8 var_set_str(blob *b, char letter, const char *str);
-// u8 var_set_integer(blob *b, char letter, u64 value, u8 bytes_length);
 
 SETTER_DEF(u8)
 SETTER_DEF(u16)
@@ -118,9 +103,6 @@ GETTER_DEF(i32)
 GETTER_DEF(i64)
 
 u8 var_get_str(blob b, char letter, char **dest);
-// u8 var_get_integer(blob *b, char letter, u64 *value_ret, u8 *bytes_length);
-
-// utils
 
 void dbg_data_layout(blob b, char *ret);
 

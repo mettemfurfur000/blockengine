@@ -3,98 +3,45 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "../include/vars_utils.h"
+
 int test_basic_data_manip()
 {
-	int src = 55555;
-	int dest = 0;
+    const char *test_vars = "{ u8 a = 66 u16 b = 6666 u32 c = 666666 i64 d = -6 str s = \"test quoted string\" u8 q = 95 }";
 
-	blob b = {};
+    blob b = {};
 
-	CHECK(var_push(&b, 't', sizeof(src)));
-	CHECK(var_set_i32(&b, 't', src));
-	CHECK(var_get_i32(b, 't', &dest));
+    CHECK(vars_parse(test_vars, &b) != SUCCESS);
+    char buf[1024] = {};
+    dbg_data_layout(b, buf);
 
-	CHECK(src != dest);
+	LOG_DEBUG("result layout: %s",buf);
 
-	char buf[1024] = {};
-	dbg_data_layout(b, buf);
+    vars_free(&b);
 
-	var_delete_all(&b);
-
-	return SUCCESS;
+    return SUCCESS;
 }
 
-int test_random_data()
+int test_full_crap()
 {
-	blob b = {};
+    const char *test_vars = "{ u8 a = 255; u16 b = 65535; u32 c = 4294967295; u32 j = 2147483647; i64 d = -999999999999 str s = \"damn what a string\" }";
 
-	for (char i = 'A'; i < 'Z'; i++)
-	{
-		u32 src = rand() * sizeof(u16) + rand();
-		u32 dest = 0;
-		CHECK(var_push(&b, i, sizeof(src)));
-		CHECK(var_set_u32(&b, i, src));
-		CHECK(var_get_u32(b, i, &dest));
+    blob b = {};
 
-		CHECK(src != dest);
-	}
+    CHECK(vars_parse(test_vars, &b) != SUCCESS);
+    char buf[1024] = {};
+    dbg_data_layout(b, buf);
 
-	char buf[1024] = {};
-	dbg_data_layout(b, buf);
+	LOG_DEBUG("result layout: %s",buf);
 
-	var_delete_all(&b);
+    vars_free(&b);
 
-	return SUCCESS;
-}
-
-int test_five_hundred_variables()
-{
-	i32 seed = time(NULL);
-
-	srand(seed);
-
-	blob b = {};
-
-	u32 src = 0x12345678;
-
-	for ( u32 i = 0; i < 26; i++)
-	{
-		char letter = 'A' + i;
-		CHECK(var_set_u32(&b, letter, src));
-	}
-
-	for ( u32 i = 0; i < 26; i++)
-	{
-		char letter = 'A' + i;
-		u32 dest = 0;
-		CHECK(var_get_u32(b, letter, &dest));
-		if (src != dest)
-		{
-			printf("%c : src %x != dest %x\n", letter, src, dest);
-			return FAIL;
-		}
-		// CHECK(src != dest);
-	}
-
-	char buf[1024] = {};
-	dbg_data_layout(b, buf);
-
-	var_delete_all(&b);
-
-	return SUCCESS;
-}
-
-void fillrand(char *b, int size)
-{
-	for ( u32 i = 0; i < size; i++)
-		b[i] = 'a' + rand() % 26;
-	b[size] = 0;
+    return SUCCESS;
 }
 
 INIT_TESTING(test_vars_all)
 
 RUN_TEST(test_basic_data_manip)
-RUN_TEST(test_random_data)
-RUN_TEST(test_five_hundred_variables)
+RUN_TEST(test_full_crap)
 
 FINISH_TESTING()

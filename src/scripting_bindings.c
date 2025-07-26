@@ -4,6 +4,9 @@
 #include "../include/image_editing.h"
 #include "../include/rendering.h"
 #include "../include/vars.h"
+#include "../include/vars_utils.h"
+
+#include <lauxlib.h>
 
 // ###############//
 // ###############//
@@ -804,7 +807,7 @@ static int lua_layer_paste_block(lua_State *L)
     if (id == 0)
         status &= block_delete_vars(wrapper->l, x, y) == SUCCESS;
     else
-        status &= block_set_vars(wrapper->l, x, y, res->vars) == SUCCESS;
+        status &= block_copy_vars(wrapper->l, x, y, res->vars) == SUCCESS;
 
     block_update_event e = {
         .type = ENGINE_BLOCK_CREATE,
@@ -907,7 +910,7 @@ static int lua_block_get_vars(lua_State *L)
     return 2;
 }
 
-static int lua_block_set_vars(lua_State *L)
+static int lua_block_copy_vars(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
 
@@ -915,7 +918,7 @@ static int lua_block_set_vars(lua_State *L)
     u32 y = luaL_checknumber(L, 3);
     LUA_CHECK_USER_OBJECT(L, Vars, wrapper_vars, 4);
 
-    lua_pushboolean(L, block_set_vars(wrapper->l, x, y, *wrapper_vars->b) == SUCCESS);
+    lua_pushboolean(L, block_copy_vars(wrapper->l, x, y, *wrapper_vars->b) == SUCCESS);
 
     return 1;
 }
@@ -941,24 +944,24 @@ static int lua_vars_length(lua_State *L)
     return 1;
 }
 
-static int lua_vars_get_var(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    const char *key = luaL_checkstring(L, 2);
+// static int lua_vars_get_var(lua_State *L)
+// {
+//     LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
+//     const char *key = luaL_checkstring(L, 2);
 
-    if (strlen(key) > 1)
-        luaL_error(L, "Key must be a single character");
+//     if (strlen(key) > 1)
+//         luaL_error(L, "Key must be a single character");
 
-    blob b = var_get(*wrapper->b, key[0]);
-    if (b.length == 0)
-    {
-        lua_pushnil(L);
-        return 1;
-    }
+//     blob b = var_get(*wrapper->b, key[0]);
+//     if (b.length == 0)
+//     {
+//         lua_pushnil(L);
+//         return 1;
+//     }
 
-    NEW_USER_OBJECT(L, Vars, &b);
-    return 1;
-}
+//     NEW_USER_OBJECT(L, Vars, &b);
+//     return 1;
+// }
 
 static int lua_vars_get_string(lua_State *L)
 {
@@ -989,6 +992,28 @@ static int lua_vars_set_string(lua_State *L)
         luaL_error(L, "Key must be a single character");
 
     lua_pushboolean(L, var_set_str(wrapper->b, key[0], value) == SUCCESS);
+    return 1;
+}
+
+static int lua_vars_add_variable(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
+    const char *key = luaL_checkstring(L, 2);
+    const int length = luaL_checknumber(L, 3);
+
+    if (strlen(key) > 1)
+        luaL_error(L, "Key must be a single character");
+
+    lua_pushboolean(L, var_add(wrapper->b, key[0], length) == SUCCESS);
+    return 1;
+}
+
+static int lua_vars_parse(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
+    const char *input_string = luaL_checkstring(L, 2);
+
+    lua_pushboolean(L, vars_parse(input_string, wrapper->b) == SUCCESS);
     return 1;
 }
 
@@ -1035,6 +1060,7 @@ static int lua_vars_get_size(lua_State *L)
         luaL_error(L, "Key must be a single character");
 
     i16 size = var_size(*wrapper->b, key[0]);
+    // u16 VAR_SIZE(wrapper->b);
     if (size < 0)
         lua_pushnil(L);
     else
@@ -1128,7 +1154,7 @@ void lua_layer_register(lua_State *L)
         {       "move_block",        lua_layer_move_block},
         {"get_input_handler", lua_get_block_input_handler},
         {         "get_vars",          lua_block_get_vars},
-        {         "set_vars",          lua_block_set_vars},
+        {         "set_vars",         lua_block_copy_vars},
         {           "bprint",                 lua_bprintf},
         {             "uuid",          lua_uuid_universal},
         {               NULL,                        NULL},
@@ -1143,26 +1169,36 @@ void lua_layer_register(lua_State *L)
 void lua_vars_register(lua_State *L)
 {
     const static luaL_Reg vars_methods[] = {
-        {"get_length",     lua_vars_length},
-        {"get_string", lua_vars_get_string},
-        {"set_string", lua_vars_set_string},
+        {"get_length",       lua_vars_length},
+        {"get_string",   lua_vars_get_string},
+        {"set_string",   lua_vars_set_string},
+        {       "add", lua_vars_add_variable},
+        {     "parse",        lua_vars_parse},
 
-        SCRIPTING_RECORD(i8, set),           SCRIPTING_RECORD(i16, set),
-        SCRIPTING_RECORD(i32, set),          SCRIPTING_RECORD(i64, set),
+        SCRIPTING_RECORD(i8, set),
+        SCRIPTING_RECORD(i16, set),
+        SCRIPTING_RECORD(i32, set),
+        SCRIPTING_RECORD(i64, set),
 
-        SCRIPTING_RECORD(u8, set),           SCRIPTING_RECORD(u16, set),
-        SCRIPTING_RECORD(u32, set),          SCRIPTING_RECORD(u64, set),
+        SCRIPTING_RECORD(u8, set),
+        SCRIPTING_RECORD(u16, set),
+        SCRIPTING_RECORD(u32, set),
+        SCRIPTING_RECORD(u64, set),
 
-        SCRIPTING_RECORD(i8, get),           SCRIPTING_RECORD(i16, get),
-        SCRIPTING_RECORD(i32, get),          SCRIPTING_RECORD(i64, get),
+        SCRIPTING_RECORD(i8, get),
+        SCRIPTING_RECORD(i16, get),
+        SCRIPTING_RECORD(i32, get),
+        SCRIPTING_RECORD(i64, get),
 
-        SCRIPTING_RECORD(u8, get),           SCRIPTING_RECORD(u16, get),
-        SCRIPTING_RECORD(u32, get),          SCRIPTING_RECORD(u64, get),
+        SCRIPTING_RECORD(u8, get),
+        SCRIPTING_RECORD(u16, get),
+        SCRIPTING_RECORD(u32, get),
+        SCRIPTING_RECORD(u64, get),
 
-        {   "get_var",    lua_vars_get_var},
-        {  "get_size",   lua_vars_get_size},
-        {"__tostring",   lua_vars_tostring},
-        {        NULL,                NULL},
+        // {   "get_var",    lua_vars_get_var},
+        {  "get_size",     lua_vars_get_size},
+        {"__tostring",     lua_vars_tostring},
+        {        NULL,                  NULL},
     };
 
     luaL_newmetatable(L, "Vars");
