@@ -127,7 +127,7 @@ void write_layer(layer *l, FILE *f)
 
     for (u32 i = 0; i < vars.length; i++)
         if (vars.data[i].active)
-            blob_vars_write(vars.data[i].b, f);
+            blob_vars_write(*vars.data[i].b_ptr, f);
 }
 
 void read_layer(layer *l, room *parent, FILE *f)
@@ -180,7 +180,7 @@ void read_layer(layer *l, room *parent, FILE *f)
     for (u32 i = 0; i < holders.length; i++)
     {
         blob b = blob_vars_read(f);
-        holders.data[i].b = b;
+        *holders.data[i].b_ptr = b;
         holders.data[i].active = true;
     }
 }
