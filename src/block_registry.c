@@ -2,9 +2,11 @@
 #include "../include/atlas_builder.h"
 #include "../include/block_properties.h"
 #include "../include/flags.h"
+#include "../include/scripting.h"
 #include "../include/uuid.h"
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
+
 
 #ifdef _WIN64
 #include "../dirent/include/dirent.h"
@@ -249,8 +251,7 @@ DECLARE_DEFAULT_INCREMENTOR(override_frame)
 
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
-    return strcmp(data, clean_token) == 0 ? vars_free(&dest->vars)
-                                          : vars_parse(data, &dest->vars);
+    return strcmp(data, clean_token) == 0 ? vars_free(&dest->vars) : vars_parse(data, &dest->vars);
 }
 
 u8 block_res_texture_handler(const char *data, block_resources *dest)
@@ -774,6 +775,12 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
     // debug_print_registry(registry);
 
     build_atlas(reg_ref);
+
+    if (scripting_load_scripts(reg_ref) != SUCCESS)
+    {
+        LOG_ERROR("Failed to load scripts for registry %s", folder_name);
+        return FAIL;
+    }
 
     return SUCCESS;
 }

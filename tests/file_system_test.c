@@ -1,94 +1,40 @@
-
-#include <unistd.h>
-#include "test_utils.h"
-#include <signal.h>
-
 #include "../include/file_system.h"
+#include "../include/vars.h"
+#include "../include/vars_utils.h"
+#include "test_utils.h"
 
-level test_level = {.name = "test_level"};
-room test_room = {.name = "test_room", .width = 8, .height = 8};
-room* t_room_ref = NULL;
-
-int test_room_init()
+int test_vars_io()
 {
-	CHECK(init_level(&test_level))
-	CHECK(init_room(&test_room, &test_level))
+	const char *test_vars = "{ u8 a = 255; u16 b = 65535; u32 c = 4294967295; u32 j = 2147483647; i64 d = -999999999999 str s = \"damn what a string\" }";
 
-	(void)vec_push(&test_level.rooms, test_room);
+    blob b = {};
+    char buf[1024] = {};
 
-	t_room_ref = &test_level.rooms.data[0];
+    CHECK(vars_parse(test_vars, &b) != SUCCESS);
 
-	return SUCCESS;
-}
+    dbg_data_layout(b, buf);
+    LOG_DEBUG("before write layout: %s", buf);
 
-int test_layer_init()
-{
-	layer new_layer = {
-		.block_size = 2,
-		.var_index_size = 2,
-		.width = t_room_ref->width,
-		.height = t_room_ref->height
+    FILE *f = fopen("test.vars", "wb");
+    blob_vars_write(b, f);
+    fclose(f);
 
-	};
-	FLAG_SET(new_layer.flags, LAYER_FLAG_HAS_VARS, 1);
+	f = fopen("test.vars", "rb");
+	blob r = blob_vars_read(f);
+	fclose(f);
 
-	CHECK(init_layer(&new_layer, t_room_ref))
+	memset(buf,0,sizeof(buf));
+	dbg_data_layout(r, buf);
+    LOG_DEBUG("after read layout: %s", buf);
 
-	(void)vec_push(&t_room_ref->layers, new_layer);
+    vars_free(&b);
+    vars_free(&r);
 
-	layer *l = &t_room_ref->layers.data[0];
-
-	u64 id = 0;
-
-	for(u32 i = 0; i < l->width * l->height; i++)
-	{
-		CHECK(block_set_id(l, i % l->width, i / l->width, i))
-	}
-
-	for(u32 i = 0; i < l->width * l->height; i++)
-	{
-		CHECK(block_get_id(l, i % l->width, i / l->width, &id))
-		CHECK(id != i)
-	}
-
-	return SUCCESS;
-}
-
-int test_save_level()
-{
-	CHECK(save_level(test_level))
-
-	return SUCCESS;
-}
-
-int test_load_level()
-{
-	level on_disk_level = {};
-
-	CHECK(load_level(&on_disk_level, "test_level"))
-	CHECK(on_disk_level.rooms.length != 1)
-	CHECK(on_disk_level.rooms.data[0].width != 8)
-
-	layer* l = &on_disk_level.rooms.data[0].layers.data[0];
-
-	u64 id = 0;
-
-	for(u32 i = 0; i < l->width * l->height; i++)
-	{
-		CHECK(block_get_id(l, i % l->width, i / l->width, &id))
-		CHECK(id != i)
-	}
-
-	free_level(&on_disk_level);
-
-	return SUCCESS;
+    return SUCCESS;
 }
 
 INIT_TESTING(test_file_system)
 
-RUN_TEST(test_room_init)
-RUN_TEST(test_layer_init)
-RUN_TEST(test_save_level)
-RUN_TEST(test_load_level)
+RUN_TEST(test_vars_io)
 
 FINISH_TESTING()

@@ -32,6 +32,32 @@ var_holder *get_variable(var_object_pool *pool, u32 index)
     return &pool->vars.data[index];
 }
 
+u8 clear_inactive_variables(var_object_pool *pool)
+{
+    var_holder_vec_t new_vars = {};
+
+    vec_reserve(&new_vars, pool->vars.length - pool->inactive_count);
+    // iterate through all vars and filter out inactive vars
+    for (u32 i = 0; i < pool->vars.length; i++)
+        if (!pool->vars.data[i].active)
+        {
+            vars_free(pool->vars.data[i].b_ptr); // frees pointer inside of a holder object, not the holder itself
+        }
+        else
+        {
+            (void)vec_push(&new_vars, pool->vars.data[i]);
+        }
+
+    vec_deinit(&pool->vars);
+    pool->vars = new_vars;
+    return SUCCESS;
+}
+
+u8 layer_clean_vars(layer *l)
+{
+    return clear_inactive_variables(&l->var_pool);
+}
+
 var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out)
 {
     if (required_size == 0)
@@ -43,22 +69,7 @@ var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out
     if (pool->inactive_count > pool->inactive_limit)
     {
         LOG_INFO("Clearing inactive vars");
-        var_holder_vec_t new_vars = {};
-
-        vec_reserve(&new_vars, pool->vars.length - pool->inactive_count);
-        // iterate through all vars and filter out inactive vars
-        for (u32 i = 0; i < pool->vars.length; i++)
-            if (!pool->vars.data[i].active)
-            {
-                vars_free(pool->vars.data[i].b_ptr); // frees pointer inside of a holder object, not the object itself
-            }
-            else
-            {
-                (void)vec_push(&new_vars, pool->vars.data[i]);
-            }
-
-        vec_deinit(&pool->vars);
-        pool->vars = new_vars;
+        clear_inactive_variables(pool);
     }
 
     if (pool->inactive_count != 0)
@@ -150,6 +161,19 @@ u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
     }
 
     return SUCCESS;
+}
+
+u64 block_get_vars_index(layer *l, u32 x, u32 y)
+{
+    u64 var_index = 0;
+    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+
+    return var_index;
+}
+
+void block_var_index_set(layer *l, u32 x, u32 y, u64 index)
+{
+    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&index, l->var_index_size);
 }
 
 u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)

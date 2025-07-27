@@ -3,7 +3,7 @@
 // #include "../tests/test_utils.h"
 // #include "../tests/block_properties_test.c"
 // #include "../tests/block_registry_test.c"
-// #include "../tests/file_system_test.c"
+#include "../tests/file_system_test.c"
 // #include "../tests/hash_table_test.c"
 #include "../tests/vars_test.c"
 
@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     // successes += test_hash_table_all();
     // successes += test_block_props_all();
     successes += test_vars_all();
-    // successes += test_file_system();
+    successes += test_file_system();
     // successes += test_all_registry();
 
     switch (successes)

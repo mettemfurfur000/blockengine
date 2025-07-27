@@ -1,9 +1,3 @@
-local constants = require("registries.engine.scripts.constants")
-local cam_utils = require("registries.engine.scripts.camera_utils")
-local mouse = require("registries.engine.scripts.mouse")
--- local input = require("registries.engine.scripts.input")
--- local renderer = require("registries.engine.scripts.renderer")
-
 local cur_block_id = scripting_current_block_id
 local pallete_width = 4
 
@@ -49,7 +43,7 @@ local function mouse_action(x, y, button)
 
         if editor.mode == "place" then
             local _, id = editor.layer_being_edited.layer:get_id(blk.x, blk.y)
-            print("id found " .. id)
+            -- print("id found " .. id)
             if id == 0 then
                 editor.layer_being_edited.layer:paste_block(blk.x, blk.y, editor.selected_block.id)
             end
@@ -161,9 +155,10 @@ end)
 
 -- special keybinds, maybe
 local function keybind_handle(keysym, char)
-    -- if char == 'e' then
-    --     editor.mode = "move"
-    -- end
+    if char == 's' then
+        le.save_level(test_level)
+        print("saved")
+    end
 
     if char == 'r' then
         editor.mode = "remove"

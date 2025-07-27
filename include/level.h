@@ -85,8 +85,14 @@ u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy);
 
 // u8 block_get_vars(layer *l, u32 x, u32 y, blob *vars_out);
 u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out);
+
+u64 block_get_vars_index(layer *l, u32 x, u32 y);
+void block_var_index_set(layer *l, u32 x, u32 y, u64 index);
+
 u8 block_delete_vars(layer *l, u32 x, u32 y);
 u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars);
+
+u8 layer_clean_vars(layer *l);
 
 u8 init_layer(layer *l,
               room *parent_room); // call after setting their resolutions

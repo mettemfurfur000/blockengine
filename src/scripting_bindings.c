@@ -1,5 +1,6 @@
 #include "../include/scripting_bindings.h"
 #include "../include/events.h"
+#include "../include/file_system.h"
 #include "../include/flags.h"
 #include "../include/image_editing.h"
 #include "../include/rendering.h"
@@ -7,6 +8,8 @@
 #include "../include/vars_utils.h"
 
 #include <lauxlib.h>
+#include <lua.h>
+#include <winnt.h>
 
 // ###############//
 // ###############//
@@ -332,7 +335,7 @@ static int lua_render_rules_set_order(lua_State *L)
 static int lua_slice_get(lua_State *L)
 {
     client_render_rules *rules = check_light_userdata(L, 1);
-    int index = luaL_checkinteger(L, 2);
+    u32 index = luaL_checkinteger(L, 2);
 
     if (index >= rules->slices.length)
         luaL_error(L, "Index out of range");
@@ -357,7 +360,7 @@ static int lua_slice_get(lua_State *L)
 static int lua_slice_set(lua_State *L)
 {
     client_render_rules *rules = check_light_userdata(L, 1);
-    int index = luaL_checkinteger(L, 2);
+    u32 index = luaL_checkinteger(L, 2);
 
     layer_slice slice = {};
 
@@ -380,10 +383,9 @@ static int lua_slice_set(lua_State *L)
         lua_pop(L, 1);
     }
     else
-        luaL_error(L, "STRUCT_SET: expected a "
-                      "LUA_TUSERDATA "
-                      "for a field "
-                      "ref");
+    {
+        luaL_error(L, "STRUCT_SET: expected a LUA_TUSERDATA for a field ref, got: %s", luaL_typename(L, 1));
+    }
 
     if (index >= rules->slices.length)
     {
@@ -553,7 +555,12 @@ static int lua_registry_to_table(lua_State *L)
             lua_setfield(L, -2, "sounds");
         }
 
-        if (r.input_names.length > 0)
+        if (r.input_names.length != r.input_refs.length)
+        {
+            LOG_ERROR("input names and references number doesnt match: %d names to %d refs", r.input_names.length,
+                      r.input_refs.length);
+        }
+        else if (r.input_names.length > 0)
         {
             lua_newtable(L);
 
@@ -617,6 +624,29 @@ static int lua_level_create(lua_State *L)
     return 1;
 }
 
+static int lua_load_level(lua_State *L)
+{
+    level *out = calloc(1, sizeof(level));
+
+    if (load_level(out, luaL_checkstring(L, 1)) == SUCCESS)
+    {
+        NEW_USER_OBJECT(L, Level, out);
+    }
+    else
+        lua_pushnil(L);
+
+    return 1;
+}
+
+static int lua_save_level(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
+
+    lua_pushboolean(L, save_level(*wrapper->lvl) == SUCCESS);
+
+    return 1;
+}
+
 static int lua_level_load_registry(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
@@ -631,11 +661,11 @@ static int lua_level_load_registry(lua_State *L)
     {
         (void)vec_push(&wrapper->lvl->registries, r);
 
-        if (scripting_load_scripts(r) != SUCCESS)
-        {
-            lua_pushboolean(L, 0);
-            return 1;
-        }
+        // if (scripting_load_scripts(r) != SUCCESS)
+        // {
+        //     lua_pushboolean(L, 0);
+        //     return 1;
+        // }
         NEW_USER_OBJECT(L, BlockRegistry, r);
     }
     else
@@ -644,6 +674,23 @@ static int lua_level_load_registry(lua_State *L)
     }
 
     return success ? 2 : 1;
+}
+
+static int lua_level_get_registries(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
+
+    lua_newtable(L);
+
+    vec_void_t *registries = &wrapper->lvl->registries;
+
+    for (u32 i = 0; i < registries->length; i++)
+    {
+        NEW_USER_OBJECT(L, BlockRegistry, registries->data[i]);
+        lua_seti(L, -2, i + 1);
+    }
+
+    return 1;
 }
 
 static int lua_level_gc(lua_State *L)
@@ -670,7 +717,7 @@ static int lua_level_get_name(lua_State *L)
 static int lua_level_get_room(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
-    int index = luaL_checkinteger(L, 2);
+    u32 index = luaL_checkinteger(L, 2);
 
     if (index >= wrapper->lvl->rooms.length)
         luaL_error(L, "Index out of range");
@@ -761,7 +808,7 @@ static int lua_room_new_layer(lua_State *L)
 static int lua_room_get_layer(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
-    int index = luaL_checkinteger(L, 2);
+    u32 index = luaL_checkinteger(L, 2);
 
     if (index >= wrapper->r->layers.length)
         luaL_error(L, "Index out of range");
@@ -771,6 +818,25 @@ static int lua_room_get_layer(lua_State *L)
     // aware, so it doesn't get freed
     return 1;
 }
+
+// layers dont have names, silly
+// static int lua_room_find_layer(lua_State *L)
+// {
+//     LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
+//     const char* name = luaL_checkstring(L, 2);
+
+//     for (u32 i = 0; i < wrapper->r->layers.length; i++)
+//     {
+//         if (strcmp(((layer *)wrapper->r->layers.data[i])->, name) == 0)
+//         {
+//             NEW_USER_OBJECT(L, Layer, wrapper->r->layers.data[i]);
+//             return 1;
+//         }
+//     }
+
+//     lua_pushnil(L);
+//     return 1;
+// }
 
 static int lua_room_get_layer_count(lua_State *L)
 {
@@ -1112,6 +1178,7 @@ void lua_level_register(lua_State *L)
     const static luaL_Reg level_methods[] = {
         {          "__gc",               lua_level_gc},
         { "load_registry",    lua_level_load_registry},
+        {"get_registries",   lua_level_get_registries},
         {      "get_name",         lua_level_get_name},
         {      "get_room",         lua_level_get_room},
         {"get_room_count",   lua_level_get_room_count},
@@ -1133,6 +1200,7 @@ void lua_room_register(lua_State *L)
         {       "get_name",        lua_room_get_name},
         {       "get_size",        lua_room_get_size},
         {      "get_layer",       lua_room_get_layer},
+        // {      "find_layer",       lua_room_find_layer},
         {"get_layer_count", lua_room_get_layer_count},
         {      "new_layer",       lua_room_new_layer},
         {           "uuid",       lua_uuid_universal},
@@ -1211,6 +1279,8 @@ void lua_level_editing_lib_register(lua_State *L)
 {
     const static luaL_Reg level_editing_methods[] = {
         {"create_level", lua_level_create},
+        {  "load_level",   lua_load_level},
+        {  "save_level",   lua_save_level},
         {          NULL,             NULL},
     };
 

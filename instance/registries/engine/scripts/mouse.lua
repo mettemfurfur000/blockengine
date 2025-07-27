@@ -1,5 +1,5 @@
-local constants = require("registries.engine.scripts.constants")
-local cam_utils = require("registries.engine.scripts.camera_utils")
+-- local constants = require("registries.engine.scripts.constants")
+-- local cam_utils = require("registries.engine.scripts.camera_utils")
 
 local this_block_id = scripting_current_block_id
 
@@ -36,7 +36,9 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
     mouse.home_layer_index = g_menu.mouse.index
     mouse.pos = pos
 
-    mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, this_block_id) -- x, y, id
+    if mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, this_block_id) == false then
+        log_error("failed to paste a mouse block")
+    end
 
     local status, vars = mouse.home_layer:get_vars(mouse.pos.x, mouse.pos.y)
     if status == false then
@@ -111,6 +113,8 @@ blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, po
     }, mouse.pos)
 end)
 
+print("registering a mouse input")
+
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
     if mouse.home_layer == nil then
         return
@@ -122,7 +126,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, stat
         y = y
     }, cur_slice.zoom)
 
-    -- print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
+    print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
 
     local func = g_menu.objects.layer:get_input_handler(actual_pos.x, actual_pos.y, "click")
 

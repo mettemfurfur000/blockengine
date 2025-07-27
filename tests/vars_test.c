@@ -1,8 +1,5 @@
-#include "../include/vars.h"
 #include "test_utils.h"
-#include <stdio.h>
-#include <time.h>
-
+#include "../include/vars.h"
 #include "../include/vars_utils.h"
 
 int test_basic_data_manip()

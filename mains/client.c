@@ -1,6 +1,7 @@
 #include "../include/events.h"
 #include "../include/rendering.h"
 #include "../include/scripting.h"
+#include "SDL_events.h"
 
 int main(int argc, char *argv[])
 {
@@ -47,11 +48,14 @@ int main(int argc, char *argv[])
         {
             switch (e.type) // vanilla sdl event handling
             {
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
-                break;
+            // case SDL_MOUSEBUTTONDOWN:
+            //     LOG_DEBUG("retard");
+            //     break;
+            // case SDL_KEYDOWN:
+            // case SDL_KEYUP:
+            // case SDL_MOUSEBUTTONDOWN:
+            // case SDL_MOUSEBUTTONUP:
+                // break;
             case SDL_QUIT:
                 goto logic_exit;
                 break;

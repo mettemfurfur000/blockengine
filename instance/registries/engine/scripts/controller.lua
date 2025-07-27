@@ -1,5 +1,5 @@
-local constants = require("registries.engine.scripts.constants")
-local cam_utils = require("registries.engine.scripts.camera_utils")
+-- local constants = require("registries.engine.scripts.constants")
+-- local cam_utils = require("registries.engine.scripts.camera_utils")
 
 local player_block_id = scripting_current_block_id
 
