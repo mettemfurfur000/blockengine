@@ -1,7 +1,6 @@
 -- local constants = require("registries.engine.scripts.constants")
 -- local cam_utils = require("registries.engine.scripts.camera_utils")
-
-local this_block_id = scripting_current_block_id
+local current_block = scripting_current_block_id
 
 mouse = {
     pos = {
@@ -14,7 +13,6 @@ mouse = {
     vars = nil
 }
 
-
 function block_pos(mouse_pos, zoom)
     zoom = zoom or render_rules.get_slice(g_render_rules, g_menu.mouse.index).zoom
     return {
@@ -22,7 +20,6 @@ function block_pos(mouse_pos, zoom)
         y = math.floor(mouse_pos.y / g_block_size / zoom)
     }
 end
-
 
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
@@ -36,7 +33,12 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
     mouse.home_layer_index = g_menu.mouse.index
     mouse.pos = pos
 
-    if mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, this_block_id) == false then
+    mouse.home_layer:for_each(current_block, function(x, y)
+        print("found an existing mouse, OBLITERATE")
+        mouse.home_layer:paste_block(x, y, 0)
+    end)
+
+    if mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, current_block) == false then
         log_error("failed to paste a mouse block")
     end
 
@@ -113,7 +115,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, po
     }, mouse.pos)
 end)
 
-print("registering a mouse input")
+-- print("registering a mouse input")
 
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
     if mouse.home_layer == nil then

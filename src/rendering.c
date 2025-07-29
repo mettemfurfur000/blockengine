@@ -76,6 +76,9 @@ u8 render_layer(layer_slice slice)
             u8 flip = 0;
             i16 rotation = 0;
 
+            u16 offset_x = 0;
+            u16 offset_y = 0;
+
             block_resources br = b_reg->resources.data[id];
 
             blob *var = NULL;
@@ -94,10 +97,10 @@ u8 render_layer(layer_slice slice)
                     var_get_u8(*var, br.anim_controller, &frame);
 
                 if (br.offset_x_controller != 0)
-                    var_get_u16(*var, br.offset_x_controller, &dest_x);
+                    var_get_u16(*var, br.offset_x_controller, &offset_x);
 
                 if (br.offset_y_controller != 0)
-                    var_get_u16(*var, br.offset_y_controller, &dest_y);
+                    var_get_u16(*var, br.offset_y_controller, &offset_y);
             }
 
             if (br.frames_per_second > 1)
@@ -115,7 +118,7 @@ u8 render_layer(layer_slice slice)
             if (br.override_frame != 0)
                 frame = br.override_frame;
 
-            block_renderer_create_instance(br.info, dest_x, dest_y);
+            block_renderer_create_instance(br.info, dest_x + offset_x, dest_y + offset_y);
 
             if (frame || type || flip || rotation)
             { // only set properties if they are not default

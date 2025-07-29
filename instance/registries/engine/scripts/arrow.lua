@@ -1,7 +1,7 @@
 -- This script handles arrow blocks, setting their rotation towards the player
-local arrow_block_id = scripting_current_block_id
+local current_block = scripting_current_block_id
 
-print("loading an arrow block id " .. arrow_block_id)
+print("loading an arrow block id " .. current_block)
 
 active_arrows = {}
 
@@ -10,7 +10,7 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
     if layer:uuid() ~= g_menu.objects.layer:uuid() then
         return
     end
-    if old_id == arrow_block_id then
+    if old_id == current_block then
         -- the arrow block was destroyed, so we remove it from active_arrows
         for i, arrow in ipairs(active_arrows) do
             if arrow.pos.x == x and arrow.pos.y == y then
@@ -21,7 +21,7 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
         end
         return
     end
-    if new_id ~= arrow_block_id then
+    if new_id ~= current_block then
         return
     end
 

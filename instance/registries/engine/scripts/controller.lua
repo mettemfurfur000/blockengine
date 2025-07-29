@@ -1,11 +1,10 @@
 -- local constants = require("registries.engine.scripts.constants")
 -- local cam_utils = require("registries.engine.scripts.camera_utils")
+local current_block = scripting_current_block_id
 
-local player_block_id = scripting_current_block_id
+player_exists = false
 
-local player_exists = false
-
-print("loading a controller block id " .. player_block_id)
+print("loading a controller block id " .. current_block)
 
 local player_states = {
     dead = 0,
@@ -106,31 +105,8 @@ local function update_player()
     end
 end
 
--- hook zone
-
-blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
-    if player_exists == true then
-        return
-    end
-    -- records newly created player block
-    if layer:uuid() ~= g_menu.objects.layer:uuid() then
-        return
-    end
-
-    if old_id == player_block_id and new_id == 0 then
-        -- the player block was destroyed, so we remove it
-        player_exists = false
-        player.state = player_states.dead
-        print("removed player at " .. x .. ", " .. y)
-        g_menu.objects.player = nil
-        return
-    end
-
-    if new_id ~= player_block_id then
-        return
-    end
-
-    pos = {
+local function setup_player(layer, x, y)
+    local pos = {
         x = x,
         y = y
     }
@@ -150,11 +126,39 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
 
     player_exists = true
 
-    print("initialized and found a player at " .. pos.x .. ", " .. pos.y .. ", room named " .. room:get_name())
+    print("initialized the player at " .. pos.x .. ", " .. pos.y .. ", room named " .. room:get_name())
 
     g_menu.objects.player = player
 
     print("vars", vars:__tostring())
+end
+
+-- hook zone
+
+blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, layer, new_id, old_id, x, y)
+    if player_exists then
+        return
+    end
+    -- records newly created player block
+    if layer:uuid() ~= g_menu.objects.layer:uuid() then
+        return
+    end
+
+    if old_id == current_block and new_id == 0 then
+        -- the player block was destroyed, so we remove it
+        player_exists = false
+        player.state = player_states.dead
+        print("removed player at " .. x .. ", " .. y)
+        g_menu.objects.player = nil
+        return
+    end
+
+    if new_id ~= current_block then
+        return
+    end
+    -- paste here
+
+    setup_player(layer, x, y)
 end)
 
 blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)
@@ -194,14 +198,17 @@ blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, 
 end)
 
 blockengine.register_handler(engine_events.ENGINE_TICK, function(code)
-    if player_exists == false then
-        return
+    if player_exists then
+        update_player()
     end
-    update_player()
 end)
 
 blockengine.register_handler(engine_events.ENGINE_INIT, function(code)
-    -- pasting a player
-    -- g_menu.objects.layer:paste_block(4, 4, player_block_id) -- x, y, id
+    g_menu.objects.layer:for_each(current_block, function(x, y)
+        if player_exists == false then
+            print("player found at " .. x .. ":" .. y)
+            setup_player(g_menu.objects.layer, x, y)
+        end
+    end)
 end)
 

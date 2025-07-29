@@ -4,3 +4,6 @@
 
 [ ] - make layers constant so engine could render it to a framebuffer texture once and potentialy save on instanced rendering
     [ ] - downsides - layer will be truly static - no animated blocks and no movement, you woud hav to render dynamic objects on top of it
+
+[ ] - make resolution changeable
+[ ] - make fullscreen possible

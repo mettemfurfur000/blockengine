@@ -935,6 +935,57 @@ static int lua_get_block_input_handler(lua_State *L)
     return 1;
 }
 
+static int lua_layer_get_size(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+    lua_pushinteger(L, wrapper->l->width);
+    lua_pushinteger(L, wrapper->l->height);
+    lua_pushinteger(L, wrapper->l->block_size);
+    lua_pushinteger(L, wrapper->l->var_index_size);
+
+    return 4;
+}
+
+static int lua_layer_for_each(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+    u64 filter = luaL_checkinteger(L, 2); // a block id that is beink searched (?)
+    luaL_checktype(L, 3, LUA_TFUNCTION);  // callback
+
+    u32 w = wrapper->l->width;
+    u32 h = wrapper->l->height;
+
+    u64 id;
+
+    for (u32 j = 0; j < h; j++)
+        for (u32 i = 0; i < w; i++)
+        {
+            if(block_get_id(wrapper->l, i, j, &id) != SUCCESS)
+            {
+                LOG_ERROR("Error getting a block at %d %d");
+                return 0;
+            }
+
+            if (id == filter)
+            {
+                lua_pushvalue(L, 3);
+                lua_pushinteger(L, i);
+                lua_pushinteger(L, j);
+
+                if (lua_pcall(g_L, 2, 0, 0) != 0)
+                {
+                    LOG_ERROR("Error calling a callback: %s", lua_tostring(g_L, -1));
+                    lua_pop(g_L, 1);
+                    return 0;
+                }
+            }
+        }
+
+    return 0;
+}
+
 static int lua_layer_set_id(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
@@ -956,10 +1007,12 @@ static int lua_block_get_id(lua_State *L)
     u32 y = luaL_checknumber(L, 3);
     u64 id = 0;
 
-    lua_pushboolean(L, block_get_id(wrapper->l, x, y, &id) == SUCCESS);
-    lua_pushnumber(L, id);
+    if (block_get_id(wrapper->l, x, y, &id) == SUCCESS)
+        lua_pushnumber(L, id);
+    else
+        lua_pushnil(L);
 
-    return 2;
+    return 1;
 }
 
 static int lua_block_get_vars(lua_State *L)
@@ -1216,10 +1269,12 @@ void lua_room_register(lua_State *L)
 void lua_layer_register(lua_State *L)
 {
     const static luaL_Reg layer_methods[] = {
-        {      "paste_block",       lua_layer_paste_block},
+        {         "get_size",          lua_layer_get_size},
+        {         "for_each",          lua_layer_for_each},
         {           "set_id",            lua_layer_set_id},
         {           "get_id",            lua_block_get_id},
         {       "move_block",        lua_layer_move_block},
+        {      "paste_block",       lua_layer_paste_block},
         {"get_input_handler", lua_get_block_input_handler},
         {         "get_vars",          lua_block_get_vars},
         {         "set_vars",         lua_block_copy_vars},

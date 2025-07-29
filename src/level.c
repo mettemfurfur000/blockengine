@@ -72,24 +72,24 @@ var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out
         clear_inactive_variables(pool);
     }
 
-    if (pool->inactive_count != 0)
+    if (pool->inactive_count != 0) // try to get an inactive var with matching size
     {
-        LOG_INFO("Reusing an inactive var");
-
         var_holder *var = get_inactive(pool, required_size, index_out);
 
-        if (!var)
+        if (var) // if found, reuse it
         {
-            LOG_ERROR("Failed to get an inactive var, now the whole program will collapse >;3");
-            return (var_holder){0};
+            LOG_WARNING("Reusing an inactive var...");
+            var->active = true;
+            var->b_ptr->size = required_size;
+
+            pool->inactive_count--;
+
+            LOG_WARNING("Success...");
+
+            return *var;
         }
 
-        var->active = true;
-        var->b_ptr->size = required_size;
-
-        pool->inactive_count--;
-
-        return *var;
+        // if not, create a new one
     }
 
     // vars have to be allocated on the heap, so anything that exists in the engine and points at
@@ -138,25 +138,32 @@ u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
 
 u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 {
+    if (x >= l->width || y >= l->height)
+        return FAIL;
+
     CHECK_PTR(l)
     CHECK_PTR(l->blocks)
-    CHECK(x >= l->width || y >= l->height)
+    CHECK_PTR(id)
+    // CHECK(x >= l->width || y >= l->height)
+
+    void *ptr = BLOCK_ID_PTR(l, x, y);
 
     switch (l->block_size)
     {
     case 1:
-        *id = *(u8 *)BLOCK_ID_PTR(l, x, y);
+        *id = *(u8 *)ptr;
         break;
     case 2:
-        *id = *(u16 *)BLOCK_ID_PTR(l, x, y);
+        *id = *(u16 *)ptr;
         break;
     case 4:
-        *id = *(u32 *)BLOCK_ID_PTR(l, x, y);
+        *id = *(u32 *)ptr;
         break;
     case 8:
-        *id = *(u64 *)BLOCK_ID_PTR(l, x, y);
+        *id = *(u64 *)ptr;
         break;
     default:
+        LOG_ERROR("FATAL: layer cannot have block size width %d bytes", l->block_size);
         return FAIL;
     }
 
@@ -247,6 +254,12 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
     {
         // creating a new var
         var_holder new = new_variable(&l->var_pool, vars.size, &var_index);
+
+        if (new.b_ptr == NULL)
+        {
+            LOG_ERROR("Failed to create a new var");
+            return FAIL;
+        }
 
         // what a weird notation, huh... b_ptr->ptr..
         memcpy(new.b_ptr->ptr, vars.ptr, vars.size);

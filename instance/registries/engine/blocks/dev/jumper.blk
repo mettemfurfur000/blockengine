@@ -1,0 +1,6 @@
+automatic_id 1
+texture = jumper.png
+script = jumper.lua
+vars = { u16 x = 0 u16 y = 0 }
+offset_x_controller = x
+offset_y_controller = y

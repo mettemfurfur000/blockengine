@@ -1,4 +1,4 @@
-local cur_block_id = scripting_current_block_id
+local current_block = scripting_current_block_id
 local pallete_width = 4
 
 local editor = {
@@ -42,7 +42,7 @@ local function mouse_action(x, y, button)
         })
 
         if editor.mode == "place" then
-            local _, id = editor.layer_being_edited.layer:get_id(blk.x, blk.y)
+            local id = editor.layer_being_edited.layer:get_id(blk.x, blk.y)
             -- print("id found " .. id)
             if id == 0 then
                 editor.layer_being_edited.layer:paste_block(blk.x, blk.y, editor.selected_block.id)

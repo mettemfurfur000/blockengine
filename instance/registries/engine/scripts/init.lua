@@ -107,15 +107,15 @@ end
 local function generate_view_and_layers()
     local menu = {}
 
-    -- layer_new_invisible(g_menu, "dev", safe_layer_create(menu_room, "engine", 1, 0))
-    layer_append_render(menu, "floor", safe_layer_create(menu_room, "engine", 1, 0))
-    layer_append_render(menu, "objects", safe_layer_create(menu_room, "engine", 1, 2))
-    layer_append_render(menu, "pallete", safe_layer_create(menu_room, "engine", 1, 0))
-    layer_append_render(menu, "text", safe_layer_create(menu_room, "engine", 1, 2), true)
-    layer_append_render(menu, "mouse", safe_layer_create(menu_room, "engine", 1, 2))
-    -- layer_append_render(g_menu, "ui_back", safe_layer_create(menu_room, "engine", 1, 2), true)
-    -- layer_append_render(g_menu, "ui_floor_select", safe_layer_create(menu_room, "engine", 1, 0), true)
-    -- layer_append_render(g_menu, "ui_engine_select", safe_layer_create(menu_room, "engine", 1, 0), true)
+    -- layer_new_invisible(g_menu, "dev", safe_layer_create(g_menu_room, "engine", 1, 0))
+    layer_append_render(menu, "floor", safe_layer_create(g_menu_room, "engine", 1, 0))
+    layer_append_render(menu, "objects", safe_layer_create(g_menu_room, "engine", 1, 2))
+    layer_append_render(menu, "pallete", safe_layer_create(g_menu_room, "engine", 1, 0))
+    layer_append_render(menu, "text", safe_layer_create(g_menu_room, "engine", 1, 2), true)
+    layer_append_render(menu, "mouse", safe_layer_create(g_menu_room, "engine", 1, 2))
+    -- layer_append_render(g_menu, "ui_back", safe_layer_create(g_menu_room, "engine", 1, 2), true)
+    -- layer_append_render(g_menu, "ui_floor_select", safe_layer_create(g_menu_room, "engine", 1, 0), true)
+    -- layer_append_render(g_menu, "ui_engine_select", safe_layer_create(g_menu_room, "engine", 1, 0), true)
 
     return menu
 end
@@ -123,11 +123,11 @@ end
 local function reflective_view_build()
     local menu = {}
 
-    layer_append_existing(menu, menu_room, "floor")
-    layer_append_existing(menu, menu_room, "objects")
-    layer_append_existing(menu, menu_room, "pallete")
-    layer_append_existing(menu, menu_room, "text", true)
-    layer_append_existing(menu, menu_room, "mouse")
+    layer_append_existing(menu, g_menu_room, "floor")
+    layer_append_existing(menu, g_menu_room, "objects")
+    layer_append_existing(menu, g_menu_room, "pallete")
+    layer_append_existing(menu, g_menu_room, "text", true)
+    layer_append_existing(menu, g_menu_room, "mouse")
 
     return menu
 end
@@ -141,7 +141,7 @@ if test_level == nil then
 
     g_engine = safe_registry_load(test_level, "engine") -- load the engine registry
 
-    menu_room = safe_menu_create(test_level, "menu", g_width_blocks, g_height_blocks) -- our first and only room
+    g_menu_room = safe_menu_create(test_level, "menu", g_width_blocks, g_height_blocks) -- our first and only room
 
     g_menu = generate_view_and_layers() -- creates all the layers
 else -- level was loaded, all the rooms are here, all the layers are here as well
@@ -149,9 +149,9 @@ else -- level was loaded, all the rooms are here, all the layers are here as wel
     -- we have to find all the objects ourselvs
     g_engine = test_level:get_registries()[1]
 
-    menu_room = test_level:find_room("menu") -- menu should be here
+    g_menu_room = test_level:find_room("menu") -- menu should be here
 
-    if menu_room == nil then
+    if g_menu_room == nil then
         -- print("menu not found")
         log_error("menu not found")
         os.exit(0)
@@ -167,6 +167,10 @@ end
 g_engine_table = g_engine:to_table()
 g_total_blocks = tablelength(g_engine_table)
 g_character_id = find_block(g_engine_table, "character").id
+
+g_menu.text.layer:for_each(g_character_id, function(x, y) -- clear all left ova text
+    g_menu.text.layer:paste_block(x, y, 0)
+end)
 
 try(function()
     set_render_rule_order(g_menu)

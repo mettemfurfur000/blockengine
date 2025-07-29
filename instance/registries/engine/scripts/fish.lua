@@ -1,6 +1,6 @@
 local constants = require("registries.engine.scripts.constants")
 
-local current_block_id = scripting_current_block_id
+local current_block = scripting_current_block_id
 
 local ticks = 0
 local wait_time = 50
@@ -20,6 +20,6 @@ local wait_time = 50
 -- blockengine.register_handler(engine_events.ENGINE_INIT, function(code)
 --     local block_info = find_block(g_engine_table, "fish")
 --     sounds = block_info.sounds
---     g_menu.objects.layer:paste_block(7, 7, current_block_id) -- x, y, id
+--     g_menu.objects.layer:paste_block(7, 7, current_block) -- x, y, id
 -- end)
 
