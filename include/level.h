@@ -9,8 +9,6 @@
 #define LAYER_FLAG_HAS_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
 
-#define SHARED_FLAG_GC_AWARE 0b1000000
-
 typedef struct var_holder
 {
     blob *b_ptr; // points to a valid instance of a record with vars

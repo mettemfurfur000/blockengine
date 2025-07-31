@@ -380,6 +380,12 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
 
     block_resources *res = &reg->resources.data[id];
 
+    if (strcmp("tick", name) == 0)
+    {
+        LOG_DEBUG("registered the tick input for block %lld", id);
+        res->input_tick_ref = ref;
+    }
+
     for (u32 i = 0; i < res->input_names.length; i++)
         if (strcmp(res->input_names.data[i], name) == 0)
         {

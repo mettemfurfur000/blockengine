@@ -1,5 +1,5 @@
-CFLAGS += -O0 -Wall -g # -pg -no-pie
-LDFLAGS += -lm -g # -pg
+CFLAGS += -O3 -Wall# -g # -pg -no-pie
+LDFLAGS += -lm# -g # -pg
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main
@@ -67,7 +67,10 @@ endif
 client_app: mains/client.c registry vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
 	gcc ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS)
-#	-./grab_dlls.sh build/client.exe /mingw64/bin 1
+
+.PHONY: grab_client_dlls
+grab_client_dlls:
+	-./grab_dlls.sh build/client.exe /mingw64/bin 2
 
 .PHONY: texgen
 texgen: mains/texgen.c registry vec $(objects)

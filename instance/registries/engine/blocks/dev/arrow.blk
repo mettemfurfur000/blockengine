@@ -1,5 +1,6 @@
 automatic_id 1
-texture = arrow.png
 script = arrow.lua
+# inputs = [ tick ]
 vars = { u16 r = 0 }
+texture = arrow.png
 rotation_controller = r

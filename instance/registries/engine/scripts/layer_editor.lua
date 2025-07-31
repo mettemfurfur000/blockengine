@@ -155,10 +155,10 @@ end)
 
 -- special keybinds, maybe
 local function keybind_handle(keysym, char)
-    if char == 's' then
-        le.save_level(test_level)
-        print("saved")
-    end
+    -- if char == 's' then
+    --     le.save_level(test_level)
+    --     print("saved")
+    -- end
 
     if char == 'r' then
         editor.mode = "remove"

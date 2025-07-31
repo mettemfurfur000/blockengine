@@ -105,7 +105,7 @@ local function update_player()
     end
 end
 
-local function setup_player(layer, x, y)
+local function setup_player(room, layer, x, y)
     local pos = {
         x = x,
         y = y
@@ -158,7 +158,7 @@ blockengine.register_handler(engine_events.ENGINE_BLOCK_CREATE, function(room, l
     end
     -- paste here
 
-    setup_player(layer, x, y)
+    setup_player(room, layer, x, y)
 end)
 
 blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)
@@ -207,7 +207,7 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function(code)
     g_menu.objects.layer:for_each(current_block, function(x, y)
         if player_exists == false then
             print("player found at " .. x .. ":" .. y)
-            setup_player(g_menu.objects.layer, x, y)
+            setup_player(g_menu_room, g_menu.objects.layer, x, y)
         end
     end)
 end)

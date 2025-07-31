@@ -12,16 +12,13 @@ int main(int argc, char *argv[])
 
     unsigned long frame = 0;
 
-    const int target_fps = 60;
+    const int target_fps = 100;
     const int ms_per_s = 1000 / target_fps;
 
-    const int target_tps = 10;
+    const int target_tps = 20;
     const int tick_period = 1000 / target_tps;
 
-    client_render_rules rules = {.screen_height = SCREEN_HEIGHT,
-                                 .screen_width = SCREEN_WIDTH
-
-    };
+    client_render_rules rules = {.screen_height = SCREEN_HEIGHT, .screen_width = SCREEN_WIDTH};
 
     scripting_init();
 
@@ -37,7 +34,7 @@ int main(int argc, char *argv[])
     call_handlers(e);
 
     u32 total_ms_took = 0;
-    const u32 perf_check_each = 60;
+    const u32 perf_check_each = 600;
 
     for (;;)
     {
@@ -55,8 +52,9 @@ int main(int argc, char *argv[])
             // case SDL_KEYUP:
             // case SDL_MOUSEBUTTONDOWN:
             // case SDL_MOUSEBUTTONUP:
-                // break;
+            // break;
             case SDL_QUIT:
+                call_handlers(e);
                 goto logic_exit;
                 break;
             case SDL_RENDER_TARGETS_RESET:

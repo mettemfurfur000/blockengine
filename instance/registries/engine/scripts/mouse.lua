@@ -128,7 +128,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, stat
         y = y
     }, cur_slice.zoom)
 
-    print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
+    -- print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
 
     local func = g_menu.objects.layer:get_input_handler(actual_pos.x, actual_pos.y, "click")
 

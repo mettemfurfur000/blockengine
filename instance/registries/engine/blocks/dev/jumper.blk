@@ -1,6 +1,10 @@
 automatic_id 1
-texture = jumper.png
 script = jumper.lua
-vars = { u16 x = 0 u16 y = 0 }
+inputs = [ tick ]
+# w for wish - direction to where jumper is going to
+# x and y is an old position for later interpolation if needed
+# f for flags, to skip ticks and such
+vars = { u8 f = 0 u8 w = 0 u16 x = 0 u16 y = 0 }
+texture = jumper.png
 offset_x_controller = x
 offset_y_controller = y

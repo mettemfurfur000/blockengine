@@ -41,6 +41,8 @@ typedef struct block_resources
     vec_str_t input_names;
     // input_handler_vec_t inputs;
 
+    i32 input_tick_ref; // reference into de tick function that script provides
+
     // these are references to internal block data fields, not actual values for
     // a block
     char anim_controller;     // current animation frame / column

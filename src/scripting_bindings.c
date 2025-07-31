@@ -696,10 +696,6 @@ static int lua_level_get_registries(lua_State *L)
 static int lua_level_gc(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
-
-    if (FLAG_GET(wrapper->lvl->flags, SHARED_FLAG_GC_AWARE))
-        return 0;
-
     free_level(wrapper->lvl);
 
     free(wrapper->lvl);
@@ -725,8 +721,6 @@ static int lua_level_get_room(lua_State *L)
     room *r = wrapper->lvl->rooms.data[index];
 
     NEW_USER_OBJECT(L, Room, r);
-    // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc
-    // aware, so it doesn't get freed
 
     return 1;
 }
@@ -748,8 +742,6 @@ static int lua_level_get_room_by_name(lua_State *L)
         if (strcmp(((room *)wrapper->lvl->rooms.data[i])->name, name) == 0)
         {
             NEW_USER_OBJECT(L, Room, wrapper->lvl->rooms.data[i]);
-            // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it
-            // as gc aware, so it doesn't get freed
             return 1;
         }
     }
@@ -766,8 +758,6 @@ static int lua_level_new_room(lua_State *L)
     int y = luaL_checkinteger(L, 4);
 
     NEW_USER_OBJECT(L, Room, room_create(wrapper->lvl, name, x, y));
-    // FLAG_SET(__Room->r->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc
-    // aware, so it doesn't get freed
     return 1;
 }
 
@@ -814,8 +804,6 @@ static int lua_room_get_layer(lua_State *L)
         luaL_error(L, "Index out of range");
 
     NEW_USER_OBJECT(L, Layer, wrapper->r->layers.data[index]);
-    // FLAG_SET(__Layer->l->flags, SHARED_FLAG_GC_AWARE, 1); // mark it as gc
-    // aware, so it doesn't get freed
     return 1;
 }
 
@@ -962,7 +950,7 @@ static int lua_layer_for_each(lua_State *L)
     for (u32 j = 0; j < h; j++)
         for (u32 i = 0; i < w; i++)
         {
-            if(block_get_id(wrapper->l, i, j, &id) != SUCCESS)
+            if (block_get_id(wrapper->l, i, j, &id) != SUCCESS)
             {
                 LOG_ERROR("Error getting a block at %d %d");
                 return 0;
@@ -1052,6 +1040,59 @@ static int lua_bprintf(lua_State *L)
     const char *format = luaL_checkstring(L, 6);
     bprintf(wrapper->l, character_id, orig_x, orig_y, limit, format);
     return 0;
+}
+
+
+static int lua_layer_tick_blocks(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+    const u32 value = luaL_checkinteger(L, 2);
+
+    const u32 w = wrapper->l->width;
+    const u32 h = wrapper->l->height;
+
+    u64 id;
+
+    int ref = 0;
+
+    const block_registry *reg = wrapper->l->registry;
+
+    for (u32 j = 0; j < h; j++)
+        for (u32 i = 0; i < w; i++)
+        {
+            if (block_get_id(wrapper->l, i, j, &id) != SUCCESS)
+            {
+                LOG_ERROR("tick errored for block %d:%d on layer %lld", i, j, wrapper->l->uuid);
+                lua_pushnil(L);
+                return 1;
+            }
+
+            if (id == 0 || id >= wrapper->l->registry->resources.length)
+                continue;
+
+            ref = reg->resources.data[id].input_tick_ref;
+            if (ref == 0)
+                continue;
+
+            if (lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION)
+            {
+                lua_pushvalue(L, 1);
+                lua_pushinteger(L, i);
+                lua_pushinteger(L, j);
+                lua_pushinteger(L, value);
+
+                if (lua_pcall(L, 4, 0, 0) != 0)
+                {
+                    LOG_ERROR("Error calling a tick callback: %s", lua_tostring(L, -1));
+                    lua_pop(L, 1);
+                    lua_pushnil(L);
+                    return 1;
+                }
+            }
+        }
+
+    lua_pushboolean(L, 1);
+    return 1;
 }
 
 // vars
@@ -1229,15 +1270,15 @@ void lua_block_registry_register(lua_State *L)
 void lua_level_register(lua_State *L)
 {
     const static luaL_Reg level_methods[] = {
-        {          "__gc",               lua_level_gc},
         { "load_registry",    lua_level_load_registry},
         {"get_registries",   lua_level_get_registries},
-        {      "get_name",         lua_level_get_name},
-        {      "get_room",         lua_level_get_room},
         {"get_room_count",   lua_level_get_room_count},
         {     "find_room", lua_level_get_room_by_name},
+        {      "get_name",         lua_level_get_name},
+        {      "get_room",         lua_level_get_room},
         {      "new_room",         lua_level_new_room},
         {          "uuid",         lua_uuid_universal},
+        {          "__gc",               lua_level_gc},
         {            NULL,                       NULL},
     };
 
@@ -1279,6 +1320,7 @@ void lua_layer_register(lua_State *L)
         {         "get_vars",          lua_block_get_vars},
         {         "set_vars",         lua_block_copy_vars},
         {           "bprint",                 lua_bprintf},
+        {             "tick",       lua_layer_tick_blocks},
         {             "uuid",          lua_uuid_universal},
         {               NULL,                        NULL},
     };

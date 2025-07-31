@@ -172,6 +172,18 @@ g_menu.text.layer:for_each(g_character_id, function(x, y) -- clear all left ova 
     g_menu.text.layer:paste_block(x, y, 0)
 end)
 
+g_tick = 0
+
+blockengine.register_handler(engine_events.ENGINE_TICK, function(code) -- tick over all existing jumpers
+    g_tick = g_tick + 1
+    g_menu.objects.layer:tick(0) -- default tick - resets all values in a preparation for an actual pass
+    g_menu.objects.layer:tick(1)
+end)
+
+blockengine.register_handler(sdl_events.SDL_QUIT, function(code) -- tick over all existing jumpers
+    le.save_level(test_level)
+end)
+
 try(function()
     set_render_rule_order(g_menu)
     set_slices(g_menu)
@@ -179,3 +191,9 @@ end, function(e)
     log_error(e)
     os.exit()
 end)
+
+--[[
+scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
+    function(layer, x, y, value)
+end)
+--]]
