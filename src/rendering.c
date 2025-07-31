@@ -114,7 +114,7 @@ u8 render_layer(layer_slice slice)
                 {
                     u32 ms_started_moving = 0; // tick timestamp when started moving
                     var_get_u32(*var, br.interp_timestamp_controller, &ms_started_moving);
-                    
+
                     // u32 ms_move_takes = 0;
                     // var_get_u32(*var, br.interp_takes_controller, &ms_move_takes);
 
@@ -164,12 +164,50 @@ u8 render_layer(layer_slice slice)
 
 u8 client_render(const client_render_rules rules)
 {
-    block_renderer_begin_frame();
+    block_renderer_begin_frame(); // framebuffer ready to soak in pixels
 
     for (u32 i = 0; i < rules.draw_order.length; i++)
     {
         int layer_id = rules.draw_order.data[i];
-        render_layer(rules.slices.data[layer_id]);
+        layer_slice slice = rules.slices.data[layer_id];
+
+        // if (FLAG_GET(slice.flags, LAYER_SLICE_FLAG_STATIC_RENDERED))
+        // {
+        //     // TODO: paste a framebuffer offsetet by the slice thing
+        //     continue;
+        // }
+        // else
+        // {
+        //     if (FLAG_GET(slice.flags, LAYER_SLICE_FLAG_STATIC_READY))
+        //     {
+        //         layer *l = slice.ref;
+
+        //         u32 width = l->width * g_block_width;
+        //         u32 height = l->width * g_block_width;
+
+        //         if (slice.framebuffer == 0) // no framebuffer yet
+        //         {
+        //             // fbo for a whole layer at once
+        //             create_framebuffer_object(width, height, &slice.framebuffer, &slice.framebuffer_texture);
+        //         }
+
+        //         block_renderer_bind_custom_framebuffer(slice.framebuffer);
+
+        //         slice.x = 0;
+        //         slice.y = 0;
+        //         slice.w = width;
+        //         slice.h = height;
+        //         slice.zoom = 1;
+
+        //         render_layer(slice); // render everything to layer fb
+
+        //         rules.slices.data[layer_id].framebuffer = slice.framebuffer;
+        //         rules.slices.data[layer_id].framebuffer_texture = slice.framebuffer_texture;
+
+        //         FLAG_SET(rules.slices.data[layer_id].flags, LAYER_SLICE_FLAG_STATIC_RENDERED, 1)
+        //     } // ELSE
+        render_layer(slice); // render normally
+        // }
     }
 
     block_renderer_end_frame();

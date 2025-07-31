@@ -17,7 +17,8 @@ local function slice_gen(x, y, w, h, z, lay_ref)
         h = h,
         w = w,
         zoom = z,
-        ref = lay_ref
+        ref = lay_ref,
+        flags = 0
     }
 end
 

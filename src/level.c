@@ -6,6 +6,12 @@
 
 // layer functions
 
+#define LAYER_CHECKS(l)                                                                                                \
+    CHECK_PTR(l)                                                                                                       \
+    if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))                                                                         \
+        return FAIL;                                                                                                   \
+    CHECK_PTR(l->blocks)
+
 // object pool functions
 
 var_holder *get_inactive(var_object_pool *pool, u32 required_size, u32 *index_out)
@@ -116,8 +122,7 @@ void remove_variable(var_object_pool *pool, var_holder *h)
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
 {
-    CHECK_PTR(l)
-    CHECK_PTR(l->blocks)
+    LAYER_CHECKS(l)
     CHECK(x >= l->width || y >= l->height)
 
     memcpy(BLOCK_ID_PTR(l, x, y), (u8 *)&id, l->block_size);
@@ -138,13 +143,10 @@ u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
 
 u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 {
+    LAYER_CHECKS(l)
     if (x >= l->width || y >= l->height)
         return FAIL;
-
-    CHECK_PTR(l)
-    CHECK_PTR(l->blocks)
     CHECK_PTR(id)
-    // CHECK(x >= l->width || y >= l->height)
 
     void *ptr = BLOCK_ID_PTR(l, x, y);
 
@@ -172,6 +174,8 @@ u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 
 u64 block_get_vars_index(layer *l, u32 x, u32 y)
 {
+    LAYER_CHECKS(l)
+
     u64 var_index = 0;
     memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
@@ -180,13 +184,17 @@ u64 block_get_vars_index(layer *l, u32 x, u32 y)
 
 void block_var_index_set(layer *l, u32 x, u32 y, u64 index)
 {
+    CHECK_PTR_NORET(l)
+    if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
+        return;
+    CHECK_PTR_NORET(l->blocks)
+
     memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&index, l->var_index_size);
 }
 
 u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
 {
-    CHECK_PTR(l)
-    CHECK_PTR(l->blocks)
+    LAYER_CHECKS(l)
     CHECK_PTR(vars_out)
     CHECK(x >= l->width || y >= l->height)
 
@@ -208,8 +216,7 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
 
 u8 block_delete_vars(layer *l, u32 x, u32 y)
 {
-    CHECK_PTR(l)
-    CHECK_PTR(l->blocks)
+    LAYER_CHECKS(l)
     CHECK(x >= l->width || y >= l->height)
 
     if (l->var_index_size == 0)
@@ -230,8 +237,7 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
 
 u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 {
-    CHECK_PTR(l)
-    CHECK_PTR(l->blocks)
+    LAYER_CHECKS(l)
     CHECK(x >= l->width || y >= l->height)
 
     if (vars.size == 0 || vars.ptr == NULL)
@@ -279,13 +285,8 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 
 u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
 {
-    CHECK_PTR(l)
-    // CHECK_PTR(l->blocks)
-    if (!(l->blocks))
-    {
-        LOG_ERROR("check failed: 'l->blocks' is NULL\n");
-        return FAIL;
-    }
+    LAYER_CHECKS(l)
+
     u32 dest_x = x + dx;
     u32 dest_y = y + dy;
     CHECK(x >= l->width || y >= l->height)
@@ -468,6 +469,11 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
 
 void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
 {
+    CHECK_PTR_NORET(l)
+    if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
+        return;
+    CHECK_PTR_NORET(l->blocks)
+
     char buffer[1024] = {};
     va_list args;
     va_start(args, format);

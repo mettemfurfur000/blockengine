@@ -15,6 +15,11 @@ typedef struct {
     u8 padding;          // Padding for alignment (1 byte)
 } BlockInstanceData;      // Total: 24 bytes
 
+// create framebuffers if needed
+void create_framebuffer_object(u16 screenWidth, u16 screenHeight, u32 *fbo_ref, u32 *tex_ref);
+void block_renderer_bind_custom_framebuffer(int fb);
+void block_renderer_render_fb_texture_to_main_fb(int texutre);
+
 // Initialize the block renderer
 int block_renderer_init(int screenWidth, int screenHeight);
 

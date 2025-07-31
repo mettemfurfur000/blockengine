@@ -8,6 +8,7 @@
 
 #define LAYER_FLAG_HAS_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
+#define LAYER_FLAG_STATIC 0b00000100
 
 typedef struct var_holder
 {

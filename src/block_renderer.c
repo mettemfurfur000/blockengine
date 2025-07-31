@@ -129,40 +129,40 @@ int block_renderer_init(int screenWidth, int screenHeight)
 
     // Set up instance attributes
     size_t stride = sizeof(BlockInstanceData);
-    
+
     // Position (vec2)
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BlockInstanceData, x));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(BlockInstanceData, x));
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1);
-    
+
     // Scale (vec2)
-    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BlockInstanceData, scaleX));
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(BlockInstanceData, scaleX));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
-    
+
     // Rotation (float)
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(BlockInstanceData, rotation));
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(BlockInstanceData, rotation));
     glEnableVertexAttribArray(4);
     glVertexAttribDivisor(4, 1);
-    
+
     // Frame (uint8)
-    glVertexAttribIPointer(5, 1, GL_UNSIGNED_BYTE, stride, (void*)offsetof(BlockInstanceData, frame));
+    glVertexAttribIPointer(5, 1, GL_UNSIGNED_BYTE, stride, (void *)offsetof(BlockInstanceData, frame));
     glEnableVertexAttribArray(5);
     glVertexAttribDivisor(5, 1);
-    
+
     // Type (uint8)
-    glVertexAttribIPointer(6, 1, GL_UNSIGNED_BYTE, stride, (void*)offsetof(BlockInstanceData, type));
+    glVertexAttribIPointer(6, 1, GL_UNSIGNED_BYTE, stride, (void *)offsetof(BlockInstanceData, type));
     glEnableVertexAttribArray(6);
     glVertexAttribDivisor(6, 1);
-    
+
     // Flags (uint8)
-    glVertexAttribIPointer(7, 1, GL_UNSIGNED_BYTE, stride, (void*)offsetof(BlockInstanceData, flags));
+    glVertexAttribIPointer(7, 1, GL_UNSIGNED_BYTE, stride, (void *)offsetof(BlockInstanceData, flags));
     glEnableVertexAttribArray(7);
     glVertexAttribDivisor(7, 1);
 
     // Initialize instance data
     renderer.instanceCapacity = 1000; // Start with space for 1000 instances
-    renderer.instanceData = (BlockInstanceData*)malloc(renderer.instanceCapacity * sizeof(BlockInstanceData));
+    renderer.instanceData = (BlockInstanceData *)malloc(renderer.instanceCapacity * sizeof(BlockInstanceData));
     renderer.instanceCount = 0;
 
     // Set up orthographic projection
@@ -270,8 +270,9 @@ int block_renderer_create_instance(atlas_info info, int x, int y)
         renderer.instanceCapacity *= 2;
         renderer.instanceData =
             (BlockInstanceData *)realloc(renderer.instanceData, renderer.instanceCapacity * sizeof(BlockInstanceData));
-        
-        if (!renderer.instanceData) {
+
+        if (!renderer.instanceData)
+        {
             LOG_ERROR("Failed to allocate memory for instance data");
             return FAIL;
         }
@@ -287,7 +288,7 @@ int block_renderer_create_instance(atlas_info info, int x, int y)
     instance->frame = info.atlas_offset_x;
     instance->type = info.atlas_offset_y;
     instance->flags = 0;
-    
+
     renderer.instanceCount++;
     return SUCCESS;
 }
@@ -295,11 +296,12 @@ int block_renderer_create_instance(atlas_info info, int x, int y)
 // Configure properties for the last created instance
 void block_renderer_set_instance_properties(u8 frame, u8 type, u8 flags, float scaleX, float scaleY, float rotation)
 {
-    if (renderer.instanceCount == 0) {
+    if (renderer.instanceCount == 0)
+    {
         LOG_ERROR("No instance to configure properties for");
         return;
     }
-    
+
     BlockInstanceData *instance = &renderer.instanceData[renderer.instanceCount - 1];
     instance->frame = frame;
     instance->type = type;
@@ -314,6 +316,32 @@ void block_renderer_begin_frame()
     // Bind our framebuffer to render into it
     glBindFramebuffer(GL_FRAMEBUFFER, renderer.fbo);
     glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void block_renderer_bind_custom_framebuffer(int fb)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void block_renderer_render_fb_texture_to_main_fb(int texutre)
+{
+    // Switch back to default framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, renderer.fbo);
+
+    // Clear the default framebuffer
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Use post-processing shader
+    glUseProgram(renderer.shaderPost);
+
+    // Bind the framebuffer texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texutre);
+
+    // Draw the fullscreen quad using the post-processing VAO
+    glBindVertexArray(renderer.postVao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 void block_renderer_end_frame()

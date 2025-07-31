@@ -1,7 +1,7 @@
 #include "../include/scripting_bindings.h"
 #include "../include/events.h"
 #include "../include/file_system.h"
-// #include "../include/flags.h"
+#include "../include/flags.h"
 #include "../include/image_editing.h"
 #include "../include/rendering.h"
 #include "../include/vars.h"
@@ -350,6 +350,7 @@ static int lua_slice_get(lua_State *L)
     STRUCT_GET(L, slice, h, lua_pushinteger)
     STRUCT_GET(L, slice, w, lua_pushinteger)
     STRUCT_GET(L, slice, zoom, lua_pushinteger)
+    STRUCT_GET(L, slice, flags, lua_pushinteger)
     // STRUCT_GET(L, slice, ref, lua_pushlightuserdata)
     NEW_USER_OBJECT(L, Layer, slice.ref);
     lua_setfield(L, -2, "ref");
@@ -376,6 +377,8 @@ static int lua_slice_set(lua_State *L)
     STRUCT_SET(L, slice, w, LUA_TNUMBER, lua_tointeger);
     LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, zoom, LUA_TNUMBER, lua_tointeger);
+    LUA_EXPECT_UNSIGNED(L);
+    STRUCT_SET(L, slice, flags, LUA_TNUMBER, lua_tointeger);
     // STRUCT_SET(L, slice, ref, LUA_TUSERDATA, lua_touserdata);
     if (lua_getfield(L, -1, "ref") == 7)
     {
@@ -464,7 +467,7 @@ static int lua_sound_play(lua_State *L)
     return 1;
 }
 
-static int lua_get_ticks(lua_State*L)
+static int lua_get_ticks(lua_State *L)
 {
     lua_pushinteger(L, SDL_GetTicks());
     return 1;
@@ -475,7 +478,7 @@ static int lua_sound_set_volume_chunk(lua_State *L)
     LUA_CHECK_USER_OBJECT(L, Sound, wrapper, 1);
     u8 volume = luaL_checkinteger(L, 2);
 
-    lua_pushinteger(L, Mix_VolumeChunk( wrapper->s->obj, volume));
+    lua_pushinteger(L, Mix_VolumeChunk(wrapper->s->obj, volume));
 
     return 1;
 }
@@ -953,6 +956,15 @@ static int lua_layer_get_size(lua_State *L)
     return 4;
 }
 
+static int lua_layer_set_static(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+    bool val = luaL_checkinteger(L, 2);
+
+    FLAG_SET(wrapper->l->flags, LAYER_FLAG_STATIC, val);
+    return 0;
+}
+
 static int lua_layer_for_each(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
@@ -1059,7 +1071,6 @@ static int lua_bprintf(lua_State *L)
     bprintf(wrapper->l, character_id, orig_x, orig_y, limit, format);
     return 0;
 }
-
 
 static int lua_layer_tick_blocks(lua_State *L)
 {
@@ -1259,9 +1270,9 @@ static int lua_vars_tostring(lua_State *L)
 void lua_sound_register(lua_State *L)
 {
     const static luaL_Reg sound_methods[] = {
-        {"play", lua_sound_play},
+        {      "play",             lua_sound_play},
         {"set_volume", lua_sound_set_volume_chunk},
-        {  NULL,           NULL},
+        {        NULL,                       NULL},
     };
 
     luaL_newmetatable(L, "Sound");
@@ -1336,6 +1347,7 @@ void lua_layer_register(lua_State *L)
         {       "move_block",        lua_layer_move_block},
         {      "paste_block",       lua_layer_paste_block},
         {"get_input_handler", lua_get_block_input_handler},
+        {       "set_static",        lua_layer_set_static},
         {         "get_vars",          lua_block_get_vars},
         {         "set_vars",         lua_block_copy_vars},
         {           "bprint",                 lua_bprintf},
@@ -1408,7 +1420,7 @@ void lua_sdl_functions_register(lua_State *L)
 {
     const static luaL_Reg sdl_methods[] = {
         {"get_ticks", lua_get_ticks},
-        {          NULL,             NULL},
+        {       NULL,          NULL},
     };
 
     luaL_newlib(L, sdl_methods);
