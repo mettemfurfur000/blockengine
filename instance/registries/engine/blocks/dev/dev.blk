@@ -1,7 +1,11 @@
 automatic_id 1
-script = controller.lua
-# inputs = [ tick ]
-vars = { u8 v = 0 u8 t = 0 }
+script = dev.lua
+inputs = [ tick ]
+# f - for flags
+# s - for state
+# t - direction
+# v - anim frame (0 static, 1-2 walking, 3 bonk)
+vars = { u8 f = 0 u8 v = 0 u8 t = 0 u8 s = 0 }
 texture = dev.png
 frame_controller = v
 type_controller = t

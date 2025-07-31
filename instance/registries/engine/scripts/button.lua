@@ -8,7 +8,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
     function(layer, x, y, input_value)
         local status, vars = layer:get_vars(x, y)
         if status == false then
-            log_error("error getting vars for de button (really weird!!)")
+            error("error getting vars for de button (really weird!!)")
             return
         end
 

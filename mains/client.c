@@ -12,10 +12,10 @@ int main(int argc, char *argv[])
 
     unsigned long frame = 0;
 
-    const int target_fps = 100;
+    const int target_fps = 75;
     const int ms_per_s = 1000 / target_fps;
 
-    const int target_tps = 20;
+    const int target_tps = 10;
     const int tick_period = 1000 / target_tps;
 
     client_render_rules rules = {.screen_height = SCREEN_HEIGHT, .screen_width = SCREEN_WIDTH};

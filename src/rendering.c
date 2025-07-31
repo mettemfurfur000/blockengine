@@ -15,6 +15,11 @@ static unsigned short tile_rand(const int x, const int y)
     return ((funny_primes[prime] + funny_shifts[antiprime] * funny_primes[midprime]) >> funny_shifts[prime]) & 0x7fff;
 }
 
+const float lerp(float a, float b, float f)
+{
+    return a + f * (b - a);
+}
+
 u8 render_layer(layer_slice slice)
 {
     CHECK(slice.zoom == 0)
@@ -41,6 +46,9 @@ u8 render_layer(layer_slice slice)
 
     const int block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
     const int block_y_offset = slice.y % local_block_width;
+
+    const u32 ms_since_start = SDL_GetTicks();
+    const float seconds_since_start = ms_since_start / 1000.0f;
 
     GLuint texture = b_reg->atlas_texture_uid;
 
@@ -76,8 +84,8 @@ u8 render_layer(layer_slice slice)
             u8 flip = 0;
             i16 rotation = 0;
 
-            u16 offset_x = 0;
-            u16 offset_y = 0;
+            i16 offset_x = 0;
+            i16 offset_y = 0;
 
             block_resources br = b_reg->resources.data[id];
 
@@ -97,15 +105,32 @@ u8 render_layer(layer_slice slice)
                     var_get_u8(*var, br.anim_controller, &frame);
 
                 if (br.offset_x_controller != 0)
-                    var_get_u16(*var, br.offset_x_controller, &offset_x);
+                    var_get_i16(*var, br.offset_x_controller, &offset_x);
 
                 if (br.offset_y_controller != 0)
-                    var_get_u16(*var, br.offset_y_controller, &offset_y);
+                    var_get_i16(*var, br.offset_y_controller, &offset_y);
+
+                if (br.interp_takes != 0 && br.interp_timestamp_controller != 0)
+                {
+                    u32 ms_started_moving = 0; // tick timestamp when started moving
+                    var_get_u32(*var, br.interp_timestamp_controller, &ms_started_moving);
+                    
+                    // u32 ms_move_takes = 0;
+                    // var_get_u32(*var, br.interp_takes_controller, &ms_move_takes);
+
+                    const float pos = (ms_since_start - ms_started_moving) / (float)br.interp_takes;
+                    const float clamp_pos = fmax(0.0f, fmin(1.0, pos));
+
+                    offset_x = lerp(offset_x, 0, clamp_pos);
+                    offset_y = lerp(offset_y, 0, clamp_pos);
+
+                    // LOG_DEBUG("jumper %d %d : %f %d %d ", ms_started_moving, ms_since_start, clamp_pos, offset_x,
+                    //           offset_y);
+                }
             }
 
             if (br.frames_per_second > 1)
             {
-                float seconds_since_start = SDL_GetTicks() / 1000.0f;
                 int fps = br.frames_per_second;
                 frame = (u8)(seconds_since_start * fps);
             }

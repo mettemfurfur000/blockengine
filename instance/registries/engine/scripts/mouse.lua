@@ -25,8 +25,8 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
 
     local pos = { -- puts it just wherevr
-        x = width / 32,
-        y = height / 32
+        x = 0,
+        y = 0
     }
 
     mouse.home_layer = g_menu.mouse.layer
@@ -39,12 +39,12 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
     end)
 
     if mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, current_block) == false then
-        log_error("failed to paste a mouse block")
+        error("failed to paste a mouse block")
     end
 
     local status, vars = mouse.home_layer:get_vars(mouse.pos.x, mouse.pos.y)
     if status == false then
-        log_error("error getting vars for the mouse")
+        error("error getting vars for the mouse")
         return
     end
 

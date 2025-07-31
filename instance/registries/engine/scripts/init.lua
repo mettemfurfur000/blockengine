@@ -4,7 +4,7 @@ require("registries.engine.scripts.constants")
 
 screen_width, screen_height = render_rules.get_size(g_render_rules)
 
-g_width_blocks, g_height_blocks = screen_width / g_block_size, screen_height / g_block_size
+g_width_blocks, g_height_blocks = screen_width / (g_block_size * global_zoom), screen_height / (g_block_size * global_zoom)
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     if lay_ref == nil then

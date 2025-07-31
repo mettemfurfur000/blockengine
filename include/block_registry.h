@@ -10,11 +10,11 @@
 
 #include "../vec/src/vec.h"
 
-#define RESOURCE_FLAG_IGNORE_TYPE 0x01
-#define RESOURCE_FLAG_RANDOM_POS 0x02
-#define RESOURCE_FLAG_IS_FILLER 0x04
-#define RESOURCE_FLAG_AUTO_ID 0x08
-#define RESOURCE_FLAG_RANGED 0x10
+#define RESOURCE_FLAG_IGNORE_TYPE 0b00000001
+#define RESOURCE_FLAG_RANDOM_POS  0b00000010
+#define RESOURCE_FLAG_IS_FILLER   0b00000100
+#define RESOURCE_FLAG_AUTO_ID     0b00001000
+#define RESOURCE_FLAG_RANGED      0b00010000
 
 typedef struct block_resources
 {
@@ -50,9 +50,12 @@ typedef struct block_resources
     char flip_controller;     // current type of flipping
     char rotation_controller; // current rotation angle
     char offset_x_controller; // controls offset on de screen if needed
-    char offset_y_controller; // 
+    char offset_y_controller; //
+    char interp_timestamp_controller;   // if present, offset will be interpreted as the previous position to interpolate frop  
+    // char interp_takes_controller;   // if present, offset will be interpreted as the previous position to interpolate frop 
+    u32 interp_takes;
 
-    u8 override_frame;        // override type of block
+    u8 override_frame; // override type of block
 
     u8 frames_per_second;
     u8 flags;

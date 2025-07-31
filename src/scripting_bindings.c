@@ -1,11 +1,13 @@
 #include "../include/scripting_bindings.h"
 #include "../include/events.h"
 #include "../include/file_system.h"
-#include "../include/flags.h"
+// #include "../include/flags.h"
 #include "../include/image_editing.h"
 #include "../include/rendering.h"
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
+#include "SDL_mixer.h"
+#include "SDL_timer.h"
 
 #include <lauxlib.h>
 #include <lua.h>
@@ -458,6 +460,22 @@ static int lua_sound_play(lua_State *L)
     LUA_CHECK_USER_OBJECT(L, Sound, wrapper, 1);
 
     lua_pushinteger(L, Mix_PlayChannel(-1, wrapper->s->obj, 0));
+
+    return 1;
+}
+
+static int lua_get_ticks(lua_State*L)
+{
+    lua_pushinteger(L, SDL_GetTicks());
+    return 1;
+}
+
+static int lua_sound_set_volume_chunk(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Sound, wrapper, 1);
+    u8 volume = luaL_checkinteger(L, 2);
+
+    lua_pushinteger(L, Mix_VolumeChunk( wrapper->s->obj, volume));
 
     return 1;
 }
@@ -1242,6 +1260,7 @@ void lua_sound_register(lua_State *L)
 {
     const static luaL_Reg sound_methods[] = {
         {"play", lua_sound_play},
+        {"set_volume", lua_sound_set_volume_chunk},
         {  NULL,           NULL},
     };
 
@@ -1385,13 +1404,25 @@ void lua_level_editing_lib_register(lua_State *L)
     lua_setglobal(L, "le");
 }
 
+void lua_sdl_functions_register(lua_State *L)
+{
+    const static luaL_Reg sdl_methods[] = {
+        {"get_ticks", lua_get_ticks},
+        {          NULL,             NULL},
+    };
+
+    luaL_newlib(L, sdl_methods);
+    lua_setglobal(L, "sdl");
+}
+
 void lua_register_engine_objects(lua_State *L)
 {
-    lua_level_register(g_L); /* level editing */
-    lua_room_register(g_L);
-    lua_layer_register(g_L);
-    lua_vars_register(g_L);
-    lua_block_registry_register(g_L);
-    lua_sound_register(g_L);
-    load_image_editing_library(g_L); /* image editing */
+    lua_sdl_functions_register(L);
+    lua_level_register(L); /* level editing */
+    lua_room_register(L);
+    lua_layer_register(L);
+    lua_vars_register(L);
+    lua_block_registry_register(L);
+    lua_sound_register(L);
+    load_image_editing_library(L); /* image editing */
 }

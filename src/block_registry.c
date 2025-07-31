@@ -7,7 +7,6 @@
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
 
-
 #ifdef _WIN64
 #include "../dirent/include/dirent.h"
 #else
@@ -148,6 +147,18 @@ also handlers must return FAIL if they cant handle data or if data is invalid
             return SUCCESS;                                                                                            \
         }                                                                                                              \
         dest->name = atol(data);                                                                                       \
+        return SUCCESS;                                                                                                \
+    }
+
+#define DECLARE_DEFAULT_INT_FIELD_HANDLER(name)                                                                        \
+    u8 block_res_##name##_handler(const char *data, block_resources *dest)                                             \
+    {                                                                                                                  \
+        if (strcmp(data, clean_token) == 0)                                                                            \
+        {                                                                                                              \
+            dest->name = 0;                                                                                            \
+            return SUCCESS;                                                                                            \
+        }                                                                                                              \
+        dest->name = atoi(data);                                                                                       \
         return SUCCESS;                                                                                                \
     }
 
@@ -324,6 +335,10 @@ DECLARE_DEFAULT_CHAR_FIELD_HANDLER(flip_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(rotation_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(offset_x_controller)
 DECLARE_DEFAULT_CHAR_FIELD_HANDLER(offset_y_controller)
+DECLARE_DEFAULT_CHAR_FIELD_HANDLER(interp_timestamp_controller)
+// DECLARE_DEFAULT_CHAR_FIELD_HANDLER(interp_takes_controller)
+
+DECLARE_DEFAULT_INT_FIELD_HANDLER(interp_takes)
 
 u8 block_res_lua_script_handler(const char *data, block_resources *dest)
 {
@@ -401,6 +416,18 @@ const static resource_entry_handler res_handlers[] = {
     {                                 NULL,      &block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
     {                                 NULL,      &block_res_offset_x_controller_handler, "offset_x_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
     {                                 NULL,      &block_res_offset_y_controller_handler, "offset_y_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
+    {                                 NULL,
+     &block_res_interp_timestamp_controller_handler,
+     "interp_timestamp_controller", NOT_REQUIRED,
+     {"vars"},
+     {},
+     {}                                                                                                                                                              },
+    {                                 NULL,
+     &block_res_interp_takes_handler,
+     "interp_takes", NOT_REQUIRED,
+     {"vars", "interp_timestamp_controller"},
+     {},
+     {}                                                                                                                                                              },
     // block type things
     {                                 NULL,          &block_res_type_controller_handler,     "type_controller", NOT_REQUIRED,         {"vars"}, {},  {"type_control"}},
     // reads its type from a block data - can be controlled
