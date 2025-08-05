@@ -77,10 +77,6 @@ hash_node *alloc_node()
 
 void free_node(hash_node *node)
 {
-#if HASHTABLE_DEBUG_LOGGING == 1
-    print_node(node, "freeing");
-#endif
-
     SAFE_FREE(node->key.ptr)
     SAFE_FREE(node->value.ptr)
     SAFE_FREE(node);
@@ -89,28 +85,17 @@ void free_node(hash_node *node)
 void copy_key(hash_node *node, blob key)
 {
     blob_dup(&node->key, key);
-#if HASHTABLE_DEBUG_LOGGING == 1
-    print_node(node, "key copied");
-#endif
 }
 
 void copy_value(hash_node *node, blob value)
 {
     blob_dup(&node->value, value);
-
-#if HASHTABLE_DEBUG_LOGGING == 1
-    print_node(node, "value copied");
-#endif
 }
 
 void copy_all(hash_node *node, blob key, blob value)
 {
     blob_dup(&node->key, key);
     blob_dup(&node->value, value);
-
-#if HASHTABLE_DEBUG_LOGGING == 1
-    print_node(node, "all copied");
-#endif
 }
 
 hash_node **alloc_table()
@@ -271,9 +256,6 @@ void print_table(hash_node **table)
         node = table[i];
         while (node != NULL)
         {
-#if HASHTABLE_DEBUG_LOGGING == 1
-            print_node(node, "printing");
-#endif
             node = node->next;
         }
     }

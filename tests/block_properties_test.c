@@ -1,4 +1,5 @@
 #include "../include/block_properties.h"
+#include "../include/folder_structure.h"
 #include "test_utils.h"
 
 int test_basic_io()

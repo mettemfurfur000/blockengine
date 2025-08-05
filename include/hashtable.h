@@ -3,18 +3,16 @@
 
 #include <unistd.h>
 
-#define HASHTABLE_DEBUG_LOGGING 0
-
 #include "general.h"
 
 #define TABLE_SIZE 31
 
 typedef struct blob
 {
-    union // just different names for the same thing
+    union 
     {
         u8 *ptr;
-        char *str; // may not be a string at all!
+        char *str;
     };
 
     union

@@ -6,6 +6,7 @@
 #include "../include/uuid.h"
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
+#include "../include/folder_structure.h"
 
 #ifdef _WIN64
 #include "../dirent/include/dirent.h"
@@ -262,7 +263,7 @@ DECLARE_DEFAULT_INCREMENTOR(override_frame)
 
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
-    return strcmp(data, clean_token) == 0 ? vars_free(&dest->vars) : vars_parse(data, &dest->vars);
+    return strcmp(data, clean_token) == 0 ? vars_free(&dest->vars_sample) : vars_parse(data, &dest->vars_sample);
 }
 
 u8 block_res_texture_handler(const char *data, block_resources *dest)
@@ -777,7 +778,7 @@ u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
     LOG_INFO("Reading block registry from %s", reg_path);
 
     block_resources filler_entry = {
-        .id = 0, .vars = {{}, {}}
+        .id = 0, .vars_sample = {{}, {}}
     };
 
     // push a default void block with id 0

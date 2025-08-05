@@ -2,22 +2,21 @@
 #define BLOCK_RENDERER_H
 
 #include "general.h"
-#include "sdl2_basics.h"
 #include "rendering.h"
+#include "sdl2_basics.h"
 
-// Instance data structure
+
 typedef struct
 {
-    float x, y;             // Position (8 bytes)
-    float scale_x, scale_y; // Scale factors for stretching (8 bytes)
-    float rotation;         // Rotation in radians (4 bytes)
-    u8 frame;               // Current animation frame (1 byte)
-    u8 type;                // Block type (1 byte)
-    u8 flags;               // Bit flags for flip, special effects etc (1 byte)
-    u8 padding;             // Padding for alignment (1 byte)
-} block_layer_instance;     // Total: 24 bytes
+    float x, y;
+    float scale_x, scale_y;
+    float rotation;
+    u8 frame;
+    u8 type;
+    u8 flags;
+    u8 padding;
+} block_layer_instance;
 
-// All the info needed to render stuff
 typedef struct
 {
     block_layer_instance *data;
@@ -41,10 +40,8 @@ typedef struct
 
 typedef struct
 {
-    // Main rendering VAO/VBO
     render_info standard;
 
-    // uniforms for standard shader
     GLuint atlas_resize_factor;
     GLuint projection_loc;
     GLuint block_width_loc;
@@ -52,34 +49,22 @@ typedef struct
 
     framebuffer post_framebuffer;
 
-    // Post-processing VAO/VBO
     render_info post;
 
-    // Static layer renderer
     render_info frozen_renderer;
 } block_renderer;
 
 extern block_renderer renderer;
 
-// create framebuffers if needed
-// void create_framebuffer_object(u16 screenWidth, u16 screenHeight, u32 *fbo_ref, u32 *tex_ref);
 framebuffer create_framebuffer_object(u16 width, u16 height);
 
-// Initialize the block renderer
 int block_renderer_init(int screenWidth, int screenHeight);
-
-// Begin a new batch of blocks
-void block_renderer_begin_batch();
-
-void block_renderer_end_batch(image *atlas_img, GLuint atlas, u8 local_block_width);
-
-// Clean up resources
 void block_renderer_shutdown();
 
-// Create a new block instance at the specified position
-int block_renderer_create_instance(atlas_info info, int x, int y);
+void block_renderer_begin_batch();
+void block_renderer_end_batch(image *atlas_img, GLuint atlas, u8 local_block_width);
 
-// Configure properties for the last created instance
+int block_renderer_create_instance(atlas_info info, int x, int y);
 void block_renderer_set_instance_properties(u8 frame, u8 type, u8 flags, float scale_x, float scale_y, float rotation);
 
 void block_renderer_begin_frame();

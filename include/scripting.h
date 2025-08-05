@@ -1,10 +1,6 @@
 #ifndef SCRIPTING_H
 #define SCRIPTING_H
 
-// #include <stdio.h>
-// #include <string.h>
-// #include "events.h"
-
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>

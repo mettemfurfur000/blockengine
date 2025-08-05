@@ -901,7 +901,7 @@ static int lua_layer_paste_block(lua_State *L)
     if (id == 0)
         status &= block_delete_vars(wrapper->l, x, y) == SUCCESS;
     else
-        status &= block_copy_vars(wrapper->l, x, y, res->vars) == SUCCESS;
+        status &= block_copy_vars(wrapper->l, x, y, res->vars_sample) == SUCCESS;
 
     block_update_event e = {
         .type = ENGINE_BLOCK_CREATE,

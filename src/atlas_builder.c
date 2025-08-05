@@ -33,7 +33,6 @@ bool will_fit(u8 *obuf, u32 obuf_w, u32 obuf_h, u32 x, u32 y, u32 w, u32 h)
     for (u32 j = 0; j < h; j++)
         for (u32 i = 0; i < w; i++)
         {
-            // first (or might be only) slot of a texture
             u32 offset = y * obuf_w + x + j * obuf_w + i;
             if (obuf[offset])
                 return false;
@@ -47,19 +46,13 @@ void mark_taken(u8 *obuf, u32 obuf_w, u32 obuf_h, u32 x, u32 y, u32 w, u32 h)
     for (u32 j = 0; j < h; j++)
         for (u32 i = 0; i < w; i++)
         {
-            // first (or might be only) slot of a texture
             u32 offset = y * obuf_w + x + j * obuf_w + i;
-            obuf[offset] = 0xff; // set it to the most positive value possible
-                                 // to explicity mark it as TAKEN
+            obuf[offset] = 0xff;
         }
 }
 
 void build_atlas(block_registry *reg)
 {
-    // seems like the only way to calculate our block limit without being too
-    // freaky with macro's u32 block_limit = pow(2, sizeof(reg->atlas->height) *
-    // 8) / 16;
-
     u32 total_height = 0;
     u32 total_width = 0;
 
@@ -94,8 +87,7 @@ void build_atlas(block_registry *reg)
 
     u32 guess_w = pow(2, (u32)log2(min_side + (total_width)));
     u32 guess_h = pow(2, (u32)log2(min_side + (total_height)));
-    // obstruction buffer
-    // records which texture "slots" were taken and which ar still free
+
     u32 obuf_w = guess_w / g_block_width;
     u32 obuf_h = guess_h / g_block_width;
 
@@ -110,7 +102,6 @@ void build_atlas(block_registry *reg)
 
     u32 index = 0;
 
-    // i and j point at texture slots, not pixels
     for (u32 j = 0; j < obuf_h; j++)
         for (u32 i = 0; i < obuf_w; i++)
         {
@@ -127,9 +118,6 @@ void build_atlas(block_registry *reg)
                 index++;
                 continue;
             }
-
-            // skip completely empty textures, fillers, void, and ranged
-            // textures
 
             if (img->width == 0 || img->height == 0 || r->id == 0 || FLAG_GET(r->flags, RESOURCE_FLAG_IS_FILLER) ||
                 FLAG_GET(r->flags, RESOURCE_FLAG_RANGED))
@@ -165,7 +153,6 @@ void build_atlas(block_registry *reg)
                         (strcmp(blk->texture_filename, r->texture_filename) == 0))
                     {
                         blk->info = r->info;
-                        // LOG_DEBUG("replicated atlas info to %d block", blk->id);
                     }
                 }
 

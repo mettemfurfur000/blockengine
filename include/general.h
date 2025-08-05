@@ -32,19 +32,6 @@ static_assert(sizeof(i64) == 8, "");
 
 #define SUCCESSFUL(op) ((op) == SUCCESS)
 
-#define FOLDER_SHD "shaders"
-#define FOLDER_SHD_FRAG_EXT "frag"
-#define FOLDER_SHD_VERT_EXT "vert"
-#define FOLDER_SHD_GEOM_EXT "geom"
-//
-#define FOLDER_LVL "levels"
-//
-#define FOLDER_REG "registries"
-#define FOLDER_REG_TEX "textures"
-#define FOLDER_REG_SCR "scripts"
-#define FOLDER_REG_SND "sounds"
-
-// LOG_DEBUG("freeing %p", ptr);
 #define SAFE_FREE(ptr)                                                                                                 \
     if (ptr)                                                                                                           \
         free(ptr);                                                                                                     \

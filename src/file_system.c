@@ -2,6 +2,7 @@
 #include "../include/endianless.h"
 #include "../include/level.h"
 #include "../include/vars.h"
+#include "../include/folder_structure.h"
 
 #define WRITE(object, f) endianless_write((u8 *)&object, sizeof(object), f)
 #define READ(object, f) endianless_read((u8 *)&object, sizeof(object), f)

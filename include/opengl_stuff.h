@@ -7,8 +7,6 @@
 
 #include "image_editing.h"
 
-// for stuff that mostly requires opengl 
-
 void setup_opengl(u16 width, u16 height);
 
 u32 load_shader(const char *shader_path, GLenum shader_type);

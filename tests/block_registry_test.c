@@ -1,4 +1,5 @@
 #include "../include/block_registry.h"
+#include "../include/folder_structure.h"
 #include "../include/file_system.h"
 #include "test_utils.h"
 

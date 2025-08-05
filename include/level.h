@@ -12,8 +12,8 @@
 
 typedef struct var_holder
 {
-    blob *b_ptr; // points to a valid instance of a record with vars
-    u8 active;  // will be marked as inactive if freed
+    blob *b_ptr;
+    u8 active;
 } var_holder;
 
 typedef vec_t(var_holder) var_holder_vec_t;
@@ -29,16 +29,10 @@ typedef struct layer
 {
     u64 uuid;
     void *parent_room;
-    // hash_node **vars;         // hashtable for block vars - variables, unique
-    // for said block. constant values are stored in the block registry, not
-    // here
-
-    // hashtables are way too slow for this, using an array instead
 
     var_object_pool var_pool;
-    block_registry *registry; // block registry used by this layer. if NULL, the
-                              // layer acts as a simple array of ids
-    u8 *blocks;               // array of blocks, each of size bytes_per_block
+    block_registry *registry;
+    u8 *blocks; // array of blocks, each of size bytes_per_block
 
     u32 width;                //
     u32 height;               //
@@ -56,8 +50,8 @@ typedef struct room
     char *name;
     void *parent_level;
 
-    u32 width;  //
-    u32 height; //
+    u32 width;
+    u32 height;
 
     vec_void_t layers;
     // TODO: implement support for entities
@@ -105,10 +99,11 @@ u8 free_level(level *l);
 level *level_create(const char *name);
 room *room_create(level *parent, const char *name, u32 w, u32 h);
 layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags);
-// utils
 
-// turns string into formatted block chain
+// utils
+// turns an ascii string into formatted block chain
 // supposed to be used with a special character block
+
 void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...);
 
 #endif

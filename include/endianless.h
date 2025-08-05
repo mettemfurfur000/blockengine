@@ -13,8 +13,4 @@ void endianless_copy(u8 *dest, u8 *src, int size);
 int endianless_write(u8 *data, int size, FILE *f);
 int endianless_read(u8 *data, int size, FILE *f);
 
-// make byte data little endian
-// in little endian makes no change
-// in big flips bytes
-
 #endif

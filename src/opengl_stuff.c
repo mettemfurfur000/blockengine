@@ -1,5 +1,6 @@
 #include "../include/opengl_stuff.h"
 #include "../include/block_renderer.h"
+#include "../include/folder_structure.h"
 // #include "SDL_opengl.h"
 #include <epoxy/gl_generated.h>
 #include <stdlib.h>

@@ -3,8 +3,6 @@
 
 #include "block_registry.h"
 
-// typedef vec_t(texture) texture_t;
-
 void build_atlas(block_registry *reg);
 
 #endif

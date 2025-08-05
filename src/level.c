@@ -483,7 +483,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
     int x = orig_x;
     int y = orig_y;
 
-    blob vars_space = l->registry->resources.data[character_block_id].vars;
+    blob vars_space = l->registry->resources.data[character_block_id].vars_sample;
 
     while (*ptr != 0)
     {
