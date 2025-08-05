@@ -90,7 +90,7 @@ local function set_slices(ref_table)
     print("setting slices")
     for k, v in pairs(ref_table) do
         if v.slice_push_ignore ~= true then
-            print(v.name)
+            print(v.name .. " at index " .. v.index)
             render_rules.set_slice(g_render_rules, v.index, v.slice)
         end
     end

@@ -6,8 +6,9 @@
 #include "../include/rendering.h"
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
-#include "SDL_mixer.h"
-#include "SDL_timer.h"
+
+#include <SDL_mixer.h>
+#include <SDL_timer.h>
 
 #include <lauxlib.h>
 #include <lua.h>
@@ -334,6 +335,22 @@ static int lua_render_rules_set_order(lua_State *L)
     return 0;
 }
 
+static int lua_make_static(lua_State *L)
+{
+    client_render_rules *rules = check_light_userdata(L, 1);
+    u32 index = luaL_checkinteger(L, 2);
+    u8 set = lua_toboolean(L, 3);
+
+    if (index >= rules->slices.length)
+        luaL_error(L, "Index out of range");
+
+    layer_slice *slice = &rules->slices.data[index];
+
+    FLAG_SET(slice->flags, LAYER_SLICE_FLAG_FROZEN, set);
+
+    return 0;
+}
+
 static int lua_slice_get(lua_State *L)
 {
     client_render_rules *rules = check_light_userdata(L, 1);
@@ -410,6 +427,7 @@ void lua_register_render_rules(lua_State *L)
         {"set_order", lua_render_rules_set_order},
         {"get_slice",              lua_slice_get},
         {"set_slice",              lua_slice_set},
+        {"make_static",              lua_make_static},
         {       NULL,                       NULL}
     };
 
@@ -420,7 +438,7 @@ void lua_register_render_rules(lua_State *L)
 // #####################//
 // #####################//
 // #####################//
-//  LEVE EDITING        //
+//  LEVEL EDITING        //
 // #####################//
 // #####################//
 // #####################//

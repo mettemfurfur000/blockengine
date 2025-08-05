@@ -3,7 +3,7 @@ layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 aTexCoord;
 // Instance attributes
 layout(location = 2) in vec2 aInstancePos;      // x, y
-layout(location = 3) in vec2 aInstanceScale;    // scaleX, scaleY
+layout(location = 3) in vec2 aInstanceScale;    // scale_x, scale_y
 layout(location = 4) in float aInstanceRotation; // rotation
 layout(location = 5) in uint aInstanceFrame;     // frame number
 layout(location = 6) in uint aInstanceType;      // block type

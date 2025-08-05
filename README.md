@@ -55,7 +55,7 @@ In summary, developers can create a layer of game logic (marked "d", for example
 - OpenGL-based rendering pipeline
 - Efficient instanced rendering with attribute system:
   - Position (float x, y)
-  - Scale (float scaleX, scaleY)
+  - Scale (float scale_x, scale_y)
   - Rotation (float, radians)
   - Frame/Type indices (uint8)
   - Flags for effects (uint8)

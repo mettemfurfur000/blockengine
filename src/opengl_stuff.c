@@ -77,27 +77,27 @@ u32 compile_shader_program(u32 *shaders, u8 len)
         return 0;
     }
 
-    u32 shaderDefault;
-    shaderDefault = glCreateProgram();
+    u32 shader;
+    shader = glCreateProgram();
     for (u8 i = 0; i < len; i++)
-        glAttachShader(shaderDefault, shaders[i]);
+        glAttachShader(shader, shaders[i]);
 
-    glLinkProgram(shaderDefault);
+    glLinkProgram(shader);
 
     for (u8 i = 0; i < len; i++)
         glDeleteShader(shaders[i]);
 
     int success;
     char infoLog[512];
-    glGetProgramiv(shaderDefault, GL_LINK_STATUS, &success);
+    glGetProgramiv(shader, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(shaderDefault, 512, NULL, infoLog);
+        glGetProgramInfoLog(shader, 512, NULL, infoLog);
         LOG_ERROR("TS PMO : %s", infoLog);
         return 0;
     }
 
-    return shaderDefault;
+    return shader;
 }
 
 u32 assemble_shader(const char *shader_name)

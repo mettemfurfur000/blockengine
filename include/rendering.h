@@ -6,22 +6,19 @@
 // #include "vars.h"
 #include "level.h"
 
-#define LAYER_SLICE_FLAG_STATIC_READY 0b00000001
-#define LAYER_SLICE_FLAG_STATIC_RENDERED 0b00000010
+#define LAYER_SLICE_FLAG_FROZEN 0b00000001
 
 typedef struct layer_slice
 {
     layer *ref;
-    u32 framebuffer; // 
-    u32 framebuffer_texture; //
+    u32 framebuffer;         // OpenGL framebuffer object ID
+    u32 framebuffer_texture; // OpenGL texture ID for the framebuffer
 
-    u32 x, y; // coordinates in the world, in pixels ( most of the time 16 per
-              // block )
-    u32 w, h; // width an height of visible uhhhh
+    u32 x, y; // coordinates in the world, in pixels (most of the time 16 per block)
+    u32 w, h; // width and height of visible area
 
     u8 zoom;
-    // static layer gets rendered once ina framebuffer
-    u8 flags;
+    u8 flags; // static layer gets rendered once in a framebuffer
 } layer_slice;
 
 typedef vec_t(layer_slice) layer_slices_t;

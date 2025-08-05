@@ -84,13 +84,13 @@ var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out
 
         if (var) // if found, reuse it
         {
-            LOG_WARNING("Reusing an inactive var...");
+            // LOG_WARNING("Reusing an inactive var...");
             var->active = true;
             var->b_ptr->size = required_size;
 
             pool->inactive_count--;
 
-            LOG_WARNING("Success...");
+            // LOG_WARNING("Success...");
 
             return *var;
         }
@@ -518,7 +518,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
             x++;
         }
 
-        if (x > length_limit)
+        if (x > length_limit || x > l->width)
         {
             x = orig_x;
             y++;
