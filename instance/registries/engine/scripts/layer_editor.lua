@@ -90,15 +90,16 @@ local function ui_update(do_erase)
     end
 
     if editor.layer_being_edited ~= nil then
-        world_print(pallete_width, ui_offset_layer_name, ui_width, editor.layer_being_edited.name .. ":" .. editor.layer_being_edited_index)
+        world_print(pallete_width, ui_offset_layer_name, ui_width,
+            editor.layer_being_edited.name .. ":" .. editor.layer_being_edited_index)
     end
 
     if editor.selected_block ~= nil and editor.selected_block.id ~= 0 then
         local filename = string.match(editor.selected_block.all_fields.source_filename, "[^/\\]*%.%w+$"):sub(1, -5)
         world_print(pallete_width, ui_offset_block_name, ui_width, "" .. filename)
-    end
 
-    editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, editor.selected_block.id) -- show the selected block
+        editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, editor.selected_block.id) -- show the selected block
+    end
 
     world_print(pallete_width, ui_offset_mode, ui_width, editor.mode)
 end
@@ -160,19 +161,19 @@ local function keybind_handle(keysym, char)
     --     print("saved")
     -- end
 
-    if char == 'h' then
-        -- for testing purposes make the object layer static
-        if editor.layer_being_edited then
-            render_rules.make_static(g_render_rules, 0, true)
-        end
-    end
+    -- if char == 'h' then
+    --     -- for testing purposes make the object layer static
+    --     if editor.layer_being_edited then
+    --         render_rules.set_frozen(g_render_rules, 0, true)
+    --     end
+    -- end
 
-    if char == 'l' then
-        -- make it normal
-        if editor.layer_being_edited then
-            render_rules.make_static(g_render_rules, 0, false)
-        end
-    end
+    -- if char == 'l' then
+    --     -- make it normal
+    --     if editor.layer_being_edited then
+    --         render_rules.set_frozen(g_render_rules, 0, false)
+    --     end
+    -- end
 
     if char == 'r' then
         editor.mode = "remove"

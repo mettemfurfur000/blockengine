@@ -335,7 +335,7 @@ static int lua_render_rules_set_order(lua_State *L)
     return 0;
 }
 
-static int lua_make_static(lua_State *L)
+static int lua_set_frozen(lua_State *L)
 {
     client_render_rules *rules = check_light_userdata(L, 1);
     u32 index = luaL_checkinteger(L, 2);
@@ -347,6 +347,7 @@ static int lua_make_static(lua_State *L)
     layer_slice *slice = &rules->slices.data[index];
 
     FLAG_SET(slice->flags, LAYER_SLICE_FLAG_FROZEN, set);
+    FLAG_SET(slice->flags, LAYER_SLICE_FLAG_RENDER_COMPLETE, 0);
 
     return 0;
 }
@@ -422,13 +423,13 @@ static int lua_slice_set(lua_State *L)
 void lua_register_render_rules(lua_State *L)
 {
     const static luaL_Reg render_rules_lib[] = {
-        { "get_size",  lua_render_rules_get_size},
-        {"get_order", lua_render_rules_get_order},
-        {"set_order", lua_render_rules_set_order},
-        {"get_slice",              lua_slice_get},
-        {"set_slice",              lua_slice_set},
-        {"make_static",              lua_make_static},
-        {       NULL,                       NULL}
+        {  "get_size",  lua_render_rules_get_size},
+        { "get_order", lua_render_rules_get_order},
+        { "set_order", lua_render_rules_set_order},
+        { "get_slice",              lua_slice_get},
+        { "set_slice",              lua_slice_set},
+        {"set_frozen",             lua_set_frozen},
+        {        NULL,                       NULL}
     };
 
     luaL_newlib(L, render_rules_lib);

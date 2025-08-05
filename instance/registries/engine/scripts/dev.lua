@@ -22,13 +22,21 @@ end
 
 blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)
     if rep ~= nil and rep <= 1 and state ~= 0 then
-        keystate[string.char(keysym)] = state
+        -- keystate[string.char(keysym)] = state
+        try(function()
+            keystate[string.char(keysym)] = state
+        end, function(e)
+        end)
     end
 end)
 
 blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, rep)
     if rep ~= nil and rep <= 0 and state ~= 1 then
-        keystate[string.char(keysym)] = state
+        -- keystate[string.char(keysym)] = state
+        try(function()
+            keystate[string.char(keysym)] = state
+        end, function(e)
+        end)
     end
 end)
 

@@ -7,6 +7,7 @@
 #include "level.h"
 
 #define LAYER_SLICE_FLAG_FROZEN 0b00000001
+#define LAYER_SLICE_FLAG_RENDER_COMPLETE 0b00000010
 
 typedef struct layer_slice
 {
