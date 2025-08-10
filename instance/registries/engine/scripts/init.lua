@@ -4,7 +4,8 @@ require("registries.engine.scripts.constants")
 
 screen_width, screen_height = render_rules.get_size(g_render_rules)
 
-g_width_blocks, g_height_blocks = screen_width / (g_block_size * global_zoom), screen_height / (g_block_size * global_zoom)
+g_width_blocks, g_height_blocks = screen_width / (g_block_size * global_zoom),
+    screen_height / (g_block_size * global_zoom)
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     if lay_ref == nil then
@@ -111,9 +112,9 @@ local function generate_view_and_layers()
     -- layer_new_invisible(g_menu, "dev", safe_layer_create(g_menu_room, "engine", 1, 0))
     layer_append_render(menu, "floor", safe_layer_create(g_menu_room, "engine", 1, 0))
     layer_append_render(menu, "objects", safe_layer_create(g_menu_room, "engine", 1, 2))
-    layer_append_render(menu, "pallete", safe_layer_create(g_menu_room, "engine", 1, 0))
+    layer_append_render(menu, "pallete", safe_layer_create(g_menu_room, "engine", 1, 0), true)
     layer_append_render(menu, "text", safe_layer_create(g_menu_room, "engine", 1, 2), true)
-    layer_append_render(menu, "mouse", safe_layer_create(g_menu_room, "engine", 1, 2))
+    layer_append_render(menu, "mouse", safe_layer_create(g_menu_room, "engine", 1, 2), true)
     -- layer_append_render(g_menu, "ui_back", safe_layer_create(g_menu_room, "engine", 1, 2), true)
     -- layer_append_render(g_menu, "ui_floor_select", safe_layer_create(g_menu_room, "engine", 1, 0), true)
     -- layer_append_render(g_menu, "ui_engine_select", safe_layer_create(g_menu_room, "engine", 1, 0), true)
@@ -126,9 +127,9 @@ local function reflective_view_build()
 
     layer_append_existing(menu, g_menu_room, "floor")
     layer_append_existing(menu, g_menu_room, "objects")
-    layer_append_existing(menu, g_menu_room, "pallete")
+    layer_append_existing(menu, g_menu_room, "pallete", true)
     layer_append_existing(menu, g_menu_room, "text", true)
-    layer_append_existing(menu, g_menu_room, "mouse")
+    layer_append_existing(menu, g_menu_room, "mouse", true)
 
     return menu
 end

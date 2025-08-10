@@ -1,4 +1,5 @@
 local vec = require("registries.engine.scripts.vector_additions")
+require("registries.engine.scripts.camera_utils")
 
 local current_block = scripting_current_block_id
 
@@ -93,6 +94,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             if status == false then
                 print("failed to move dev to " .. next_pos.x .. ":" .. next_pos.y)
             end
+
+            camera_set_target(next_pos, true)
 
             vars:set_u8("f", 0) -- moved
         end

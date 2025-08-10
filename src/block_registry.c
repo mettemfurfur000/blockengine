@@ -769,7 +769,7 @@ u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
 u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
 {
     CHECK_PTR(reg_ref);
-    reg_ref->name = folder_name;
+    reg_ref->name = strdup(folder_name);
     reg_ref->uuid = generate_uuid();
 
     char reg_path[MAX_PATH_LENGTH] = {};

@@ -36,7 +36,7 @@ end
 
 local function mouse_action(x, y, button)
     if button == 1 then
-        local blk = block_pos({
+        local blk = pixels_to_blocks({
             x = x,
             y = y
         })
@@ -118,7 +118,7 @@ end)
 
 -- clicks on the pallete choose the tile
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
-    local blk = block_pos({
+    local blk = pixel_to_blocks_no_offset({
         x = x,
         y = y
     })

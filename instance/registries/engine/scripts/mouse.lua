@@ -7,17 +7,29 @@ mouse = {
         x = -1,
         y = -1
     },
+    offset = {
+        x = 0,
+        y = 0
+    },
     home_layer = nil,
     home_layer_index = nil,
     home_room = nil,
     vars = nil
 }
 
-function block_pos(mouse_pos, zoom)
+function pixels_to_blocks(pos, zoom)
     zoom = zoom or render_rules.get_slice(g_render_rules, g_menu.mouse.index).zoom
     return {
-        x = math.floor(mouse_pos.x / g_block_size / zoom),
-        y = math.floor(mouse_pos.y / g_block_size / zoom)
+        x = math.floor((pos.x + mouse.offset.x) / g_block_size / zoom),
+        y = math.floor((pos.y + mouse.offset.y) / g_block_size / zoom)
+    }
+end
+
+function pixel_to_blocks_no_offset(pos, zoom)
+    zoom = zoom or render_rules.get_slice(g_render_rules, g_menu.mouse.index).zoom
+    return {
+        x = math.floor(pos.x / g_block_size / zoom),
+        y = math.floor(pos.y / g_block_size / zoom)
     }
 end
 
@@ -54,7 +66,7 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
 end)
 
 local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
-    local new_pos = block_pos(cur_pos_pixels, slice.zoom)
+    local new_pos = pixel_to_blocks_no_offset(cur_pos_pixels, slice.zoom)
 
     local delta = {
         x = new_pos.x - old_pos_blocks.x,
@@ -79,29 +91,6 @@ blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, c
         x = x,
         y = y
     }, mouse.pos)
-
-    if state == 1 then
-        -- print("clicked at ", mouse.pos.x, mouse.pos.y)
-        if control_points == nil then
-            return
-        end
-        -- print("valid")
-        print_table(control_points)
-
-        local block_pos = block_pos({
-            x = x,
-            y = y
-        }, cur_slice.zoom)
-
-        for i, v in ipairs(control_points) do
-            -- print("checking " .. v.x .. ", " .. v.y .. " to " .. block_pos.x .. ", " .. block_pos.y)
-            if block_pos.x == v.x and block_pos.y == v.y then
-                control_points_clear()
-                v.action_set(mouse)
-                -- print("triggering")
-            end
-        end
-    end
 end)
 
 blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
@@ -123,7 +112,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, stat
     end
 
     local cur_slice = render_rules.get_slice(g_render_rules, g_menu.mouse.index);
-    local actual_pos = block_pos({
+    local actual_pos = pixels_to_blocks({
         x = x,
         y = y
     }, cur_slice.zoom)
