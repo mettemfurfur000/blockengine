@@ -135,7 +135,7 @@ u8 render_layer(layer_slice slice)
 
             if (FLAG_GET(br.flags, RESOURCE_FLAG_RANDOM_POS))
             {
-                frame = tile_rand(i, j) % br.info.frames;
+                frame = tile_rand(i, j) % br.info.total_frames;
             }
 
             if (br.override_frame != 0)
