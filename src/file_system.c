@@ -1,8 +1,8 @@
 #include "../include/file_system.h"
 #include "../include/endianless.h"
+#include "../include/folder_structure.h"
 #include "../include/level.h"
 #include "../include/vars.h"
-#include "../include/folder_structure.h"
 
 #define WRITE(object, f) endianless_write((u8 *)&object, sizeof(object), f)
 #define READ(object, f) endianless_read((u8 *)&object, sizeof(object), f)
@@ -128,13 +128,22 @@ void write_layer(layer *l, FILE *f)
             endianless_write((u8 *)&id, l->var_index_size, f);
         }
 
-    layer_clean_vars(l);
+    // layer_clean_vars(l);
 
     var_holder_vec_t vars = l->var_pool.vars;
-    WRITE(vars.length, f);
+
+    // only count active vars
+
+    u32 active_count = 0;
+    for (u32 i = 0; i < vars.length; i++)
+        if (vars.data[i].active)
+            active_count++;
+
+    WRITE(active_count, f);
 
     for (u32 i = 0; i < vars.length; i++)
-        blob_vars_write(*vars.data[i].b_ptr, f);
+        if (vars.data[i].active)
+            blob_vars_write(*vars.data[i].b_ptr, f);
 }
 
 void read_layer(layer *l, room *parent, FILE *f)
@@ -191,7 +200,7 @@ void read_layer(layer *l, room *parent, FILE *f)
 
     for (u32 i = 0; i < holders->length; i++)
     {
-        holders->data[i].b_ptr = calloc(1,sizeof(blob));
+        holders->data[i].b_ptr = calloc(1, sizeof(blob));
         holders->data[i].active = true;
         *holders->data[i].b_ptr = blob_vars_read(f);
     }

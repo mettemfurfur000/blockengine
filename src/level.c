@@ -16,7 +16,7 @@
 
 var_holder *get_inactive(var_object_pool *pool, u32 required_size, u32 *index_out)
 {
-    for (u32 i = 1; i <= pool->vars.length; i++)
+    for (u32 i = 1; i < pool->vars.length; i++)
     {
         var_holder iter = pool->vars.data[i];
         if (!iter.active && iter.b_ptr->size >= required_size)
@@ -38,31 +38,31 @@ var_holder *get_variable(var_object_pool *pool, u32 index)
     return &pool->vars.data[index];
 }
 
-u8 clear_inactive_variables(var_object_pool *pool)
-{
-    var_holder_vec_t new_vars = {};
+// u8 clear_inactive_variables(var_object_pool *pool)
+// {
+//     var_holder_vec_t new_vars = {};
 
-    vec_reserve(&new_vars, pool->vars.length - pool->inactive_count);
-    // iterate through all vars and filter out inactive vars
-    for (u32 i = 0; i < pool->vars.length; i++)
-        if (!pool->vars.data[i].active)
-        {
-            vars_free(pool->vars.data[i].b_ptr); // frees pointer inside of a holder object, not the holder itself
-        }
-        else
-        {
-            (void)vec_push(&new_vars, pool->vars.data[i]);
-        }
+//     vec_reserve(&new_vars, pool->vars.length - pool->inactive_count);
+//     // iterate through all vars and filter out inactive vars
+//     for (u32 i = 1; i < pool->vars.length; i++)
+//         if (!pool->vars.data[i].active)
+//         {
+//             vars_free(pool->vars.data[i].b_ptr); // frees pointer inside of a holder object, not the holder itself
+//         }
+//         else
+//         {
+//             (void)vec_push(&new_vars, pool->vars.data[i]);
+//         }
 
-    vec_deinit(&pool->vars);
-    pool->vars = new_vars;
-    return SUCCESS;
-}
+//     vec_deinit(&pool->vars);
+//     pool->vars = new_vars;
+//     return SUCCESS;
+// }
 
-u8 layer_clean_vars(layer *l)
-{
-    return clear_inactive_variables(&l->var_pool);
-}
+// u8 layer_clean_vars(layer *l)
+// {
+//     return clear_inactive_variables(&l->var_pool);
+// }
 
 var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out)
 {
@@ -72,11 +72,11 @@ var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out
         return (var_holder){0};
     }
 
-    if (pool->inactive_count > pool->inactive_limit)
-    {
-        LOG_INFO("Clearing inactive vars");
-        clear_inactive_variables(pool);
-    }
+    // if (pool->inactive_count > pool->inactive_limit)
+    // {
+    //     LOG_INFO("Clearing inactive vars");
+    //     clear_inactive_variables(pool);
+    // }
 
     if (pool->inactive_count != 0) // try to get an inactive var with matching size
     {
@@ -118,6 +118,8 @@ void remove_variable(var_object_pool *pool, var_holder *h)
 {
     h->active = false;
     pool->inactive_count++;
+
+    // LOG_DEBUG("marking as inactive: %p : len %d", h->b_ptr, h->b_ptr->length);
 }
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
@@ -334,7 +336,7 @@ u8 init_layer(layer *l, room *parent_room)
     {
         vec_init(&l->var_pool.vars);
         l->var_pool.inactive_count = 0;
-        l->var_pool.inactive_limit = 256 * 16;
+        l->var_pool.inactive_limit = 16;
         // push an empty var so that the first var is always at index 1
         (void)new_variable(&l->var_pool, 1, NULL);
     }
