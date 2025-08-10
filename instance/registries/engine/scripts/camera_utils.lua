@@ -14,24 +14,30 @@ function recalc_camera_limits()
     camera_limit_x, camera_limit_y = screen_width / cur_zoom, screen_height / cur_zoom
 end
 
-function camera_set_target(pos, do_center)
-    do_center = do_center or false
+function camera_set_target(pos)
+
+    -- do_center = do_center or false
     for k, v in pairs(g_menu) do
         if v.is_ui ~= true then
             local slice = v.slice
 
             local actual_block_width = cur_zoom * g_block_size
 
-            if (do_center) then
-                pos.x = pos.x + 0.5
-                pos.y = pos.y + 0.5
-            end
+            print_table(slice)
 
-            slice.x = (pos.x) * actual_block_width - slice.w / 2
-            slice.y = (pos.y) * actual_block_width - slice.h / 2
+            local pixels_x = (pos.x * actual_block_width) - slice.w / 2
+            local pixels_y = (pos.y * actual_block_width) - slice.h / 2
 
-            slice.x = math.min(math.max(slice.x, 0), camera_limit_x)
-            slice.y = math.min(math.max(slice.y, 0), camera_limit_y)
+            local error_x = math.fmod(pixels_x, actual_block_width)
+            local error_y = math.fmod(pixels_y, actual_block_width)
+
+            pixels_x = pixels_x - error_x
+            pixels_y = pixels_y - error_y
+
+            -- print(pixels_x .. " : ".. pixels_y)
+
+            slice.x = math.min(math.max(pixels_x, 0), camera_limit_x)
+            slice.y = math.min(math.max(pixels_y, 0), camera_limit_y)
 
             -- update current mouse offset
 

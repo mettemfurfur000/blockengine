@@ -627,7 +627,7 @@ void call_increments(block_resources *br_ref)
 
 void range_ids(block_resources_t *reg, block_resources *br_ref)
 {
-    for (u32 i = 1; i <= br_ref->repeat_times; i++)
+    for (u32 i = 1; i < br_ref->repeat_times; i++)
     {
         u8 skip_this_one = 0;
 

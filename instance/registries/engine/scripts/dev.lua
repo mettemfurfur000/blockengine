@@ -95,7 +95,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 print("failed to move dev to " .. next_pos.x .. ":" .. next_pos.y)
             end
 
-            camera_set_target(next_pos, true)
+            camera_set_target(next_pos)
 
             vars:set_u8("f", 0) -- moved
         end

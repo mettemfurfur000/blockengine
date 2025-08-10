@@ -1,6 +1,6 @@
 automatic_id 1
 repeat_times = 20
-repeat_skip = [ 6 ]
+# repeat_skip = [ 6 ]
 repeat_increment = [ id override_frame ]
 texture = dark_brick_wall.png
 override_frame = 0
