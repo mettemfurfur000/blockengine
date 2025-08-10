@@ -203,12 +203,16 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
     u64 var_index = 0;
     memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
+    if(var_index == 0)
+        return FAIL;
+
     var_holder *h = get_variable(&l->var_pool, var_index);
 
     if (h)
         *vars_out = h->b_ptr;
     else
     {
+        LOG_ERROR("Failed to lookup a var %d at %d:%d", var_index, x, y);
         *vars_out = NULL;
         return FAIL;
     }

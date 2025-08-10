@@ -132,18 +132,21 @@ void write_layer(layer *l, FILE *f)
 
     var_holder_vec_t vars = l->var_pool.vars;
 
-    // only count active vars
+    // u32 active_count = 0;
+    // for (u32 i = 0; i < vars.length; i++)
+    //     if (vars.data[i].active)
+    //         active_count++;
 
-    u32 active_count = 0;
+    // write all vars, including inactive ones
+    // TODO: change var indexes each time we wana save the world (remove holes in the list of vars)
+
+    WRITE(vars.length, f);
     for (u32 i = 0; i < vars.length; i++)
-        if (vars.data[i].active)
-            active_count++;
-
-    WRITE(active_count, f);
-
-    for (u32 i = 0; i < vars.length; i++)
-        if (vars.data[i].active)
-            blob_vars_write(*vars.data[i].b_ptr, f);
+    // if (vars.data[i].active)
+    {
+        WRITE(vars.data[i].active, f);
+        blob_vars_write(*vars.data[i].b_ptr, f);
+    }
 }
 
 void read_layer(layer *l, room *parent, FILE *f)
@@ -201,7 +204,8 @@ void read_layer(layer *l, room *parent, FILE *f)
     for (u32 i = 0; i < holders->length; i++)
     {
         holders->data[i].b_ptr = calloc(1, sizeof(blob));
-        holders->data[i].active = true;
+        // holders->data[i].active = true;
+        READ(holders->data[i].active, f);
         *holders->data[i].b_ptr = blob_vars_read(f);
     }
 }
