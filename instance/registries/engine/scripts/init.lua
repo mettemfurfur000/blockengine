@@ -4,8 +4,8 @@ require("registries.engine.scripts.constants")
 
 screen_width, screen_height = render_rules.get_size(g_render_rules)
 
-g_width_blocks, g_height_blocks = screen_width / (g_block_size * global_zoom),
-    screen_height / (g_block_size * global_zoom)
+g_width_blocks, g_height_blocks = 2 * screen_width / (g_block_size * global_zoom),
+    2 * screen_height / (g_block_size * global_zoom)
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     if lay_ref == nil then
@@ -15,6 +15,9 @@ local function slice_gen(x, y, w, h, z, lay_ref)
     return {
         x = x,
         y = y,
+        old_x = x,
+        old_y = y,
+        timestamp_old = sdl:get_ticks(),
         h = h,
         w = w,
         zoom = z,

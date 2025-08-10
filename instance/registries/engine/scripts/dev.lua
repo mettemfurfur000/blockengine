@@ -43,9 +43,22 @@ end)
 
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
     function(layer, x, y, value)
+        -- if g_tick % tick_skip ~= 0 then -- tick cap
+        --     return
+        -- end
+
         local status, vars = layer:get_vars(x, y)
         if status == false then
             error("error getting vars for the dev")
+            return
+        end
+
+        if value == 0 then
+            vars:set_u8("f", 1) -- ready to perform a move
+            return
+        end
+
+        if vars:get_u8("f") == 0 then -- if 0 that means that it already moved
             return
         end
 
@@ -53,19 +66,6 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             x = x,
             y = y
         }
-
-        if value == 0 then
-            vars:set_u8("f", 1) -- ready to perform a move
-            return
-        end
-
-        -- if g_tick % 5 ~= 0 then -- tick cap
-        --     return
-        -- end
-
-        if vars:get_u8("f") == 0 then -- if 0 that means that it already moved
-            return
-        end
 
         local delta = input_delta()
         if delta.x == 0 and delta.y == 0 then
@@ -95,7 +95,12 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 print("failed to move dev to " .. next_pos.x .. ":" .. next_pos.y)
             end
 
-            camera_set_target(next_pos)
+            vars:set_i16("x", -delta.x * g_block_width_pixels)
+            vars:set_i16("y", -delta.y * g_block_width_pixels)
+
+            vars:set_u32("T", sdl:get_ticks())
+
+            camera_set_target(vec.mult(next_pos, g_block_width_pixels))
 
             vars:set_u8("f", 0) -- moved
         end

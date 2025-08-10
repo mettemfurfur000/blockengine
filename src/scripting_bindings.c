@@ -363,6 +363,9 @@ static int lua_slice_get(lua_State *L)
     layer_slice slice = rules->slices.data[index];
 
     lua_newtable(L);
+    STRUCT_GET(L, slice, timestamp_old, lua_pushinteger)
+    STRUCT_GET(L, slice, old_x, lua_pushinteger)
+    STRUCT_GET(L, slice, old_y, lua_pushinteger)
     STRUCT_GET(L, slice, x, lua_pushinteger)
     STRUCT_GET(L, slice, y, lua_pushinteger)
     STRUCT_GET(L, slice, h, lua_pushinteger)
@@ -385,17 +388,14 @@ static int lua_slice_set(lua_State *L)
 
     layer_slice slice = {};
 
-    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, x, LUA_TNUMBER, lua_tointeger);
-    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, y, LUA_TNUMBER, lua_tointeger);
-    LUA_EXPECT_UNSIGNED(L);
+    STRUCT_SET(L, slice, old_x, LUA_TNUMBER, lua_tointeger);
+    STRUCT_SET(L, slice, old_y, LUA_TNUMBER, lua_tointeger);
+    STRUCT_SET(L, slice, timestamp_old, LUA_TNUMBER, lua_tointeger);
     STRUCT_SET(L, slice, h, LUA_TNUMBER, lua_tointeger);
-    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, w, LUA_TNUMBER, lua_tointeger);
-    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, zoom, LUA_TNUMBER, lua_tointeger);
-    LUA_EXPECT_UNSIGNED(L);
     STRUCT_SET(L, slice, flags, LUA_TNUMBER, lua_tointeger);
     // STRUCT_SET(L, slice, ref, LUA_TUSERDATA, lua_touserdata);
     if (lua_getfield(L, -1, "ref") == 7)

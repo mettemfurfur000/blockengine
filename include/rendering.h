@@ -15,6 +15,9 @@ typedef struct layer_slice
     u32 x, y; // coordinates in the world, in pixels (most of the time 16 per block)
     u32 w, h; // width and height of visible area
 
+    u32 old_x, old_y; // for interpolation
+    u32 timestamp_old;
+
     u8 zoom;
     u8 flags; // static layer gets rendered once in a framebuffer
 } layer_slice;

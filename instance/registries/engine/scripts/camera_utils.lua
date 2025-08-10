@@ -14,8 +14,13 @@ function recalc_camera_limits()
     camera_limit_x, camera_limit_y = screen_width / cur_zoom, screen_height / cur_zoom
 end
 
-function camera_set_target(pos)
+camera_current_pos = {
+    x = 0,
+    y = 0
+}
 
+function camera_set_target(pos)
+    camera_current_pos = pos
     -- do_center = do_center or false
     for k, v in pairs(g_menu) do
         if v.is_ui ~= true then
@@ -23,21 +28,25 @@ function camera_set_target(pos)
 
             local actual_block_width = cur_zoom * g_block_size
 
-            print_table(slice)
+            -- print(camera_current_pos.x .. " : ".. camera_current_pos.y)
+            -- print_table(slice)
 
-            local pixels_x = (pos.x * actual_block_width) - slice.w / 2
-            local pixels_y = (pos.y * actual_block_width) - slice.h / 2
+            -- local pixels_y = (camera_current_pos.y * actual_block_width) - slice.h / 2
+            -- local pixels_x = (camera_current_pos.x * actual_block_width) - slice.w / 2
 
-            local error_x = math.fmod(pixels_x, actual_block_width)
-            local error_y = math.fmod(pixels_y, actual_block_width)
+            local pixels_y = camera_current_pos.y - slice.h / 2
+            local pixels_x = camera_current_pos.x - slice.w / 2
 
-            pixels_x = pixels_x - error_x
-            pixels_y = pixels_y - error_y
+            pixels_x = pixels_x - math.fmod(pixels_x, actual_block_width) -- minus error to snap to grid
+            pixels_y = pixels_y - math.fmod(pixels_y, actual_block_width)
 
-            -- print(pixels_x .. " : ".. pixels_y)
+            slice.old_x = slice.x
+            slice.old_y = slice.y
 
-            slice.x = math.min(math.max(pixels_x, 0), camera_limit_x)
-            slice.y = math.min(math.max(pixels_y, 0), camera_limit_y)
+            slice.timestamp_old = sdl:get_ticks()
+
+            slice.x = math.floor(math.min(math.max(pixels_x, 0), camera_limit_x)) 
+            slice.y = math.floor(math.min(math.max(pixels_y, 0), camera_limit_y))
 
             -- update current mouse offset
 

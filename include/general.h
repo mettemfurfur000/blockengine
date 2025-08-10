@@ -28,6 +28,9 @@ static_assert(sizeof(i64) == 8, "");
 #define SUCCESS 0
 #define FAIL -1
 
+#define FPS 60
+#define TPS 10
+
 #define MAX_PATH_LENGTH 512
 
 #define SUCCESSFUL(op) ((op) == SUCCESS)

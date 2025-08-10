@@ -37,29 +37,38 @@ u8 render_layer(layer_slice slice)
 
     block_registry *b_reg = slice.ref->registry;
 
-    const int start_block_x = ((slice.x / local_block_width) - 1);
-    const int start_block_y = ((slice.y / local_block_width) - 1);
-
-    const int end_block_x = start_block_x + width + 2;
-    const int end_block_y = start_block_y + height + 2;
-
-    const int block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
-    const int block_y_offset = slice.y % local_block_width;
-
     const u32 ms_since_start = SDL_GetTicks();
     const float seconds_since_start = ms_since_start / 1000.0f;
 
+    u32 ms_started_moving = slice.timestamp_old;
+
+    const float slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - ms_started_moving) / (1000.0f / TPS)));
+
+    slice.x = lerp(slice.old_x, slice.x, slice_clamp_pos);
+    slice.y = lerp(slice.old_y, slice.y, slice_clamp_pos);
+
+    #define BLOCKS_EXTRA 1
+
+    const i32 start_block_x = ((slice.x / local_block_width) - BLOCKS_EXTRA);
+    const i32 start_block_y = ((slice.y / local_block_width) - BLOCKS_EXTRA);
+
+    const i32 end_block_x = start_block_x + width + BLOCKS_EXTRA + 1;
+    const i32 end_block_y = start_block_y + height + BLOCKS_EXTRA + 1;
+
+    const i32 block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
+    const i32 block_y_offset = slice.y % local_block_width;
+
     GLuint texture = b_reg->atlas_texture_uid;
 
-    u16 dest_x, dest_y;
-    dest_x = -block_x_offset - local_block_width * 2;
+    i32 dest_x, dest_y;
+    dest_x = -block_x_offset - local_block_width * (BLOCKS_EXTRA + 1);
 
     block_renderer_begin_batch();
 
     for (i32 i = start_block_x; i < end_block_x; i++)
     {
         dest_x += local_block_width;
-        dest_y = -block_y_offset - local_block_width * 2;
+        dest_y = -block_y_offset - local_block_width * (BLOCKS_EXTRA + 1);
 
         for (i32 j = start_block_y; j < end_block_y; j++)
         {
@@ -108,7 +117,6 @@ u8 render_layer(layer_slice slice)
 
                 if (br.interp_takes != 0 && br.interp_timestamp_controller != 0)
                 {
-                    u32 ms_started_moving = 0;
                     var_get_u32(*var, br.interp_timestamp_controller, &ms_started_moving);
 
                     const float pos = (ms_since_start - ms_started_moving) / (float)br.interp_takes;

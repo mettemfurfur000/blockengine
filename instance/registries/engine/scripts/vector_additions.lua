@@ -1,9 +1,23 @@
 local M = {}
 
+function M.new(x,y)
+    return {
+        x = x,
+        y = y
+    }
+end
+
 function M.add(a, b)
     return {
         x = a.x + b.x,
         y = a.y + b.y
+    }
+end
+
+function M.mult(a, numbuh)
+    return {
+        x = a.x * numbuh,
+        y = a.y * numbuh
     }
 end
 
