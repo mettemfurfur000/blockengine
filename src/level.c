@@ -200,10 +200,13 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
     CHECK_PTR(vars_out)
     CHECK(x >= l->width || y >= l->height)
 
+    if (l->var_index_size == 0)
+        return SUCCESS;
+
     u64 var_index = 0;
     memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
-    if(var_index == 0)
+    if (var_index == 0)
         return FAIL;
 
     var_holder *h = get_variable(&l->var_pool, var_index);
@@ -246,6 +249,9 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
     LAYER_CHECKS(l)
     CHECK(x >= l->width || y >= l->height)
 
+    if (l->var_index_size == 0)
+        return SUCCESS;
+
     if (vars.size == 0 || vars.ptr == NULL)
     {
         if (block_delete_vars(l, x, y) != SUCCESS)
@@ -257,34 +263,36 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
         return SUCCESS;
     }
 
-    // get an existing var
+    // get an existing var at that block position
     u32 var_index = 0;
     memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
     var_holder *h = get_variable(&l->var_pool, var_index);
 
-    if (!h)
+    if (h)
     {
-        // creating a new var
-        var_holder new = new_variable(&l->var_pool, vars.size, &var_index);
-
-        if (new.b_ptr == NULL)
+        // use if fits
+        if (h->b_ptr->size >= vars.size)
         {
-            LOG_ERROR("Failed to create a new var");
-            return FAIL;
+            h->b_ptr->size = vars.size;
+            memcpy(h->b_ptr->ptr, vars.ptr, vars.size);
+            return SUCCESS;
         }
 
-        // what a weird notation, huh... b_ptr->ptr..
-        memcpy(new.b_ptr->ptr, vars.ptr, vars.size);
-        new.b_ptr->size = vars.size;
+        remove_variable(&l->var_pool, h); // didn fit, remove and mak a new one
+    }
 
-        memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&var_index, l->var_index_size);
-    }
-    else
+    var_holder new = new_variable(&l->var_pool, vars.size, &var_index);
+
+    if (new.b_ptr == NULL)
     {
-        vars_free(h->b_ptr);
-        h->b_ptr->size = vars.size;
-        memcpy(h->b_ptr->ptr, vars.ptr, vars.size);
+        LOG_ERROR("Failed to create a new var");
+        return FAIL;
     }
+
+    memcpy(new.b_ptr->ptr, vars.ptr, vars.size);
+    new.b_ptr->size = vars.size;
+
+    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&var_index, l->var_index_size);
 
     return SUCCESS;
 }

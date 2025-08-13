@@ -1,0 +1,6 @@
+automatic_id 1
+repeat_times = 42
+repeat_increment = [ id override_frame ]
+texture = platform.png
+override_frame = 0
+ignore_type = 1

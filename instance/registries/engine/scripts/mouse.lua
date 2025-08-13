@@ -33,6 +33,16 @@ function pixel_to_blocks_no_offset(pos, zoom)
     }
 end
 
+function pixel_to_layer_blocks(layer, pos, zoom)
+    local slice = render_rules.get_slice(g_render_rules, layer.index)
+    zoom = zoom or slice.zoom
+
+    return {
+        x = math.floor((pos.x + slice.x) / g_block_size / zoom),
+        y = math.floor((pos.y + slice.y) / g_block_size / zoom)
+    }
+end
+
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
 

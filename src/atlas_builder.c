@@ -78,16 +78,18 @@ void build_atlas(block_registry *reg)
         total_width += r->img->width;
         total_pixels += r->img->height * r->img->width;
 
-        LOG_DEBUG("appending %dx%d from %s", r->img->height, r->img->width, r->texture_filename);
+        // LOG_DEBUG("appending %dx%d from %s", r->img->height, r->img->width, r->texture_filename);
     }
 
     u32 min_side = sqrt(total_pixels);
 
     // guessed size in pixels
 
-    u32 guess_w = pow(2, (u32)log2(min_side + (total_width)));
-    u32 guess_h = pow(2, (u32)log2(min_side + (total_height)));
-
+    u32 guess_w = pow(2, (u32)log2((min_side + total_width) / 4.0f));
+    u32 guess_h = pow(2, (u32)log2((min_side + total_height) / 4.0f));
+    // u32 guess_w = pow(2, (u32)log2(min_side + (total_width)));
+    // u32 guess_h = pow(2, (u32)log2(min_side + (total_height)));
+build_again:;
     u32 obuf_w = guess_w / g_block_width;
     u32 obuf_h = guess_h / g_block_width;
 
@@ -105,10 +107,10 @@ void build_atlas(block_registry *reg)
     for (u32 j = 0; j < obuf_h; j++)
         for (u32 i = 0; i < obuf_w; i++)
         {
-            block_resources *r = &reg->resources.data[index];
-
             if (index == reg->resources.length)
                 continue;
+
+            block_resources *r = &reg->resources.data[index];
 
             image *img = r->img;
 
@@ -133,7 +135,7 @@ void build_atlas(block_registry *reg)
             // if not taken and will fit
             if (obuf[j * obuf_w + i] == 0 && will_fit(obuf, obuf_w, obuf_h, i, j, tex_w, tex_h))
             {
-                LOG_DEBUG("atlas gen successful fit: %s at %d,%d : %dx%d", r->texture_filename, i, j, tex_w, tex_h);
+                // LOG_DEBUG("atlas gen successful fit: %s at %d,%d : %dx%d", r->texture_filename, i, j, tex_w, tex_h);
                 // mark as taken and put it on da atlas
                 mark_taken(obuf, obuf_w, obuf_h, i, j, tex_w, tex_h);
                 overlay_image(atlas, img, i * g_block_width, j * g_block_width);
@@ -159,6 +161,21 @@ void build_atlas(block_registry *reg)
                 index++; // iterate another texture
             }
         }
+
+    free(obuf);
+
+    if (index != reg->resources.length)
+    {
+        LOG_ERROR("Wrong atlas guess");
+    
+        if (guess_h < guess_w)
+            guess_h *= 2;
+        else
+            guess_w *= 2;
+    
+        free_image(atlas);
+        goto build_again;
+    }
 
     save_image(atlas, "atlas_latest_debug.png"); // REMOVE ME MAYBE
     sort_by_id(&reg->resources);

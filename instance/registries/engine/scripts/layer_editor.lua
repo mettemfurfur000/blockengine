@@ -1,5 +1,11 @@
 local current_block = scripting_current_block_id
-local pallete_width = 4
+
+pallete_width = 8
+ui_width = 16
+ui_offset_layer_name = 0
+ui_offset_mode = 1
+ui_offset_block_name = 3
+ui_offset_preview = 5
 
 local editor = {
     mode = "none",
@@ -20,15 +26,29 @@ local function get_block_by_id(id)
 end
 
 local function place_pallete(actually_erase_pallete)
-    for k, v in pairs(g_engine_table) do
-        local x = v.id % pallete_width
-        local y = math.floor(v.id / pallete_width)
+    local x, y = 0, 0
+    local ranged_begin = 0
 
-        if actually_erase_pallete then
-            editor.pallete_layer.layer:paste_block(x, y, 0)
+    for k, v in pairs(g_engine_table) do
+
+        if ranged_begin ~= nil and ranged_begin ~= 0 then
+            x = x + 1
+            ranged_begin = ranged_begin - 1
+            -- if x >= pallete_width then
+            if x >= v.atlas_info.frames then
+                x = 0
+                y = y + 1
+            end
+        elseif v.all_fields ~= nil and v.all_fields.repeat_times ~= nil and ranged_begin == 0 then -- place them all on the same line if its a repeated block
+            print("#### found ranged thing with id " .. v.id)
+            print_table(v)
+            ranged_begin = v.all_fields.repeat_times - 1
         else
-            editor.pallete_layer.layer:paste_block(x, y, v.id)
+            x = 0
+            y = y + 1
         end
+
+        editor.pallete_layer.layer:paste_block(x, y, actually_erase_pallete and 0 or v.id)
 
         -- print("placing pallete " .. v.id .. " at " .. x .. ", " .. y)
     end
@@ -73,11 +93,11 @@ local function get_layer_by_id(id)
     return nil
 end
 
-ui_width = 16
-ui_offset_layer_name = 0
-ui_offset_mode = 1
-ui_offset_block_name = 3
-ui_offset_preview = 5
+local function select_layer(number)
+    local desired_layer = math.max(0, math.min(total_layers, (editor.layer_being_edited_index or 0) + number))
+    editor.layer_being_edited_index = desired_layer
+    editor.layer_being_edited = get_layer_by_id(desired_layer)
+end
 
 local function ui_update(do_erase)
     if do_erase then
@@ -85,7 +105,8 @@ local function ui_update(do_erase)
         world_print(pallete_width, ui_offset_block_name, ui_width, " ")
         world_print(pallete_width, ui_offset_mode, ui_width, " ")
 
-        editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, 0)
+        -- editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, 0)
+        g_menu.text.layer:paste_block(pallete_width, ui_offset_preview, 0)
         return
     end
 
@@ -98,27 +119,32 @@ local function ui_update(do_erase)
         local filename = string.match(editor.selected_block.all_fields.source_filename, "[^/\\]*%.%w+$"):sub(1, -5)
         world_print(pallete_width, ui_offset_block_name, ui_width, "" .. filename)
 
-        editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, editor.selected_block.id) -- show the selected block
+        -- show the selected block
+        -- editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, editor.selected_block.id) 
+        g_menu.text.layer:paste_block(pallete_width, ui_offset_preview, editor.selected_block.id)
     end
 
     world_print(pallete_width, ui_offset_mode, ui_width, editor.mode)
 end
 
--- mouse wheel chooses the current layer for now
 blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
-    local desired_layer = math.max(0, math.min(last_layer_element_index, (editor.layer_being_edited_index or 0) + y))
-    editor.layer_being_edited_index = desired_layer
+    local slice = render_rules.get_slice(g_render_rules, editor.pallete_layer.index)
+    slice.y = math.max(0, math.min(screen_height, (slice.y or 0) - y * 32))
+    render_rules.set_slice(g_render_rules, editor.pallete_layer.index, slice)
 
-    -- print("layer " .. desired_layer .. " out of " .. last_layer_element_index)
+    -- local desired_layer = math.max(0, math.min(total_layers, (editor.layer_being_edited_index or 0) + y))
+    -- editor.layer_being_edited_index = desired_layer
+    -- editor.layer_being_edited = get_layer_by_id(desired_layer)
 
-    editor.layer_being_edited = get_layer_by_id(desired_layer)
+    -- print("layer " .. desired_layer .. " out of " .. total_layers)
 
     ui_update()
 end)
 
 -- clicks on the pallete choose the tile
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
-    local blk = pixel_to_blocks_no_offset({
+    -- local blk = pixel_to_blocks_no_offset({
+    local blk = pixel_to_layer_blocks(editor.pallete_layer, {
         x = x,
         y = y
     })
@@ -128,7 +154,8 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, stat
             goto attempt_select_layer_skip
         end
 
-        local id = blk.x + blk.y * pallete_width
+        -- local id = blk.x + blk.y * pallete_width
+        local id = editor.pallete_layer.layer:get_id(blk.x, blk.y)
 
         if id >= g_total_blocks then
             -- print("out of bounds")
@@ -174,6 +201,14 @@ local function keybind_handle(keysym, char)
     --         render_rules.set_frozen(g_render_rules, 0, false)
     --     end
     -- end
+
+    if char == 'z' then
+        select_layer(1)
+    end
+
+    if char == 'q' then
+        select_layer(-1)
+    end
 
     if char == 'r' then
         editor.mode = "remove"

@@ -30,24 +30,24 @@ local function slice_basic(lay_ref)
     return slice_gen(0, 0, screen_width, screen_height, global_zoom, lay_ref)
 end
 
-last_layer_element_index = 0
+total_layers = 0
 
 local function layer_append_render(table_dest, __name, lay_ref, __is_ui)
     table_dest[__name] = {
-        index = last_layer_element_index,
+        index = total_layers,
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
         slice = slice_basic(lay_ref)
     }
-    last_layer_element_index = last_layer_element_index + 1
+    total_layers = total_layers + 1
 end
 
 local function layer_append_existing(table_dest, room_to_lookup, __name, __is_ui)
-    local lay_ref = room_to_lookup:get_layer(last_layer_element_index)
+    local lay_ref = room_to_lookup:get_layer(total_layers)
 
     table_dest[__name] = {
-        index = last_layer_element_index,
+        index = total_layers,
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
@@ -56,19 +56,19 @@ local function layer_append_existing(table_dest, room_to_lookup, __name, __is_ui
 
     print("generated " .. __name)
 
-    last_layer_element_index = last_layer_element_index + 1
+    total_layers = total_layers + 1
 end
 
 local function layer_new_invisible(table_dest, __name, lay_ref)
     table_dest[__name] = {
-        index = last_layer_element_index,
+        index = total_layers,
         name = __name,
         layer = lay_ref,
         is_ui = false,
         slice = nil,
         slice_push_ignore = true
     }
-    last_layer_element_index = last_layer_element_index + 1
+    total_layers = total_layers + 1
 end
 
 local function set_render_rule_order(ref_table)

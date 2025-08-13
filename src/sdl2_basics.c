@@ -3,8 +3,8 @@
 #include "../include/opengl_stuff.h"
 #include <string.h>
 
-int SCREEN_WIDTH = 640;
-int SCREEN_HEIGHT = 480;
+int SCREEN_WIDTH = 1024;
+int SCREEN_HEIGHT = 640;
 char *window_name = "Block Engine";
 
 SDL_Window *g_window = NULL;
