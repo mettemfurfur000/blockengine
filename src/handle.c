@@ -72,7 +72,7 @@ u32 handle_to_u32(handle32 h)
        - type: bits 25..30 (6 bits)
        - active: bit 31
     */
-    v = ((u32)h.index ^ INVALID_HANDLE_INDEX) | (((u32)h.validation & 0x1FFu) << 16) | (((u32)h.type & 0x3Fu) << 25) |
+    v = ((u32)h.index & INVALID_HANDLE_INDEX) | (((u32)h.validation & 0x1FFu) << 16) | (((u32)h.type & 0x3Fu) << 25) |
         (((u32)h.active & 0x1u) << 31);
     return v;
 }
@@ -80,7 +80,7 @@ u32 handle_to_u32(handle32 h)
 handle32 handle_from_u32(u32 v)
 {
     handle32 h;
-    h.index = (u16)(v ^ INVALID_HANDLE_INDEX);
+    h.index = (u16)(v & INVALID_HANDLE_INDEX);
     h.validation = (u16)((v >> 16) & 0x1FFu);
     h.type = (u16)((v >> 25) & 0x3Fu);
     h.active = (u16)((v >> 31) & 0x1u);
@@ -108,6 +108,33 @@ handle32 handle_table_put(handle_table *table, void *obj, u16 type)
     }
     else
     {
+        /* Expand table if full */
+
+        if (table->capacity == MAX_HANDLE_TABLE_CAPACITY)
+        {
+            LOG_ERROR("Reached maximum handle table capacity of %d slots", table->capacity);
+            return INVALID_HANDLE;
+        }
+
+        u32 new_capacity = table->capacity * 2;
+        new_capacity = (new_capacity > MAX_HANDLE_TABLE_CAPACITY) ? MAX_HANDLE_TABLE_CAPACITY : new_capacity;
+
+        struct handle_table_slot *new_slots = (struct handle_table_slot *)calloc(new_capacity, sizeof(*new_slots));
+        if (!new_slots)
+        {
+            LOG_ERROR("Failed to expand handle table");
+            return INVALID_HANDLE;
+        }
+
+        /* Copy old slots to new table */
+        for (u16 i = 0; i < table->capacity; ++i)
+            if (table->slots[i].active)
+                new_slots[i] = table->slots[i];
+
+        free(table->slots);
+        table->slots = new_slots;
+        table->capacity = new_capacity;
+
         /* walk slots to find an inactive one */
         for (u16 i = 0; i < table->capacity; ++i)
         {
@@ -120,9 +147,8 @@ handle32 handle_table_put(handle_table *table, void *obj, u16 type)
 
         if (slot_index == INVALID_HANDLE_INDEX)
         {
-            LOG_ERROR("No free slots in a handle table");
-            // TODO: expand the table without breaking everything
-            return INVALID_HANDLE; /* no free slot */
+            LOG_ERROR("Failed to allocate handle: table is full");
+            return INVALID_HANDLE;
         }
     }
 

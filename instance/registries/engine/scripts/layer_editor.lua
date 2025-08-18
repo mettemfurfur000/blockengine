@@ -1,11 +1,12 @@
 local current_block = scripting_current_block_id
 
 pallete_width = 8
-ui_width = 16
+ui_width = 24
 ui_offset_layer_name = 0
 ui_offset_mode = 1
 ui_offset_block_name = 3
-ui_offset_preview = 5
+ui_offset_preview = 4
+ui_offset_vars_debug = 5
 
 local editor = {
     mode = "none",
@@ -72,17 +73,18 @@ local function mouse_action(x, y, button)
         if editor.mode == "remove" then
             editor.layer_being_edited.layer:paste_block(blk.x, blk.y, 0)
         end
+
+        if editor.mode == "inspect" then
+            local status, vars = editor.layer_being_edited.layer:get_vars(blk.x, blk.y)
+            if status == true and vars:is_valid() then
+                log_message("true vars found at " .. x .. ", " .. y)
+                local vars = vars:__tostring()
+
+                world_print(pallete_width, ui_offset_vars_debug, ui_width, vars)
+            end
+        end
     end
 end
-
-blockengine.register_handler(engine_events.ENGINE_INIT, function()
-    editor.pallete_layer = g_menu.pallete
-
-    -- editor.layer_being_edited = get_layer_by_id(0)
-    -- editor.layer_being_edited_index = 0
-
-    place_pallete(editor.hide_palette)
-end)
 
 local function get_layer_by_id(id)
     for k, v in pairs(g_menu) do
@@ -98,6 +100,13 @@ local function select_layer(number)
     editor.layer_being_edited_index = desired_layer
     editor.layer_being_edited = get_layer_by_id(desired_layer)
 end
+
+blockengine.register_handler(engine_events.ENGINE_INIT, function()
+    editor.pallete_layer = g_menu.pallete
+    place_pallete(editor.hide_palette)
+
+    select_layer(-1)
+end)
 
 local function ui_update(do_erase)
     if do_erase then
@@ -138,7 +147,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, po
 
     -- print("layer " .. desired_layer .. " out of " .. total_layers)
 
-    ui_update()
+    -- ui_update()
 end)
 
 -- clicks on the pallete choose the tile
@@ -202,11 +211,11 @@ local function keybind_handle(keysym, char)
     --     end
     -- end
 
-    if char == 'z' then
+    if char == 'q' then
         select_layer(1)
     end
 
-    if char == 'q' then
+    if char == 'z' then
         select_layer(-1)
     end
 
@@ -220,6 +229,10 @@ local function keybind_handle(keysym, char)
 
     if char == 'x' then
         editor.mode = "none"
+    end
+
+    if char == 'i' then
+        editor.mode = "inspect"
     end
 
     if keysym == 1073742048 then -- left control

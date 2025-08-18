@@ -1059,7 +1059,7 @@ static int lua_block_get_vars(lua_State *L)
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
     /* Return a VarHandle instead of raw Vars pointer. First return boolean success, then handle or nil */
-    u64 packed = block_get_vars_index(wrapper->l, x, y);
+    u32 packed = block_get_vars_index(wrapper->l, x, y);
     if (packed == 0)
     {
         lua_pushboolean(L, 0);

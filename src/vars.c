@@ -105,6 +105,7 @@ u8 var_delete(blob *b, char letter)
 
     return SUCCESS;
 }
+
 u8 var_add(blob *b, char letter, u8 size)
 {
     CHECK_PTR(b);

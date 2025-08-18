@@ -1,7 +1,7 @@
+#include "../include/scripting_var_handles.h"
 #include "../include/handle.h"
 #include "../include/level.h"
 #include "../include/scripting.h"
-#include "../include/scripting_var_handles.h"
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
 #include <string.h>

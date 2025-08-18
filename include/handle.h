@@ -40,6 +40,8 @@ extern "C" {
 
 typedef struct handle_table handle_table;
 
+#define MAX_HANDLE_TABLE_CAPACITY (u16)-1
+
 /* Create / destroy a handle table for up to `capacity` slots. Returns NULL on OOM. */
 handle_table *handle_table_create(u16 capacity);
 void handle_table_destroy(handle_table *table);

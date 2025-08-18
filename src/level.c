@@ -56,6 +56,14 @@ static var_handle var_table_alloc_blob(var_handle_table *pool, blob vars)
     b->size = vars.size;
 
     handle32 h = handle_table_put(pool->table, b, pool->type_tag);
+
+    if (h.index == INVALID_HANDLE_INDEX)
+    {
+        SAFE_FREE(b->ptr);
+        SAFE_FREE(b);
+        return INVALID_HANDLE;
+    }
+    
     return h;
 }
 
@@ -133,22 +141,30 @@ u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
     return SUCCESS;
 }
 
-u64 block_get_vars_index(layer *l, u32 x, u32 y)
+u32 block_get_vars_index(layer *l, u32 x, u32 y)
 {
     LAYER_CHECKS(l)
+    CHECK(x >= l->width || y >= l->height)
 
-    u64 var_index = 0;
+    if (l->var_pool.table == NULL)
+        return 0;
+
+    u32 var_index = 0;
     memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
     return var_index;
 }
 
-void block_var_index_set(layer *l, u32 x, u32 y, u64 index)
+void block_var_index_set(layer *l, u32 x, u32 y, u32 index)
 {
     CHECK_PTR_NORET(l)
     if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
         return;
     CHECK_PTR_NORET(l->blocks)
+    CHECK_NORET(x >= l->width || y >= l->height)
+
+    if (l->var_pool.table == NULL)
+        return;
 
     memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&index, l->var_index_size);
 }

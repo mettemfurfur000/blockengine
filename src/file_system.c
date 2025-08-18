@@ -115,6 +115,7 @@ void write_layer(layer *l, FILE *f)
         blob_write(blobify((char *)l->registry->name), f);
 
     u64 id = 0;
+    u32 index = 0;
     for (u32 y = 0; y < l->height; y++)
         for (u32 x = 0; x < l->width; x++)
         {
@@ -124,8 +125,8 @@ void write_layer(layer *l, FILE *f)
                 return;
             }
             endianless_write((u8 *)&id, l->block_size, f);
-            id = block_get_vars_index(l, x, y);
-            endianless_write((u8 *)&id, l->var_index_size, f);
+            index = block_get_vars_index(l, x, y);
+            endianless_write((u8 *)&index, l->var_index_size, f);
         }
 
     // layer_clean_vars(l);
