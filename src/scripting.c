@@ -1,8 +1,9 @@
 #include "../include/scripting.h"
 // #include "../include/image_editing.h"
 #include "../include/events.h"
-#include "../include/scripting_bindings.h"
 #include "../include/folder_structure.h"
+#include "../include/scripting_bindings.h"
+
 
 lua_State *g_L = 0;
 

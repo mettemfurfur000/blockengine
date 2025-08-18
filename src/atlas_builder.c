@@ -167,12 +167,12 @@ build_again:;
     if (index != reg->resources.length)
     {
         LOG_ERROR("Wrong atlas guess");
-    
+
         if (guess_h < guess_w)
             guess_h *= 2;
         else
             guess_w *= 2;
-    
+
         free_image(atlas);
         goto build_again;
     }

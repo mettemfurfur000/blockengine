@@ -1,4 +1,5 @@
 #include "../include/scripting_bindings.h"
+#include "../include/scripting_var_handles.h"
 #include "../include/events.h"
 #include "../include/file_system.h"
 #include "../include/flags.h"

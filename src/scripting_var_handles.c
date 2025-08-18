@@ -1,9 +1,10 @@
-#include "../include/scripting.h"
-#include "../include/level.h"
 #include "../include/handle.h"
-#include <string.h>
+#include "../include/level.h"
+#include "../include/scripting.h"
+#include "../include/scripting_var_handles.h"
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
+#include <string.h>
 
 /* VarHandle userdata stores the owning layer pointer and the packed handle (u32)
    so Lua can keep it and call methods. */
@@ -124,13 +125,13 @@ blob *get_blob_from_varhandle(lua_State *L, int idx)
 }
 
 /* File-scope macro to fetch the blob pointer protected by the VarHandle. */
-#define VH_GET_BLOB_FROM_L(L, _b_out)                                                                                 \
-    handle32 _h = handle_from_u32(((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->packed);                    \
-    layer *_l = ((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->l;                                            \
-    if (!_l || !_l->var_pool.table)                                                                                   \
-        return luaL_error(L, "Invalid VarHandle (no layer/table)");                                                   \
+#define VH_GET_BLOB_FROM_L(L, _b_out)                                                                                  \
+    handle32 _h = handle_from_u32(((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->packed);                      \
+    layer *_l = ((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->l;                                              \
+    if (!_l || !_l->var_pool.table)                                                                                    \
+        return luaL_error(L, "Invalid VarHandle (no layer/table)");                                                    \
     blob *_b_out = (blob *)handle_table_get(_l->var_pool.table, _h);                                                   \
-    if (!_b_out)                                                                                                      \
+    if (!_b_out)                                                                                                       \
         return luaL_error(L, "Invalid VarHandle (slot not active)");
 
 /* simple helpers */
@@ -177,6 +178,52 @@ static int lua_varhandle_add_variable(lua_State *L)
     lua_pushboolean(L, var_add(_b, key[0], length) == SUCCESS);
     return 1;
 }
+static int lua_varhandle_remove(lua_State *L)
+{
+    VH_GET_BLOB_FROM_L(L, _b);
+    const char *key = luaL_checkstring(L, 2);
+    if (strlen(key) > 1)
+        return luaL_error(L, "Key must be a single character");
+    lua_pushboolean(L, var_delete(_b, key[0]) == SUCCESS);
+    return 1;
+}
+
+static int lua_varhandle_resize(lua_State *L)
+{
+    VH_GET_BLOB_FROM_L(L, _b);
+    const char *key = luaL_checkstring(L, 2);
+    const int new_size = luaL_checknumber(L, 3);
+    if (strlen(key) > 1)
+        return luaL_error(L, "Key must be a single character");
+    lua_pushboolean(L, var_resize(_b, key[0], (u8)new_size) == SUCCESS);
+    return 1;
+}
+
+static int lua_varhandle_rename(lua_State *L)
+{
+    VH_GET_BLOB_FROM_L(L, _b);
+    const char *old_key = luaL_checkstring(L, 2);
+    const char *new_key = luaL_checkstring(L, 3);
+    if (strlen(old_key) > 1 || strlen(new_key) > 1)
+        return luaL_error(L, "Keys must be single characters");
+    lua_pushboolean(L, var_rename(_b, old_key[0], new_key[0]) == SUCCESS);
+    return 1;
+}
+
+static int lua_varhandle_ensure(lua_State *L)
+{
+    VH_GET_BLOB_FROM_L(L, _b);
+    const char *key = luaL_checkstring(L, 2);
+    const int needed = luaL_checknumber(L, 3);
+    if (strlen(key) > 1)
+        return luaL_error(L, "Key must be a single character");
+    i32 pos = ensure_tag(_b, key[0], needed);
+    if (pos < 0)
+        lua_pushnil(L);
+    else
+        lua_pushinteger(L, pos);
+    return 1;
+}
 
 static int lua_varhandle_parse(lua_State *L)
 {
@@ -211,31 +258,31 @@ static int lua_varhandle_tostring(lua_State *L)
 }
 
 /* typed setters/getters */
-#define VH_SETTER_FN(type, cname)                                                                                     \
-    static int lua_varhandle_set_##cname(lua_State *L)                                                                \
-    {                                                                                                                 \
-        VH_GET_BLOB_FROM_L(L, _b);                                                                                    \
-        const char *key = luaL_checkstring(L, 2);                                                                    \
-        lua_Number number = luaL_checknumber(L, 3);                                                                  \
-        if (strlen(key) > 1)                                                                                          \
-            return luaL_error(L, "Key must be a single character");                                                 \
-        lua_pushboolean(L, var_set_##cname(_b, key[0], (type)number) == SUCCESS);                                       \
-        return 1;                                                                                                     \
+#define VH_SETTER_FN(type, cname)                                                                                      \
+    static int lua_varhandle_set_##cname(lua_State *L)                                                                 \
+    {                                                                                                                  \
+        VH_GET_BLOB_FROM_L(L, _b);                                                                                     \
+        const char *key = luaL_checkstring(L, 2);                                                                      \
+        lua_Number number = luaL_checknumber(L, 3);                                                                    \
+        if (strlen(key) > 1)                                                                                           \
+            return luaL_error(L, "Key must be a single character");                                                    \
+        lua_pushboolean(L, var_set_##cname(_b, key[0], (type)number) == SUCCESS);                                      \
+        return 1;                                                                                                      \
     }
 
-#define VH_GETTER_FN(type, cname)                                                                                     \
-    static int lua_varhandle_get_##cname(lua_State *L)                                                                \
-    {                                                                                                                 \
-        VH_GET_BLOB_FROM_L(L, _b);                                                                                    \
-        const char *key = luaL_checkstring(L, 2);                                                                    \
-        if (strlen(key) > 1)                                                                                          \
-            return luaL_error(L, "Key must be a single character");                                                 \
-        type ret = 0;                                                                                                 \
-        if (var_get_##cname(*_b, key[0], &ret) == SUCCESS)                                                            \
-            lua_pushinteger(L, ret);                                                                                  \
-        else                                                                                                          \
-            lua_pushnil(L);                                                                                           \
-        return 1;                                                                                                     \
+#define VH_GETTER_FN(type, cname)                                                                                      \
+    static int lua_varhandle_get_##cname(lua_State *L)                                                                 \
+    {                                                                                                                  \
+        VH_GET_BLOB_FROM_L(L, _b);                                                                                     \
+        const char *key = luaL_checkstring(L, 2);                                                                      \
+        if (strlen(key) > 1)                                                                                           \
+            return luaL_error(L, "Key must be a single character");                                                    \
+        type ret = 0;                                                                                                  \
+        if (var_get_##cname(*_b, key[0], &ret) == SUCCESS)                                                             \
+            lua_pushinteger(L, ret);                                                                                   \
+        else                                                                                                           \
+            lua_pushnil(L);                                                                                            \
+        return 1;                                                                                                      \
     }
 
 VH_SETTER_FN(i8, i8)
@@ -261,38 +308,42 @@ VH_GETTER_FN(u64, u64)
 void lua_varhandle_register(lua_State *L)
 {
     const static luaL_Reg varhandle_methods[] = {
-        {"is_valid", lua_varhandle_is_valid},
-        {"get_copy", lua_varhandle_get_copy},
-        {"release", lua_varhandle_release},
+        {  "is_valid",     lua_varhandle_is_valid},
+        {  "get_copy",     lua_varhandle_get_copy},
+        {   "release",      lua_varhandle_release},
 
-        {"get_length", lua_varhandle_length},
-        {"get_string", lua_varhandle_get_string},
-        {"set_string", lua_varhandle_set_string},
-        {"add", lua_varhandle_add_variable},
-        {"parse", lua_varhandle_parse},
+        {"get_length",       lua_varhandle_length},
+        {"get_string",   lua_varhandle_get_string},
+        {"set_string",   lua_varhandle_set_string},
+        {       "add", lua_varhandle_add_variable},
+        {     "parse",        lua_varhandle_parse},
 
-        {"set_i8", lua_varhandle_set_i8},
-        {"set_i16", lua_varhandle_set_i16},
-        {"set_i32", lua_varhandle_set_i32},
-        {"set_i64", lua_varhandle_set_i64},
-        {"set_u8", lua_varhandle_set_u8},
-        {"set_u16", lua_varhandle_set_u16},
-        {"set_u32", lua_varhandle_set_u32},
-        {"set_u64", lua_varhandle_set_u64},
+        {    "set_i8",       lua_varhandle_set_i8},
+        {   "set_i16",      lua_varhandle_set_i16},
+        {   "set_i32",      lua_varhandle_set_i32},
+        {   "set_i64",      lua_varhandle_set_i64},
+        {    "set_u8",       lua_varhandle_set_u8},
+        {   "set_u16",      lua_varhandle_set_u16},
+        {   "set_u32",      lua_varhandle_set_u32},
+        {   "set_u64",      lua_varhandle_set_u64},
 
-        {"get_i8", lua_varhandle_get_i8},
-        {"get_i16", lua_varhandle_get_i16},
-        {"get_i32", lua_varhandle_get_i32},
-        {"get_i64", lua_varhandle_get_i64},
-        {"get_u8", lua_varhandle_get_u8},
-        {"get_u16", lua_varhandle_get_u16},
-        {"get_u32", lua_varhandle_get_u32},
-        {"get_u64", lua_varhandle_get_u64},
+        {    "get_i8",       lua_varhandle_get_i8},
+        {   "get_i16",      lua_varhandle_get_i16},
+        {   "get_i32",      lua_varhandle_get_i32},
+        {   "get_i64",      lua_varhandle_get_i64},
+        {    "get_u8",       lua_varhandle_get_u8},
+        {   "get_u16",      lua_varhandle_get_u16},
+        {   "get_u32",      lua_varhandle_get_u32},
+        {   "get_u64",      lua_varhandle_get_u64},
 
-        {"get_size", lua_varhandle_get_size},
-        {"__tostring", lua_varhandle_tostring},
+        {  "get_size",     lua_varhandle_get_size},
+        {"__tostring",     lua_varhandle_tostring},
+        {    "remove",       lua_varhandle_remove},
+        {    "resize",       lua_varhandle_resize},
+        {    "rename",       lua_varhandle_rename},
+        {    "ensure",       lua_varhandle_ensure},
 
-        {NULL, NULL},
+        {        NULL,                       NULL},
     };
 
     luaL_newmetatable(L, "VarHandle");

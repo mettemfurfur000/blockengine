@@ -1,7 +1,6 @@
 #ifndef VARS_H
 #define VARS_H 1
 
-
 #ifdef _WIN64
 #include <winsock.h>
 #else
@@ -24,6 +23,10 @@ i16 var_size(blob b, char letter);
 
 u8 var_add(blob *b, char letter, u8 size);
 u8 vars_free(blob *b);
+u8 var_delete(blob *b, char letter);
+u8 var_resize(blob *b, char letter, u8 new_size);
+u8 var_rename(blob *b, char old_letter, char new_letter);
+i32 ensure_tag(blob *b, const int letter, const int needed_size);
 
 // macros to mass-produce getters and setters
 
@@ -36,7 +39,7 @@ u8 vars_free(blob *b);
     u8 GETTER_NAME(type)(blob b, char letter, type *dest)                                                              \
     {                                                                                                                  \
         CHECK_PTR(dest);                                                                                               \
-        int pos = vars_pos(b, letter);                                                                                    \
+        i32 pos = vars_pos(b, letter);                                                                                 \
         if (pos < 0)                                                                                                   \
             return FAIL;                                                                                               \
         *dest = *(type *)VAR_VALUE(b.ptr, pos);                                                                        \
@@ -48,7 +51,7 @@ u8 vars_free(blob *b);
     u8 SETTER_NAME(type)(blob * b, char letter, type value)                                                            \
     {                                                                                                                  \
         CHECK_PTR(b);                                                                                                  \
-        int pos = vars_pos(*b, letter);                                                                                   \
+        i32 pos = vars_pos(*b, letter);                                                                                \
         if (pos < 0)                                                                                                   \
             return FAIL;                                                                                               \
         *(type *)VAR_VALUE(b->ptr, pos) = value;                                                                       \
