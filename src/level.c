@@ -3,6 +3,8 @@
 #include "../include/vars.h"
 // #include "../include/endianless.h"
 #include "../include/flags.h"
+#include <stdarg.h>
+#include <stdio.h>
 
 // layer functions
 
@@ -14,15 +16,15 @@
 
 // object pool functions
 
-var_holder *get_inactive(var_object_pool *pool, u32 required_size, u32 *index_out)
+var_holder *get_inactive(var_object_pool *pool, u32 required_size, u64 *index_out)
 {
     for (u32 i = 1; i < pool->vars.length; i++)
     {
         var_holder iter = pool->vars.data[i];
-        if (!iter.active && iter.b_ptr->size >= required_size)
+        if (iter.b_ptr && !iter.active && iter.b_ptr->size >= required_size)
         {
             if (index_out)
-                *index_out = i;
+                *index_out = (u64)i;
             return &pool->vars.data[i];
         }
     }
@@ -30,7 +32,7 @@ var_holder *get_inactive(var_object_pool *pool, u32 required_size, u32 *index_ou
     return NULL;
 }
 
-var_holder *get_variable(var_object_pool *pool, u32 index)
+var_holder *get_variable(var_object_pool *pool, u64 index)
 {
     if (index == 0 || index >= pool->vars.length) // block is referencing to an invalid var
         return NULL;
@@ -38,45 +40,13 @@ var_holder *get_variable(var_object_pool *pool, u32 index)
     return &pool->vars.data[index];
 }
 
-// u8 clear_inactive_variables(var_object_pool *pool)
-// {
-//     var_holder_vec_t new_vars = {};
-
-//     vec_reserve(&new_vars, pool->vars.length - pool->inactive_count);
-//     // iterate through all vars and filter out inactive vars
-//     for (u32 i = 1; i < pool->vars.length; i++)
-//         if (!pool->vars.data[i].active)
-//         {
-//             vars_free(pool->vars.data[i].b_ptr); // frees pointer inside of a holder object, not the holder itself
-//         }
-//         else
-//         {
-//             (void)vec_push(&new_vars, pool->vars.data[i]);
-//         }
-
-//     vec_deinit(&pool->vars);
-//     pool->vars = new_vars;
-//     return SUCCESS;
-// }
-
-// u8 layer_clean_vars(layer *l)
-// {
-//     return clear_inactive_variables(&l->var_pool);
-// }
-
-var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out)
+var_holder new_variable(var_object_pool *pool, u32 required_size, u64 *index_out)
 {
     if (required_size == 0)
     {
         LOG_ERROR("new_variable: required_size is 0, cannot create a new variable");
         return (var_holder){0};
     }
-
-    // if (pool->inactive_count > pool->inactive_limit)
-    // {
-    //     LOG_INFO("Clearing inactive vars");
-    //     clear_inactive_variables(pool);
-    // }
 
     if (pool->inactive_count != 0) // try to get an inactive var with matching size
     {
@@ -109,7 +79,7 @@ var_holder new_variable(var_object_pool *pool, u32 required_size, u32 *index_out
 
     (void)vec_push(&pool->vars, new);
     if (index_out)
-        *index_out = pool->vars.length - 1;
+        *index_out = (u64)(pool->vars.length - 1);
 
     return new;
 }
@@ -127,21 +97,29 @@ u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
     LAYER_CHECKS(l)
     CHECK(x >= l->width || y >= l->height)
 
-    memcpy(BLOCK_ID_PTR(l, x, y), (u8 *)&id, l->block_size);
+    void *ptr = BLOCK_ID_PTR(l, x, y);
+
+    switch (l->block_size)
+    {
+    case 1:
+        *(u8 *)ptr = id;
+        break;
+    case 2:
+        *(u16 *)ptr = id;
+        break;
+    case 4:
+        *(u32 *)ptr = id;
+        break;
+    case 8:
+        *(u64 *)ptr = id;
+        break;
+    default:
+        LOG_ERROR("FATAL: layer cannot have block size width %d bytes", l->block_size);
+        return FAIL;
+    }
 
     return SUCCESS;
 }
-
-// u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
-// {
-//     CHECK_PTR(l)
-//     CHECK_PTR(l->blocks)
-//     CHECK(x >= l->width || y >= l->height)
-
-//     memcpy((u8 *)id, BLOCK_ID_PTR(l, x, y), l->block_size);
-
-//     return SUCCESS;
-// }
 
 u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 {
@@ -264,7 +242,7 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
     }
 
     // get an existing var at that block position
-    u32 var_index = 0;
+    u64 var_index = 0;
     memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
     var_holder *h = get_variable(&l->var_pool, var_index);
 
@@ -393,6 +371,17 @@ u8 free_layer(layer *l)
     SAFE_FREE(l->blocks);
     if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
     {
+        /* Free any allocated blob buffers inside the var holders */
+        for (u32 i = 0; i < l->var_pool.vars.length; i++)
+        {
+            var_holder *h = &l->var_pool.vars.data[i];
+            if (h && h->b_ptr)
+            {
+                SAFE_FREE(h->b_ptr->ptr);
+                SAFE_FREE(h->b_ptr);
+            }
+        }
+
         vec_deinit(&l->var_pool.vars);
     }
 
@@ -488,10 +477,10 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
         return;
     CHECK_PTR_NORET(l->blocks)
 
-    char buffer[1024] = {};
+    char buffer[1024] = {0};
     va_list args;
     va_start(args, format);
-    vsprintf(buffer, format, args);
+    vsnprintf(buffer, sizeof(buffer), format, args);
 
     char *ptr = buffer;
     int x = orig_x;
@@ -532,7 +521,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
             x++;
         }
 
-        if (x > length_limit || x > l->width)
+        if (x >= length_limit || x >= l->width)
         {
             x = orig_x;
             y++;
