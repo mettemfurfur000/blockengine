@@ -183,3 +183,57 @@ bool handle_is_valid(handle_table *table, handle32 h)
 {
     return handle_table_get(table, h) != NULL;
 }
+
+u16 handle_table_capacity(handle_table *table)
+{
+    if (!table)
+        return 0;
+    return table->capacity;
+}
+
+void *handle_table_slot_ptr(handle_table *table, u16 index)
+{
+    if (!table)
+        return NULL;
+    if (index >= table->capacity)
+        return NULL;
+    return table->slots[index].ptr;
+}
+
+u16 handle_table_slot_active(handle_table *table, u16 index)
+{
+    if (!table)
+        return 0;
+    if (index >= table->capacity)
+        return 0;
+    return (u16)table->slots[index].active;
+}
+
+u16 handle_table_slot_generation(handle_table *table, u16 index)
+{
+    if (!table)
+        return 0;
+    if (index >= table->capacity)
+        return 0;
+    return table->slots[index].generation;
+}
+
+int handle_table_set_slot(handle_table *table, u16 index, void *ptr, u16 generation, u16 type, u16 active)
+{
+    if (!table)
+        return -1;
+    if (index >= table->capacity)
+        return -1;
+    table->slots[index].ptr = ptr;
+    table->slots[index].generation = generation;
+    table->slots[index].type = (u16)(type & 0x3F);
+    table->slots[index].active = (u16)(active ? 1 : 0);
+
+    /* Ensure the count reflects the highest initialized slot so that future
+       allocations behave correctly (we treat `count` as number of slots
+       that have been 'touched' for simple reconstruction). */
+    if ((u16)(index + 1) > table->count)
+        table->count = (u16)(index + 1);
+
+    return 0;
+}

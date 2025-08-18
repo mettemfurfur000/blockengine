@@ -4,15 +4,14 @@
 #include "../include/flags.h"
 #include "../include/image_editing.h"
 #include "../include/rendering.h"
-#include "../include/vars.h"
-#include "../include/vars_utils.h"
+#include "../include/scripting.h"
 
 #include <SDL_mixer.h>
 #include <SDL_timer.h>
 
 #include <lauxlib.h>
 #include <lua.h>
-#include <winnt.h>
+// #include <winnt.h>
 
 // ###############//
 // ###############//
@@ -1058,11 +1057,18 @@ static int lua_block_get_vars(lua_State *L)
 
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
-    blob *vars = NULL;
+    /* Return a VarHandle instead of raw Vars pointer. First return boolean success, then handle or nil */
+    u64 packed = block_get_vars_index(wrapper->l, x, y);
+    if (packed == 0)
+    {
+        lua_pushboolean(L, 0);
+        lua_pushnil(L);
+        return 2;
+    }
 
-    lua_pushboolean(L, block_get_vars(wrapper->l, x, y, &vars) == SUCCESS);
-    NEW_USER_OBJECT(L, Vars, vars);
-
+    lua_pushboolean(L, 1);
+    /* push VarHandle userdata (packed is u32 representation stored in low bits) */
+    push_varhandle(L, wrapper->l, (u32)packed);
     return 2;
 }
 
@@ -1072,10 +1078,29 @@ static int lua_block_copy_vars(lua_State *L)
 
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper_vars, 4);
+    /* Accept either a Vars userdata (blob pointer) or a VarHandle userdata */
+    blob *src_blob = NULL;
 
-    lua_pushboolean(L, block_copy_vars(wrapper->l, x, y, *wrapper_vars->b) == SUCCESS);
+    if (luaL_testudata(L, 4, "Vars"))
+    {
+        LuaHolder *wrapper_vars = (LuaHolder *)luaL_checkudata(L, 4, "Vars");
+        src_blob = wrapper_vars->b;
+    }
+    else if (luaL_testudata(L, 4, "VarHandle"))
+    {
+        src_blob = get_blob_from_varhandle(L, 4);
+        if (!src_blob)
+        {
+            lua_pushboolean(L, 0);
+            return 1;
+        }
+    }
+    else
+    {
+        luaL_error(L, "Expected Vars or VarHandle as 4th argument");
+    }
 
+    lua_pushboolean(L, block_copy_vars(wrapper->l, x, y, *src_blob) == SUCCESS);
     return 1;
 }
 
@@ -1140,149 +1165,6 @@ static int lua_layer_tick_blocks(lua_State *L)
         }
 
     lua_pushboolean(L, 1);
-    return 1;
-}
-
-// vars
-
-static int lua_vars_length(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    lua_pushinteger(L, wrapper->b->length);
-    return 1;
-}
-
-// static int lua_vars_get_var(lua_State *L)
-// {
-//     LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-//     const char *key = luaL_checkstring(L, 2);
-
-//     if (strlen(key) > 1)
-//         luaL_error(L, "Key must be a single character");
-
-//     blob b = var_get(*wrapper->b, key[0]);
-//     if (b.length == 0)
-//     {
-//         lua_pushnil(L);
-//         return 1;
-//     }
-
-//     NEW_USER_OBJECT(L, Vars, &b);
-//     return 1;
-// }
-
-static int lua_vars_get_string(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    const char *key = luaL_checkstring(L, 2);
-
-    if (strlen(key) > 1)
-        luaL_error(L, "Key must be a single character");
-
-    char *ret = 0;
-    u8 status = var_get_str(*wrapper->b, key[0], &ret);
-
-    if (status == SUCCESS)
-        lua_pushstring(L, ret);
-    else
-        lua_pushnil(L);
-
-    return 1;
-}
-
-static int lua_vars_set_string(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    const char *key = luaL_checkstring(L, 2);
-    const char *value = luaL_checkstring(L, 3);
-
-    if (strlen(key) > 1)
-        luaL_error(L, "Key must be a single character");
-
-    lua_pushboolean(L, var_set_str(wrapper->b, key[0], value) == SUCCESS);
-    return 1;
-}
-
-static int lua_vars_add_variable(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    const char *key = luaL_checkstring(L, 2);
-    const int length = luaL_checknumber(L, 3);
-
-    if (strlen(key) > 1)
-        luaL_error(L, "Key must be a single character");
-
-    lua_pushboolean(L, var_add(wrapper->b, key[0], length) == SUCCESS);
-    return 1;
-}
-
-static int lua_vars_parse(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    const char *input_string = luaL_checkstring(L, 2);
-
-    lua_pushboolean(L, vars_parse(input_string, wrapper->b) == SUCCESS);
-    return 1;
-}
-
-// static int lua_var_set_i8(lua_State *L)
-// {
-//     LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-//     const char *key = luaL_checkstring(L, 2);
-//     lua_Number number = luaL_checknumber(L, 3);
-
-//     if (strlen(key) > 1)
-//         luaL_error(L, "Key must be a single character");
-
-//     lua_pushboolean(L, var_set_i8(wrapper->b, key[0], (i8)number) ==
-//     SUCCESS);
-
-//     return 1;
-// }
-
-DECLARE_LUA_VAR_SETTER(i8)
-DECLARE_LUA_VAR_SETTER(i16)
-DECLARE_LUA_VAR_SETTER(i32)
-DECLARE_LUA_VAR_SETTER(i64)
-
-DECLARE_LUA_VAR_SETTER(u8)
-DECLARE_LUA_VAR_SETTER(u16)
-DECLARE_LUA_VAR_SETTER(u32)
-DECLARE_LUA_VAR_SETTER(u64)
-
-DECLARE_LUA_VAR_GETTER(i8)
-DECLARE_LUA_VAR_GETTER(i16)
-DECLARE_LUA_VAR_GETTER(i32)
-DECLARE_LUA_VAR_GETTER(i64)
-
-DECLARE_LUA_VAR_GETTER(u8)
-DECLARE_LUA_VAR_GETTER(u16)
-DECLARE_LUA_VAR_GETTER(u32)
-DECLARE_LUA_VAR_GETTER(u64)
-
-static int lua_vars_get_size(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    const char *key = luaL_checkstring(L, 2);
-    if (strlen(key) > 1)
-        luaL_error(L, "Key must be a single character");
-
-    i16 size = var_size(*wrapper->b, key[0]);
-    // u16 VAR_SIZE(wrapper->b);
-    if (size < 0)
-        lua_pushnil(L);
-    else
-        lua_pushinteger(L, size);
-
-    return 1;
-}
-
-static int lua_vars_tostring(lua_State *L)
-{
-    LUA_CHECK_USER_OBJECT(L, Vars, wrapper, 1);
-    char buffer[512];
-    dbg_data_layout(*wrapper->b, buffer);
-    lua_pushstring(L, buffer);
     return 1;
 }
 
@@ -1381,47 +1263,6 @@ void lua_layer_register(lua_State *L)
     luaL_setfuncs(L, layer_methods, 0);
 }
 
-void lua_vars_register(lua_State *L)
-{
-    const static luaL_Reg vars_methods[] = {
-        {"get_length",       lua_vars_length},
-        {"get_string",   lua_vars_get_string},
-        {"set_string",   lua_vars_set_string},
-        {       "add", lua_vars_add_variable},
-        {     "parse",        lua_vars_parse},
-
-        SCRIPTING_RECORD(i8, set),
-        SCRIPTING_RECORD(i16, set),
-        SCRIPTING_RECORD(i32, set),
-        SCRIPTING_RECORD(i64, set),
-
-        SCRIPTING_RECORD(u8, set),
-        SCRIPTING_RECORD(u16, set),
-        SCRIPTING_RECORD(u32, set),
-        SCRIPTING_RECORD(u64, set),
-
-        SCRIPTING_RECORD(i8, get),
-        SCRIPTING_RECORD(i16, get),
-        SCRIPTING_RECORD(i32, get),
-        SCRIPTING_RECORD(i64, get),
-
-        SCRIPTING_RECORD(u8, get),
-        SCRIPTING_RECORD(u16, get),
-        SCRIPTING_RECORD(u32, get),
-        SCRIPTING_RECORD(u64, get),
-
-        // {   "get_var",    lua_vars_get_var},
-        {  "get_size",     lua_vars_get_size},
-        {"__tostring",     lua_vars_tostring},
-        {        NULL,                  NULL},
-    };
-
-    luaL_newmetatable(L, "Vars");
-    lua_pushvalue(L, -1);
-    lua_setfield(L, -2, "__index");
-    luaL_setfuncs(L, vars_methods, 0);
-}
-
 void lua_level_editing_lib_register(lua_State *L)
 {
     const static luaL_Reg level_editing_methods[] = {
@@ -1452,8 +1293,8 @@ void lua_register_engine_objects(lua_State *L)
     lua_level_register(L); /* level editing */
     lua_room_register(L);
     lua_layer_register(L);
-    lua_vars_register(L);
     lua_block_registry_register(L);
     lua_sound_register(L);
     load_image_editing_library(L); /* image editing */
+    lua_varhandle_register(L);
 }

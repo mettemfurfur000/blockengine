@@ -62,6 +62,25 @@ bool handle_is_valid(handle_table *table, handle32 h);
 u32 handle_to_u32(handle32 h);
 handle32 handle_from_u32(u32 v);
 
+/* Additional helpers for advanced use (inspection / serialization). */
+/* Return the configured capacity (number of slots) for the table. */
+u16 handle_table_capacity(handle_table *table);
+
+/* Return pointer stored in slot `index` (may be NULL). This accesses the raw slot
+    pointer regardless of the slot's active flag - useful for saving/restoring state. */
+void *handle_table_slot_ptr(handle_table *table, u16 index);
+
+/* Return whether the slot `index` is currently active (1) or not (0). */
+u16 handle_table_slot_active(handle_table *table, u16 index);
+
+/* Return the generation stored for the slot (raw u16). Useful to preserve handle
+    validation values when deserializing. */
+u16 handle_table_slot_generation(handle_table *table, u16 index);
+
+/* Set a slot's raw contents - used during deserialization to reconstruct exact
+    handle values. Returns 0 on success, non-zero on failure. */
+int handle_table_set_slot(handle_table *table, u16 index, void *ptr, u16 generation, u16 type, u16 active);
+
 #ifdef __cplusplus
 }
 #endif

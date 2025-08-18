@@ -130,22 +130,34 @@ void write_layer(layer *l, FILE *f)
 
     // layer_clean_vars(l);
 
-    var_holder_vec_t vars = l->var_pool.vars;
-
-    // u32 active_count = 0;
-    // for (u32 i = 0; i < vars.length; i++)
-    //     if (vars.data[i].active)
-    //         active_count++;
-
-    // write all vars, including inactive ones
-    // TODO: change var indexes each time we wana save the world (remove holes in the list of vars)
-
-    WRITE(vars.length, f);
-    for (u32 i = 0; i < vars.length; i++)
-    // if (vars.data[i].active)
+    /* Serialize handle table: write capacity (slot count) and for each slot write
+       active flag and blob contents (or zero blob for empty slots). */
+    if (!l->var_pool.table)
     {
-        WRITE(vars.data[i].active, f);
-        blob_vars_write(*vars.data[i].b_ptr, f);
+        u32 zero32 = 0;
+        WRITE(zero32, f);
+    }
+    else
+    {
+        u16 cap = handle_table_capacity(l->var_pool.table);
+        u32 cap32 = (u32)cap;
+        WRITE(cap32, f);
+        for (u16 i = 0; i < cap; ++i)
+        {
+            void *p = handle_table_slot_ptr(l->var_pool.table, i);
+            u16 active = handle_table_slot_active(l->var_pool.table, i);
+            WRITE(active, f);
+            if (p)
+            {
+                blob_vars_write(*(blob *)p, f);
+            }
+            else
+            {
+                /* write empty blob */
+                u32 zero32 = 0;
+                WRITE(zero32, f);
+            }
+        }
     }
 }
 
@@ -196,17 +208,40 @@ void read_layer(layer *l, room *parent, FILE *f)
             block_var_index_set(l, x, y, id);
         }
 
-    var_holder_vec_t *holders = &l->var_pool.vars;
-
-    READ(holders->length, f);
-    vec_reserve(holders, holders->length);
-
-    for (u32 i = 0; i < holders->length; i++)
+    u32 slot_count = 0;
+    READ(slot_count, f);
+    if (slot_count == 0)
     {
-        holders->data[i].b_ptr = calloc(1, sizeof(blob));
-        // holders->data[i].active = true;
-        READ(holders->data[i].active, f);
-        *holders->data[i].b_ptr = blob_vars_read(f);
+        /* no table */
+    }
+    else
+    {
+        /* create a handle table with slot_count capacity and fill slots */
+        l->var_pool.table = handle_table_create((u16)slot_count);
+        l->var_pool.type_tag = 1; /* same tag used when writing */
+
+        for (u16 i = 0; i < (u16)slot_count; ++i)
+        {
+            u16 active = 0;
+            READ(active, f);
+            blob b = blob_vars_read(f);
+            if (b.size == 0 || b.ptr == NULL)
+            {
+                /* empty slot */
+                handle_table_set_slot(l->var_pool.table, i, NULL, 0, 0, 0);
+            }
+            else
+            {
+                /* allocate new blob and set raw slot */
+                blob *nb = calloc(1, sizeof(blob));
+                nb->ptr = calloc(b.size ? b.size : 1, 1);
+                if (b.size && b.ptr)
+                    memcpy(nb->ptr, b.ptr, b.size);
+                nb->size = b.size;
+                /* generation left at 0; type set to pool tag; active follows `active` */
+                handle_table_set_slot(l->var_pool.table, i, nb, 0, l->var_pool.type_tag, active);
+            }
+        }
     }
 }
 

@@ -1,6 +1,8 @@
 #include "../include/level.h"
+#include "../include/handle.h"
 #include "../include/uuid.h"
 #include "../include/vars.h"
+
 // #include "../include/endianless.h"
 #include "../include/flags.h"
 #include <stdarg.h>
@@ -16,80 +18,59 @@
 
 // object pool functions
 
-var_holder *get_inactive(var_object_pool *pool, u32 required_size, u64 *index_out)
-{
-    for (u32 i = 1; i < pool->vars.length; i++)
-    {
-        var_holder iter = pool->vars.data[i];
-        if (iter.b_ptr && !iter.active && iter.b_ptr->size >= required_size)
-        {
-            if (index_out)
-                *index_out = (u64)i;
-            return &pool->vars.data[i];
-        }
-    }
+/* New var handle table helpers -------------------------------------------------
+   We store `blob*` pointers inside the layer's handle table. The block metadata
+   stores a packed u32 produced by `handle_to_u32` (copied into the low bytes of
+   the var index field). A stored value of 0 means "no var".
+*/
 
-    return NULL;
+static inline var_handle var_handle_from_u64(u64 v)
+{
+    return handle_from_u32((u32)v);
 }
 
-var_holder *get_variable(var_object_pool *pool, u64 index)
+static inline u64 u64_from_var_handle(var_handle h)
 {
-    if (index == 0 || index >= pool->vars.length) // block is referencing to an invalid var
-        return NULL;
-
-    return &pool->vars.data[index];
+    return (u64)handle_to_u32(h);
 }
 
-var_holder new_variable(var_object_pool *pool, u32 required_size, u64 *index_out)
+/* Create a new blob in the pool and return the handle. The blob memory is
+   allocated and the contents copied from `vars`. Returns INVALID_HANDLE on
+   failure. */
+static var_handle var_table_alloc_blob(var_handle_table *pool, blob vars)
 {
-    if (required_size == 0)
+    if (!pool || !pool->table)
+        return INVALID_HANDLE;
+
+    blob *b = calloc(1, sizeof(blob));
+    if (!b)
+        return INVALID_HANDLE;
+    b->ptr = calloc(vars.size ? vars.size : 1, 1);
+    if (!b->ptr)
     {
-        LOG_ERROR("new_variable: required_size is 0, cannot create a new variable");
-        return (var_holder){0};
+        SAFE_FREE(b);
+        return INVALID_HANDLE;
     }
+    if (vars.size && vars.ptr)
+        memcpy(b->ptr, vars.ptr, vars.size);
+    b->size = vars.size;
 
-    if (pool->inactive_count != 0) // try to get an inactive var with matching size
-    {
-        var_holder *var = get_inactive(pool, required_size, index_out);
-
-        if (var) // if found, reuse it
-        {
-            // LOG_WARNING("Reusing an inactive var...");
-            var->active = true;
-            var->b_ptr->size = required_size;
-
-            pool->inactive_count--;
-
-            // LOG_WARNING("Success...");
-
-            return *var;
-        }
-
-        // if not, create a new one
-    }
-
-    // vars have to be allocated on the heap, so anything that exists in the engine and points at
-    // the var and hopes that it exist will know fur sure it eixsts, even if vec_push expands the
-    // vector to get more space for holders and shifts all fuycking objects god knows where
-
-    var_holder new = {.active = true, .b_ptr = calloc(1, sizeof(blob))};
-
-    new.b_ptr->ptr = calloc(required_size, 1);
-    new.b_ptr->size = required_size;
-
-    (void)vec_push(&pool->vars, new);
-    if (index_out)
-        *index_out = (u64)(pool->vars.length - 1);
-
-    return new;
+    handle32 h = handle_table_put(pool->table, b, pool->type_tag);
+    return h;
 }
 
-void remove_variable(var_object_pool *pool, var_holder *h)
+/* Free a blob previously stored in the table (frees memory and releases handle). */
+static void var_table_free_handle(var_handle_table *pool, var_handle h)
 {
-    h->active = false;
-    pool->inactive_count++;
-
-    // LOG_DEBUG("marking as inactive: %p : len %d", h->b_ptr, h->b_ptr->length);
+    if (!pool || !pool->table)
+        return;
+    blob *b = (blob *)handle_table_get(pool->table, h);
+    if (b)
+    {
+        SAFE_FREE(b->ptr);
+        SAFE_FREE(b);
+    }
+    handle_table_release(pool->table, h);
 }
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
@@ -178,25 +159,27 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
     CHECK_PTR(vars_out)
     CHECK(x >= l->width || y >= l->height)
 
-    if (l->var_index_size == 0)
+    // if (l->var_index_size == 0)
+    if (l->var_pool.table == NULL)
         return SUCCESS;
 
-    u64 var_index = 0;
-    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+    u64 packed = 0;
+    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
-    if (var_index == 0)
+    if (packed == 0)
         return FAIL;
 
-    var_holder *h = get_variable(&l->var_pool, var_index);
+    var_handle vh = var_handle_from_u64(packed);
+    blob *b = (blob *)handle_table_get(l->var_pool.table, vh);
 
-    if (h)
-        *vars_out = h->b_ptr;
-    else
+    if (!b)
     {
-        LOG_ERROR("Failed to lookup a var %d at %d:%d", var_index, x, y);
+        LOG_ERROR("Failed to lookup a var (handle) %llu at %d:%d", (unsigned long long)packed, x, y);
         *vars_out = NULL;
         return FAIL;
     }
+
+    *vars_out = b;
 
     return SUCCESS;
 }
@@ -206,15 +189,18 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
     LAYER_CHECKS(l)
     CHECK(x >= l->width || y >= l->height)
 
-    if (l->var_index_size == 0)
+    // if (l->var_index_size == 0)
+    if (l->var_pool.table == NULL)
         return SUCCESS; // nothing to delete
 
-    u64 var_index = 0;
-    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+    u64 packed = 0;
+    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
-    var_holder *h = get_variable(&l->var_pool, var_index);
-    if (h)
-        remove_variable(&l->var_pool, h);
+    if (packed != 0)
+    {
+        var_handle vh = var_handle_from_u64(packed);
+        var_table_free_handle(&l->var_pool, vh);
+    }
 
     // Clear the var index in the block
     memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, l->var_index_size);
@@ -227,7 +213,8 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
     LAYER_CHECKS(l)
     CHECK(x >= l->width || y >= l->height)
 
-    if (l->var_index_size == 0)
+    // if (l->var_index_size == 0)
+    if (l->var_pool.table == NULL)
         return SUCCESS;
 
     if (vars.size == 0 || vars.ptr == NULL)
@@ -241,36 +228,34 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
         return SUCCESS;
     }
 
-    // get an existing var at that block position
-    u64 var_index = 0;
-    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
-    var_holder *h = get_variable(&l->var_pool, var_index);
+    /* Check existing handle */
+    u64 packed = 0;
+    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
 
-    if (h)
+    if (packed != 0)
     {
-        // use if fits
-        if (h->b_ptr->size >= vars.size)
+        var_handle vh = var_handle_from_u64(packed);
+        blob *existing = (blob *)handle_table_get(l->var_pool.table, vh);
+        if (existing && existing->size >= vars.size)
         {
-            h->b_ptr->size = vars.size;
-            memcpy(h->b_ptr->ptr, vars.ptr, vars.size);
+            existing->size = vars.size;
+            memcpy(existing->ptr, vars.ptr, vars.size);
             return SUCCESS;
         }
 
-        remove_variable(&l->var_pool, h); // didn fit, remove and mak a new one
+        /* free existing and allocate new below */
+        var_table_free_handle(&l->var_pool, vh);
     }
 
-    var_holder new = new_variable(&l->var_pool, vars.size, &var_index);
-
-    if (new.b_ptr == NULL)
+    var_handle newh = var_table_alloc_blob(&l->var_pool, vars);
+    if (newh.index == INVALID_HANDLE_INDEX)
     {
         LOG_ERROR("Failed to create a new var");
         return FAIL;
     }
 
-    memcpy(new.b_ptr->ptr, vars.ptr, vars.size);
-    new.b_ptr->size = vars.size;
-
-    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&var_index, l->var_index_size);
+    u64 store = u64_from_var_handle(newh);
+    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&store, l->var_index_size);
 
     return SUCCESS;
 }
@@ -324,11 +309,8 @@ u8 init_layer(layer *l, room *parent_room)
 
     if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
     {
-        vec_init(&l->var_pool.vars);
-        l->var_pool.inactive_count = 0;
-        l->var_pool.inactive_limit = 16;
-        // push an empty var so that the first var is always at index 1
-        (void)new_variable(&l->var_pool, 1, NULL);
+        l->var_pool.table = handle_table_create(256); /* default capacity */
+        l->var_pool.type_tag = 1;                     /* choose tag 1 for vars */
     }
 
     return SUCCESS;
@@ -371,18 +353,23 @@ u8 free_layer(layer *l)
     SAFE_FREE(l->blocks);
     if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
     {
-        /* Free any allocated blob buffers inside the var holders */
-        for (u32 i = 0; i < l->var_pool.vars.length; i++)
+        /* Free any blobs stored in the handle table and destroy it */
+        if (l->var_pool.table)
         {
-            var_holder *h = &l->var_pool.vars.data[i];
-            if (h && h->b_ptr)
+            u16 cap = handle_table_capacity(l->var_pool.table);
+            for (u16 i = 0; i < cap; ++i)
             {
-                SAFE_FREE(h->b_ptr->ptr);
-                SAFE_FREE(h->b_ptr);
+                void *p = handle_table_slot_ptr(l->var_pool.table, i);
+                if (p)
+                {
+                    blob *b = (blob *)p;
+                    SAFE_FREE(b->ptr);
+                    SAFE_FREE(b);
+                }
             }
+            handle_table_destroy(l->var_pool.table);
+            l->var_pool.table = NULL;
         }
-
-        vec_deinit(&l->var_pool.vars);
     }
 
     l->uuid = 0;
@@ -457,8 +444,8 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
 
     l->registry = registry_ref;
     l->block_size = bytes_per_block;
-    l->var_index_size = bytes_per_index;
-    l->total_bytes_per_block = bytes_per_block + bytes_per_index;
+    l->var_index_size = sizeof(handle32);
+    l->total_bytes_per_block = bytes_per_block + l->var_index_size;
     l->width = parent->width;
     l->height = parent->height;
     l->flags = flags;
