@@ -6,6 +6,7 @@
 #include "general.h"
 #include "hashtable.h"
 #include "handle.h"
+#include "physics.h"
 
 #define LAYER_FLAG_HAS_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
@@ -48,17 +49,19 @@ typedef struct layer
     u8 flags; //
 } layer;
 
+typedef struct level level;
+
 typedef struct room
 {
     u64 uuid;
     char *name;
-    void *parent_level;
+    level *parent_level;
 
     u32 width;
     u32 height;
 
     vec_void_t layers;
-    // TODO: implement support for entities
+    physics_world_t physics_world; /* each room gets its own physics world */
 
     u8 flags;
 } room;

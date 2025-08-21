@@ -1,7 +1,11 @@
 #include "../include/scripting_var_handles.h"
 #include "../include/handle.h"
 #include "../include/level.h"
-#include "../include/scripting.h"
+
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
+
 #include "../include/vars.h"
 #include "../include/vars_utils.h"
 #include <string.h>
@@ -27,50 +31,6 @@ static int lua_varhandle_is_valid(lua_State *L)
 
     handle32 h = handle_from_u32(vh->packed);
     lua_pushboolean(L, handle_is_valid(vh->l->var_pool.table, h));
-    return 1;
-}
-
-/* Returns a copy of the blob as a new Vars userdata (so Lua cannot hold a raw engine pointer).
-   Caller must not assume the returned blob refers to engine memory. */
-static int lua_varhandle_get_copy(lua_State *L)
-{
-    VarHandleUser *vh = (VarHandleUser *)luaL_checkudata(L, 1, "VarHandle");
-    if (!vh || !vh->l || !vh->l->var_pool.table)
-    {
-        lua_pushnil(L);
-        return 1;
-    }
-
-    handle32 h = handle_from_u32(vh->packed);
-    blob *b = (blob *)handle_table_get(vh->l->var_pool.table, h);
-    if (!b)
-    {
-        lua_pushnil(L);
-        return 1;
-    }
-
-    /* create copy */
-    blob *nb = calloc(1, sizeof(blob));
-    if (!nb)
-    {
-        lua_pushnil(L);
-        return 1;
-    }
-    nb->size = b->size;
-    nb->ptr = NULL;
-    if (b->size)
-    {
-        nb->ptr = calloc(b->size, 1);
-        if (!nb->ptr)
-        {
-            SAFE_FREE(nb);
-            lua_pushnil(L);
-            return 1;
-        }
-        memcpy(nb->ptr, b->ptr, b->size);
-    }
-
-    NEW_USER_OBJECT(L, Vars, nb);
     return 1;
 }
 
@@ -309,7 +269,6 @@ void lua_varhandle_register(lua_State *L)
 {
     const static luaL_Reg varhandle_methods[] = {
         {  "is_valid",     lua_varhandle_is_valid},
-        {  "get_copy",     lua_varhandle_get_copy},
         {   "release",      lua_varhandle_release},
 
         {"get_length",       lua_varhandle_length},

@@ -63,7 +63,7 @@ static var_handle var_table_alloc_blob(var_handle_table *pool, blob vars)
         SAFE_FREE(b);
         return INVALID_HANDLE;
     }
-    
+
     return h;
 }
 
@@ -342,6 +342,9 @@ u8 init_room(room *r, level *parent_level)
 
     vec_init(&r->layers);
 
+    /* create a physics world for this room */
+    r->physics_world = physics_world_create();
+
     CHECK_PTR(r->name)
 
     return SUCCESS;
@@ -403,6 +406,12 @@ u8 free_room(room *r)
     vec_deinit(&r->layers);
     SAFE_FREE(r->name);
 
+    if (r->physics_world)
+    {
+        physics_world_destroy(r->physics_world);
+        r->physics_world = NULL;
+    }
+
     r->uuid = 0;
 
     return SUCCESS;
@@ -432,6 +441,9 @@ level *level_create(const char *name)
 {
     level *lvl = calloc(1, sizeof(level));
 
+    if (!lvl)
+        return NULL;
+
     lvl->name = strdup(name);
     init_level(lvl);
 
@@ -441,6 +453,9 @@ level *level_create(const char *name)
 room *room_create(level *parent, const char *name, u32 w, u32 h)
 {
     room *r = calloc(1, sizeof(room));
+
+    if (!r)
+        return NULL;
 
     r->name = strdup(name);
     r->width = w;
@@ -457,6 +472,9 @@ room *room_create(level *parent, const char *name, u32 w, u32 h)
 layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags)
 {
     layer *l = calloc(1, sizeof(layer));
+
+    if (!l)
+        return NULL;
 
     l->registry = registry_ref;
     l->block_size = bytes_per_block;
@@ -501,6 +519,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
             if (block_get_vars(l, x, y, &vars) != SUCCESS)
             {
                 LOG_ERROR("bprintf Failed create a variable");
+                va_end(args);
                 return;
             }
         }
@@ -508,6 +527,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
         if (var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr))
         {
             LOG_ERROR("bprintf Failed to set a u8 for character block in a loop");
+            va_end(args);
             return;
         }
 

@@ -1294,6 +1294,7 @@ void lua_register_engine_objects(lua_State *L)
     lua_level_register(L); /* level editing */
     lua_room_register(L);
     lua_layer_register(L);
+    lua_entity_register(L);
     lua_block_registry_register(L);
     lua_sound_register(L);
     load_image_editing_library(L); /* image editing */

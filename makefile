@@ -15,8 +15,13 @@ ifeq ($(OS),Windows_NT)
 endif
 
 # sources := $(shell cd src;echo *.c)
-sources += $(shell cd src;find . -name '*.c')
-objects := $(patsubst %.c,obj/%.o,$(sources))
+sources_c := $(shell cd src;find . -name '*.c')
+sources_cpp := $(shell cd src;find . -name '*.cpp')
+sources += $(sources_c) $(sources_cpp)
+
+objects_c := $(patsubst %.c,obj/%.o,$(sources_c))
+objects_cpp := $(patsubst %.cpp,obj/%.o,$(sources_cpp))
+objects := $(objects_c) $(objects_cpp)
 headers := $(shell cd include;echo *.h)
 
 .PHONY: win_get_libs
@@ -41,6 +46,9 @@ registry: make_folders
 obj/%.o : src/%.c
 	gcc $(CFLAGS) -c $^ -o $@
 
+obj/%.o : src/%.cpp
+	g++ -std=c++17 $(CFLAGS) -c $^ -o $@
+
 # $(executable): $(objects)
 # 	gcc $(CFLAGS) -o build/$@ $^ $(LDFLAGS)
 
@@ -63,10 +71,10 @@ else
 	gcc -o build/lua_test obj/lua_test.o lua/src/liblua.a -lm
 endif
 
-.PHONY: client_app
+PHONY: client_app
 client_app: mains/client.c registry vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
-	gcc ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS)
+	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS) -lbox2d -lstdc++
 
 .PHONY: grab_client_dlls
 grab_client_dlls:

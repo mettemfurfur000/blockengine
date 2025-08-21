@@ -41,8 +41,8 @@ local function place_pallete(actually_erase_pallete)
                 y = y + 1
             end
         elseif v.all_fields ~= nil and v.all_fields.repeat_times ~= nil and ranged_begin == 0 then -- place them all on the same line if its a repeated block
-            print("#### found ranged thing with id " .. v.id)
-            print_table(v)
+            -- print("#### found ranged thing with id " .. v.id)
+            -- print_table(v)
             ranged_begin = v.all_fields.repeat_times - 1
         else
             x = 0

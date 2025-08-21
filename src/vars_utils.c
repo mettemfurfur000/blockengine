@@ -149,6 +149,8 @@ u8 vars_parse(const char *str_to_cpy, blob *b)
     bool wrote_stuff = false;
 
     char *str = strdup(str_to_cpy);
+
+    CHECK_PTR(str)
     strcpy(str, str_to_cpy);
 
     char *token = strtok(str, " \n"); // consume start token

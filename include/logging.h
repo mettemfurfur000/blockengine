@@ -7,6 +7,10 @@
 
 #include <lua.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int log_enabled;
 extern FILE *log_file;
 
@@ -64,5 +68,9 @@ void log_msg(unsigned char level, const char *format, ...);
 // lua
 
 void lua_logging_register(lua_State *L);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
