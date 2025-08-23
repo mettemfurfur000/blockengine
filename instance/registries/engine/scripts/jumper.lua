@@ -1,8 +1,10 @@
 local current_block = scripting_current_block_id
 local vec = require("registries.engine.scripts.vector_additions")
 
-scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
-    function(layer, x, y, value)
+local sdl = require("registries.engine.scripts.definitions.sdl")
+
+---@param layer Layer
+scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick", function(layer, x, y, value)
         local status, vars = layer:get_vars(x, y)
         if status == false then
             error("error getting vars for the jumper")
@@ -44,7 +46,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             vars:set_i16("x", -delta.x * g_block_width_pixels)
             vars:set_i16("y", -delta.y * g_block_width_pixels)
 
-            vars:set_u32("t", sdl:get_ticks())
+            vars:set_u32("t", sdl.get_ticks())
 
             vars:set_u8("f", 0) -- moved
         else -- in case of a nil or a non-zero block, just rotate

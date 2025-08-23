@@ -12,15 +12,6 @@
 
 #include <lauxlib.h>
 #include <lua.h>
-// #include <winnt.h>
-
-// ###############//
-// ###############//
-// ###############//
-//  IMAGE EDITING //
-// ###############//
-// ###############//
-// ###############//
 
 #define PUSHNEWIMAGE(L, i, name)                                                                                       \
     ImageWrapper *name = (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper));                                     \
@@ -1082,12 +1073,13 @@ static int lua_block_copy_vars(lua_State *L)
     /* Accept either a Vars userdata (blob pointer) or a VarHandle userdata */
     blob *src_blob = NULL;
 
-    if (luaL_testudata(L, 4, "Vars"))
-    {
-        LuaHolder *wrapper_vars = (LuaHolder *)luaL_checkudata(L, 4, "Vars");
-        src_blob = wrapper_vars->b;
-    }
-    else if (luaL_testudata(L, 4, "VarHandle"))
+    // if (luaL_testudata(L, 4, "Vars"))
+    // {
+    //     LuaHolder *wrapper_vars = (LuaHolder *)luaL_checkudata(L, 4, "Vars");
+    //     src_blob = wrapper_vars->b;
+    // }
+    // else 
+    if (luaL_testudata(L, 4, "VarHandle"))
     {
         src_blob = get_blob_from_varhandle(L, 4);
         if (!src_blob)
@@ -1098,7 +1090,7 @@ static int lua_block_copy_vars(lua_State *L)
     }
     else
     {
-        luaL_error(L, "Expected Vars or VarHandle as 4th argument");
+        luaL_error(L, "Expected VarHandle as 4th argument");
     }
 
     lua_pushboolean(L, block_copy_vars(wrapper->l, x, y, *src_blob) == SUCCESS);
@@ -1226,7 +1218,6 @@ void lua_room_register(lua_State *L)
         {       "get_name",        lua_room_get_name},
         {       "get_size",        lua_room_get_size},
         {      "get_layer",       lua_room_get_layer},
-        // {      "find_layer",       lua_room_find_layer},
         {"get_layer_count", lua_room_get_layer_count},
         {      "new_layer",       lua_room_new_layer},
         {           "uuid",       lua_uuid_universal},

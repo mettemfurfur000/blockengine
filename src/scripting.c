@@ -11,11 +11,11 @@ vec_int_t handlers[128] = {};
 
 static int lua_register_handler(lua_State *L)
 {
-    luaL_checkany(L, 1);
+    int event_id = luaL_checkinteger(L, 1);
+    luaL_checkany(L, 2);
     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    int handler_id = luaL_checkinteger(L, 1);
 
-    scripting_register_event_handler(ref, handler_id);
+    scripting_register_event_handler(ref, event_id);
     return 0;
 }
 

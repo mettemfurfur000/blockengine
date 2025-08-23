@@ -2,6 +2,10 @@ require("registries.engine.scripts.wrappers")
 require("registries.engine.scripts.constants")
 -- require("registries.engine.scripts.level_editor")
 
+local sdl = require("registries.engine.scripts.definitions.sdl")
+local blockengine = require("registries.engine.scripts.definitions.blockengine")
+local le = require("registries.engine.scripts.definitions.level_editor")
+
 screen_width, screen_height = render_rules.get_size(g_render_rules)
 
 g_width_blocks, g_height_blocks = 2 * screen_width / (g_block_size * global_zoom),
@@ -17,7 +21,7 @@ local function slice_gen(x, y, w, h, z, lay_ref)
         y = y,
         old_x = x,
         old_y = y,
-        timestamp_old = sdl:get_ticks(),
+        timestamp_old = sdl.get_ticks(),
         h = h,
         w = w,
         zoom = z,
@@ -196,9 +200,3 @@ end, function(e)
     log_error(e)
     os.exit()
 end)
-
---[[
-scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
-    function(layer, x, y, value)
-end)
---]]

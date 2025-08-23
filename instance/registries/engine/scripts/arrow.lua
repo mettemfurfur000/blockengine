@@ -1,8 +1,8 @@
 -- This script handles arrow blocks, setting their rotation towards the player
 local current_block = scripting_current_block_id
 
-scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
-    function(layer, x, y, value)
+---@param layer Layer
+scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick", function(layer, x, y, value)
         if not player or not player.state == 0 then
             return
         end

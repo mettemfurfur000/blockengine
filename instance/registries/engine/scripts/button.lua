@@ -4,8 +4,8 @@ local current_block = scripting_current_block_id
 
 print("registering an input")
 
-scripting_light_block_input_register(scripting_current_light_registry, current_block, "click",
-    function(layer, x, y, input_value)
+---@param layer Layer
+scripting_light_block_input_register(scripting_current_light_registry, current_block, "click", function(layer, x, y, input_value)
         local status, vars = layer:get_vars(x, y)
         if status == false then
             error("error getting vars for de button (really weird!!)")
