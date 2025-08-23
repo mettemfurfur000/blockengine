@@ -3,6 +3,7 @@
 #include "../include/flags.h"
 #include "../include/vars.h"
 #include <excpt.h>
+#include <time.h>
 
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,
                                      6307353, 1532671, 6233633, 873473,  685613};
@@ -37,7 +38,8 @@ u8 render_layer(layer_slice slice)
 
     block_registry *b_reg = slice.ref->registry;
 
-    const u32 ms_since_start = SDL_GetTicks();
+    // const u32 ms_since_start = SDL_GetTicks();
+    const u32 ms_since_start = clock();
     const float seconds_since_start = ms_since_start / 1000.0f;
 
     u32 ms_started_moving = slice.timestamp_old;

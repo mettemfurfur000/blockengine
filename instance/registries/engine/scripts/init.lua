@@ -21,7 +21,7 @@ local function slice_gen(x, y, w, h, z, lay_ref)
         y = y,
         old_x = x,
         old_y = y,
-        timestamp_old = sdl.get_ticks(),
+        timestamp_old = sdl_current_tick or sdl.get_ticks(),
         h = h,
         w = w,
         zoom = z,
@@ -183,8 +183,11 @@ end)
 
 g_tick = 0
 
+sdl_current_tick = 0
+
 blockengine.register_handler(engine_events.ENGINE_TICK, function(code) -- tick over all existing jumpers
     g_tick = g_tick + 1
+    sdl_current_tick = sdl.get_ticks()
     g_menu.objects.layer:tick(0) -- default tick - resets all values in a preparation for an actual pass
     g_menu.objects.layer:tick(1)
 end)

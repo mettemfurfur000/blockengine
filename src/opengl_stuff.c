@@ -19,6 +19,8 @@ void setup_opengl(u16 width, u16 height)
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
 
     block_renderer_init(SCREEN_WIDTH, SCREEN_HEIGHT);
 }

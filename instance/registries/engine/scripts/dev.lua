@@ -101,7 +101,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             vars:set_i16("x", -delta.x * g_block_width_pixels)
             vars:set_i16("y", -delta.y * g_block_width_pixels)
 
-            vars:set_u32("T", sdl.get_ticks())
+            vars:set_u32("T", sdl_current_tick)
 
             camera_set_target(vec.mult(next_pos, g_block_width_pixels))
 

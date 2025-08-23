@@ -3,6 +3,8 @@
 #include "../include/scripting.h"
 #include "SDL_events.h"
 
+#include <time.h>
+
 int main(int argc, char *argv[])
 {
     log_start("client.log");
@@ -28,7 +30,7 @@ int main(int argc, char *argv[])
 
     SDL_Event e;
 
-    int latest_logic_tick = SDL_GetTicks();
+    clock_t latest_logic_tick = clock();
 
     e.type = ENGINE_INIT;
     call_handlers(e);
@@ -39,7 +41,7 @@ int main(int argc, char *argv[])
     for (;;)
     {
         // LOG_INFO("frame %lu", frame);
-        int frame_begin_tick = SDL_GetTicks();
+        int frame_begin_tick = clock();
 
         while (SDL_PollEvent(&e))
         {
@@ -69,27 +71,25 @@ int main(int argc, char *argv[])
 
         if (latest_logic_tick + tick_period <= frame_begin_tick)
         {
-            latest_logic_tick = SDL_GetTicks();
+            latest_logic_tick = clock();
             e.type = ENGINE_TICK;
             call_handlers(e);
         }
-
-        glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
 
         client_render(rules);
 
         SDL_GL_SwapWindow(g_window);
 
-        int loop_took = SDL_GetTicks() - frame_begin_tick;
+        int loop_took = clock() - frame_begin_tick;
         int chill_time = ms_per_s - loop_took;
         total_ms_took += loop_took;
 
-        SDL_Delay(fmax(1, chill_time));
+        const int sleep_final = chill_time < 1 ? 1 : chill_time;
+        usleep(sleep_final * 1000);
 
-        if (frame % perf_check_each == 0)
+        if (frame % perf_check_each == 0 && frame != 0)
         {
-            LOG_INFO("perf: %dms for %d frames", total_ms_took, perf_check_each);
+            LOG_INFO("perf: %f%% for %d frames", (1.0f * perf_check_each) / total_ms_took, perf_check_each);
             total_ms_took = 0;
         }
 
