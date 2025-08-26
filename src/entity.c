@@ -15,15 +15,26 @@ handle32 entity_create_point(entity_table *t, const char *name, b2Vec2 pos)
             g_entity_table = entity_table_create(1024);
         t = g_entity_table;
     }
+
     if (!t)
         return INVALID_HANDLE;
+
     entity *e = calloc(1, sizeof(*e));
+
+    if (!e)
+    {
+        LOG_ERROR("allocation failed for a point entity");
+        return INVALID_HANDLE;
+    }
+
     e->uuid = generate_uuid();
     e->type = ENTITY_TYPE_POINT;
     e->name = name ? strdup(name) : NULL;
-    /* point entities currently do not create a physics body by default; store pos in a transient body if needed later */
+    /* point entities currently do not create a physics body by default; store pos in a transient body if needed later
+     */
     e->payload.point.body = NULL;
     e->parent = INVALID_HANDLE;
+
     vec_init(&e->children);
 
     return entity_table_put(t, e, 0);
@@ -261,7 +272,15 @@ handle32 entity_create_full(entity_table *t, const char *name, room body, room *
     }
     if (!t)
         return INVALID_HANDLE;
+
     entity *e = calloc(1, sizeof(*e));
+
+    if (!e)
+    {
+        LOG_ERROR("allocation failed for a full entity");
+        return INVALID_HANDLE;
+    }
+
     e->uuid = generate_uuid();
     e->type = ENTITY_TYPE_FULL;
     e->name = name ? strdup(name) : NULL;

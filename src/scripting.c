@@ -4,7 +4,6 @@
 #include "../include/folder_structure.h"
 #include "../include/scripting_bindings.h"
 
-
 lua_State *g_L = 0;
 
 vec_int_t handlers[128] = {};
@@ -37,8 +36,10 @@ void scripting_register(lua_State *L)
 
 void *check_light_userdata(lua_State *L, int index)
 {
-    return lua_islightuserdata(L, index) ? lua_touserdata(L, index)
-                                         : (void *)0 + luaL_error(L, "Expected light userdata at index %d", index);
+    if (lua_islightuserdata(L, index))
+        return lua_touserdata(L, index);
+    luaL_error(L, "Expected light userdata at index %d", index);
+    return NULL;
 }
 
 void scripting_init()

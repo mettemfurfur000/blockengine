@@ -34,18 +34,6 @@ framebuffer create_framebuffer_object(u16 width, u16 height)
     return buffer;
 }
 
-int block_renderer_init_frozen(int width, int height)
-{
-    renderer.frozen_renderer.shader = assemble_shader("frozen");
-    if (!renderer.frozen_renderer.shader)
-    {
-        LOG_ERROR("Failed to compile frozen layer shader program");
-        return FAIL;
-    }
-
-    return SUCCESS;
-}
-
 int block_renderer_init_post(int width, int height)
 {
     renderer.post_framebuffer = create_framebuffer_object(width, height);
@@ -181,8 +169,6 @@ int block_renderer_init(int width, int height)
 
     if (block_renderer_init_post(width, height) != SUCCESS)
         return FAIL;
-    if (block_renderer_init_frozen(width, height) != SUCCESS)
-        return FAIL;
     return SUCCESS;
 }
 
@@ -285,33 +271,6 @@ void block_renderer_end_frame()
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, renderer.post_framebuffer.texture);
-
-    glBindVertexArray(renderer.post.vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-}
-
-void block_renderer_render_frozen(layer_slice slice)
-{
-    GLuint frozen_shader = renderer.frozen_renderer.shader;
-    glUseProgram(frozen_shader);
-
-    float offset[2] = {(float)slice.x, (float)slice.y};
-    float size[2] = {(float)slice.w, (float)slice.h};
-
-    size[0] *= slice.zoom;
-    size[1] *= slice.zoom;
-
-    glUniform2fv(glGetUniformLocation(frozen_shader, "uOffset"), 1, offset);
-    glUniform2fv(glGetUniformLocation(frozen_shader, "uSize"), 1, size);
-
-    glUniform1i(glGetUniformLocation(frozen_shader, "uTexture"), 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, slice.framebuffer_texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glBindVertexArray(renderer.post.vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

@@ -19,7 +19,7 @@ void setup_opengl(u16 width, u16 height)
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
+
     glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
 
     block_renderer_init(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -40,6 +40,8 @@ u32 load_shader(const char *shader_path, GLenum shader_type)
     fseek(shader_file, 0, SEEK_SET);
 
     char *shader_source = (char *)calloc(shader_size + 1, 1);
+    assert(shader_source != NULL);
+
     fread(shader_source, 1, shader_size, shader_file);
     shader_source[shader_size] = '\0';
     fclose(shader_file);

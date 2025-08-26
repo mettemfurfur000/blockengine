@@ -28,29 +28,6 @@ int greatest_common_divisor(int a, int b)
     return a;
 }
 
-char *get_folder_path(char *file_path, int bonus_for_str_size)
-{
-    // from you.com/chat
-    int len = strlen(file_path);
-    char *folder_path = (char *)malloc(len + bonus_for_str_size);
-    strcpy(folder_path, file_path);
-    // find the last occurrence of a separator
-    char *last_slash = strrchr(folder_path, SEPARATOR);
-    if (last_slash != NULL)
-    {
-        // if there is a slash, terminate the string after it
-        *last_slash = '\0';
-    }
-    else
-    {
-        // if there is no slash, return NULL
-        free(folder_path);
-        return NULL;
-    }
-
-    return folder_path;
-}
-
 int init_graphics()
 {
     const int flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;

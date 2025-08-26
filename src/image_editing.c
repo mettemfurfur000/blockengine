@@ -11,11 +11,14 @@ image *create_image(u16 width, u16 height)
 
     image *img = (image *)malloc(sizeof(image));
 
+    assert(img != NULL);
+
     img->width = width;
     img->height = height;
 
-    img->pixels = malloc(height * width * CHANNELS);
-    memset(img->pixels, 0, height * width * CHANNELS);
+    img->pixels = calloc(height * width, CHANNELS);
+    assert(img->pixels != NULL);
+
     return img;
 }
 
@@ -63,6 +66,8 @@ image *load_image(const char *filename)
     // image *img = create_image(width, height, channels);
 
     image *img = (image *)malloc(sizeof(image));
+
+    assert(img != NULL);
 
     img->width = width;
     img->height = height;

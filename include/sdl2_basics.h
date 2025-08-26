@@ -8,7 +8,7 @@
 #include "general.h"
 
 #include "../vec/src/vec.h"
-#include "../stb/stb_image.h"
+// #include "../stb/stb_image.h"
 #include "../include/image_editing.h"
 
 extern int SCREEN_WIDTH;
@@ -59,7 +59,6 @@ typedef struct music
 #define KEEPINLIMITS(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
 
 int greatest_common_divisor(int a, int b);
-char *get_folder_path(char *file_path, int bonus_for_str_size);
 
 int init_graphics();
 int exit_graphics();

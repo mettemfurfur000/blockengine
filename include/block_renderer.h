@@ -50,8 +50,6 @@ typedef struct
     framebuffer post_framebuffer;
 
     render_info post;
-
-    render_info frozen_renderer;
 } block_renderer;
 
 extern block_renderer renderer;

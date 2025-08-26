@@ -44,6 +44,8 @@ blob blob_vars_read(FILE *f)
     READ(b.size, f);
     b.ptr = calloc(b.size, 1);
 
+    assert(b.ptr != NULL);
+
     VAR_FOREACH(b, {
         b.ptr[i] = getc(f);
         u8 size = getc(f);
@@ -235,7 +237,11 @@ void read_layer(layer *l, room *parent, FILE *f)
             {
                 /* allocate new blob and set raw slot */
                 blob *nb = calloc(1, sizeof(blob));
+                assert(nb != NULL);
+
                 nb->ptr = calloc(b.size ? b.size : 1, 1);
+                assert(nb->ptr != NULL);
+            
                 if (b.size && b.ptr)
                     memcpy(nb->ptr, b.ptr, b.size);
                 nb->size = b.size;
@@ -275,6 +281,8 @@ void read_room(room *r, FILE *f)
     for (u32 i = 0; i < r->layers.length; i++)
     {
         layer *l = calloc(1, sizeof(layer));
+        assert(l != NULL);
+
         read_layer(l, r, f);
         r->layers.data[i] = l;
     }
@@ -334,6 +342,8 @@ u8 load_level(level *lvl, const char *name_in)
         char *name = blob_read(f).str;
         block_registry *reg = calloc(1, sizeof(block_registry));
 
+        assert(reg != NULL);
+
         reg->name = name;
 
         // sprintf(path, FOLDER_REG SEPARATOR_STR "%s", name);
@@ -354,6 +364,8 @@ u8 load_level(level *lvl, const char *name_in)
     for (u32 i = 0; i < room_count; i++)
     {
         room *new_room = calloc(1, sizeof(room));
+
+        assert(new_room != NULL);
 
         new_room->parent_level = lvl;
         read_room(new_room, f);

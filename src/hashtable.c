@@ -1,5 +1,6 @@
 #include "../include/hashtable.h"
 
+#include <lua.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -100,8 +101,9 @@ void copy_all(hash_node *node, blob key, blob value)
 
 hash_node **alloc_table()
 {
-    hash_node **t = (hash_node **)malloc(TABLE_SIZE * sizeof(hash_node *));
-    memset(t, 0, TABLE_SIZE * sizeof(hash_node *));
+    hash_node **t = (hash_node **)calloc(TABLE_SIZE, sizeof(hash_node *));
+
+    assert(t != NULL);
 
     // LOG_DEBUG("Allocated table of size %d, ptr %p", TABLE_SIZE, t);
 
