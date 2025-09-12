@@ -1,0 +1,34 @@
+rm -rf build/*
+rm -rf obj/*
+mkdir -p obj
+mkdir -p build
+mkdir -p build
+cp -r instance/* build/
+gcc -o obj/vec.o -c vec/src/vec.c -Wall -Wextra -Ivec/src
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./atlas_builder.c -o obj/./atlas_builder.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./benchmarking.c -o obj/./benchmarking.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./block_properties.c -o obj/./block_properties.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./block_registry.c -o obj/./block_registry.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./block_renderer.c -o obj/./block_renderer.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./endianless.c -o obj/./endianless.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./entity.c -o obj/./entity.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./file_system.c -o obj/./file_system.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./general.c -o obj/./general.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./handle.c -o obj/./handle.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./hashtable.c -o obj/./hashtable.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./image_editing.c -o obj/./image_editing.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./level.c -o obj/./level.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./logging.c -o obj/./logging.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./opengl_stuff.c -o obj/./opengl_stuff.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./physics_box2d.c -o obj/./physics_box2d.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./rendering.c -o obj/./rendering.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting.c -o obj/./scripting.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting_bindings.c -o obj/./scripting_bindings.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting_entities.c -o obj/./scripting_entities.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting_var_handles.c -o obj/./scripting_var_handles.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./sdl2_basics.c -o obj/./sdl2_basics.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./stb_implementation.c -o obj/./stb_implementation.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./vars.c -o obj/./vars.o
+gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./vars_utils.c -o obj/./vars_utils.o
+gcc -o obj/client.o -c mains/client.c -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine
+g++ -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -o build/client obj/client.o obj/vec.o obj/./atlas_builder.o obj/./benchmarking.o obj/./block_properties.o obj/./block_registry.o obj/./block_renderer.o obj/./endianless.o obj/./entity.o obj/./file_system.o obj/./general.o obj/./handle.o obj/./hashtable.o obj/./image_editing.o obj/./level.o obj/./logging.o obj/./opengl_stuff.o obj/./physics_box2d.o obj/./rendering.o obj/./scripting.o obj/./scripting_bindings.o obj/./scripting_entities.o obj/./scripting_var_handles.o obj/./sdl2_basics.o obj/./stb_implementation.o obj/./vars.o obj/./vars_utils.o  -lm -g  ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lopengl32 -lepoxy.dll -lbox2d -lstdc++

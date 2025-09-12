@@ -1,4 +1,4 @@
-#include "../include/endianless.h"
+#include "include/endianless.h"
 #include <string.h>
 
 volatile u8 is_big_endian(void)

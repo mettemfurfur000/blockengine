@@ -14,6 +14,9 @@ ifeq ($(OS),Windows_NT)
 	cp C:/msys64/mingw64/bin/$@ build/
 endif
 
+# to avoid backtrack includes things
+CFLAGS += -IC:/msys64$(shell pwd)
+
 # sources := $(shell cd src;echo *.c)
 sources_c := $(shell cd src;find . -name '*.c')
 sources_cpp := $(shell cd src;find . -name '*.cpp')
@@ -22,6 +25,7 @@ sources += $(sources_c) $(sources_cpp)
 objects_c := $(patsubst %.c,obj/%.o,$(sources_c))
 objects_cpp := $(patsubst %.cpp,obj/%.o,$(sources_cpp))
 objects := $(objects_c) $(objects_cpp)
+objects := $(shell echo $(objects) | sed 's#/./#/#')
 headers := $(shell cd include;echo *.h)
 
 .PHONY: win_get_libs
@@ -44,6 +48,7 @@ registry: make_folders
 	cp -r instance/* build/
 
 obj/%.o : src/%.c
+	mkdir -p $(shell echo $@ | sed -r "s/(.+)\/.+/\1/")
 	gcc $(CFLAGS) -c $^ -o $@
 
 obj/%.o : src/%.cpp

@@ -1,5 +1,5 @@
-#include "../include/block_renderer.h"
-#include "../include/opengl_stuff.h"
+#include "include/block_renderer.h"
+#include "include/opengl_stuff.h"
 
 #include <epoxy/gl_generated.h>
 #include <stdlib.h>

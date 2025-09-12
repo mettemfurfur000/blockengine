@@ -1,7 +1,8 @@
-#include "../include/atlas_builder.h"
-#include "../include/flags.h"
-#include "../include/image_editing.h"
-#include "../include/opengl_stuff.h"
+#include "include/atlas_builder.h"
+#include "include/flags.h"
+#include "include/image_editing.h"
+#include "include/opengl_stuff.h"
+
 #include <math.h>
 
 int __img_cmp(const void *a, const void *b)

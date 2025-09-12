@@ -1,11 +1,11 @@
-#include "../include/scripting.h"
-// #include "../include/block_registry.h"
-// #include "../include/level.h"
-// #include "../include/rendering.h"
-// #include "../include/vars.h"
+#include "include/scripting.h"
+// #include "include/block_registry.h"
+// #include "include/level.h"
+// #include "include/rendering.h"
+// #include "include/vars.h"
 
 
-#include "../include/scripting_bindings.h"
+#include "include/scripting_bindings.h"
 
 const char *usage = "Usage: %s --script <script_name> --input <input_name> "
                     "--output <output_name>\n";

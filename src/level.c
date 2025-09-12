@@ -1,10 +1,10 @@
-#include "../include/level.h"
-#include "../include/handle.h"
-#include "../include/uuid.h"
-#include "../include/vars.h"
+#include "include/level.h"
+#include "include/handle.h"
+#include "include/uuid.h"
+#include "include/vars.h"
 
-// #include "../include/endianless.h"
-#include "../include/flags.h"
+// #include "include/endianless.h"
+#include "include/flags.h"
 #include <stdarg.h>
 #include <stdio.h>
 

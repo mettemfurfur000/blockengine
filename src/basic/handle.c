@@ -1,5 +1,5 @@
-#include "../include/handle.h"
-#include "../include/logging.h"
+#include "include/handle.h"
+#include "include/logging.h"
 #include <stdlib.h>
 
 /* Internal slot layout. Each slot stores a pointer, a generation counter and an

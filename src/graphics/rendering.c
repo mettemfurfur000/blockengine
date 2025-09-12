@@ -1,7 +1,7 @@
-#include "../include/rendering.h"
-#include "../include/block_renderer.h"
-#include "../include/flags.h"
-#include "../include/vars.h"
+#include "include/rendering.h"
+#include "include/block_renderer.h"
+#include "include/flags.h"
+#include "include/vars.h"
 #include <excpt.h>
 #include <time.h>
 

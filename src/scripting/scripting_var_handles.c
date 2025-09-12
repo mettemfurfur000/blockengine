@@ -1,13 +1,13 @@
-#include "../include/scripting_var_handles.h"
-#include "../include/handle.h"
-#include "../include/level.h"
+#include "include/scripting_var_handles.h"
+#include "include/handle.h"
+#include "include/level.h"
 
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
 
-#include "../include/vars.h"
-#include "../include/vars_utils.h"
+#include "include/vars.h"
+#include "include/vars_utils.h"
 #include <string.h>
 
 /* VarHandle userdata stores the owning layer pointer and the packed handle (u32)

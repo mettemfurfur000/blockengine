@@ -9,7 +9,7 @@
 
 #include "../vec/src/vec.h"
 // #include "../stb/stb_image.h"
-#include "../include/image_editing.h"
+#include "image_editing.h"
 
 extern int SCREEN_WIDTH;
 extern int SCREEN_HEIGHT;

@@ -1,7 +1,7 @@
-#include "../include/vars_utils.h"
-// #include "../include/block_properties.h"
-// #include "../include/endianless.h"
-#include "../include/vars.h"
+#include "include/vars_utils.h"
+// #include "include/block_properties.h"
+// #include "include/endianless.h"
+#include "include/vars.h"
 
 #include <float.h>
 #include <stdlib.h>

@@ -1,10 +1,10 @@
-#include "../include/physics.h"
+#include "include/physics.h"
 
 // Minimal Box2D wrapper implementation using the C-style thin API present in
 // MSYS2's Box2D headers (functions like b2CreateWorld, b2World_Step, b2CreateBody).
-#include "../include/level.h"
-#include "../include/logging.h"
-#include "../include/physics.h"
+#include "include/level.h"
+#include "include/logging.h"
+#include "include/physics.h"
 
 #include <box2d/box2d.h>
 #include <math.h>

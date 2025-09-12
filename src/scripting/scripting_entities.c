@@ -1,7 +1,7 @@
-#include "../include/entity.h"
-#include "../include/level.h"
-#include "../include/scripting.h"
-#include "../include/scripting_bindings.h"
+#include "include/entity.h"
+#include "include/level.h"
+#include "include/scripting.h"
+#include "include/scripting_bindings.h"
 
 #include <lauxlib.h>
 #include <lua.h>

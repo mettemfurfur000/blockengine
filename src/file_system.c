@@ -1,8 +1,8 @@
-#include "../include/file_system.h"
-#include "../include/endianless.h"
-#include "../include/folder_structure.h"
-#include "../include/level.h"
-#include "../include/vars.h"
+#include "include/file_system.h"
+#include "include/endianless.h"
+#include "include/folder_structure.h"
+#include "include/level.h"
+#include "include/vars.h"
 
 #define WRITE(object, f) endianless_write((u8 *)&object, sizeof(object), f)
 #define READ(object, f) endianless_read((u8 *)&object, sizeof(object), f)

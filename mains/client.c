@@ -1,6 +1,6 @@
-#include "../include/events.h"
-#include "../include/rendering.h"
-#include "../include/scripting.h"
+#include "include/events.h"
+#include "include/rendering.h"
+#include "include/scripting.h"
 #include "SDL_events.h"
 
 #include <time.h>

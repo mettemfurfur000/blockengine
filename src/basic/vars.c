@@ -1,5 +1,5 @@
-#include "../include/vars.h"
-#include "../include/endianless.h"
+#include "include/vars.h"
+#include "include/endianless.h"
 
 i32 vars_pos(const blob b, const char letter)
 {

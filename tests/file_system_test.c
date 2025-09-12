@@ -1,6 +1,6 @@
-#include "../include/file_system.h"
-#include "../include/vars.h"
-#include "../include/vars_utils.h"
+#include "include/file_system.h"
+#include "include/vars.h"
+#include "include/vars_utils.h"
 #include "test_utils.h"
 
 int test_vars_io()

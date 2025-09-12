@@ -1,5 +1,5 @@
-#include "../include/logging.h"
-#include "../include/general.h"
+#include "include/logging.h"
+#include "include/general.h"
 
 #include <lauxlib.h>
 #include <pthread.h>

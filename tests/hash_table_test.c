@@ -1,5 +1,5 @@
-#include "../include/hashtable.h"
-#include "../include/benchmarking.h"
+#include "include/hashtable.h"
+#include "include/benchmarking.h"
 
 #include "test_utils.h"
 

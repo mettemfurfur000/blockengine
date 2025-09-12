@@ -1,6 +1,6 @@
-#include "../include/entity.h"
-#include "../include/handle.h"
-#include "../include/uuid.h"
+#include "include/entity.h"
+#include "include/handle.h"
+#include "include/uuid.h"
 #include <stdlib.h>
 
 // Global entity table used by scripting bindings

@@ -1,6 +1,6 @@
-#include "../include/block_registry.h"
-#include "../include/folder_structure.h"
-#include "../include/file_system.h"
+#include "include/block_registry.h"
+#include "include/folder_structure.h"
+#include "include/file_system.h"
 #include "test_utils.h"
 
 int test_read_from_string()

@@ -1,9 +1,9 @@
-#include "../include/image_editing.h"
+#include "include/image_editing.h"
 
-#include "../include/general.h"
-#include "../include/sdl2_basics.h"
-#include "../stb/stb_image.h"
-#include "../stb/stb_image_write.h"
+#include "include/general.h"
+#include "include/sdl2_basics.h"
+#include "stb/stb_image.h"
+#include "stb/stb_image_write.h"
 
 image *create_image(u16 width, u16 height)
 {

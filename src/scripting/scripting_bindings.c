@@ -1,11 +1,11 @@
-#include "../include/scripting_bindings.h"
-#include "../include/scripting_var_handles.h"
-#include "../include/events.h"
-#include "../include/file_system.h"
-#include "../include/flags.h"
-#include "../include/image_editing.h"
-#include "../include/rendering.h"
-#include "../include/scripting.h"
+#include "include/scripting_bindings.h"
+#include "include/scripting_var_handles.h"
+#include "include/events.h"
+#include "include/file_system.h"
+#include "include/flags.h"
+#include "include/image_editing.h"
+#include "include/rendering.h"
+#include "include/scripting.h"
 
 #include <SDL_mixer.h>
 #include <SDL_timer.h>

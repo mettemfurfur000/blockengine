@@ -41,3 +41,18 @@ then navigate to the project folder and run `make test`
 # for guys from macos
 
 i have no idea how to build this on macos, but if you know how, please make a pull request
+
+# clangd
+
+for fancy autocomplete and analysys,
+come to the project root, and:
+
+```bash
+python -m venv .env
+source .env/bin/activate
+pip install compiledb
+make clean client_app VERBOSE=1 -B > ./build_log.txt
+compiledb < build_log.txt
+```
+
+then clangd thing should work

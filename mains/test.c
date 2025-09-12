@@ -7,7 +7,7 @@
 // #include "../tests/hash_table_test.c"
 #include "../tests/vars_test.c"
 
-#include "../include/endianless.h"
+#include "include/endianless.h"
 
 int main(int argc, char *argv[])
 {

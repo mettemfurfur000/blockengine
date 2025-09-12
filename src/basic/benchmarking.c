@@ -1,4 +1,4 @@
-#include "../include/benchmarking.h"
+#include "include/benchmarking.h"
 #include <time.h>
 
 // returns ticks, have to be passed in bench_end to get actual time

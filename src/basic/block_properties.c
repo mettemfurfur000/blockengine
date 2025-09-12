@@ -1,4 +1,4 @@
-#include "../include/block_properties.h"
+#include "include/block_properties.h"
 
 char *strtok_take_whole_line()
 {

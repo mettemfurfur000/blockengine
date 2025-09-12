@@ -1,6 +1,6 @@
-#include "../include/sdl2_basics.h"
-#include "../include/events.h"
-#include "../include/opengl_stuff.h"
+#include "include/sdl2_basics.h"
+#include "include/events.h"
+#include "include/opengl_stuff.h"
 #include <string.h>
 
 int SCREEN_WIDTH = 1024;

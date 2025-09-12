@@ -1,4 +1,4 @@
-#include "../include/hashtable.h"
+#include "include/hashtable.h"
 
 #include <lua.h>
 #include <stdlib.h>
