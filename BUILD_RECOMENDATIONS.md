@@ -48,7 +48,7 @@ for fancy autocomplete and analysys,
 come to the project root, and:
 
 ```bash
-python -m venv .env
+python3 -m venv .env
 source .env/bin/activate
 pip install compiledb
 make clean client_app VERBOSE=1 -B > ./build_log.txt

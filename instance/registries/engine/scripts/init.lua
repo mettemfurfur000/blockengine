@@ -194,6 +194,7 @@ end)
 
 blockengine.register_handler(sdl_events.SDL_QUIT, function(code) -- tick over all existing jumpers
     le.save_level(test_level)
+    print("Saved level ")
 end)
 
 try(function()

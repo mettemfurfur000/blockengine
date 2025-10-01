@@ -2,7 +2,7 @@
 #include "include/block_renderer.h"
 #include "include/flags.h"
 #include "include/vars.h"
-#include <excpt.h>
+// #include <excpt.h>
 #include <time.h>
 
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,

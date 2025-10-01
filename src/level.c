@@ -343,7 +343,7 @@ u8 init_room(room *r, level *parent_level)
     vec_init(&r->layers);
 
     /* create a physics world for this room */
-    r->physics_world = physics_world_create();
+    // r->physics_world = physics_world_create();
 
     CHECK_PTR(r->name)
 
@@ -406,11 +406,11 @@ u8 free_room(room *r)
     vec_deinit(&r->layers);
     SAFE_FREE(r->name);
 
-    if (r->physics_world)
-    {
-        physics_world_destroy(r->physics_world);
-        r->physics_world = NULL;
-    }
+    // if (r->physics_world)
+    // {
+    //     physics_world_destroy(r->physics_world);
+    //     r->physics_world = NULL;
+    // }
 
     r->uuid = 0;
 
