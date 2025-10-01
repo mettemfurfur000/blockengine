@@ -464,8 +464,8 @@ static int lua_sound_play(lua_State *L)
 
 static int lua_get_ticks(lua_State *L)
 {
-    // lua_pushinteger(L, SDL_GetTicks());
-    lua_pushinteger(L, clock());
+    lua_pushinteger(L, SDL_GetTicks());
+    // lua_pushinteger(L, clock());
     return 1;
 }
 

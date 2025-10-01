@@ -524,7 +524,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
             }
         }
 
-        if (var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr))
+        if (var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr) != SUCCESS)
         {
             LOG_ERROR("bprintf Failed to set a u8 for character block in a loop");
             va_end(args);
