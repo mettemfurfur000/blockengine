@@ -6,7 +6,13 @@ ifeq ($(OS),Windows_NT)
 	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32
 endif
 
-LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lopengl32 -lepoxy.dll
+LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer
+
+ifeq ($(OS),Windows_NT)
+	LDFLAGS += -lopengl32 -lepoxy.dll
+else
+	LDFLAGS += -lGL -lepoxy -llua5.4
+endif
 
 # get shared libs here
 ifeq ($(OS),Windows_NT)
@@ -15,7 +21,13 @@ ifeq ($(OS),Windows_NT)
 endif
 
 # to avoid backtrack includes things
-CFLAGS += -IC:/msys64$(shell pwd)
+ifeq ($(OS),Windows_NT)
+	CFLAGS += -IC:/msys64$(shell pwd)
+else
+	CFLAGS += -I$(shell pwd)
+	CFLAGS += -I/usr/include/lua5.4/
+	CFLAGS += -I/usr/include/SDL2
+endif
 
 # sources := $(shell cd src;echo *.c)
 sources_c := $(shell cd src;find . -name '*.c')

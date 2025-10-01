@@ -1,6 +1,8 @@
 #include "include/vars.h"
 #include "include/endianless.h"
 
+#include <stdlib.h>
+
 i32 vars_pos(const blob b, const char letter)
 {
     if (b.size == 0 || b.ptr == 0)
@@ -22,7 +24,7 @@ i32 vars_pos(const blob b, const char letter)
             return FAIL;
         }
 
-        if (b.ptr[i] == (byte)letter)
+        if (b.ptr[i] == (u8)letter)
             return (i32)i;
 
         i += (u32)entry_size + 2;
@@ -115,7 +117,7 @@ u8 var_add(blob *b, char letter, u8 size)
         return SUCCESS;
 
     u32 old_size = b->size;
-    u32 new_data_size = old_size + size + 2; // 1 byte for letter and 1 byte for size
+    u32 new_data_size = old_size + size + 2; // 1 u8 for letter and 1 u8 for size
 
     void *new_ptr = b->ptr ? realloc(b->ptr, new_data_size) : calloc(new_data_size, 1);
     if (!new_ptr)
@@ -125,8 +127,8 @@ u8 var_add(blob *b, char letter, u8 size)
     }
 
     b->ptr = new_ptr;
-    b->ptr[old_size] = (byte)letter;
-    b->ptr[old_size + 1] = (byte)size;
+    b->ptr[old_size] = (u8)letter;
+    b->ptr[old_size + 1] = (u8)size;
 
     b->size = new_data_size;
 
@@ -146,7 +148,7 @@ u8 var_rename(blob *b, char old_letter, char new_letter)
         return FAIL;
 
     /* simply change header letter */
-    b->ptr[(u32)pos_old] = (byte)new_letter;
+    b->ptr[(u32)pos_old] = (u8)new_letter;
     return SUCCESS;
 }
 
@@ -330,8 +332,8 @@ void dbg_data_layout(blob b, char *ret)
     u32 index = 0;
     while (index + 1 < data_size)
     {
-        byte letter = b.ptr[index];
-        byte size = b.ptr[index + 1];
+        u8 letter = b.ptr[index];
+        u8 size = b.ptr[index + 1];
 
         /* guard against malformed blobs */
         if ((u32)index + 2 + (u32)size > data_size)

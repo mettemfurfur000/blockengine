@@ -61,7 +61,7 @@ typedef struct room
     u32 height;
 
     vec_void_t layers;
-    physics_world_t physics_world; /* each room gets its own physics world */
+    // physics_world_t physics_world; /* each room gets its own physics world */
 
     u8 flags;
 } room;
