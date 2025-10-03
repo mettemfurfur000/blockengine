@@ -21,10 +21,10 @@ ifeq ($(OS),Windows_NT)
 endif
 
 # to avoid backtrack includes things
+CFLAGS += -I$(shell pwd)
+
 ifeq ($(OS),Windows_NT)
-	CFLAGS += -IC:/msys64$(shell pwd)
 else
-	CFLAGS += -I$(shell pwd)
 	CFLAGS += -I/usr/include/lua5.4/
 	CFLAGS += -I/usr/include/SDL2
 endif
@@ -91,7 +91,8 @@ endif
 PHONY: client_app
 client_app: mains/client.c registry vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
-	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS) -lbox2d -lstdc++
+	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS) -lstdc++
+# no more -lbox2d 
 
 .PHONY: grab_client_dlls
 grab_client_dlls:
