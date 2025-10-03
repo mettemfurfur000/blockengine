@@ -6,7 +6,6 @@
 #include "general.h"
 #include "hashtable.h"
 #include "handle.h"
-#include "physics.h"
 
 #define LAYER_FLAG_HAS_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010

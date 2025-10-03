@@ -2,8 +2,12 @@ CFLAGS += -O0 -Wall -g # -pg -no-pie
 LDFLAGS += -lm -g # -pg
 
 ifeq ($(OS),Windows_NT)
-	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main
+	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64$(shell pwd)
 	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32
+else
+	CFLAGS += -I$(shell pwd)
+	CFLAGS += -I/usr/include/lua5.4/
+	CFLAGS += -I/usr/include/SDL2
 endif
 
 LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer
@@ -12,21 +16,6 @@ ifeq ($(OS),Windows_NT)
 	LDFLAGS += -lopengl32 -lepoxy.dll
 else
 	LDFLAGS += -lGL -lepoxy -llua5.4
-endif
-
-# get shared libs here
-ifeq ($(OS),Windows_NT)
-%.dll:
-	cp C:/msys64/mingw64/bin/$@ build/
-endif
-
-# to avoid backtrack includes things
-CFLAGS += -I$(shell pwd)
-
-ifeq ($(OS),Windows_NT)
-else
-	CFLAGS += -I/usr/include/lua5.4/
-	CFLAGS += -I/usr/include/SDL2
 endif
 
 # sources := $(shell cd src;echo *.c)
@@ -39,9 +28,6 @@ objects_cpp := $(patsubst %.cpp,obj/%.o,$(sources_cpp))
 objects := $(objects_c) $(objects_cpp)
 objects := $(shell echo $(objects) | sed 's#/./#/#')
 headers := $(shell cd include;echo *.h)
-
-.PHONY: win_get_libs
-win_get_libs: SDL2.dll libwinpthread-1.dll
 
 #our vector library
 .PHONY: vec
