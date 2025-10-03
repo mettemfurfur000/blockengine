@@ -12,7 +12,8 @@ elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
 	pacman -S make mingw-w64-x86_64-toolchain \
 		mingw-w64-x86_64-SDL2_ttf mingw-w64-x86_64-SDL2_image \
 		mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_mixer \
-		mingw-w64-x86_64-libepoxy
+		mingw-w64-x86_64-libepoxy \
+		mingw-w64-x86_64-llvm-tools
 else
         echo "Unknown platform, aborting"
 		echo "Got: $OSTYPE"
