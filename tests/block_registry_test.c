@@ -93,7 +93,7 @@ int test_sort()
 
 INIT_TESTING(test_all_registry)
 
-init_graphics();
+init_graphics(false);
 // RUN_TEST(test_read_from_string)
 // RUN_TEST(test_parse_from_file)
 RUN_TEST(test_parse_folder)

@@ -1,4 +1,5 @@
 #include "include/sdl2_basics.h"
+#include "SDL_video.h"
 #include "include/events.h"
 #include "include/opengl_stuff.h"
 #include <string.h>
@@ -28,7 +29,7 @@ int greatest_common_divisor(int a, int b)
     return a;
 }
 
-int init_graphics()
+int init_graphics(bool set_fullscreen)
 {
     const int flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO;
 
@@ -50,8 +51,6 @@ int init_graphics()
     }
 
     g_gl_context = SDL_GL_CreateContext(g_window);
-
-    // Setup OpenGL for 2D rendering
     setup_opengl(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     int result = SDL_RegisterEvents(TOTAL_ENGINE_EVENTS);
@@ -87,10 +86,6 @@ int init_graphics()
         LOG_ERROR("Mix_Init Error: %s", SDL_GetError());
         return FAIL;
     }
-
-    // Mix_ChannelFinished()
-
-    // SDL_ShowCursor(SDL_DISABLE);
 
     return SUCCESS;
 }

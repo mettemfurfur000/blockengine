@@ -1,5 +1,6 @@
 #include "include/block_renderer.h"
 #include "include/opengl_stuff.h"
+#include "include/sdl2_basics.h"
 
 #include <epoxy/gl_generated.h>
 #include <stdlib.h>
@@ -34,9 +35,14 @@ framebuffer create_framebuffer_object(u16 width, u16 height)
     return buffer;
 }
 
-int block_renderer_init_post(int width, int height)
+int block_renderer_init_post()
 {
-    renderer.post_framebuffer = create_framebuffer_object(width, height);
+    if (renderer.post_framebuffer.fbo)
+    {
+        glDeleteFramebuffers(1, &renderer.post_framebuffer.fbo);
+    }
+
+    renderer.post_framebuffer = create_framebuffer_object(SCREEN_WIDTH, SCREEN_HEIGHT);
 
     if (renderer.post_framebuffer.fbo == 0)
     {
@@ -84,7 +90,7 @@ int block_renderer_init_post(int width, int height)
     return SUCCESS;
 }
 
-int block_renderer_init(int width, int height)
+int block_renderer_init()
 {
     std->shader = assemble_shader("block");
     if (!std->shader)
@@ -98,9 +104,7 @@ int block_renderer_init(int width, int height)
     renderer.block_width_loc = glGetUniformLocation(std->shader, "uBlockWidth");
     renderer.texture_loc = glGetUniformLocation(std->shader, "uTexture");
 
-    float vertices[] = {
-
-        0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f};
+    float vertices[] = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f};
 
     unsigned int indices[] = {0, 1, 2, 2, 3, 0};
 
@@ -156,18 +160,19 @@ int block_renderer_init(int width, int height)
 
     float projection[16] = {0};
 
-    projection[0] = 2.0f / width;
-    projection[5] = -2.0f / height;
+    projection[0] = 2.0f / SCREEN_WIDTH;
+    projection[5] = -2.0f / SCREEN_HEIGHT;
     projection[10] = -1.0f;
     projection[12] = -1.0f;
     projection[13] = 1.0f;
     projection[15] = 1.0f;
 
     glUseProgram(std->shader);
+
     glUniformMatrix4fv(renderer.projection_loc, 1, GL_FALSE, projection);
     glUniform1i(renderer.texture_loc, 0);
 
-    if (block_renderer_init_post(width, height) != SUCCESS)
+    if (block_renderer_init_post() != SUCCESS)
         return FAIL;
     return SUCCESS;
 }
@@ -274,4 +279,24 @@ void block_renderer_end_frame()
 
     glBindVertexArray(renderer.post.vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+
+void block_renderer_update_size()
+{
+    float projection[16] = {0};
+
+    projection[0] = 2.0f / SCREEN_WIDTH;
+    projection[5] = -2.0f / SCREEN_HEIGHT;
+    projection[10] = -1.0f;
+    projection[12] = -1.0f;
+    projection[13] = 1.0f;
+    projection[15] = 1.0f;
+
+    glUseProgram(std->shader);
+
+    glUniformMatrix4fv(renderer.projection_loc, 1, GL_FALSE, projection);
+
+    glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    block_renderer_init_post();
 }

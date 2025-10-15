@@ -6,6 +6,7 @@
 #include <epoxy/gl.h>
 
 #include "general.h"
+// #include "rendering.h"
 
 #include "../vec/src/vec.h"
 // #include "../stb/stb_image.h"
@@ -60,7 +61,7 @@ typedef struct music
 
 int greatest_common_divisor(int a, int b);
 
-int init_graphics();
+int init_graphics(bool set_fullscreen);
 int exit_graphics();
 
 int record_atlas_info(atlas_info *atlas_info, image *img);

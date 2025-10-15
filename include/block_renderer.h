@@ -2,9 +2,8 @@
 #define BLOCK_RENDERER_H
 
 #include "general.h"
-#include "rendering.h"
+// #include "rendering.h"
 #include "sdl2_basics.h"
-
 
 typedef struct
 {
@@ -56,8 +55,10 @@ extern block_renderer renderer;
 
 framebuffer create_framebuffer_object(u16 width, u16 height);
 
-int block_renderer_init(int screenWidth, int screenHeight);
+int block_renderer_init();
 void block_renderer_shutdown();
+
+void block_renderer_update_size();
 
 void block_renderer_begin_batch();
 void block_renderer_end_batch(image *atlas_img, GLuint atlas, u8 local_block_width);
@@ -68,6 +69,6 @@ void block_renderer_set_instance_properties(u8 frame, u8 type, u8 flags, float s
 void block_renderer_begin_frame();
 void block_renderer_end_frame();
 
-void block_renderer_render_frozen(layer_slice slice);
+// void block_renderer_render_frozen(layer_slice slice);
 
 #endif // BLOCK_RENDERER_H

@@ -83,6 +83,9 @@ u16 handle_table_slot_generation(handle_table *table, u16 index);
     handle values. Returns 0 on success, non-zero on failure. */
 int handle_table_set_slot(handle_table *table, u16 index, void *ptr, u16 generation, u16 type, u16 active);
 
+/* Returns first unused slot, or invalid handle if all are taken */
+u16 handle_table_get_first_inactive(handle_table *table);
+
 #ifdef __cplusplus
 }
 #endif

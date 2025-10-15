@@ -1,5 +1,6 @@
 #include "include/level.h"
 #include "include/handle.h"
+#include "include/logging.h"
 #include "include/uuid.h"
 #include "include/vars.h"
 
@@ -190,7 +191,7 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
 
     if (!b)
     {
-        LOG_ERROR("Failed to lookup a var (handle) %llu at %d:%d", (unsigned long long)packed, x, y);
+        LOG_ERROR("Failed to lookup a var: idx - %d, validation - %d, at %d:%d", vh.index, vh.validation, x, y);
         *vars_out = NULL;
         return FAIL;
     }
@@ -509,26 +510,38 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
 
     blob vars_space = l->registry->resources.data[character_block_id].vars_sample;
 
+    char c = ' ';
+
     while (*ptr != 0)
     {
-        block_set_id(l, x, y, character_block_id);
-        blob *vars = NULL;
-        if (block_get_vars(l, x, y, &vars) != SUCCESS)
+        c = iscntrl(*ptr) ? ' ' : *ptr;
+        if (c == ' ')
         {
-            block_copy_vars(l, x, y, vars_space);
+            block_set_id(l, x, y, 0);
+            block_delete_vars(l, x, y);
+        }
+        else
+        {
+            block_set_id(l, x, y, character_block_id);
+
+            blob *vars = NULL;
             if (block_get_vars(l, x, y, &vars) != SUCCESS)
             {
-                LOG_ERROR("bprintf Failed create a variable");
-                va_end(args);
-                return;
+                block_copy_vars(l, x, y, vars_space);
+                if (block_get_vars(l, x, y, &vars) != SUCCESS)
+                {
+                    LOG_ERROR("bprintf Failed create a variable");
+                    va_end(args);
+                    return;
+                }
             }
-        }
 
-        if (var_set_u8(vars, 'v', iscntrl(*ptr) ? ' ' : *ptr) != SUCCESS)
-        {
-            LOG_ERROR("bprintf Failed to set a u8 for character block in a loop");
-            va_end(args);
-            return;
+            if (var_set_u8(vars, 'v', c) != SUCCESS)
+            {
+                LOG_WARNING("bprintf Failed to set a u8 var for char block at %d:%d", x, y);
+                // va_end(args);
+                // return;
+            }
         }
 
         switch (*ptr)

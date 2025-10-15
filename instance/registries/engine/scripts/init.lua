@@ -8,8 +8,12 @@ local le = require("registries.engine.scripts.definitions.level_editor")
 
 screen_width, screen_height = render_rules.get_size(g_render_rules)
 
+print("lua got resolution: " .. screen_width .. "x" .. screen_height)
+
 g_width_blocks, g_height_blocks = 2 * screen_width / (g_block_size * global_zoom),
     2 * screen_height / (g_block_size * global_zoom)
+
+print("lua block area: " .. g_width_blocks .. "x" .. g_height_blocks)
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     if lay_ref == nil then
