@@ -1,16 +1,17 @@
 #include "include/scripting_bindings.h"
-#include "include/scripting_var_handles.h"
 #include "include/events.h"
 #include "include/file_system.h"
 #include "include/flags.h"
 #include "include/image_editing.h"
+#include "include/level.h"
 #include "include/rendering.h"
 #include "include/scripting.h"
+#include "include/scripting_var_handles.h"
 
 #include <SDL_mixer.h>
 #include <SDL_timer.h>
 
-#include <time.h>
+// #include <time.h>
 
 #include <lauxlib.h>
 #include <lua.h>
@@ -399,13 +400,13 @@ static int lua_slice_set(lua_State *L)
 void lua_register_render_rules(lua_State *L)
 {
     const static luaL_Reg render_rules_lib[] = {
-        {  "get_size",  lua_render_rules_get_size},
-        { "get_order", lua_render_rules_get_order},
-        { "set_order", lua_render_rules_set_order},
-        { "get_slice",              lua_slice_get},
-        { "set_slice",              lua_slice_set},
+        { "get_size",  lua_render_rules_get_size},
+        {"get_order", lua_render_rules_get_order},
+        {"set_order", lua_render_rules_set_order},
+        {"get_slice",              lua_slice_get},
+        {"set_slice",              lua_slice_set},
         // {"set_frozen",             lua_set_frozen},
-        {        NULL,                       NULL}
+        {       NULL,                       NULL}
     };
 
     luaL_newlib(L, render_rules_lib);
@@ -867,18 +868,26 @@ static int lua_layer_paste_block(lua_State *L)
         luaL_error(L, "Layer has no registry");
 
     if (id >= wrapper->l->registry->resources.length)
-        luaL_error(L, "Block ID out of range");
+        luaL_error(L, "Block ID out of range - %d out of total %d blocks", id, wrapper->l->registry->resources.length);
 
     block_resources *res = &wrapper->l->registry->resources.data[id];
 
     u64 old_id = 0;
-    u8 status = block_get_id(wrapper->l, x, y, &old_id) == SUCCESS;
 
-    status &= block_set_id(wrapper->l, x, y, id) == SUCCESS;
     if (id == 0)
-        status &= block_delete_vars(wrapper->l, x, y) == SUCCESS;
+    {
+        block_delete_vars(wrapper->l, x, y);
+    }
     else
-        status &= block_copy_vars(wrapper->l, x, y, res->vars_sample) == SUCCESS;
+    {
+        if (block_copy_vars(wrapper->l, x, y, res->vars_sample) != SUCCESS)
+            luaL_error(L, "Failed to copy vars at: %d, %d", x, y);
+    }
+
+    if (block_get_id(wrapper->l, x, y, &old_id) != SUCCESS)
+        luaL_error(L, "Failed to get id at: %d, %d", x, y);
+    if (block_set_id(wrapper->l, x, y, id) != SUCCESS)
+        luaL_error(L, "Failed to set id at: %d, %d", x, y);
 
     block_update_event e = {
         .type = ENGINE_BLOCK_CREATE,
@@ -891,9 +900,7 @@ static int lua_layer_paste_block(lua_State *L)
     };
 
     SDL_PushEvent((SDL_Event *)&e);
-
-    lua_pushboolean(L, status);
-    return 1;
+    return 0;
 }
 
 static int lua_layer_move_block(lua_State *L)
@@ -1064,7 +1071,7 @@ static int lua_block_copy_vars(lua_State *L)
     //     LuaHolder *wrapper_vars = (LuaHolder *)luaL_checkudata(L, 4, "Vars");
     //     src_blob = wrapper_vars->b;
     // }
-    // else 
+    // else
     if (luaL_testudata(L, 4, "VarHandle"))
     {
         src_blob = get_blob_from_varhandle(L, 4);

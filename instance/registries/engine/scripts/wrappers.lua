@@ -1,32 +1,51 @@
-log_error = function(msg)
+local M = {}
+
+function M.log_error(msg)
     log_msg(2, msg)
 end
 
-log_message = function(msg)
+function M.log_message(msg)
     log_msg(1, msg)
 end
 
-function try(f, catch_f)
+function M.try(f, catch_f)
     local status, exception = pcall(f)
     if not status then
         catch_f(exception)
     end
 end
 
-function world_print(x, y, width, msg)
+function M.world_fill(x, y, w, h, id)
+    id = id or 0
+
+    for j = y, h do
+        for i = x, w do
+            G_menu.text.layer:paste_block(i, j, id)
+        end
+    end
+end
+
+function M.world_print(x, y, width, msg)
     if type(msg) ~= "string" then
         msg = tostring(msg)
     end
+
+    if msg == " " then
+        for i = 0, width do
+            G_menu.text.layer:paste_block(x + i, y, 0)
+        end
+    end
+
     local spaces = width - #msg
     local spaces_str = ""
     for i = 1, spaces do
         spaces_str = spaces_str .. " "
     end
 
-    g_menu.text.layer:bprint(g_character_id, x, y, width, msg .. spaces_str)
+    G_menu.text.layer:bprint(G_character_id, x, y, width, msg .. spaces_str)
 end
 
-function tablelength(T)
+function M.tablelength(T)
     local count = 0
     for _ in pairs(T) do
         count = count + 1
@@ -34,12 +53,12 @@ function tablelength(T)
     return count
 end
 
-function print_table(t, indent)
+function M.print_table(t, indent)
     indent = indent or 0
     for k, v in pairs(t) do
         if type(v) == "table" then
             print(string.rep("  ", indent) .. k .. " = {")
-            print_table(v, indent + 1)
+            M.print_table(v, indent + 1)
             print(string.rep("  ", indent) .. "}")
         else
             print(string.rep("  ", indent) .. k .. " = " .. tostring(v))
@@ -47,7 +66,7 @@ function print_table(t, indent)
     end
 end
 
-function safe_registry_load(level, name)
+function M.safe_registry_load(level, name)
     local status, reg_table = level:load_registry(name)
 
     if status == false then
@@ -58,7 +77,7 @@ function safe_registry_load(level, name)
     return reg_table
 end
 
-function safe_menu_create(level, name, width, height)
+function M.safe_menu_create(level, name, width, height)
     local menu = level:new_room(name, width, height)
 
     if menu == nil then
@@ -69,7 +88,7 @@ function safe_menu_create(level, name, width, height)
     return menu
 end
 
-function safe_layer_create(room, registry_name, block_width, var_width)
+function M.safe_layer_create(room, registry_name, block_width, var_width)
     if block_width <= 0 or var_width < 0 or registry_name == nil or room == nil then
         log_error("invalid arguments for layer creation")
         os.exit()
@@ -91,19 +110,16 @@ function safe_layer_create(room, registry_name, block_width, var_width)
     return layer
 end
 
-function find_block(reg_table, filename)
-    print("searching for " .. filename)
+function M.find_block(reg_table, filename)
     for k, v in pairs(reg_table) do
-        -- print_table(v)
         if v.all_fields ~= nil then
             local file_src = v.all_fields.source_filename
             local match = string.gmatch(file_src, "/(%w+).blk$")()
-            -- print_table(v.all_fields)
-            -- print(filename, file_src, match)
             if match == filename then
-                -- print("match!")
                 return v
             end
         end
     end
 end
+
+return M

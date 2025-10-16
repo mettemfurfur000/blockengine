@@ -21,10 +21,6 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             return
         end
 
-        -- if g_tick % 5 ~= 0 then
-        --     return
-        -- end
-
         local flags = vars:get_u8("f")
 
         if flags == 0 then -- if 0 that means that it already moved
@@ -46,7 +42,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             vars:set_i16("x", -delta.x * g_block_width_pixels)
             vars:set_i16("y", -delta.y * g_block_width_pixels)
 
-            vars:set_u32("t", sdl_current_tick)
+            vars:set_u32("t", G_sdl_tick)
 
             vars:set_u8("f", 0) -- moved
         else -- in case of a nil or a non-zero block, just rotate

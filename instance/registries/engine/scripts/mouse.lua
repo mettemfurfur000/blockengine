@@ -1,8 +1,10 @@
--- local constants = require("registries.engine.scripts.constants")
--- local cam_utils = require("registries.engine.scripts.camera_utils")
+local block_utils = require("registries.engine.scripts.block_utils")
+
 local current_block = scripting_current_block_id
 
-mouse = {
+local M = {}
+
+G_mouse = {
     pos = {
         x = -1,
         y = -1
@@ -17,32 +19,6 @@ mouse = {
     vars = nil
 }
 
-function pixels_to_blocks(pos, zoom)
-    zoom = zoom or render_rules.get_slice(g_render_rules, g_menu.mouse.index).zoom
-    return {
-        x = math.floor((pos.x + mouse.offset.x) / g_block_size / zoom),
-        y = math.floor((pos.y + mouse.offset.y) / g_block_size / zoom)
-    }
-end
-
-function pixel_to_blocks_no_offset(pos, zoom)
-    zoom = zoom or render_rules.get_slice(g_render_rules, g_menu.mouse.index).zoom
-    return {
-        x = math.floor(pos.x / g_block_size / zoom),
-        y = math.floor(pos.y / g_block_size / zoom)
-    }
-end
-
-function pixel_to_layer_blocks(layer, pos, zoom)
-    local slice = render_rules.get_slice(g_render_rules, layer.index)
-    zoom = zoom or slice.zoom
-
-    return {
-        x = math.floor((pos.x + slice.x) / g_block_size / zoom),
-        y = math.floor((pos.y + slice.y) / g_block_size / zoom)
-    }
-end
-
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
 
@@ -51,32 +27,33 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
         y = 0
     }
 
-    mouse.home_layer = g_menu.mouse.layer
-    mouse.home_layer_index = g_menu.mouse.index
-    mouse.pos = pos
+    ---@class Layer
+    G_mouse.home_layer = G_menu.mouse.layer
+    G_mouse.home_layer_index = G_menu.mouse.index
+    G_mouse.pos = pos
 
-    mouse.home_layer:for_each(current_block, function(x, y)
+    G_mouse.home_layer:for_each(current_block, function(x, y)
         print("found an existing mouse, OBLITERATE")
-        mouse.home_layer:paste_block(x, y, 0)
+        G_mouse.home_layer:paste_block(x, y, 0)
     end)
 
-    if mouse.home_layer:paste_block(mouse.pos.x, mouse.pos.y, current_block) == false then
+    if G_mouse.home_layer:paste_block(G_mouse.pos.x, G_mouse.pos.y, current_block) == false then
         error("failed to paste a mouse block")
     end
 
-    local status, vars = mouse.home_layer:get_vars(mouse.pos.x, mouse.pos.y)
+    local status, vars = G_mouse.home_layer:get_vars(G_mouse.pos.x, G_mouse.pos.y)
     if status == false then
         error("error getting vars for the mouse")
         return
     end
 
-    mouse.vars = vars
+    G_mouse.vars = vars
 
     print("mouse initialized")
 end)
 
 local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
-    local new_pos = pixel_to_blocks_no_offset(cur_pos_pixels, slice.zoom)
+    local new_pos = block_utils.pixel_to_blocks_no_offset(cur_pos_pixels, slice.zoom)
 
     local delta = {
         x = new_pos.x - old_pos_blocks.x,
@@ -92,47 +69,47 @@ local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
 end
 
 blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, clicks)
-    if mouse.home_layer == nil then
+    if G_mouse.home_layer == nil then
         return
     end
 
-    local cur_slice = render_rules.get_slice(g_render_rules, g_menu.mouse.index);
-    mouse.pos = mouse_move(mouse.home_layer, cur_slice, {
+    local cur_slice = render_rules.get_slice(g_render_rules, G_menu.mouse.index);
+    G_mouse.pos = mouse_move(G_mouse.home_layer, cur_slice, {
         x = x,
         y = y
-    }, mouse.pos)
+    }, G_mouse.pos)
 end)
 
 blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
-    if mouse.home_layer == nil then
+    if G_mouse.home_layer == nil then
         return
     end
 
-    mouse.pos = mouse_move(mouse.home_layer, render_rules.get_slice(g_render_rules, mouse.home_layer_index), {
+    G_mouse.pos = mouse_move(G_mouse.home_layer, render_rules.get_slice(g_render_rules, G_mouse.home_layer_index), {
         x = pos_x,
         y = pos_y
-    }, mouse.pos)
+    }, G_mouse.pos)
 end)
 
 -- print("registering a mouse input")
 
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
-    if mouse.home_layer == nil then
+    if G_mouse.home_layer == nil then
         return
     end
 
-    local cur_slice = render_rules.get_slice(g_render_rules, g_menu.mouse.index);
-    local actual_pos = pixels_to_blocks({
+    local cur_slice = render_rules.get_slice(g_render_rules, G_menu.mouse.index);
+    local actual_pos = block_utils.pixels_to_blocks({
         x = x,
         y = y
     }, cur_slice.zoom)
 
     -- print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
 
-    local func = g_menu.objects.layer:get_input_handler(actual_pos.x, actual_pos.y, "click")
+    local func = G_menu.objects.layer:get_input_handler(actual_pos.x, actual_pos.y, "click")
 
     if func then
-        func(g_menu.objects.layer, actual_pos.x, actual_pos.y, 1)
+        func(G_menu.objects.layer, actual_pos.x, actual_pos.y, 1)
     end
 end)
 

@@ -1,93 +1,101 @@
+local block_utils = require("registries.engine.scripts.block_utils")
+local wrappers = require("registries.engine.scripts.wrappers")
+
 local current_block = scripting_current_block_id
 
-pallete_width = 8
-ui_width = 24
-ui_offset_layer_name = 0
-ui_offset_mode = 1
-ui_offset_block_name = 3
-ui_offset_preview = 4
-ui_offset_vars_debug = 5
+G_pallete_width = 8
+G_ui_width = 32
+G_ui_offset_layer_name = 0
+G_ui_offset_mode = 1
+G_ui_offset_block_name = 3
+G_ui_offset_preview = 4
+G_ui_offset_position_debug = 5
+G_ui_offset_vars_debug = 6
 
 local editor = {
     mode = "none",
     pallete_layer = nil,
+    pallete_index = nil,
     layer_being_edited = nil,
     layer_being_edited_index = nil,
-    hide_palette = false,
+    is_shown = false,
     selected_block = nil,
     keystate = {}
 }
 
 local function get_block_by_id(id)
-    for k, v in pairs(g_engine_table) do
+    for k, v in pairs(G_engine_table) do
         if v.id == id then
             return v
         end
     end
 end
 
-local function place_pallete(actually_erase_pallete)
+local function place_pallete(is_shown)
     local x, y = 0, 0
     local ranged_begin = 0
 
-    for k, v in pairs(g_engine_table) do
-
+    for k, v in pairs(G_engine_table) do
         if ranged_begin ~= nil and ranged_begin ~= 0 then
             x = x + 1
             ranged_begin = ranged_begin - 1
-            -- if x >= pallete_width then
+
             if x >= v.atlas_info.frames then
                 x = 0
                 y = y + 1
-            end
-        elseif v.all_fields ~= nil and v.all_fields.repeat_times ~= nil and ranged_begin == 0 then -- place them all on the same line if its a repeated block
-            -- print("#### found ranged thing with id " .. v.id)
-            -- print_table(v)
+            end -- place them all on the same line if its a repeated block
+        elseif v.all_fields ~= nil and v.all_fields.repeat_times ~= nil and ranged_begin == 0 then
             ranged_begin = v.all_fields.repeat_times - 1
         else
             x = 0
             y = y + 1
         end
 
-        editor.pallete_layer.layer:paste_block(x, y, actually_erase_pallete and 0 or v.id)
-
-        -- print("placing pallete " .. v.id .. " at " .. x .. ", " .. y)
+        editor.pallete_layer:paste_block(x, y, (not is_shown) and 0 or v.id)
     end
 end
 
+-- does actions and allows to inspect blocks
 local function mouse_action(x, y, button)
+    if not editor.is_shown then
+        return
+    end
+
+    local block_highlight = block_utils.pixels_to_blocks({
+        x = x,
+        y = y
+    })
+
+    wrappers.world_print(G_pallete_width, G_ui_offset_position_debug, G_ui_width,
+        (block_highlight.x .. ", " .. block_highlight.y))
+
+    local success, vars = editor.layer_being_edited.layer:get_vars(block_highlight.x, block_highlight.y)
+    if success and vars:is_valid() then
+        wrappers.world_print(G_pallete_width, G_ui_offset_vars_debug, G_ui_width, vars:__tostring())
+    end
+
     if button == 1 then
-        local blk = pixels_to_blocks({
+        local block_coords = block_utils.pixels_to_blocks({
             x = x,
             y = y
         })
 
         if editor.mode == "place" then
-            local id = editor.layer_being_edited.layer:get_id(blk.x, blk.y)
+            local id = editor.layer_being_edited.layer:get_id(block_coords.x, block_coords.y)
             -- print("id found " .. id)
             if id == 0 then
-                editor.layer_being_edited.layer:paste_block(blk.x, blk.y, editor.selected_block.id)
+                editor.layer_being_edited.layer:paste_block(block_coords.x, block_coords.y, editor.selected_block.id)
             end
         end
 
         if editor.mode == "remove" then
-            editor.layer_being_edited.layer:paste_block(blk.x, blk.y, 0)
-        end
-
-        if editor.mode == "inspect" then
-            local status, vars = editor.layer_being_edited.layer:get_vars(blk.x, blk.y)
-            if status == true and vars:is_valid() then
-                log_message("true vars found at " .. x .. ", " .. y)
-                local vars = vars:__tostring()
-
-                world_print(pallete_width, ui_offset_vars_debug, ui_width, vars)
-            end
+            editor.layer_being_edited.layer:paste_block(block_coords.x, block_coords.y, 0)
         end
     end
 end
 
 local function get_layer_by_id(id)
-    for k, v in pairs(g_menu) do
+    for k, v in pairs(G_menu) do
         if v.index == id then
             return v
         end
@@ -96,77 +104,68 @@ local function get_layer_by_id(id)
 end
 
 local function select_layer(number)
-    local desired_layer = math.max(0, math.min(total_layers, (editor.layer_being_edited_index or 0) + number))
+    local desired_layer = math.max(0, math.min(G_layers_amount, (editor.layer_being_edited_index or 0) + number))
     editor.layer_being_edited_index = desired_layer
     editor.layer_being_edited = get_layer_by_id(desired_layer)
 end
 
+-- gets all the data
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
-    editor.pallete_layer = g_menu.pallete
-    place_pallete(editor.hide_palette)
+    ---@class Layer
+    editor.pallete_layer = G_menu.pallete.layer
+    ---@type number
+    editor.pallete_index = G_menu.pallete.index
+
+    place_pallete(editor.is_shown)
 
     select_layer(-1)
 end)
 
-local function ui_update(do_erase)
-    if do_erase then
-        world_print(pallete_width, ui_offset_layer_name, ui_width, " ")
-        world_print(pallete_width, ui_offset_block_name, ui_width, " ")
-        world_print(pallete_width, ui_offset_mode, ui_width, " ")
-
-        -- editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, 0)
-        g_menu.text.layer:paste_block(pallete_width, ui_offset_preview, 0)
+-- resets the whole editor thing
+local function ui_update()
+    if not editor.is_shown then
+        wrappers.world_fill(0, 0, G_ui_width, 64)
         return
     end
 
     if editor.layer_being_edited ~= nil then
-        world_print(pallete_width, ui_offset_layer_name, ui_width,
+        wrappers.world_print(G_pallete_width, G_ui_offset_layer_name, G_ui_width,
             editor.layer_being_edited.name .. ":" .. editor.layer_being_edited_index)
     end
 
     if editor.selected_block ~= nil and editor.selected_block.id ~= 0 then
         local filename = string.match(editor.selected_block.all_fields.source_filename, "[^/\\]*%.%w+$"):sub(1, -5)
-        world_print(pallete_width, ui_offset_block_name, ui_width, "" .. filename)
+        wrappers.world_print(G_pallete_width, G_ui_offset_block_name, G_ui_width, "" .. filename)
 
-        -- show the selected block
-        -- editor.pallete_layer.layer:paste_block(pallete_width, ui_offset_preview, editor.selected_block.id) 
-        g_menu.text.layer:paste_block(pallete_width, ui_offset_preview, editor.selected_block.id)
+        G_menu.text.layer:paste_block(G_pallete_width, G_ui_offset_preview, editor.selected_block.id)
     end
 
-    world_print(pallete_width, ui_offset_mode, ui_width, editor.mode)
+    wrappers.world_print(G_pallete_width, G_ui_offset_mode, G_ui_width, editor.mode)
 end
 
+-- Scrolls the pallete
 blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
-    local slice = render_rules.get_slice(g_render_rules, editor.pallete_layer.index)
-    slice.y = math.max(0, math.min(screen_height, (slice.y or 0) - y * 32))
-    render_rules.set_slice(g_render_rules, editor.pallete_layer.index, slice)
-
-    -- local desired_layer = math.max(0, math.min(total_layers, (editor.layer_being_edited_index or 0) + y))
-    -- editor.layer_being_edited_index = desired_layer
-    -- editor.layer_being_edited = get_layer_by_id(desired_layer)
-
-    -- print("layer " .. desired_layer .. " out of " .. total_layers)
-
-    -- ui_update()
+    local slice = render_rules.get_slice(g_render_rules, editor.pallete_index)
+    slice.y = math.max(0, math.min(G_screen_height, (slice.y or 0) - y * 32))
+    render_rules.set_slice(g_render_rules, editor.pallete_index, slice)
 end)
 
 -- clicks on the pallete choose the tile
 blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
-    -- local blk = pixel_to_blocks_no_offset({
-    local blk = pixel_to_layer_blocks(editor.pallete_layer, {
+    local blk = block_utils.pixel_to_layer_blocks(editor.pallete_index, {
         x = x,
         y = y
     })
 
-    if editor.hide_palette == false then -- attempt to select a block if pallete is visible
-        if blk.x > pallete_width then
+    if editor.is_shown then -- attempt to select a block if pallete is visible
+        if blk.x > G_pallete_width then
             goto attempt_select_layer_skip
         end
 
         -- local id = blk.x + blk.y * pallete_width
-        local id = editor.pallete_layer.layer:get_id(blk.x, blk.y)
+        local id = editor.pallete_layer:get_id(blk.x, blk.y)
 
-        if id >= g_total_blocks then
+        if id >= G_total_blocks then
             -- print("out of bounds")
             goto attempt_select_layer_skip
         end
@@ -192,25 +191,6 @@ end)
 
 -- special keybinds, maybe
 local function keybind_handle(keysym, char)
-    -- if char == 's' then
-    --     le.save_level(test_level)
-    --     print("saved")
-    -- end
-
-    -- if char == 'h' then
-    --     -- for testing purposes make the object layer static
-    --     if editor.layer_being_edited then
-    --         render_rules.set_frozen(g_render_rules, 0, true)
-    --     end
-    -- end
-
-    -- if char == 'l' then
-    --     -- make it normal
-    --     if editor.layer_being_edited then
-    --         render_rules.set_frozen(g_render_rules, 0, false)
-    --     end
-    -- end
-
     if char == 'q' then
         select_layer(1)
     end
@@ -236,11 +216,11 @@ local function keybind_handle(keysym, char)
     end
 
     if keysym == 1073742048 then -- left control
-        editor.hide_palette = not editor.hide_palette
+        editor.is_shown = not editor.is_shown
     end
 
-    place_pallete(editor.hide_palette)
-    ui_update(editor.hide_palette)
+    place_pallete(editor.is_shown)
+    ui_update()
 end
 
 blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)

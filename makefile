@@ -74,11 +74,15 @@ else
 	gcc -o build/lua_test obj/lua_test.o lua/src/liblua.a -lm
 endif
 
-PHONY: client_app
+.PHONY: client_app
 client_app: mains/client.c registry vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
 	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS) -lstdc++
 # no more -lbox2d 
+
+.PHONY: run_client
+run_client: client_app
+	cd build;./client.exe
 
 .PHONY: grab_client_dlls
 grab_client_dlls:

@@ -85,7 +85,9 @@ static void var_table_free_handle(var_handle_table *pool, var_handle h)
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
 {
     LAYER_CHECKS(l)
-    CHECK(x >= l->width || y >= l->height)
+    // CHECK(x >= l->width || y >= l->height)
+    if (x >= l->width || y >= l->height)
+        return FAIL;
 
     void *ptr = BLOCK_ID_PTR(l, x, y);
 
@@ -145,7 +147,9 @@ u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 u32 block_get_vars_index(layer *l, u32 x, u32 y)
 {
     LAYER_CHECKS(l)
-    CHECK(x >= l->width || y >= l->height)
+    // CHECK(x >= l->width || y >= l->height)
+    if (x >= l->width || y >= l->height)
+        return FAIL;
 
     if (l->var_pool.table == NULL)
         return 0;
@@ -162,7 +166,9 @@ void block_var_index_set(layer *l, u32 x, u32 y, u32 index)
     if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
         return;
     CHECK_PTR_NORET(l->blocks)
-    CHECK_NORET(x >= l->width || y >= l->height)
+    // CHECK_NORET(x >= l->width || y >= l->height)
+    if (x >= l->width || y >= l->height)
+        return;
 
     if (l->var_pool.table == NULL)
         return;
@@ -191,7 +197,6 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
 
     if (!b)
     {
-        LOG_ERROR("Failed to lookup a var: idx - %d, validation - %d, at %d:%d", vh.index, vh.validation, x, y);
         *vars_out = NULL;
         return FAIL;
     }
@@ -204,9 +209,9 @@ u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
 u8 block_delete_vars(layer *l, u32 x, u32 y)
 {
     LAYER_CHECKS(l)
-    CHECK(x >= l->width || y >= l->height)
+    if(x >= l->width || y >= l->height)
+        return FAIL;
 
-    // if (l->var_index_size == 0)
     if (l->var_pool.table == NULL)
         return SUCCESS; // nothing to delete
 
@@ -224,6 +229,27 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
 
     return SUCCESS;
 }
+
+// u8 layer_clear_vars(layer *l)
+// {
+//     LAYER_CHECKS(l)
+
+//     if (l->var_pool.table == NULL)
+//         return SUCCESS;
+
+//     u16 cap = handle_table_capacity(l->var_pool.table);
+
+//     for (u16 i = 0; i < cap; ++i)
+//     {
+//         if (b.size == 0 || b.ptr == NULL)
+//         {
+//             /* empty slot */
+//             handle_table_set_slot(l->var_pool.table, i, NULL, 0, 0, 0);
+//         }
+//     }
+
+//     return SUCCESS;
+// }
 
 u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 {
@@ -517,8 +543,8 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
         c = iscntrl(*ptr) ? ' ' : *ptr;
         if (c == ' ')
         {
-            block_set_id(l, x, y, 0);
             block_delete_vars(l, x, y);
+            block_set_id(l, x, y, 0);
         }
         else
         {

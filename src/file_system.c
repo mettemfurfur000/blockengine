@@ -2,6 +2,7 @@
 #include "include/endianless.h"
 #include "include/folder_structure.h"
 #include "include/level.h"
+#include "include/logging.h"
 #include "include/vars.h"
 
 #define WRITE(object, f) endianless_write((u8 *)&object, sizeof(object), f)
@@ -142,6 +143,7 @@ void write_layer(layer *l, FILE *f)
     }
     else
     {
+        u16 debug_active_amount = 0;
         u16 cap = handle_table_capacity(l->var_pool.table);
         u32 cap32 = (u32)cap;
         WRITE(cap32, f);
@@ -152,6 +154,7 @@ void write_layer(layer *l, FILE *f)
             WRITE(active, f);
             if (p)
             {
+                debug_active_amount++;
                 blob_vars_write(*(blob *)p, f);
             }
             else
@@ -161,6 +164,7 @@ void write_layer(layer *l, FILE *f)
                 WRITE(zero32, f);
             }
         }
+        LOG_DEBUG("total handles saved: %d out of %d", debug_active_amount, cap);
     }
 }
 
@@ -223,6 +227,8 @@ void read_layer(layer *l, room *parent, FILE *f)
         l->var_pool.table = handle_table_create((u16)slot_count);
         l->var_pool.type_tag = 1; /* same tag used when writing */
 
+        u16 debug_active_amount = 0;
+
         for (u16 i = 0; i < (u16)slot_count; ++i)
         {
             u16 active = 0;
@@ -239,16 +245,14 @@ void read_layer(layer *l, room *parent, FILE *f)
                 blob *nb = calloc(1, sizeof(blob));
                 assert(nb != NULL);
 
-                nb->ptr = calloc(b.size ? b.size : 1, 1);
-                assert(nb->ptr != NULL);
-            
-                if (b.size && b.ptr)
-                    memcpy(nb->ptr, b.ptr, b.size);
+                nb->ptr = b.ptr;
                 nb->size = b.size;
                 /* generation left at 0; type set to pool tag; active follows `active` */
                 handle_table_set_slot(l->var_pool.table, i, nb, 0, l->var_pool.type_tag, active);
+                debug_active_amount++;
             }
         }
+        LOG_DEBUG("restored %d active var handles", debug_active_amount);
     }
 }
 

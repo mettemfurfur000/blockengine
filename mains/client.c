@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     float total_ms_took = 0;
     float total_ms_took_gpu = 0;
 
-    const u32 perf_check_period_frames = 120;
+    const u32 perf_check_period_frames = 600;
     const float perf_ms_per_check = perf_check_period_frames * ms_per_frame;
 
     // e.type = SDL_RENDER_TARGETS_RESET;
@@ -104,10 +104,10 @@ int main(int argc, char *argv[])
             glGenQueries(1, &queryID);
 
             glBeginQuery(GL_TIME_ELAPSED, queryID);
-
-            client_render(rules);
-            SDL_GL_SwapWindow(g_window);
-
+            {
+                client_render(rules);
+                SDL_GL_SwapWindow(g_window);
+            }
             glEndQuery(GL_TIME_ELAPSED);
 
             // Retrieve the result (can block until available)
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 
         if (frame % perf_check_period_frames == 0 && frame != 0)
         {
-            LOG_INFO("perf: %f%% cpu, gpu: %f%%", total_ms_took / perf_ms_per_check,
+            LOG_INFO("perf: %f%% cpu, opengl calls: %f%%", total_ms_took / perf_ms_per_check,
                      total_ms_took_gpu / perf_ms_per_check);
 
             total_ms_took = 0;
