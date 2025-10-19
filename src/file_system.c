@@ -4,43 +4,124 @@
 #include "include/handle.h"
 #include "include/level.h"
 #include "include/logging.h"
-#include "include/vars.h"
+// #include "include/vars.h"
 
-#define WRITE(object, f) endianless_write((u8 *)&object, sizeof(object), f)
-#define READ(object, f) endianless_read((u8 *)&object, sizeof(object), f)
+/* compression-related stuff */
 
-void blob_write(blob b, FILE *f)
+typedef enum
 {
-    WRITE(b.length, f);
-    fwrite(b.str, 1, b.length, f);
+    STREAM_PLAIN, /* ordinary FILE* */
+    STREAM_GZIP   /* gzFile from zlib   */
+} stream_mode_t;
+
+/* The struct that all functions will actually receive. */
+typedef struct
+{
+    stream_mode_t mode;
+    union
+    {
+        FILE *plain; /* when mode == STREAM_PLAIN */
+        gzFile gz;   /* when mode == STREAM_GZIP  */
+    } handle;
+} stream_t;
+
+/* Compatibility shim – lets us keep the old signatures */
+#define AS_STREAM(p) ((stream_t *)(p))
+
+static u8 flip_buf[8] = {};
+
+static inline int stream_write(const void *buf, size_t size, stream_t *s)
+{
+    if (size % 2 == 0 && size <= 8 && size > 0)
+    {
+        memcpy(flip_buf, buf, size);
+        make_endianless(flip_buf, size);
+        buf = flip_buf;
+    }
+
+    if (s->mode == STREAM_PLAIN)
+    {
+        return fwrite(buf, 1, size, s->handle.plain) == size ? 0 : -1;
+    }
+    else
+    { /* STREAM_GZIP */
+        int written = gzwrite(s->handle.gz, buf, (unsigned int)size);
+        return written == (int)size ? 0 : -1;
+    }
 }
 
-blob blob_read(FILE *f)
+static inline int stream_read(void *buf, size_t size, stream_t *s)
+{
+    int ret_code = true;
+    if (s->mode == STREAM_PLAIN)
+    {
+        ret_code = fread(buf, 1, size, s->handle.plain) == size ? 0 : -1;
+    }
+    else
+    { /* STREAM_GZIP */
+        int read = gzread(s->handle.gz, buf, (unsigned int)size);
+        ret_code = read == (int)size ? 0 : -1;
+    }
+
+    if (size % 2 == 0 && size < 9 && size > 0)
+        make_endianless(buf, size);
+
+    return ret_code;
+}
+
+#define WRITE(object, s)                                                                                               \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (stream_write(&(object), sizeof(object), AS_STREAM(s)) != 0)                                                \
+        {                                                                                                              \
+            LOG_ERROR("Write failed for %s", #object);                                                                 \
+        }                                                                                                              \
+    } while (0)
+
+#define READ(object, s)                                                                                                \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        if (stream_read(&(object), sizeof(object), AS_STREAM(s)) != 0)                                                 \
+        {                                                                                                              \
+            LOG_ERROR("Read failed for %s", #object);                                                                  \
+        }                                                                                                              \
+    } while (0)
+
+void blob_write(blob b, stream_t *f)
+{
+    WRITE(b.length, f);
+    // fwrite(b.str, 1, b.length, f);
+    stream_write(b.str, b.length, f);
+}
+
+blob blob_read(stream_t *f)
 {
     blob t;
     READ(t.length, f);
     t.str = malloc(t.length);
-    fread(t.str, 1, t.length, f);
+    stream_read(t.str, t.length, f);
     return t;
 }
 
-void blob_vars_write(blob b, FILE *f)
+void blob_vars_write(blob b, stream_t *f)
 {
     WRITE(b.length, f);
 
-    VAR_FOREACH(b, {
-        putc(b.ptr[i], f);
-        u8 size = b.ptr[i + 1];
-        putc(size, f);
-        u8 *val = VAR_VALUE(b.ptr, i);
-        if (size % 2 == 0 && size <= 8 && size > 0)
-            endianless_write(val, size, f);
-        else
-            fwrite(val, 1, size, f);
-    });
+    stream_write(b.ptr, b.length, f);
+
+    // VAR_FOREACH(b, {
+    //     putc(b.ptr[i], f);
+    //     u8 size = b.ptr[i + 1];
+    //     putc(size, f);
+    //     u8 *val = VAR_VALUE(b.ptr, i);
+    //     if (size % 2 == 0 && size <= 8 && size > 0)
+    //         endianless_write(val, size, f);
+    //     else
+    //         fwrite(val, 1, size, f);
+    // });
 }
 
-blob blob_vars_read(FILE *f)
+blob blob_vars_read(stream_t *f)
 {
     blob b;
     READ(b.size, f);
@@ -48,21 +129,23 @@ blob blob_vars_read(FILE *f)
 
     assert(b.ptr != NULL);
 
-    VAR_FOREACH(b, {
-        b.ptr[i] = getc(f);
-        u8 size = getc(f);
-        b.ptr[i + 1] = size;
-        u8 *val = VAR_VALUE(b.ptr, i);
-        if (size % 2 == 0 && size <= 8 && size > 0)
-            endianless_read(val, size, f);
-        else
-            fread(val, 1, size, f);
-    });
+    stream_read(b.ptr, b.length, f);
+
+    // VAR_FOREACH(b, {
+    //     b.ptr[i] = getc(f);
+    //     u8 size = getc(f);
+    //     b.ptr[i + 1] = size;
+    //     u8 *val = VAR_VALUE(b.ptr, i);
+    //     if (size % 2 == 0 && size <= 8 && size > 0)
+    //         endianless_read(val, size, f);
+    //     else
+    //         fread(val, 1, size, f);
+    // });
 
     return b;
 }
 
-void write_hashtable(hash_node **t, FILE *f)
+void write_hashtable(hash_node **t, stream_t *f)
 {
     const u32 size = TABLE_SIZE;
     const u32 elements = table_elements(t);
@@ -83,7 +166,7 @@ void write_hashtable(hash_node **t, FILE *f)
     }
 }
 
-void read_hashtable(hash_node **t, FILE *f)
+void read_hashtable(hash_node **t, stream_t *f)
 {
     u32 size = TABLE_SIZE;
     u32 elements = 0;
@@ -106,7 +189,7 @@ void read_hashtable(hash_node **t, FILE *f)
 
 // TODO: this serialization code is stinky, mayb remake in a more modular way?/
 
-void write_layer(layer *l, FILE *f)
+void write_layer(layer *l, stream_t *f)
 {
     WRITE(l->block_size, f);
     WRITE(l->var_index_size, f);
@@ -130,15 +213,10 @@ void write_layer(layer *l, FILE *f)
                 LOG_ERROR("failed to read the block id on %d %d", x, y);
                 return;
             }
-            endianless_write((u8 *)&id, l->block_size, f);
+            stream_write(&id, l->block_size, f);
             index = block_get_vars_index(l, x, y);
-            // handle32 h = handle_from_u32(index);
-            // if (h.index > 0)
-            //     LOG_DEBUG("wrote i:%d v:%d", h.index, h.validation);
-            endianless_write((u8 *)&index, l->var_index_size, f);
+            stream_write(&index, l->var_index_size, f);
         }
-
-    // layer_clean_vars(l);
 
     /* Serialize handle table: write capacity (slot count) and for each slot write
        active flag and blob contents (or zero blob for empty slots). */
@@ -176,7 +254,7 @@ void write_layer(layer *l, FILE *f)
     }
 }
 
-void read_layer(layer *l, room *parent, FILE *f)
+void read_layer(layer *l, room *parent, stream_t *f)
 {
     READ(l->block_size, f);
     READ(l->var_index_size, f);
@@ -212,7 +290,7 @@ void read_layer(layer *l, room *parent, FILE *f)
     for (u32 y = 0; y < l->height; y++)
         for (u32 x = 0; x < l->width; x++)
         {
-            endianless_read((u8 *)&id, l->block_size, f); // read id
+            stream_read((u8 *)&id, l->block_size, f); // read id
 
             if (block_set_id(l, x, y, id) != SUCCESS)
             {
@@ -220,7 +298,7 @@ void read_layer(layer *l, room *parent, FILE *f)
                 block_set_id(l, x, y, 0);
             }
 
-            endianless_read((u8 *)&index, l->var_index_size, f); // read var index
+            stream_read((u8 *)&index, l->var_index_size, f); // read var index
             block_var_index_set(l, x, y, index);
         }
 
@@ -267,7 +345,7 @@ void read_layer(layer *l, room *parent, FILE *f)
     }
 }
 
-void write_room(room *r, FILE *f)
+void write_room(room *r, stream_t *f)
 {
     WRITE(r->uuid, f);
     WRITE(r->width, f);
@@ -282,7 +360,7 @@ void write_room(room *r, FILE *f)
         write_layer(r->layers.data[i], f);
 }
 
-void read_room(room *r, FILE *f)
+void read_room(room *r, stream_t *f)
 {
     READ(r->uuid, f);
     READ(r->width, f);
@@ -303,39 +381,99 @@ void read_room(room *r, FILE *f)
     }
 }
 
+/* Open for writing.  If `compress` is true we create a gzip stream. */
+static int stream_open_write(const char *path, int compress, stream_t *out)
+{
+    if (compress)
+    {
+        out->mode = STREAM_GZIP;
+        out->handle.gz = gzopen(path, "wb9"); /* max compression */
+        if (!out->handle.gz)
+        {
+            LOG_ERROR("gzopen failed for %s", path);
+            return -1;
+        }
+    }
+    else
+    {
+        out->mode = STREAM_PLAIN;
+        out->handle.plain = fopen(path, "wb");
+        if (!out->handle.plain)
+        {
+            LOG_ERROR("fopen failed for %s", path);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/* Open for reading.  If `compress` is true we expect a gzip stream. */
+static int stream_open_read(const char *path, int compress, stream_t *out)
+{
+    if (compress)
+    {
+        out->mode = STREAM_GZIP;
+        out->handle.gz = gzopen(path, "rb");
+        if (!out->handle.gz)
+        {
+            LOG_ERROR("gzopen failed for %s", path);
+            return -1;
+        }
+    }
+    else
+    {
+        out->mode = STREAM_PLAIN;
+        out->handle.plain = fopen(path, "rb");
+        if (!out->handle.plain)
+        {
+            LOG_ERROR("fopen failed for %s", path);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/* Close the abstract stream */
+static void stream_close(stream_t *s)
+{
+    if (s->mode == STREAM_PLAIN)
+    {
+        if (s->handle.plain)
+            fclose(s->handle.plain);
+    }
+    else
+    {
+        if (s->handle.gz)
+            gzclose(s->handle.gz);
+    }
+}
+
 u8 save_level(level lvl)
 {
     char path[256] = {};
     sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", lvl.name);
-    FILE *f = fopen(path, "wb");
-    if (!f)
+
+    stream_t s;
+    if (stream_open_write(path, COMPRESS_LEVELS, &s) != 0)
         return FAIL;
 
-    // CHECK_PTR(lvl.name)
-    if (!lvl.name)
-    {
-        fclose(f);
-        LOG_ERROR("Level name is null");
-        return FAIL;
-    }
+    /* The rest of the function stays exactly the same – just pass &s instead of FILE* */
+    WRITE(lvl.uuid, &s);
+    blob_write(blobify(lvl.name), &s);
 
-    WRITE(lvl.uuid, f);
-    blob_write(blobify(lvl.name), f);
-
-    WRITE(lvl.registries.length, f);
+    WRITE(lvl.registries.length, &s);
     for (u32 i = 0; i < lvl.registries.length; i++)
     {
         const char *reg_name = ((block_registry *)lvl.registries.data[i])->name;
         CHECK_PTR(reg_name)
-        blob_write(blobify((char *)reg_name), f); // only save registry names
+        blob_write(blobify((char *)reg_name), &s);
     }
 
-    WRITE(lvl.rooms.length, f);
+    WRITE(lvl.rooms.length, &s);
     for (u32 i = 0; i < lvl.rooms.length; i++)
-        write_room(lvl.rooms.data[i], f);
+        write_room(lvl.rooms.data[i], &s);
 
-    fclose(f);
-
+    stream_close(&s);
     return SUCCESS;
 }
 
@@ -343,51 +481,42 @@ u8 load_level(level *lvl, const char *name_in)
 {
     char path[256] = {};
     sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
-    FILE *f = fopen(path, "rb");
-    if (!f)
+
+    stream_t s;
+    if (stream_open_read(path, COMPRESS_LEVELS, &s) != 0)
         return FAIL;
 
-    READ(lvl->uuid, f);
-    lvl->name = blob_read(f).str;
+    READ(lvl->uuid, &s);
+    lvl->name = blob_read(&s).str;
 
     u32 reg_count;
-    READ(reg_count, f);
+    READ(reg_count, &s);
     for (u32 i = 0; i < reg_count; i++)
     {
-        char *name = blob_read(f).str;
+        char *name = blob_read(&s).str;
         block_registry *reg = calloc(1, sizeof(block_registry));
-
         assert(reg != NULL);
-
         reg->name = name;
-
-        // sprintf(path, FOLDER_REG SEPARATOR_STR "%s", name);
-
         if (read_block_registry(reg, name) != SUCCESS)
         {
             LOG_WARNING("Failed to load registry %s", name);
             free(name);
             continue;
         }
-
         (void)vec_push(&lvl->registries, reg);
-        // free(name);
     }
 
     u32 room_count;
-    READ(room_count, f);
+    READ(room_count, &s);
     for (u32 i = 0; i < room_count; i++)
     {
         room *new_room = calloc(1, sizeof(room));
-
         assert(new_room != NULL);
-
         new_room->parent_level = lvl;
-        read_room(new_room, f);
+        read_room(new_room, &s);
         (void)vec_push(&lvl->rooms, new_room);
     }
 
-    fclose(f);
-
+    stream_close(&s);
     return SUCCESS;
 }

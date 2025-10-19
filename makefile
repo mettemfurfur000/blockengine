@@ -3,7 +3,7 @@ LDFLAGS += -lm -g # -pg
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64$(shell pwd)
-	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32
+	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32 -lz
 else
 	CFLAGS += -I$(shell pwd)
 	CFLAGS += -I/usr/include/lua5.4/
