@@ -48,7 +48,7 @@ void handle_table_destroy(handle_table *table);
 
 /* Acquire a slot for `obj`. `type` is a 6-bit user tag (0..63). Returns an invalid
      handle (index == 0xFFFF) on failure. */
-handle32 handle_table_put(handle_table *table, void *obj, u16 type);
+handle32 handle_table_put(handle_table *table, void *obj);
 
 /* Release a previously acquired handle. If the handle is invalid or already freed
      this is a no-op. */
@@ -81,10 +81,10 @@ u16 handle_table_slot_generation(handle_table *table, u16 index);
 
 /* Set a slot's raw contents - used during deserialization to reconstruct exact
     handle values. Returns 0 on success, non-zero on failure. */
-int handle_table_set_slot(handle_table *table, u16 index, void *ptr, u16 generation, u16 type, u16 active);
+int handle_table_set_slot(handle_table *table, u16 index, void *ptr, u16 generation, u16 active);
 
 /* Returns first unused slot, or invalid handle if all are taken */
-u16 handle_table_get_first_inactive(handle_table *table);
+u16 handle_table_get_inactive(handle_table *table);
 
 #ifdef __cplusplus
 }

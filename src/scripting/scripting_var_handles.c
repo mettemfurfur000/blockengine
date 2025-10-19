@@ -193,6 +193,15 @@ static int lua_varhandle_parse(lua_State *L)
     return 1;
 }
 
+static int lua_varhandle_raw(lua_State *L)
+{
+    handle32 _h = handle_from_u32(((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->packed);
+    // layer *_l = ((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->l;
+    lua_pushinteger(L, _h.index);
+    lua_pushinteger(L, _h.validation);
+    return 2;
+}
+
 /* get_size and tostring */
 static int lua_varhandle_get_size(lua_State *L)
 {
@@ -297,6 +306,7 @@ void lua_varhandle_register(lua_State *L)
 
         {  "get_size",     lua_varhandle_get_size},
         {"__tostring",     lua_varhandle_tostring},
+        {   "get_raw",          lua_varhandle_raw},
         {    "remove",       lua_varhandle_remove},
         {    "resize",       lua_varhandle_resize},
         {    "rename",       lua_varhandle_rename},

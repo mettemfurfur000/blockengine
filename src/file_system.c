@@ -1,6 +1,7 @@
 #include "include/file_system.h"
 #include "include/endianless.h"
 #include "include/folder_structure.h"
+#include "include/handle.h"
 #include "include/level.h"
 #include "include/logging.h"
 #include "include/vars.h"
@@ -103,6 +104,8 @@ void read_hashtable(hash_node **t, FILE *f)
     }
 }
 
+// TODO: this serialization code is stinky, mayb remake in a more modular way?/
+
 void write_layer(layer *l, FILE *f)
 {
     WRITE(l->block_size, f);
@@ -129,6 +132,9 @@ void write_layer(layer *l, FILE *f)
             }
             endianless_write((u8 *)&id, l->block_size, f);
             index = block_get_vars_index(l, x, y);
+            // handle32 h = handle_from_u32(index);
+            // if (h.index > 0)
+            //     LOG_DEBUG("wrote i:%d v:%d", h.index, h.validation);
             endianless_write((u8 *)&index, l->var_index_size, f);
         }
 
@@ -150,8 +156,10 @@ void write_layer(layer *l, FILE *f)
         for (u16 i = 0; i < cap; ++i)
         {
             void *p = handle_table_slot_ptr(l->var_pool.table, i);
-            u16 active = handle_table_slot_active(l->var_pool.table, i);
+            u8 active = handle_table_slot_active(l->var_pool.table, i);
             WRITE(active, f);
+            u16 generation = handle_table_slot_generation(l->var_pool.table, i);
+            WRITE(generation, f);
             if (p)
             {
                 debug_active_amount++;
@@ -200,6 +208,7 @@ void read_layer(layer *l, room *parent, FILE *f)
     init_layer(l, parent);
 
     u64 id = 0;
+    u32 index = 0;
     for (u32 y = 0; y < l->height; y++)
         for (u32 x = 0; x < l->width; x++)
         {
@@ -211,8 +220,8 @@ void read_layer(layer *l, room *parent, FILE *f)
                 block_set_id(l, x, y, 0);
             }
 
-            endianless_read((u8 *)&id, l->var_index_size, f); // read var index
-            block_var_index_set(l, x, y, id);
+            endianless_read((u8 *)&index, l->var_index_size, f); // read var index
+            block_var_index_set(l, x, y, index);
         }
 
     u32 slot_count = 0;
@@ -225,19 +234,21 @@ void read_layer(layer *l, room *parent, FILE *f)
     {
         /* create a handle table with slot_count capacity and fill slots */
         l->var_pool.table = handle_table_create((u16)slot_count);
-        l->var_pool.type_tag = 1; /* same tag used when writing */
+        // l->var_pool.type_tag = 1; /* same tag used when writing */
 
         u16 debug_active_amount = 0;
 
         for (u16 i = 0; i < (u16)slot_count; ++i)
         {
-            u16 active = 0;
+            u8 active = 0;
             READ(active, f);
+            u16 generation = 0;
+            READ(generation, f);
             blob b = blob_vars_read(f);
             if (b.size == 0 || b.ptr == NULL)
             {
                 /* empty slot */
-                handle_table_set_slot(l->var_pool.table, i, NULL, 0, 0, 0);
+                handle_table_set_slot(l->var_pool.table, i, NULL, 0, 0);
             }
             else
             {
@@ -247,8 +258,8 @@ void read_layer(layer *l, room *parent, FILE *f)
 
                 nb->ptr = b.ptr;
                 nb->size = b.size;
-                /* generation left at 0; type set to pool tag; active follows `active` */
-                handle_table_set_slot(l->var_pool.table, i, nb, 0, l->var_pool.type_tag, active);
+
+                handle_table_set_slot(l->var_pool.table, i, nb, generation, active);
                 debug_active_amount++;
             }
         }

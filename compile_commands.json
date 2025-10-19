@@ -1,6 +1,6 @@
 [
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-o",
@@ -14,15 +14,15 @@
   "file": "vec/src/vec.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
    "src/basic/benchmarking.c",
    "-o",
@@ -31,15 +31,15 @@
   "file": "src/basic/benchmarking.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
    "src/./basic/block_properties.c",
    "-o",
@@ -48,83 +48,15 @@
   "file": "src/./basic/block_properties.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./basic/endianless.c",
-   "-o",
-   "obj/./basic/endianless.o"
-  ],
-  "file": "src/./basic/endianless.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./basic/general.c",
-   "-o",
-   "obj/./basic/general.o"
-  ],
-  "file": "src/./basic/general.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./basic/handle.c",
-   "-o",
-   "obj/./basic/handle.o"
-  ],
-  "file": "src/./basic/handle.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./basic/hashtable.c",
-   "-o",
-   "obj/./basic/hashtable.o"
-  ],
-  "file": "src/./basic/hashtable.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
    "src/./basic/logging.c",
    "-o",
@@ -133,32 +65,32 @@
   "file": "src/./basic/logging.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
-   "src/./basic/vars.c",
+   "src/./basic/handle.c",
    "-o",
-   "obj/./basic/vars.o"
+   "obj/./basic/handle.o"
   ],
-  "file": "src/./basic/vars.c"
+  "file": "src/./basic/handle.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
    "src/./basic/vars_utils.c",
    "-o",
@@ -167,202 +99,83 @@
   "file": "src/./basic/vars_utils.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
-   "src/./block_registry.c",
+   "src/./basic/hashtable.c",
    "-o",
-   "obj/./block_registry.o"
+   "obj/./basic/hashtable.o"
   ],
-  "file": "src/./block_registry.c"
+  "file": "src/./basic/hashtable.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
-   "src/./file_system.c",
+   "src/./basic/vars.c",
    "-o",
-   "obj/./file_system.o"
+   "obj/./basic/vars.o"
   ],
-  "file": "src/./file_system.c"
+  "file": "src/./basic/vars.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
-   "src/./graphics/atlas_builder.c",
+   "src/./basic/endianless.c",
    "-o",
-   "obj/./graphics/atlas_builder.o"
+   "obj/./basic/endianless.o"
   ],
-  "file": "src/./graphics/atlas_builder.c"
+  "file": "src/./basic/endianless.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
-   "src/./graphics/block_renderer.c",
+   "src/./basic/general.c",
    "-o",
-   "obj/./graphics/block_renderer.o"
+   "obj/./basic/general.o"
   ],
-  "file": "src/./graphics/block_renderer.c"
+  "file": "src/./basic/general.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./graphics/image_editing.c",
-   "-o",
-   "obj/./graphics/image_editing.o"
-  ],
-  "file": "src/./graphics/image_editing.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./graphics/opengl_stuff.c",
-   "-o",
-   "obj/./graphics/opengl_stuff.o"
-  ],
-  "file": "src/./graphics/opengl_stuff.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./graphics/rendering.c",
-   "-o",
-   "obj/./graphics/rendering.o"
-  ],
-  "file": "src/./graphics/rendering.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./graphics/sdl2_basics.c",
-   "-o",
-   "obj/./graphics/sdl2_basics.o"
-  ],
-  "file": "src/./graphics/sdl2_basics.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./graphics/stb_implementation.c",
-   "-o",
-   "obj/./graphics/stb_implementation.o"
-  ],
-  "file": "src/./graphics/stb_implementation.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./level.c",
-   "-o",
-   "obj/./level.o"
-  ],
-  "file": "src/./level.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./scripting/scripting.c",
-   "-o",
-   "obj/./scripting/scripting.o"
-  ],
-  "file": "src/./scripting/scripting.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
    "src/./scripting/scripting_bindings.c",
    "-o",
@@ -371,32 +184,15 @@
   "file": "src/./scripting/scripting_bindings.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
-   "-c",
-   "src/./scripting/scripting_entities.c",
-   "-o",
-   "obj/./scripting/scripting_entities.o"
-  ],
-  "file": "src/./scripting/scripting_entities.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
    "-c",
    "src/./scripting/scripting_var_handles.c",
    "-o",
@@ -405,7 +201,211 @@
   "file": "src/./scripting/scripting_var_handles.c"
  },
  {
-  "directory": "C:/msys64/home/tem/blockengine",
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./scripting/scripting.c",
+   "-o",
+   "obj/./scripting/scripting.o"
+  ],
+  "file": "src/./scripting/scripting.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./block_registry.c",
+   "-o",
+   "obj/./block_registry.o"
+  ],
+  "file": "src/./block_registry.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/sdl2_extras.c",
+   "-o",
+   "obj/./graphics/sdl2_extras.o"
+  ],
+  "file": "src/./graphics/sdl2_extras.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/atlas_builder.c",
+   "-o",
+   "obj/./graphics/atlas_builder.o"
+  ],
+  "file": "src/./graphics/atlas_builder.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/stb_implementation.c",
+   "-o",
+   "obj/./graphics/stb_implementation.o"
+  ],
+  "file": "src/./graphics/stb_implementation.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/block_renderer.c",
+   "-o",
+   "obj/./graphics/block_renderer.o"
+  ],
+  "file": "src/./graphics/block_renderer.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/rendering.c",
+   "-o",
+   "obj/./graphics/rendering.o"
+  ],
+  "file": "src/./graphics/rendering.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/opengl_stuff.c",
+   "-o",
+   "obj/./graphics/opengl_stuff.o"
+  ],
+  "file": "src/./graphics/opengl_stuff.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/image_editing.c",
+   "-o",
+   "obj/./graphics/image_editing.o"
+  ],
+  "file": "src/./graphics/image_editing.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./graphics/sdl2_basics.c",
+   "-o",
+   "obj/./graphics/sdl2_basics.o"
+  ],
+  "file": "src/./graphics/sdl2_basics.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./file_system.c",
+   "-o",
+   "obj/./file_system.o"
+  ],
+  "file": "src/./file_system.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-g",
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2",
+   "-c",
+   "src/./level.c",
+   "-o",
+   "obj/./level.o"
+  ],
+  "file": "src/./level.c"
+ },
+ {
+  "directory": "/home/tem/blockengine",
   "arguments": [
    "gcc",
    "-o",
@@ -415,10 +415,10 @@
    "-O0",
    "-Wall",
    "-g",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-IC:/msys64/home/tem/blockengine"
+   "-I/home/tem/blockengine",
+   "-I/usr/include/lua5.4/",
+   "-I/usr/include/SDL2"
   ],
   "file": "mains/client.c"
  }
-]
+]

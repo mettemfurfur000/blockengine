@@ -104,10 +104,10 @@ local function set_slices(ref_table)
 end
 
 local function make_test_level()
-    G_level = le.create_level("test")
+    G_level = level_editor.create_level("test")
 
     if G_level == nil then
-        log_error("error creating level")
+        wrappers.log_error("error creating level")
         os.exit()
     end
 end
@@ -140,7 +140,7 @@ local function reflective_view_build()
     return menu
 end
 
-G_level = le.load_level("test")
+G_level = level_editor.load_level("test")
 
 if G_level == nil then
     print("test.lvl file not found, creating from scratch")
@@ -161,7 +161,7 @@ else                                                                            
 
     if G_menu_room == nil then
         -- print("menu not found")
-        log_error("menu not found")
+        wrappers.log_error("menu not found")
         os.exit(0)
     end
 
@@ -201,6 +201,6 @@ wrappers.try(function()
     set_render_rule_order(G_menu)
     set_slices(G_menu)
 end, function(e)
-    log_error(e)
+    wrappers.log_error(e)
     os.exit()
 end)

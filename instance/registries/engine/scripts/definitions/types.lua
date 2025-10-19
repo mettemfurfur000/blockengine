@@ -28,6 +28,7 @@
 ---@field get_u64 fun(self:VarsHandle, key:char):integer|nil
 ---@field get_size fun(self:VarsHandle, key:char):integer|nil
 ---@field __tostring fun(self:VarsHandle):string
+---@field get_raw fun(self:VarsHandle):integer,integer|nil
 ---@field remove fun(self:VarsHandle, key:char):boolean
 ---@field resize fun(self:VarsHandle, key:char,new_size:integer):boolean
 ---@field rename fun(self:VarsHandle, key_old:char, key_new:char):boolean
@@ -54,7 +55,7 @@
 ---@field get_layer fun(self:Room, index:integer):Layer
 ---@field get_layer_count fun(self:Room):integer
 ---@field new_layer fun(self:Room, reg_name:string, block_width:integer, unused:integer, flags:integer):Layer
----@field uuid fun(self:Room):integer 
+---@field uuid fun(self:Room):integer
 local room = {}
 
 ---@class Sound
@@ -63,7 +64,7 @@ local room = {}
 local sound = {}
 
 ---@class BlockRegistry
----@field get_name fun(self:BlockRegistry):string 
+---@field get_name fun(self:BlockRegistry):string
 ---@field to_table fun(self:BlockRegistry):table
 ---@field register_input fun(self:BlockRegistry, id:integer, name:string, func:function):boolean
 ---@field uuid fun(self:BlockRegistry):integer

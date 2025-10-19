@@ -1,5 +1,6 @@
 local block_utils = require("registries.engine.scripts.block_utils")
 local wrappers = require("registries.engine.scripts.wrappers")
+local vec = require("registries.engine.scripts.vector_additions")
 
 local current_block = scripting_current_block_id
 
@@ -10,7 +11,8 @@ G_ui_offset_mode = 1
 G_ui_offset_block_name = 3
 G_ui_offset_preview = 4
 G_ui_offset_position_debug = 5
-G_ui_offset_vars_debug = 6
+G_ui_offset_var_handle_debug = 6
+G_ui_offset_vars_debug = 7
 
 local editor = {
     mode = "none",
@@ -20,7 +22,8 @@ local editor = {
     layer_being_edited_index = nil,
     is_shown = false,
     selected_block = nil,
-    keystate = {}
+    keystate = {},
+    lastpos = nil
 }
 
 local function get_block_by_id(id)
@@ -70,7 +73,10 @@ local function mouse_action(x, y, button)
         (block_highlight.x .. ", " .. block_highlight.y))
 
     local success, vars = editor.layer_being_edited.layer:get_vars(block_highlight.x, block_highlight.y)
+
     if success and vars:is_valid() then
+        wrappers.world_print(G_pallete_width, G_ui_offset_var_handle_debug, G_ui_width,
+            table.concat({ vars:get_raw() }, ","))
         wrappers.world_print(G_pallete_width, G_ui_offset_vars_debug, G_ui_width, vars:__tostring())
     end
 
@@ -107,6 +113,8 @@ local function select_layer(number)
     local desired_layer = math.max(0, math.min(G_layers_amount, (editor.layer_being_edited_index or 0) + number))
     editor.layer_being_edited_index = desired_layer
     editor.layer_being_edited = get_layer_by_id(desired_layer)
+    ---@class Layer
+    editor.layer_being_edited.layer = editor.layer_being_edited.layer
 end
 
 -- gets all the data
@@ -187,6 +195,7 @@ end)
 
 blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, clicks, button)
     mouse_action(x, y, button)
+    editor.lastpos = vec.new(x, y)
 end)
 
 -- special keybinds, maybe
@@ -235,5 +244,12 @@ blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, 
     if rep ~= nil and rep == 0 and state == 0 then
         local char = keysym < 256 and string.char(keysym) or nil
         editor.keystate[char or -1] = 0
+    end
+end)
+
+
+blockengine.register_handler(engine_events.ENGINE_TICK, function(code)
+    if editor.lastpos ~= nil then
+        mouse_action(editor.lastpos.x, editor.lastpos.y)
     end
 end)

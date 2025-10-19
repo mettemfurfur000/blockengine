@@ -56,7 +56,7 @@ static var_handle var_table_alloc_blob(var_handle_table *pool, blob vars)
         memcpy(b->ptr, vars.ptr, vars.size);
     b->size = vars.size;
 
-    handle32 h = handle_table_put(pool->table, b, pool->type_tag);
+    handle32 h = handle_table_put(pool->table, b);
 
     if (h.index == INVALID_HANDLE_INDEX)
     {
@@ -176,15 +176,14 @@ void block_var_index_set(layer *l, u32 x, u32 y, u32 index)
     memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&index, l->var_index_size);
 }
 
-u8 block_get_vars(layer *l, u32 x, u32 y, blob **vars_out)
+u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out)
 {
     LAYER_CHECKS(l)
     CHECK_PTR(vars_out)
     CHECK(x >= l->width || y >= l->height)
 
-    // if (l->var_index_size == 0)
     if (l->var_pool.table == NULL)
-        return SUCCESS;
+        return FAIL;
 
     u64 packed = 0;
     memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
@@ -229,27 +228,6 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
 
     return SUCCESS;
 }
-
-// u8 layer_clear_vars(layer *l)
-// {
-//     LAYER_CHECKS(l)
-
-//     if (l->var_pool.table == NULL)
-//         return SUCCESS;
-
-//     u16 cap = handle_table_capacity(l->var_pool.table);
-
-//     for (u16 i = 0; i < cap; ++i)
-//     {
-//         if (b.size == 0 || b.ptr == NULL)
-//         {
-//             /* empty slot */
-//             handle_table_set_slot(l->var_pool.table, i, NULL, 0, 0, 0);
-//         }
-//     }
-
-//     return SUCCESS;
-// }
 
 u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 {
@@ -353,7 +331,7 @@ u8 init_layer(layer *l, room *parent_room)
     if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
     {
         l->var_pool.table = handle_table_create(256); /* default capacity */
-        l->var_pool.type_tag = 1;                     /* choose tag 1 for vars */
+        // l->var_pool.type_tag = 1;                     /* choose tag 1 for vars */
     }
 
     return SUCCESS;

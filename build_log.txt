@@ -6,50 +6,50 @@ mkdir -p build
 cp -r instance/* build/
 gcc -o obj/vec.o -c vec/src/vec.c -Wall -Wextra -Ivec/src
 mkdir -p obj/basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/basic/benchmarking.c -o obj/basic/benchmarking.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/basic/benchmarking.c -o obj/basic/benchmarking.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/block_properties.c -o obj/./basic/block_properties.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/block_properties.c -o obj/./basic/block_properties.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/endianless.c -o obj/./basic/endianless.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/logging.c -o obj/./basic/logging.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/general.c -o obj/./basic/general.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/handle.c -o obj/./basic/handle.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/handle.c -o obj/./basic/handle.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/vars_utils.c -o obj/./basic/vars_utils.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/hashtable.c -o obj/./basic/hashtable.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/hashtable.c -o obj/./basic/hashtable.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/logging.c -o obj/./basic/logging.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/vars.c -o obj/./basic/vars.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/vars.c -o obj/./basic/vars.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/endianless.c -o obj/./basic/endianless.o
 mkdir -p obj/./basic
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./basic/vars_utils.c -o obj/./basic/vars_utils.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./basic/general.c -o obj/./basic/general.o
+mkdir -p obj/./scripting
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./scripting/scripting_bindings.c -o obj/./scripting/scripting_bindings.o
+mkdir -p obj/./scripting
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./scripting/scripting_var_handles.c -o obj/./scripting/scripting_var_handles.o
+mkdir -p obj/./scripting
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./scripting/scripting.c -o obj/./scripting/scripting.o
 mkdir -p obj/.
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./block_registry.c -o obj/./block_registry.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./block_registry.c -o obj/./block_registry.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/sdl2_extras.c -o obj/./graphics/sdl2_extras.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/atlas_builder.c -o obj/./graphics/atlas_builder.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/stb_implementation.c -o obj/./graphics/stb_implementation.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/block_renderer.c -o obj/./graphics/block_renderer.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/rendering.c -o obj/./graphics/rendering.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/opengl_stuff.c -o obj/./graphics/opengl_stuff.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/image_editing.c -o obj/./graphics/image_editing.o
+mkdir -p obj/./graphics
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./graphics/sdl2_basics.c -o obj/./graphics/sdl2_basics.o
 mkdir -p obj/.
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./file_system.c -o obj/./file_system.o
-mkdir -p obj/./graphics
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./graphics/atlas_builder.c -o obj/./graphics/atlas_builder.o
-mkdir -p obj/./graphics
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./graphics/block_renderer.c -o obj/./graphics/block_renderer.o
-mkdir -p obj/./graphics
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./graphics/image_editing.c -o obj/./graphics/image_editing.o
-mkdir -p obj/./graphics
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./graphics/opengl_stuff.c -o obj/./graphics/opengl_stuff.o
-mkdir -p obj/./graphics
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./graphics/rendering.c -o obj/./graphics/rendering.o
-mkdir -p obj/./graphics
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./graphics/sdl2_basics.c -o obj/./graphics/sdl2_basics.o
-mkdir -p obj/./graphics
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./graphics/stb_implementation.c -o obj/./graphics/stb_implementation.o
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./file_system.c -o obj/./file_system.o
 mkdir -p obj/.
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./level.c -o obj/./level.o
-mkdir -p obj/./scripting
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting/scripting.c -o obj/./scripting/scripting.o
-mkdir -p obj/./scripting
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting/scripting_bindings.c -o obj/./scripting/scripting_bindings.o
-mkdir -p obj/./scripting
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting/scripting_entities.c -o obj/./scripting/scripting_entities.o
-mkdir -p obj/./scripting
-gcc -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -c src/./scripting/scripting_var_handles.c -o obj/./scripting/scripting_var_handles.o
-gcc -o obj/client.o -c mains/client.c -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine
-g++ -O0 -Wall -g  -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64/home/tem/blockengine -o build/client obj/client.o obj/vec.o obj/basic/benchmarking.o obj/./basic/block_properties.o obj/./basic/endianless.o obj/./basic/general.o obj/./basic/handle.o obj/./basic/hashtable.o obj/./basic/logging.o obj/./basic/vars.o obj/./basic/vars_utils.o obj/./block_registry.o obj/./file_system.o obj/./graphics/atlas_builder.o obj/./graphics/block_renderer.o obj/./graphics/image_editing.o obj/./graphics/opengl_stuff.o obj/./graphics/rendering.o obj/./graphics/sdl2_basics.o obj/./graphics/stb_implementation.o obj/./level.o obj/./scripting/scripting.o obj/./scripting/scripting_bindings.o obj/./scripting/scripting_entities.o obj/./scripting/scripting_var_handles.o -lm -g  ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lopengl32 -lepoxy.dll -lstdc++
+gcc -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -c src/./level.c -o obj/./level.o
+gcc -o obj/client.o -c mains/client.c -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2
+g++ -O0 -Wall -g  -I/home/tem/blockengine -I/usr/include/lua5.4/ -I/usr/include/SDL2 -o build/client obj/client.o obj/vec.o obj/basic/benchmarking.o obj/./basic/block_properties.o obj/./basic/logging.o obj/./basic/handle.o obj/./basic/vars_utils.o obj/./basic/hashtable.o obj/./basic/vars.o obj/./basic/endianless.o obj/./basic/general.o obj/./scripting/scripting_bindings.o obj/./scripting/scripting_var_handles.o obj/./scripting/scripting.o obj/./block_registry.o obj/./graphics/sdl2_extras.o obj/./graphics/atlas_builder.o obj/./graphics/stb_implementation.o obj/./graphics/block_renderer.o obj/./graphics/rendering.o obj/./graphics/opengl_stuff.o obj/./graphics/image_editing.o obj/./graphics/sdl2_basics.o obj/./file_system.o obj/./level.o -lm -g  -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lGL -lepoxy -llua5.4 -lstdc++

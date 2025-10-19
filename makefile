@@ -82,7 +82,11 @@ client_app: mains/client.c registry vec $(objects)
 
 .PHONY: run_client
 run_client: client_app
+ifeq ($(OS),Windows_NT)
 	cd build;./client.exe
+else
+	cd build;./client
+endif
 
 .PHONY: grab_client_dlls
 grab_client_dlls:

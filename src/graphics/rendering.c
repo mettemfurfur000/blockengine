@@ -1,9 +1,14 @@
 #include "include/rendering.h"
 #include "include/block_renderer.h"
 #include "include/flags.h"
+#include "include/general.h"
 #include "include/vars.h"
-// #include <excpt.h>
+
 #include <time.h>
+
+#ifdef WIN32 // might be needed on windows!
+#include <wchar.h>
+#endif
 
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,
                                      6307353, 1532671, 6233633, 873473,  685613};
@@ -67,6 +72,9 @@ u8 render_layer(layer_slice slice)
 
     block_renderer_begin_batch();
 
+    const layer *l = slice.ref;
+    const u8 bytes_per_block = l->total_bytes_per_block;
+
     for (i32 i = start_block_x; i < end_block_x; i++)
     {
         dest_x += local_block_width;
@@ -76,12 +84,10 @@ u8 render_layer(layer_slice slice)
         {
             dest_y += local_block_width;
 
-            if (i > slice.ref->width || j > slice.ref->height)
+            if (i > l->width || j > l->height || i < 0 || j < 0)
                 continue;
 
-            u64 id = 0;
-            if (i >= 0 && j >= 0 && i < slice.ref->width && j < slice.ref->height)
-                id = *BLOCK_ID_PTR(slice.ref, i, j);
+            u64 id = *(l->blocks + ((j * l->width) + i) * bytes_per_block);
 
             if (id == 0)
                 continue;
@@ -97,8 +103,11 @@ u8 render_layer(layer_slice slice)
             block_resources br = b_reg->resources.data[id];
 
             blob *var = NULL;
-            if (block_get_vars(slice.ref, i, j, &var) == SUCCESS && var != NULL && var->length != 0 && var->ptr != NULL)
+            if (block_get_vars(l, i, j, &var) == SUCCESS)
             {
+                // CHECK(var->length == 0);
+                // CHECK(var->ptr == NULL);
+
                 if (br.type_controller != 0)
                     var_get_u8(*var, br.type_controller, &type);
 

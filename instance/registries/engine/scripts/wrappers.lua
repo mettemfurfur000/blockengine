@@ -70,7 +70,7 @@ function M.safe_registry_load(level, name)
     local status, reg_table = level:load_registry(name)
 
     if status == false then
-        log_error("error loading engine registry")
+        M.log_error("error loading engine registry")
         os.exit()
     end
 
@@ -81,7 +81,7 @@ function M.safe_menu_create(level, name, width, height)
     local menu = level:new_room(name, width, height)
 
     if menu == nil then
-        log_error("error creating room")
+        M.log_error("error creating room")
         os.exit()
     end
 
@@ -90,7 +90,7 @@ end
 
 function M.safe_layer_create(room, registry_name, block_width, var_width)
     if block_width <= 0 or var_width < 0 or registry_name == nil or room == nil then
-        log_error("invalid arguments for layer creation")
+        M.log_error("invalid arguments for layer creation")
         os.exit()
     end
 
@@ -103,7 +103,7 @@ function M.safe_layer_create(room, registry_name, block_width, var_width)
     local layer = room:new_layer(registry_name, block_width, var_width, enable_vars)
 
     if layer == nil then
-        log_error("error creating a floor")
+        M.log_error("error creating a floor")
         os.exit()
     end
 
