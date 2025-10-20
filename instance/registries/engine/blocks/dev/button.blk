@@ -1,7 +1,0 @@
-automatic_id 1
-texture = button.png
-script = button.lua
-inputs = [ click ]
-vars = { u8 a = 0 }
-frame_controller = a
-ignore_type = 1

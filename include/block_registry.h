@@ -39,6 +39,9 @@ typedef struct block_resources
     vec_str_t input_names;
 
     i32 input_tick_ref;
+    u8 autotile_type;
+    // char autotile_update_key;
+    // char autotile_cache_key;
 
     char anim_controller;
     char type_controller;

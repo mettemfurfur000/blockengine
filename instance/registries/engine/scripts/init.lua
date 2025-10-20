@@ -2,8 +2,10 @@ local sdl = require("registries.engine.scripts.definitions.sdl")
 local blockengine = require("registries.engine.scripts.definitions.blockengine")
 local wrappers = require("registries.engine.scripts.wrappers")
 local level_editor = require("registries.engine.scripts.definitions.level_editor")
-
 require("registries.engine.scripts.constants")
+
+--- loads and registers layer editor functions
+require("registries.engine.scripts.layer_editor")
 
 G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
 

@@ -1,0 +1,6 @@
+automatic_id 1
+texture = editor_background.png
+repeat_times = 9
+repeat_increment = [ id override_frame ]
+override_frame = 0
+ignore_type = 1

@@ -75,7 +75,7 @@ typedef struct level
     u8 flags;
 } level;
 
-#define BLOCK_ID_PTR(l, x, y) (l->blocks + ((y * l->width) + x) * l->total_bytes_per_block)
+#define BLOCK_ID_PTR(l, x, y) (l->blocks + (((y) * l->width) + (x)) * l->total_bytes_per_block)
 #define MERGE32_TO_64(a, b) (((u64)a << 32) | (u64)b)
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id);

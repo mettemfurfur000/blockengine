@@ -2,11 +2,11 @@
 #include "include/atlas_builder.h"
 #include "include/block_properties.h"
 #include "include/flags.h"
+#include "include/folder_structure.h"
 #include "include/scripting.h"
 #include "include/uuid.h"
 #include "include/vars.h"
 #include "include/vars_utils.h"
-#include "include/folder_structure.h"
 
 #ifdef _WIN64
 #include "../dirent/include/dirent.h"
@@ -167,6 +167,18 @@ also handlers must return FAIL if they cant handle data or if data is invalid
     void block_res_##name##_incrementor(block_resources *dest)                                                         \
     {                                                                                                                  \
         dest->name++;                                                                                                  \
+    }
+
+#define DECLARE_DEFALT_STR_HANDLER(name)                                                                               \
+    u8 block_res_##name##_str_handler(const char *data, block_resources *dest)                                         \
+    {                                                                                                                  \
+        if (strcmp(data, clean_token) == 0)                                                                            \
+        {                                                                                                              \
+            free(dest->name);                                                                                          \
+            return SUCCESS;                                                                                            \
+        }                                                                                                              \
+        dest->name = strdup(data);                                                                                     \
+        return SUCCESS;                                                                                                \
     }
 
 #define DECLARE_DEFAULT_STR_VEC_HANDLER(name)                                                                          \
@@ -341,106 +353,202 @@ DECLARE_DEFAULT_CHAR_FIELD_HANDLER(interp_timestamp_controller)
 
 DECLARE_DEFAULT_INT_FIELD_HANDLER(interp_takes)
 
-u8 block_res_lua_script_handler(const char *data, block_resources *dest)
-{
-    if (strcmp(data, clean_token) == 0)
-    {
-        free(dest->lua_script_filename);
-        return SUCCESS;
-    }
+// Autotiling stuff
 
-    u32 len = strlen(data);
-    dest->lua_script_filename = malloc(len + 1);
-    memcpy(dest->lua_script_filename, data, len + 1);
+DECLARE_DEFAULT_BYTE_FIELD_HANDLER(autotile_type)
+// DECLARE_DEFAULT_CHAR_FIELD_HANDLER(autotile_update_key)
+// DECLARE_DEFAULT_CHAR_FIELD_HANDLER(autotile_cache_key)
 
-    return SUCCESS;
-}
+// u8 block_res_lua_script_handler(const char *data, block_resources *dest)
+// {
+//     if (strcmp(data, clean_token) == 0)
+//     {
+//         free(dest->lua_script_filename);
+//         return SUCCESS;
+//     }
+
+//     u32 len = strlen(data);
+//     dest->lua_script_filename = malloc(len + 1);
+//     memcpy(dest->lua_script_filename, data, len + 1);
+
+//     return SUCCESS;
+// }
+
+DECLARE_DEFALT_STR_HANDLER(lua_script_filename)
 
 DECLARE_DEFAULT_STR_VEC_HANDLER(input_names)
-
-// u8 block_res_parent_handler(const char *data, block_resources *dest)
-// {
-// 	return SUCCESS;
-// }
 
 /* end of block resource handlers */
 
 const static resource_entry_handler res_handlers[] = {
-    // every block needs an identity, or its just a thin air
-    // {NULL, &block_res_parent_handler, "parent", NOT_REQUIRED, {}, {}, {}},
-    {                                 NULL,&block_res_id_handler,"id", NOT_REQUIRED,{},{},  {"identity"}                                                                                                                                                   },
-    {                                 NULL,             &block_res_automatic_id_handler,        "automatic_id", NOT_REQUIRED,               {}, {},      {"identity"}},
-    // every block needs a visual representation
-    {                                 NULL,                  &block_res_texture_handler,             "texture",     REQUIRED,               {}, {},                {}},
-    // every block needs a sound, right?
-    // may set to REQUIRED later
-    {                                 NULL,               &block_res_sounds_vec_handler,              "sounds", NOT_REQUIRED,               {}, {},                {}},
+    // Use strict ID if you don wana break compatibility between major updates, use automatic for quick block addition
+    // ENGINE DOES NOT GUARANTEES DAT BLOCK WILL HAVE THE SAME ID IF NEW ASSETS WERE ADDED!
+    {
+     .function = &block_res_id_handler,
+     .name = "id",
+     .slots = {"identity"},
+     },
+    {
+     .function = &block_res_automatic_id_handler,
+     .name = "automatic_id",
+     .slots = {"identity"},
+     },
+    // Controls which file will be associated with the block for all animations and states and stuff
+    {
+     .function = &block_res_texture_handler,
+     .name = "texture",
+     .is_critical = REQUIRED,
+     },
+    // Loads sounds from an array of strings
+    {
+     .function = &block_res_sounds_vec_handler,
+     .name = "sounds",
+     },
     // dangerous: will replicate the same block multiple times until it reaches
     // the said id
     // useful if you just want to have a bunch of blocks with the same texture
     // and locked type
-    {                                 NULL,             &block_res_repeat_times_handler,        "repeat_times", NOT_REQUIRED,               {}, {},                {}},
-    // if id accurs on this list while ranging, all increments will pass but no
-    // blocks will be pasted
-    {                                 NULL,              &block_res_repeat_skip_handler,         "repeat_skip", NOT_REQUIRED, {"repeat_times"}, {},                {}},
+    {
+     .function = &block_res_repeat_times_handler,
+     .name = "repeat_times",
+     },
+    // increment vars will progress, but no actual blocks will be added to the registry - useful if you have holes in
+    // your texture
+    {
+     .function = &block_res_repeat_skip_handler,
+     .name = "repeat_skip",
+     .deps = {"repeat_times"},
+     },
     // this controls what variables shoud be incremented as id_range progresses
     // forward
     // triggers them and passes id of current ranged block as a string
-    {                                 NULL, &block_res_repeat_increment_vec_str_handler,    "repeat_increment", NOT_REQUIRED, {"repeat_times"}, {},                {}},
-    // unique data goes here. Each block will have a copy of these values on
-    // paste
-    {                                 NULL,                     &block_res_data_handler,                "vars", NOT_REQUIRED,               {}, {},                {}},
-
-    // graphics-related stuff
-    // frames
-    {                                 NULL,                      &block_res_fps_handler,                 "fps", NOT_REQUIRED,               {}, {}, {"frame_control"}},
-    // changes frame of a block N times per second. Not a
-    // float!
-    {                                 NULL,          &block_res_anim_controller_handler,    "frame_controller", NOT_REQUIRED,         {"vars"}, {}, {"frame_control"}},
-    // directly controls the frame of a texture, so it cant
-    // used with fps
-    {                                 NULL,      &block_res_position_based_type_handler,        "random_frame", NOT_REQUIRED,               {}, {}, {"frame_control"}},
-    // randomizes frame of a block based on its location
-
-    {&block_res_override_frame_incrementor,
+    {
+     .function = &block_res_repeat_increment_vec_str_handler,
+     .name = "repeat_increment",
+     .deps = {"repeat_times"},
+     },
+    // Defines a set of default block variables that each new pasted instance of a block will have
+    // see handler for syntax
+    {
+     .function = &block_res_data_handler,
+     .name = "vars",
+     },
+    // These are frame controllers - they will define how frames (on X-axis) will be selected for a block
+    // FPS constantly changes the frame said times per second - only integers from 1 to 255
+    {
+     .function = &block_res_fps_handler,
+     .name = "fps",
+     .slots = {"frame_control"},
+     },
+    // If defined, engine will look at block vars at said key and use that as a frame
+    {
+     .function = &block_res_anim_controller_handler,
+     .name = "frame_controller",
+     .deps = {"vars"},
+     .slots = {"frame_control"},
+     },
+    // Based on tile location, pseudo-randomly selects a frame
+    {
+     .function = &block_res_position_based_type_handler,
+     .name = "random_frame",
+     .slots = {"frame_control"},
+     },
+    // Directly sets a frame from the registry. Why would anyone use this?
+    {
+     &block_res_override_frame_incrementor,
      &block_res_override_frame_handler,
-     "override_frame", NOT_REQUIRED,
-     {},
-     {},
-     {"frame_control"}                                                                                                                                               },
+     .name = "override_frame",
+     .slots = {"frame_control"},
+     },
+    // Based on selected block variable, flips the texture horizontally or vertiacaly or both.
+    // TODO: check if it actually works
+    {
+     .function = &block_res_flip_controller_handler,
+     .name = "flip_controller",
+     .deps = {"vars"},
+     },
+    // Rotates the texture around its center. Variable has to hold a u16 value in degrees to work
+    {
+     .function = &block_res_rotation_controller_handler,
+     .name = "rotation_controller",
+     .deps = {"vars"},
+     },
+    // Based on said block variable, offsets the block on x-axis
+    // Also used for interpolation
+    {
+     .function = &block_res_offset_x_controller_handler,
+     .name = "offset_x_controller",
+     .deps = {"vars"},
+     },
+    // For y
+    {
+     .function = &block_res_offset_y_controller_handler,
+     .name = "offset_y_controller",
+     .deps = {"vars"},
+     },
+    // Interpolation - takes said block variable, interprets it as a u32 tick timestamp, and linearly interpolates its
+    // position between offset_x/y controlled values
+    // Used in pairs with interp_takes
+    {
+     .function = &block_res_interp_timestamp_controller_handler,
+     .name = "interp_timestamp_controller",
+     .deps = {"vars"},
+     },
+    // Amount of milliseconds that the thing takes to get from position dictated by offset_x/y to blocks real position
+    // See jumper.blk
+    {
+     .function = &block_res_interp_takes_handler,
+     .name = "interp_takes",
+     .deps = {"vars", "interp_timestamp_controller"},
+     },
+    // Similar to frame_controller, selects a type (Y-axis) frame on a texture
+    {
+     .function = &block_res_type_controller_handler,
+     .name = "type_controller",
+     .deps = {"vars"},
+     .slots = {"type_control"},
+     },
+    // If your texture is a single-type animation, but you dont want it to look like a long stripe of frames, you can
+    // simply ignore types and make a square texture
+    {
+     .function = &block_res_ignore_type_handler,
+     .name = "ignore_type",
+     .slots = {"type_control"},
+     },
+    // Selects an autotile type, according to which the engine will choose the frame for a block based on its neighbours
+    // Still allows sum animations to be applied
+    // Compatible with ignore-type so you can have nice 3x3 textures instead of 1x9 arrays of frames
+    // 0 - no type, default
+    // 1 - 3x3 tileset, 4 neighbours, lines default to center tile
+    // 2 - 4x4, 4 neighbours, full coverage on all cases
+    // {
+    //  .function = &block_res_autotile_update_key_handler,
+    //  .name = "autotile_update_key",
+    //  .deps = {"vars"},
+    //  },
+    // {
+    //  .function = &block_res_autotile_cache_key_handler,
+    //  .name = "autotile_cache_key",
+    //  .deps = {"vars"},
+    //  },
+    {
+     .function = &block_res_autotile_type_handler,
+     .name = "autotile_type",
+     .deps = {"autotile_update_key", "autotile_cache_key"},
+     .slots = {"frame_control"},
+     },
 
-    // directly sets its type from block resources - solid
-    // as rock
-    // flips, untested
-    {                                 NULL,          &block_res_flip_controller_handler,     "flip_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
-    // untested
-    {                                 NULL,      &block_res_rotation_controller_handler, "rotation_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
-    {                                 NULL,      &block_res_offset_x_controller_handler, "offset_x_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
-    {                                 NULL,      &block_res_offset_y_controller_handler, "offset_y_controller", NOT_REQUIRED,         {"vars"}, {},                {}},
-    {                                 NULL,
-     &block_res_interp_timestamp_controller_handler,
-     "interp_timestamp_controller", NOT_REQUIRED,
-     {"vars"},
-     {},
-     {}                                                                                                                                                              },
-    {                                 NULL,
-     &block_res_interp_takes_handler,
-     "interp_takes", NOT_REQUIRED,
-     {"vars", "interp_timestamp_controller"},
-     {},
-     {}                                                                                                                                                              },
-    // block type things
-    {                                 NULL,          &block_res_type_controller_handler,     "type_controller", NOT_REQUIRED,         {"vars"}, {},  {"type_control"}},
-    // reads its type from a block data - can be controlled
-    // with scripts
-    {                                 NULL,              &block_res_ignore_type_handler,         "ignore_type", NOT_REQUIRED,               {}, {},  {"type_control"}},
-    // ignores type and treats each 16x16 square on a
-    // texture as a frame
-    // block logic zone
-    // custom script file, executed on level creation
-    {                                 NULL,               &block_res_lua_script_handler,              "script", NOT_REQUIRED,               {}, {},                {}},
-    // block inputs
-    {                                 NULL,      &block_res_input_names_vec_str_handler,              "inputs", NOT_REQUIRED,       {"script"}, {},                {}}
+    // Associates said block with a script file - used for inputs, tick events, etc
+    {
+     .function = &block_res_lua_script_filename_str_handler,
+     .name = "script",
+     },
+    // Used to accept ticks and other block inputs
+    {
+     .function = &block_res_input_names_vec_str_handler,
+     .name = "inputs",
+     .deps = {"script"},
+     }
 };
 
 const u32 TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);

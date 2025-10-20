@@ -2,6 +2,7 @@
 #include "include/block_renderer.h"
 #include "include/flags.h"
 #include "include/general.h"
+#include "include/level.h"
 #include "include/vars.h"
 
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,
@@ -19,6 +20,38 @@ static unsigned short tile_rand(const int x, const int y)
 const float lerp(float a, float b, float f)
 {
     return a + f * (b - a);
+}
+
+// simple autotile with only 9 types of tiles, all other default to the center one
+/*
+    as in:
+    [0][1][2]
+    [3][4][5]
+    [6][7][8]
+*/
+static u8 autotile_table_type_1[] = {4, 4, 4, 0, 4, 4, 2, 1, 4, 6, 4, 3, 8, 7, 5, 4};
+static u8 autotile_table_type_2[] = {15, 12, 3, 0, 14, 13, 2, 1, 11, 8, 7, 4, 10, 9, 6, 5};
+
+u8 autotile_select_shared(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
+{
+    bool match_west = false;
+    bool match_east = false;
+    bool match_north = false;
+    bool match_south = false;
+
+    if (x > 0 && x < l->width - 1 && y >= 0)
+    {
+        match_west = *BLOCK_ID_PTR(l, x - 1, y) == ref_id;
+        match_east = *BLOCK_ID_PTR(l, x + 1, y) == ref_id;
+    }
+    if (y > 0 && y < l->height - 1 && x >= 0)
+    {
+        match_north = *BLOCK_ID_PTR(l, x, y - 1) == ref_id;
+        match_south = *BLOCK_ID_PTR(l, x, y + 1) == ref_id;
+    }
+
+    return select_table[(match_east & 1) | ((match_south & 1) << 1) | ((match_west & 1) << 2) |
+                        ((match_north & 1) << 3)];
 }
 
 u8 render_layer(layer_slice slice)
@@ -48,7 +81,7 @@ u8 render_layer(layer_slice slice)
     slice.x = lerp(slice.old_x, slice.x, slice_clamp_pos);
     slice.y = lerp(slice.old_y, slice.y, slice_clamp_pos);
 
-    #define BLOCKS_EXTRA 1
+#define BLOCKS_EXTRA 1
 
     const i32 start_block_x = ((slice.x / local_block_width) - BLOCKS_EXTRA);
     const i32 start_block_y = ((slice.y / local_block_width) - BLOCKS_EXTRA);
@@ -102,6 +135,20 @@ u8 render_layer(layer_slice slice)
                 // CHECK(var->length == 0);
                 // CHECK(var->ptr == NULL);
 
+                /* process autotiling for said tile */
+                // if (br.autotile_type == 1)
+                // {
+                //     // u8 update_frame = 0;
+                //     // var_get_u8(*var, br.autotile_update_key, &update_frame);
+                //     // if(update_frame)
+                //     // {
+                //     //     u8 cached_frame = 0;
+                //     frame = autotile_get_type_1(l, id, i, j);
+                //     // }else{
+
+                //     // }
+                // }
+
                 if (br.type_controller != 0)
                     var_get_u8(*var, br.type_controller, &type);
 
@@ -131,6 +178,11 @@ u8 render_layer(layer_slice slice)
                     offset_y = lerp(offset_y, 0, clamp_pos);
                 }
             }
+
+            if (br.autotile_type == 1)
+                frame = autotile_select_shared(l, autotile_table_type_1, id, i, j);
+            if (br.autotile_type == 2)
+                frame = autotile_select_shared(l, autotile_table_type_2, id, i, j);
 
             if (br.frames_per_second > 1)
             {

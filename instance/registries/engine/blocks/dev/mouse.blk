@@ -1,6 +1,0 @@
-automatic_id 1
-vars = { u8 t = 0 }
-texture = mouse.png
-script = mouse.lua
-fps = 2
-type_controller = t

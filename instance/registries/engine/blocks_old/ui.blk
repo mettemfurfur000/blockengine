@@ -1,0 +1,6 @@
+automatic_id 1
+repeat_times = 9
+repeat_increment = [ id override_frame ]
+texture = ui_background.png
+override_frame = 0
+ignore_type = 1
