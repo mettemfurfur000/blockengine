@@ -12,12 +12,22 @@
 // #include <time.h>
 #include <unistd.h>
 
+void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                const GLchar *message, const void *userParam)
+{
+    LOG_ERROR("GL: %s type = 0x%x, severity = 0x%x, message = %s",
+              (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, message);
+}
+
 int main(int argc, char *argv[])
 {
     log_start("client.log");
 
     if (init_graphics(false) != SUCCESS)
         return 1;
+
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MessageCallback, 0);
 
     unsigned long frame = 0;
 
