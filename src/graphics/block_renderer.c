@@ -71,6 +71,8 @@ int block_renderer_init_post()
         2, 3, 0  // second triangle
     };
 
+    glUseProgram(renderer.post.shader);
+
     glGenVertexArrays(1, &renderer.post.vao);
     glBindVertexArray(renderer.post.vao);
 
@@ -98,6 +100,8 @@ int block_renderer_init()
         LOG_ERROR("Failed to compile block renderer shader program");
         return FAIL;
     }
+
+    glUseProgram(renderer.standard.shader);
 
     renderer.projection_loc = glGetUniformLocation(std->shader, "uProjection");
     renderer.atlas_resize_factor = glGetUniformLocation(std->shader, "uResizeRatio");

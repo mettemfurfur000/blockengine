@@ -15,8 +15,9 @@
 void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                 const GLchar *message, const void *userParam)
 {
-    LOG_ERROR("GL: %s type = 0x%x, severity = 0x%x, message = %s",
-              (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, message);
+    if (type != 0x8251)
+        LOG_ERROR("GL: %s type = 0x%x, severity = 0x%x, message = %s",
+                  (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, message);
 }
 
 int main(int argc, char *argv[])
