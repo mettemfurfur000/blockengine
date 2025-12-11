@@ -8,6 +8,7 @@
 #include "include/scripting.h"
 #include "include/sdl2_basics.h"
 #include "include/sdl2_extras.h"
+#include "include/signal_handler.h"
 
 #include <getopt.h>
 #include <stdlib.h>
@@ -164,6 +165,7 @@ int main(int argc, char *argv[])
     log_start(config.log_output);
 
     init_backtrace();
+    init_signal_handlers();
 
     if (init_graphics(false) != SUCCESS)
         return 1;
@@ -266,6 +268,7 @@ int main(int argc, char *argv[])
 logic_exit:
     LOG_INFO("exiting...");
 
+    deinit_signal_handlers();
     deinit_backtrace();
 
     exit_graphics();

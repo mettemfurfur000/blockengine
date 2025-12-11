@@ -5,7 +5,7 @@
 
 #include "include/logging.h"
 
-static struct backtrace_state *bt_state = NULL;
+struct backtrace_state *bt_state = NULL;
 
 // Callback for backtrace_full to print stack frames
 static int backtrace_callback(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
