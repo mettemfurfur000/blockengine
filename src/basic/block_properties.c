@@ -1,5 +1,8 @@
 #include "include/block_properties.h"
 
+#include <stdio.h>
+#include <string.h>
+
 char *strtok_take_whole_line()
 {
     char *token = strtok(NULL, "\n\r"); // take everything until first newline character

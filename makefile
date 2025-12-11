@@ -1,13 +1,14 @@
 CFLAGS += -O0 -Wall -g # -pg -no-pie
-LDFLAGS += -lm -g -lz # -pg
+LDFLAGS += -lm -g -lz -lunwind # -pg
 
 ifeq ($(OS),Windows_NT)
 	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64$(shell pwd)
-	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32
+	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32 -lbacktrace
 else
 	CFLAGS += -I$(shell pwd)
 	CFLAGS += -I/usr/include/lua5.4/
 	CFLAGS += -I/usr/include/SDL2
+	LDFLAGS += -lbacktrace
 endif
 
 LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer

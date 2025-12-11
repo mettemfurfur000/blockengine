@@ -12,6 +12,13 @@ const int log_level = LOG_LEVEL;
 
 void log_start(const char *fname)
 {
+    if (strcmp(fname, "stdout") == 0)
+    {
+        log_file = stdout;
+        log_enabled = 1;
+        return;
+    }
+
     log_file = fopen(fname, "w");
 
     if (!log_file)

@@ -772,10 +772,10 @@ static int lua_level_new_room(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     const char *name = luaL_checkstring(L, 2);
-    int x = luaL_checkinteger(L, 3);
-    int y = luaL_checkinteger(L, 4);
+    int w = luaL_checkinteger(L, 3);
+    int h = luaL_checkinteger(L, 4);
 
-    NEW_USER_OBJECT(L, Room, room_create(wrapper->lvl, name, x, y));
+    NEW_USER_OBJECT(L, Room, room_create(wrapper->lvl, name, w, h));
     return 1;
 }
 
@@ -863,6 +863,10 @@ static int lua_layer_paste_block(lua_State *L)
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
     u64 id = luaL_checknumber(L, 4);
+
+    if (x >= wrapper->l->width || y >= wrapper->l->height)
+        luaL_error(L, "Coordinates out of range - %d,%d for layer size %d,%d", x, y, wrapper->l->width,
+                   wrapper->l->height);
 
     if (!wrapper->l->registry)
         luaL_error(L, "Layer has no registry");

@@ -4,29 +4,19 @@
 #include "../vec/src/vec.h"
 #include "block_registry.h"
 #include "general.h"
-#include "hashtable.h"
 #include "handle.h"
+#include "hashtable.h"
 
 #define LAYER_FLAG_HAS_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
 #define LAYER_FLAG_STATIC 0b00000100
 
-/* Previous var pool stored raw blob pointers which could be handed to scripts.
-    We now store blob pointers behind a handle table so external code (Lua) can
-    keep a small, stable handle object and validate it before use. */
-
-/* A var_handle is represented as a 32-bit handle32 value. For storage inside
-    block metadata (which may store up to `var_index_size` bytes) we pack the
-    handle32 -> u32 -> u64 when copying into block data. */
-typedef handle32 var_handle;
-
 /* Each layer that supports vars keeps a pointer to a handle table that owns
     blob pointers. The table is created at layer init and destroyed at free.
     The table's `type` tag should be set to a dedicated value (e.g. 1). */
-typedef struct var_handle_table
+typedef struct
 {
-     handle_table *table; /* stores blob* */
-    //  u16 type_tag;        /* 6-bit type tag used when inserting into table */
+    handle_table *table; /* stores blob* */
 } var_handle_table;
 
 typedef struct layer
@@ -38,10 +28,10 @@ typedef struct layer
     block_registry *registry;
     u8 *blocks; // array of blocks, each of size bytes_per_block
 
-    u32 width;                //
-    u32 height;               //
-    u8 block_size;            // bytes per block id
-    u8 var_index_size;        // bytes per var index
+    u32 width;         //
+    u32 height;        //
+    u8 block_size;     // bytes per block id
+    u8 var_index_size; // bytes per var index
     // since we now use 32 bit handles it will be 4 bytes
     u8 total_bytes_per_block; // sum of block_size and var_index_size
 
@@ -92,14 +82,16 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars);
 
 // u8 layer_clean_vars(layer *l);
 
-u8 init_layer(layer *l,
-              room *parent_room); // call after setting their resolutions
+// call after setting their resolutions, not recommended to use
+u8 init_layer(layer *l, room *parent_room);
 u8 init_room(room *r, level *parent_level);
 u8 init_level(level *l);
 
 u8 free_layer(layer *l);
 u8 free_room(room *r);
 u8 free_level(level *l);
+
+// more usable functions to create levels, rooms, layers
 
 level *level_create(const char *name);
 room *room_create(level *parent, const char *name, u32 w, u32 h);

@@ -9,7 +9,7 @@
 
 typedef struct blob
 {
-    union 
+    union
     {
         u8 *ptr;
         char *str;
@@ -50,7 +50,7 @@ u64 table_elements(hash_node **table);
 
 #define HASHTABLE_FOREACH_EXEC(table, node_name, code)                                                                 \
     {                                                                                                                  \
-        CHECK_PTR(table);                                                                                              \
+        assert(table);                                                                                                 \
         hash_node *node_name;                                                                                          \
         for (u32 __i = 0; __i < TABLE_SIZE; ++__i)                                                                     \
         {                                                                                                              \

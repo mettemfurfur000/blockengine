@@ -137,8 +137,8 @@ u8 var_add_from_string(blob *b, const u8 type, const char letter, const char *to
 
 u8 vars_parse(const char *str_to_cpy, blob *b)
 {
-    CHECK_PTR(str_to_cpy)
-    CHECK_PTR(b)
+    assert(str_to_cpy);
+    assert(b);
 
     vars_free(b);
 
@@ -150,7 +150,7 @@ u8 vars_parse(const char *str_to_cpy, blob *b)
 
     char *str = strdup(str_to_cpy);
 
-    CHECK_PTR(str)
+    assert(str);
     strcpy(str, str_to_cpy);
 
     char *token = strtok(str, " \n"); // consume start token

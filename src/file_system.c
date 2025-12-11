@@ -351,7 +351,7 @@ void write_room(room *r, stream_t *f)
     WRITE(r->width, f);
     WRITE(r->height, f);
 
-    CHECK_PTR_NORET(r->name)
+    assert(r->name);
     blob_write(blobify(r->name), f);
 
     WRITE(r->layers.length, f);
@@ -465,7 +465,7 @@ u8 save_level(level lvl)
     for (u32 i = 0; i < lvl.registries.length; i++)
     {
         const char *reg_name = ((block_registry *)lvl.registries.data[i])->name;
-        CHECK_PTR(reg_name)
+        assert(reg_name);
         blob_write(blobify((char *)reg_name), &s);
     }
 

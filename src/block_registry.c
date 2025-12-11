@@ -20,8 +20,8 @@
 
 u8 read_int_list(const char *str, vec_int_t *dest)
 {
-    CHECK_PTR(str)
-    CHECK_PTR(dest)
+    assert(str);
+    assert(dest);
 
     char *dup = strdup(str);
 
@@ -60,8 +60,8 @@ u8 read_int_list(const char *str, vec_int_t *dest)
 
 u8 read_str_list(const char *str, vec_str_t *dest)
 {
-    CHECK_PTR(str)
-    CHECK_PTR(dest)
+    assert(str);
+    assert(dest);
 
     char *dup = strdup(str);
 
@@ -247,11 +247,11 @@ u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 
     read_str_list(data, &tmp);
 
-    CHECK_PTR(dest->parent_registry)
+    assert(dest->parent_registry);
 
     block_registry *b_reg = (block_registry *)dest->parent_registry;
 
-    CHECK_PTR(b_reg->name)
+    assert(b_reg->name);
 
     char sound_full_path[MAX_PATH_LENGTH] = {};
 
@@ -290,11 +290,11 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
         return SUCCESS;
     }
 
-    CHECK_PTR(dest->parent_registry)
+    assert(dest->parent_registry);
 
     block_registry *b_reg = (block_registry *)dest->parent_registry;
 
-    CHECK_PTR(b_reg->name)
+    assert(b_reg->name);
 
     char texture_full_path[MAX_PATH_LENGTH] = {};
     snprintf(texture_full_path, sizeof(texture_full_path),
@@ -823,7 +823,7 @@ u32 registry_read_block(block_registry *reg_ref, const char *file_path)
 // reads all blocks in a folder and adds them to the registry
 u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
 {
-    CHECK_PTR(reg_ref);
+    assert(reg_ref);
     DIR *directory;
     struct dirent *entry;
 
@@ -876,7 +876,7 @@ u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
 
 u32 read_block_registry(block_registry *reg_ref, const char *folder_name)
 {
-    CHECK_PTR(reg_ref);
+    assert(reg_ref);
     reg_ref->name = strdup(folder_name);
     reg_ref->uuid = generate_uuid();
 

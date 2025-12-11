@@ -56,7 +56,7 @@ u8 autotile_select_shared(const layer *l, const u8 select_table[], const u64 ref
 
 u8 render_layer(layer_slice slice)
 {
-    CHECK(slice.zoom == 0)
+    assert(slice.zoom > 0);
     const int local_block_width = (g_block_width * slice.zoom);
 
     const int width = slice.w / local_block_width;
@@ -132,8 +132,7 @@ u8 render_layer(layer_slice slice)
             blob *var = NULL;
             if (block_get_vars(l, i, j, &var) == SUCCESS)
             {
-                // CHECK(var->length == 0);
-                // CHECK(var->ptr == NULL);
+                // assert(var->ptr == NULL);;
 
                 /* process autotiling for said tile */
                 // if (br.autotile_type == 1)
@@ -260,21 +259,6 @@ u8 render_layer_to_framebuffer(layer_slice *slice)
 
 u8 client_render(const client_render_rules rules)
 {
-    // // Look for all frozen layers and make sure they are rendered to framebuffers
-    // // if they are not rendered yet
-    // for (u32 i = 0; i < rules.slices.length; i++)
-    // {
-    //     layer_slice *slice = &rules.slices.data[i];
-
-    //     if (FLAG_GET(slice->flags, LAYER_SLICE_FLAG_FROZEN) == 1 &&
-    //         FLAG_GET(slice->flags, LAYER_SLICE_FLAG_RENDER_COMPLETE) != 5)
-    //         if (render_layer_to_framebuffer(slice) != SUCCESS)
-    //         {
-    //             LOG_ERROR("Failed to render frozen layer slice %d", i);
-    //             return FAIL;
-    //         }
-    // }
-
     block_renderer_begin_frame();
 
     for (u32 i = 0; i < rules.draw_order.length; i++)
@@ -282,9 +266,6 @@ u8 client_render(const client_render_rules rules)
         int layer_id = rules.draw_order.data[i];
         layer_slice slice = rules.slices.data[layer_id];
 
-        // if (FLAG_GET(slice.flags, LAYER_SLICE_FLAG_RENDER_COMPLETE))
-        //     block_renderer_render_frozen(slice);
-        // else
         render_layer(slice);
     }
 

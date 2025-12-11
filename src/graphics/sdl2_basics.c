@@ -4,8 +4,8 @@
 #include "include/opengl_stuff.h"
 #include <string.h>
 
-int SCREEN_WIDTH = 1024;
-int SCREEN_HEIGHT = 640;
+int SCREEN_WIDTH = 800;
+int SCREEN_HEIGHT = 600;
 char *window_name = "Block Engine";
 
 SDL_Window *g_window = NULL;
@@ -200,9 +200,9 @@ int exit_graphics()
 // int load_image_alt(image *img_dst, atlas_info *atlas_info,  char
 // *path_to_file)
 // {
-//     CHECK_PTR(img_dst)
-//     CHECK_PTR(atlas_info)
-//     CHECK_PTR(path_to_file)
+//     assert(img_dst);
+//     assert(atlas_info);
+//     assert(path_to_file);
 
 //     u8 *image_data;
 //     int channels;

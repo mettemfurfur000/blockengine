@@ -1,36 +1,20 @@
 #include "include/level.h"
+#include "include/general.h"
 #include "include/handle.h"
 #include "include/logging.h"
 #include "include/uuid.h"
 #include "include/vars.h"
 
-// #include "include/endianless.h"
 #include "include/flags.h"
 #include <stdarg.h>
 #include <stdio.h>
 
-// layer functions
-
-#define LAYER_CHECKS(l)                                                                                                \
-    CHECK_PTR(l)                                                                                                       \
-    if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))                                                                         \
-        return FAIL;                                                                                                   \
-    CHECK_PTR(l->blocks)
-
-// object pool functions
-
-/* New var handle table helpers -------------------------------------------------
-   We store `blob*` pointers inside the layer's handle table. The block metadata
-   stores a packed u32 produced by `handle_to_u32` (copied into the low bytes of
-   the var index field). A stored value of 0 means "no var".
-*/
-
-static inline var_handle var_handle_from_u64(u64 v)
+static inline handle32 var_handle_from_u64(u64 v)
 {
     return handle_from_u32((u32)v);
 }
 
-static inline u64 u64_from_var_handle(var_handle h)
+static inline u64 u64_from_var_handle(handle32 h)
 {
     return (u64)handle_to_u32(h);
 }
@@ -38,7 +22,7 @@ static inline u64 u64_from_var_handle(var_handle h)
 /* Create a new blob in the pool and return the handle. The blob memory is
    allocated and the contents copied from `vars`. Returns INVALID_HANDLE on
    failure. */
-static var_handle var_table_alloc_blob(var_handle_table *pool, blob vars)
+static handle32 var_table_alloc_blob(var_handle_table *pool, blob vars)
 {
     if (!pool || !pool->table)
         return INVALID_HANDLE;
@@ -69,7 +53,7 @@ static var_handle var_table_alloc_blob(var_handle_table *pool, blob vars)
 }
 
 /* Free a blob previously stored in the table (frees memory and releases handle). */
-static void var_table_free_handle(var_handle_table *pool, var_handle h)
+static void var_table_free_handle(var_handle_table *pool, handle32 h)
 {
     if (!pool || !pool->table)
         return;
@@ -84,8 +68,7 @@ static void var_table_free_handle(var_handle_table *pool, var_handle h)
 
 u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
 {
-    LAYER_CHECKS(l)
-    // CHECK(x >= l->width || y >= l->height)
+    assert(l != NULL);
     if (x >= l->width || y >= l->height)
         return FAIL;
 
@@ -115,10 +98,11 @@ u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
 
 u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 {
-    LAYER_CHECKS(l)
+    assert(l);
+    assert(id);
+
     if (x >= l->width || y >= l->height)
         return FAIL;
-    CHECK_PTR(id)
 
     void *ptr = BLOCK_ID_PTR(l, x, y);
 
@@ -146,8 +130,8 @@ u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
 
 u32 block_get_vars_index(layer *l, u32 x, u32 y)
 {
-    LAYER_CHECKS(l)
-    // CHECK(x >= l->width || y >= l->height)
+    assert(l);
+
     if (x >= l->width || y >= l->height)
         return FAIL;
 
@@ -162,14 +146,12 @@ u32 block_get_vars_index(layer *l, u32 x, u32 y)
 
 void block_var_index_set(layer *l, u32 x, u32 y, u32 index)
 {
-    CHECK_PTR_NORET(l)
+    assert(l);
+    assert(l->blocks);
     if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
         return;
-    CHECK_PTR_NORET(l->blocks)
-    // CHECK_NORET(x >= l->width || y >= l->height)
     if (x >= l->width || y >= l->height)
         return;
-
     if (l->var_pool.table == NULL)
         return;
 
@@ -178,10 +160,11 @@ void block_var_index_set(layer *l, u32 x, u32 y, u32 index)
 
 u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out)
 {
-    LAYER_CHECKS(l)
-    CHECK_PTR(vars_out)
-    CHECK(x >= l->width || y >= l->height)
-
+    assert(l);
+    assert(vars_out);
+    assert(l->blocks);
+    if (x >= l->width || y >= l->height)
+        return FAIL;
     if (l->var_pool.table == NULL)
         return FAIL;
 
@@ -191,7 +174,7 @@ u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out)
     if (packed == 0)
         return FAIL;
 
-    var_handle vh = var_handle_from_u64(packed);
+    handle32 vh = var_handle_from_u64(packed);
     blob *b = (blob *)handle_table_get(l->var_pool.table, vh);
 
     if (!b)
@@ -207,8 +190,8 @@ u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out)
 
 u8 block_delete_vars(layer *l, u32 x, u32 y)
 {
-    LAYER_CHECKS(l)
-    if(x >= l->width || y >= l->height)
+    assert(l);
+    if (x >= l->width || y >= l->height)
         return FAIL;
 
     if (l->var_pool.table == NULL)
@@ -219,7 +202,7 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
 
     if (packed != 0)
     {
-        var_handle vh = var_handle_from_u64(packed);
+        handle32 vh = var_handle_from_u64(packed);
         var_table_free_handle(&l->var_pool, vh);
     }
 
@@ -231,8 +214,9 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
 
 u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 {
-    LAYER_CHECKS(l)
-    CHECK(x >= l->width || y >= l->height)
+    assert(l);
+    if (x >= l->width || y >= l->height)
+        return FAIL;
 
     // if (l->var_index_size == 0)
     if (l->var_pool.table == NULL)
@@ -255,7 +239,7 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 
     if (packed != 0)
     {
-        var_handle vh = var_handle_from_u64(packed);
+        handle32 vh = var_handle_from_u64(packed);
         blob *existing = (blob *)handle_table_get(l->var_pool.table, vh);
         if (existing && existing->size >= vars.size)
         {
@@ -268,7 +252,7 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
         var_table_free_handle(&l->var_pool, vh);
     }
 
-    var_handle newh = var_table_alloc_blob(&l->var_pool, vars);
+    handle32 newh = var_table_alloc_blob(&l->var_pool, vars);
     if (newh.index == INVALID_HANDLE_INDEX)
     {
         LOG_ERROR("Failed to create a new var");
@@ -283,11 +267,12 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 
 u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
 {
-    LAYER_CHECKS(l)
+    assert(l);
 
     u32 dest_x = x + dx;
     u32 dest_y = y + dy;
-    CHECK(x >= l->width || y >= l->height)
+    if (x >= l->width || y >= l->height)
+        return FAIL;
     if (dest_x >= l->width || dest_y >= l->height)
         return FAIL;
 
@@ -309,14 +294,16 @@ u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
 
 u8 init_layer(layer *l, room *parent_room)
 {
-    CHECK_PTR(parent_room)
-    CHECK_PTR(l)
+    assert(parent_room);
+    assert(l);
 
     l->parent_room = parent_room;
     l->uuid = generate_uuid();
 
-    CHECK(l->width == 0 || l->height == 0)
-    CHECK((l->block_size + l->var_index_size) == 0)
+    if (l->width == 0 || l->height == 0)
+        return FAIL;
+    if ((l->block_size + l->var_index_size) == 0)
+        return FAIL;
     l->total_bytes_per_block = l->block_size + l->var_index_size;
 
     l->blocks = calloc(l->width * l->height, l->block_size + l->var_index_size);
@@ -339,8 +326,8 @@ u8 init_layer(layer *l, room *parent_room)
 
 u8 init_room(room *r, level *parent_level)
 {
-    CHECK_PTR(parent_level)
-    CHECK_PTR(r)
+    assert(parent_level);
+    assert(r);
 
     r->parent_level = parent_level;
     r->uuid = generate_uuid();
@@ -350,21 +337,21 @@ u8 init_room(room *r, level *parent_level)
     /* create a physics world for this room */
     // r->physics_world = physics_world_create();
 
-    CHECK_PTR(r->name)
+    assert(r->name);
 
     return SUCCESS;
 }
 
 u8 init_level(level *lvl)
 {
-    CHECK_PTR(lvl)
+    assert(lvl);
 
     vec_init(&lvl->rooms);
     vec_init(&lvl->registries);
 
     lvl->uuid = generate_uuid();
 
-    CHECK_PTR(lvl->name)
+    assert(lvl->name);
 
     return SUCCESS;
 }
@@ -373,8 +360,8 @@ u8 init_level(level *lvl)
 
 u8 free_layer(layer *l)
 {
-    CHECK_PTR(l)
-    SAFE_FREE(l->blocks);
+    assert(l);
+    assert(l->blocks);
     if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
     {
         /* Free any blobs stored in the handle table and destroy it */
@@ -403,7 +390,7 @@ u8 free_layer(layer *l)
 
 u8 free_room(room *r)
 {
-    CHECK_PTR(r)
+    assert(r);
 
     for (u32 i = 0; i < r->layers.length; i++)
         free_layer(r->layers.data[i]);
@@ -424,7 +411,7 @@ u8 free_room(room *r)
 
 u8 free_level(level *lvl)
 {
-    CHECK_PTR(lvl)
+    assert(lvl);
 
     LOG_DEBUG("Freeing level %s, the world might collapse!", lvl->name);
 
@@ -498,10 +485,10 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
 
 void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
 {
-    CHECK_PTR_NORET(l)
+    assert(l);
     if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
         return;
-    CHECK_PTR_NORET(l->blocks)
+    assert(l->blocks);
 
     char buffer[1024] = {0};
     va_list args;

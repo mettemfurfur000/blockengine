@@ -53,7 +53,7 @@ i16 var_size(blob b, char letter)
 
 u8 vars_free(blob *b)
 {
-    CHECK_PTR(b);
+    assert(b);
 
     if (b->ptr)
     {
@@ -67,7 +67,7 @@ u8 vars_free(blob *b)
 
 u8 var_delete(blob *b, char letter)
 {
-    CHECK_PTR(b);
+    assert(b);
 
     i32 pos = vars_pos(*b, letter);
     if (pos < 0)
@@ -110,8 +110,8 @@ u8 var_delete(blob *b, char letter)
 
 u8 var_add(blob *b, char letter, u8 size)
 {
-    CHECK_PTR(b);
-    CHECK(size == 0)
+    assert(b);
+    assert(size != 0);
 
     if (vars_pos(*b, letter) >= 0) // make sure it doesn't exist first
         return SUCCESS;
@@ -137,7 +137,7 @@ u8 var_add(blob *b, char letter, u8 size)
 
 u8 var_rename(blob *b, char old_letter, char new_letter)
 {
-    CHECK_PTR(b);
+    assert(b);
 
     i32 pos_old = vars_pos(*b, old_letter);
     if (pos_old < 0)
@@ -154,7 +154,7 @@ u8 var_rename(blob *b, char old_letter, char new_letter)
 
 u8 var_resize(blob *b, char letter, u8 new_size)
 {
-    CHECK_PTR(b);
+    assert(b);
 
     i32 pos_i = vars_pos(*b, letter);
     if (pos_i < 0)
@@ -198,8 +198,8 @@ u8 var_resize(blob *b, char letter, u8 new_size)
 
 i32 ensure_tag(blob *b, const int letter, const int needed_size)
 {
-    CHECK_PTR(b);
-    CHECK(needed_size == 0);
+    assert(b);
+    assert(needed_size != 0);
 
     i32 pos = vars_pos(*b, (char)letter);
     if (pos < 0)
@@ -225,8 +225,8 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
 // will affect src
 i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
 {
-    CHECK_PTR(b);
-    CHECK_PTR(src);
+    assert(b);
+    assert(src);
 
     i32 pos = vars_pos(*b, letter);
     if (pos < 0)
@@ -267,11 +267,11 @@ i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
 
 u8 var_set_str(blob *b, char letter, const char *str)
 {
-    CHECK_PTR(b);
-    CHECK_PTR(str);
+    assert(b);
+    assert(str);
     u32 len = strlen(str);
-    CHECK(len == 0);
-    CHECK(len >= 0xff - 1);
+    assert(len != 0);
+    assert(len <= 0xff - 1);
 
     i32 pos = vars_pos(*b, letter);
     if (pos < 0)

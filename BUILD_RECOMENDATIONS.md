@@ -10,6 +10,8 @@ paste this in your msys2 terminal (purple-ish one) to install all the packages y
 
 `pacman -S mingw-w64-x86_64-toolchain make mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_image mingw-w64-x86_64-SDL2_ttf mingw-w64-x86_64-lua`
 
+or use like setup.sh or sumthin all the packages must be here
+
 i will add more packages later for sound support and probly other stuff..
 
 you may also need `git` to clone this repo, you can install it with `pacman -S git`. but if you already have git installed, check if you can reach it in your terminal with `git --version`, if yes, you're good to go, obviously..

@@ -1,6 +1,8 @@
 #ifndef GENERAL_H
 #define GENERAL_H 1
 
+// required, dont get fooled by the clangd error
+#include "backtrace.h"
 #include "logging.h"
 #include <assert.h>
 #include <stdbool.h>
@@ -40,32 +42,22 @@ static_assert(sizeof(i64) == 8, "");
         free(ptr);                                                                                                     \
     ptr = 0;
 
-#define CHECK_PTR(ptr)                                                                                                 \
-    if (!(ptr))                                                                                                        \
+// Custom assert that prints backtrace on failure
+#ifdef NDEBUG
+#define assert(condition) ((void)0)
+#else
+#undef assert
+#define assert(condition)                                                                                              \
+    do                                                                                                                 \
     {                                                                                                                  \
-        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                                                               \
-        return FAIL;                                                                                                   \
-    }
-
-#define CHECK_PTR_NORET(ptr)                                                                                           \
-    if (!(ptr))                                                                                                        \
-    {                                                                                                                  \
-        LOG_ERROR("check failed: '" #ptr "' is NULL\n");                                                               \
-        return;                                                                                                        \
-    }
-
-#define CHECK(expression)                                                                                              \
-    if (expression)                                                                                                    \
-    {                                                                                                                  \
-        LOG_ERROR("check failed: '" #expression " is positive'\n");                                                    \
-        return FAIL;                                                                                                   \
-    }
-
-#define CHECK_NORET(expression)                                                                                        \
-    if (expression)                                                                                                    \
-    {                                                                                                                  \
-        LOG_ERROR("check failed: '" #expression " is positive'\n");                                                    \
-        return;                                                                                                        \
-    }
+        if (!(condition))                                                                                              \
+        {                                                                                                              \
+            LOG_ERROR("Assertion failed: %s", #condition);                                                             \
+            LOG_ERROR("  File: %s:%d", __FILE__, __LINE__);                                                            \
+            print_backtrace();                                                                                         \
+            abort();                                                                                                   \
+        }                                                                                                              \
+    } while (0)
+#endif
 
 #endif

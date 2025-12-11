@@ -78,6 +78,7 @@ function M.safe_registry_load(level, name)
 end
 
 function M.safe_menu_create(level, name, width, height)
+    print("creating room " .. name .. " size " .. width .. "x" .. height)
     local menu = level:new_room(name, width, height)
 
     if menu == nil then

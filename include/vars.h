@@ -38,7 +38,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 #define GETTER_IMP(type)                                                                                               \
     u8 GETTER_NAME(type)(blob b, char letter, type *dest)                                                              \
     {                                                                                                                  \
-        CHECK_PTR(dest);                                                                                               \
+        assert(dest);                                                                                                  \
         i32 pos = vars_pos(b, letter);                                                                                 \
         if (pos < 0)                                                                                                   \
             return FAIL;                                                                                               \
@@ -50,7 +50,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 #define SETTER_IMP(type)                                                                                               \
     u8 SETTER_NAME(type)(blob * b, char letter, type value)                                                            \
     {                                                                                                                  \
-        CHECK_PTR(b);                                                                                                  \
+        assert(b);                                                                                                     \
         i32 pos = vars_pos(*b, letter);                                                                                \
         if (pos < 0)                                                                                                   \
             return FAIL;                                                                                               \

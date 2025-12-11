@@ -4,13 +4,12 @@
 
 int test_basic_io()
 {
-    char *file =
-        FOLDER_REG SEPARATOR_STR TEST_REGISTRY SEPARATOR_STR "test.prop";
+    char *file = FOLDER_REG SEPARATOR_STR TEST_REGISTRY SEPARATOR_STR "test.prop";
 
     hash_node **table = alloc_table();
 
-    CHECK(load_properties(file, table))
-    CHECK(save_properties(file, table))
+    assert(load_properties(file, table));
+    assert(save_properties(file, table));
 
     free_table(table);
 

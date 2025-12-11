@@ -372,8 +372,8 @@ void scripting_register_event_handler(int ref, int event_type)
 */
 u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const char *name)
 {
-    CHECK_PTR(reg);
-    CHECK_PTR(name);
+    assert(reg);
+    assert(name);
 
     if (id > reg->resources.length)
     {

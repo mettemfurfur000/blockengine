@@ -76,7 +76,7 @@ local function mouse_action(x, y, button)
 
     if success and vars:is_valid() then
         wrappers.world_print(G_pallete_width, G_ui_offset_var_handle_debug, G_ui_width,
-            table.concat({ vars:get_raw() }, ","))
+            table.concat({vars:get_raw()}, ","))
         wrappers.world_print(G_pallete_width, G_ui_offset_vars_debug, G_ui_width, vars:__tostring())
     end
 
@@ -89,7 +89,7 @@ local function mouse_action(x, y, button)
         if editor.mode == "place" then
             local id = editor.layer_being_edited.layer:get_id(block_coords.x, block_coords.y)
             -- print("id found " .. id)
-            if id == 0 then
+            if id == 0 and editor.selected_block ~= nil then
                 editor.layer_being_edited.layer:paste_block(block_coords.x, block_coords.y, editor.selected_block.id)
             end
         end
@@ -132,7 +132,7 @@ end)
 -- resets the whole editor thing
 local function ui_update()
     if not editor.is_shown then
-        wrappers.world_fill(0, 0, G_ui_width, 64)
+        wrappers.world_fill(0, 0, G_ui_width, G_height_blocks - 1, 0)
         return
     end
 
@@ -246,7 +246,6 @@ blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, 
         editor.keystate[char or -1] = 0
     end
 end)
-
 
 blockengine.register_handler(engine_events.ENGINE_TICK, function(code)
     if editor.lastpos ~= nil then

@@ -9,8 +9,8 @@ require("registries.engine.scripts.layer_editor")
 
 G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
 
-G_width_blocks = 2 * G_screen_width / (g_block_size * global_zoom)
-G_height_blocks = 2 * G_screen_height / (g_block_size * global_zoom)
+G_width_blocks = math.floor(2 * G_screen_width / (g_block_size * global_zoom))
+G_height_blocks = math.floor(2 * G_screen_height / (g_block_size * global_zoom))
 
 local function slice_gen(x, y, w, h, z, lay_ref)
     if lay_ref == nil then
@@ -147,14 +147,14 @@ G_level = level_editor.load_level("test")
 if G_level == nil then
     print("test.lvl file not found, creating from scratch")
 
-    make_test_level()                                                                         -- allocates sum space for the level
+    make_test_level() -- allocates sum space for the level
 
-    G_engine = wrappers.safe_registry_load(G_level, "engine")                                 -- load the engine registry
+    G_engine = wrappers.safe_registry_load(G_level, "engine") -- load the engine registry
 
     G_menu_room = wrappers.safe_menu_create(G_level, "menu", G_width_blocks, G_height_blocks) -- our first and only room
 
-    G_menu = generate_view_and_layers()                                                       -- creates all the layers
-else                                                                                          -- level was loaded, all the rooms are here, all the layers are here as well
+    G_menu = generate_view_and_layers() -- creates all the layers
+else -- level was loaded, all the rooms are here, all the layers are here as well
     print("loaded test.lvl")
     -- we have to find all the objects ourselvs
     G_engine = G_level:get_registries()[1]
