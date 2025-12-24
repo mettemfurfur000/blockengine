@@ -76,7 +76,7 @@ local function mouse_action(x, y, button)
 
     if success and vars:is_valid() then
         wrappers.world_print(G_pallete_width, G_ui_offset_var_handle_debug, G_ui_width,
-            table.concat({vars:get_raw()}, ","))
+            table.concat({ vars:get_raw() }, ","))
         wrappers.world_print(G_pallete_width, G_ui_offset_vars_debug, G_ui_width, vars:__tostring())
     end
 
@@ -101,7 +101,7 @@ local function mouse_action(x, y, button)
 end
 
 local function get_layer_by_id(id)
-    for k, v in pairs(G_menu) do
+    for k, v in pairs(G_view_menu) do
         if v.index == id then
             return v
         end
@@ -120,9 +120,9 @@ end
 -- gets all the data
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
     ---@class Layer
-    editor.pallete_layer = G_menu.pallete.layer
+    editor.pallete_layer = G_view_menu.pallete.layer
     ---@type number
-    editor.pallete_index = G_menu.pallete.index
+    editor.pallete_index = G_view_menu.pallete.index
 
     place_pallete(editor.is_shown)
 
@@ -145,7 +145,7 @@ local function ui_update()
         local filename = string.match(editor.selected_block.all_fields.source_filename, "[^/\\]*%.%w+$"):sub(1, -5)
         wrappers.world_print(G_pallete_width, G_ui_offset_block_name, G_ui_width, "" .. filename)
 
-        G_menu.text.layer:paste_block(G_pallete_width, G_ui_offset_preview, editor.selected_block.id)
+        G_view_menu.text.layer:paste_block(G_pallete_width, G_ui_offset_preview, editor.selected_block.id)
     end
 
     wrappers.world_print(G_pallete_width, G_ui_offset_mode, G_ui_width, editor.mode)

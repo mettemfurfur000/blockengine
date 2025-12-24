@@ -315,7 +315,7 @@ u8 init_layer(layer *l, room *parent_room)
     }
     // l->blocks = calloc(l->width * l->width, l->block_size + l->var_index_size);
 
-    if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
+    if (FLAG_GET(l->flags, LAYER_FLAG_USE_VARS))
     {
         l->var_pool.table = handle_table_create(256); /* default capacity */
         // l->var_pool.type_tag = 1;                     /* choose tag 1 for vars */
@@ -362,7 +362,7 @@ u8 free_layer(layer *l)
 {
     assert(l);
     assert(l->blocks);
-    if (FLAG_GET(l->flags, LAYER_FLAG_HAS_VARS))
+    if (FLAG_GET(l->flags, LAYER_FLAG_USE_VARS))
     {
         /* Free any blobs stored in the handle table and destroy it */
         if (l->var_pool.table)
@@ -461,7 +461,7 @@ room *room_create(level *parent, const char *name, u32 w, u32 h)
     return r;
 }
 
-layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags)
+layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 flags)
 {
     layer *l = calloc(1, sizeof(layer));
 

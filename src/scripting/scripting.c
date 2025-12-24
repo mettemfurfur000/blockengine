@@ -1,5 +1,6 @@
 #include "include/scripting.h"
 // #include "include/image_editing.h"
+#include "SDL_events.h"
 #include "include/events.h"
 #include "include/folder_structure.h"
 #include "include/scripting_bindings.h"
@@ -245,6 +246,15 @@ int push_event_args(SDL_Event *e)
 
     switch (e->type)
     {
+    case SDL_WINDOWEVENT:
+        if (e->window.event == SDL_WINDOWEVENT_RESIZED || e->window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+        {
+            lua_pushinteger(g_L, e->window.data1);
+            lua_pushinteger(g_L, e->window.data2);
+            return 2;
+        }
+        else
+            return 0;
     case SDL_KEYDOWN:
     case SDL_KEYUP:
         lua_pushinteger(g_L, e->key.keysym.sym);

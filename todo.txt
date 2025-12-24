@@ -3,8 +3,9 @@
         [ ] - ??
 
 [ ] - add native support for particles
-[ ] - make resolution changeable
-[ ] - make fullscreen possible
+[x] - make resolution changeable
+[x] - make fullscreen possible
+[x] - add a window resolution change event and make lua respond to it by configuring the screen sizes
 
 
 

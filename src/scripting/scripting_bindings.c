@@ -800,15 +800,14 @@ static int lua_room_new_layer(lua_State *L)
     const char *registry_name = luaL_checkstring(L, 2);
 
     int bytes_per_block = luaL_checkinteger(L, 3);
-    int byte_per_index = luaL_checkinteger(L, 4);
-    int flags = luaL_checkinteger(L, 5);
+    int flags = luaL_checkinteger(L, 4);
 
     block_registry *reg = find_registry((((level *)wrapper->r->parent_level)->registries), (char *)registry_name);
 
     if (!reg)
         luaL_error(L, "Registry %s not found", registry_name);
 
-    NEW_USER_OBJECT(L, Layer, layer_create(wrapper->r, reg, bytes_per_block, byte_per_index, flags));
+    NEW_USER_OBJECT(L, Layer, layer_create(wrapper->r, reg, bytes_per_block, flags));
 
     return 1;
 }

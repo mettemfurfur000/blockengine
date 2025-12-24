@@ -20,7 +20,7 @@ function M.world_fill(x, y, w, h, id)
 
     for j = y, h do
         for i = x, w do
-            G_menu.text.layer:paste_block(i, j, id)
+            G_view_menu.text.layer:paste_block(i, j, id)
         end
     end
 end
@@ -32,7 +32,7 @@ function M.world_print(x, y, width, msg)
 
     if msg == " " then
         for i = 0, width do
-            G_menu.text.layer:paste_block(x + i, y, 0)
+            G_view_menu.text.layer:paste_block(x + i, y, 0)
         end
     end
 
@@ -42,7 +42,7 @@ function M.world_print(x, y, width, msg)
         spaces_str = spaces_str .. " "
     end
 
-    G_menu.text.layer:bprint(G_character_id, x, y, width, msg .. spaces_str)
+    G_view_menu.text.layer:bprint(G_character_id, x, y, width, msg .. spaces_str)
 end
 
 function M.tablelength(T)
@@ -77,7 +77,7 @@ function M.safe_registry_load(level, name)
     return reg_table
 end
 
-function M.safe_menu_create(level, name, width, height)
+function M.safe_room_create(level, name, width, height)
     print("creating room " .. name .. " size " .. width .. "x" .. height)
     local menu = level:new_room(name, width, height)
 
@@ -89,19 +89,13 @@ function M.safe_menu_create(level, name, width, height)
     return menu
 end
 
-function M.safe_layer_create(room, registry_name, block_width, var_width)
-    if block_width <= 0 or var_width < 0 or registry_name == nil or room == nil then
+function M.safe_layer_create(room, registry_name, block_width, enable_vars)
+    if block_width <= 0 or registry_name == nil or room == nil then
         M.log_error("invalid arguments for layer creation")
         os.exit()
     end
 
-    local enable_vars = 0
-
-    if var_width > 0 then
-        enable_vars = 1
-    end
-
-    local layer = room:new_layer(registry_name, block_width, var_width, enable_vars)
+    local layer = room:new_layer(registry_name, block_width, enable_vars and 1 or 0)
 
     if layer == nil then
         M.log_error("error creating a floor")

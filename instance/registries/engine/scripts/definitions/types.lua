@@ -54,7 +54,7 @@
 ---@field get_size fun(self:Room):integer, integer
 ---@field get_layer fun(self:Room, index:integer):Layer
 ---@field get_layer_count fun(self:Room):integer
----@field new_layer fun(self:Room, reg_name:string, block_width:integer, unused:integer, flags:integer):Layer
+---@field new_layer fun(self:Room, reg_name:string, block_width:integer, flags:integer):Layer
 ---@field uuid fun(self:Room):integer
 local room = {}
 

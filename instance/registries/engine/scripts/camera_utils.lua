@@ -11,7 +11,9 @@ local zoom_max = 4
 
 local cur_zoom = global_zoom
 
-local function recalc_camera_limits()
+local M = {}
+
+function M.recalc_camera_limits()
     G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
     camera_limit_x, camera_limit_y = G_screen_width / cur_zoom, G_screen_height / cur_zoom
 end
@@ -21,14 +23,14 @@ G_camera_current_pos = {
     y = 0
 }
 
-local M = {}
-
 function M.set_target(pos)
     G_camera_current_pos = pos
     -- do_center = do_center or false
-    for k, v in pairs(G_menu) do
+    for k, v in pairs(G_view_menu) do
         if v.is_ui ~= true then
             local slice = v.slice
+
+            assert(slice)
 
             local actual_block_width = cur_zoom * g_block_size
 
@@ -49,7 +51,7 @@ function M.set_target(pos)
 
             slice.timestamp_old = G_sdl_tick or sdl.get_ticks()
 
-            slice.x = math.floor(math.min(math.max(pixels_x, 0), camera_limit_x)) 
+            slice.x = math.floor(math.min(math.max(pixels_x, 0), camera_limit_x))
             slice.y = math.floor(math.min(math.max(pixels_y, 0), camera_limit_y))
 
             -- update current mouse offset
@@ -67,7 +69,7 @@ end
 function M.camera_set_zoom(change_zoom)
     cur_zoom = math.max(zoom_min, math.min(zoom_max, cur_zoom + change_zoom))
 
-    for k, v in pairs(G_menu) do
+    for k, v in pairs(G_view_menu) do
         if v.is_ui == false then
             local slice = v.slice
 
@@ -77,7 +79,7 @@ function M.camera_set_zoom(change_zoom)
         end
     end
 
-    recalc_camera_limits()
+    M.recalc_camera_limits()
 end
 
 return M

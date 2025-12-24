@@ -7,7 +7,7 @@
 #include "handle.h"
 #include "hashtable.h"
 
-#define LAYER_FLAG_HAS_VARS 0b00000001
+#define LAYER_FLAG_USE_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
 #define LAYER_FLAG_STATIC 0b00000100
 
@@ -95,7 +95,7 @@ u8 free_level(level *l);
 
 level *level_create(const char *name);
 room *room_create(level *parent, const char *name, u32 w, u32 h);
-layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 bytes_per_index, u8 flags);
+layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_block, u8 flags);
 
 // utils
 // turns an ascii string into formatted block chain

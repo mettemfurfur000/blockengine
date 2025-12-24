@@ -224,7 +224,7 @@ void write_layer(layer *l, stream_t *f)
     }
     else
     {
-        u16 debug_active_amount = 0;
+        // u16 debug_active_amount = 0;
         u16 cap = handle_table_capacity(l->var_pool.table);
         u32 cap32 = (u32)cap;
         WRITE(cap32, f);
@@ -237,7 +237,7 @@ void write_layer(layer *l, stream_t *f)
             WRITE(generation, f);
             if (p)
             {
-                debug_active_amount++;
+                // debug_active_amount++;
                 blob_vars_write(*(blob *)p, f);
             }
             else
@@ -247,7 +247,7 @@ void write_layer(layer *l, stream_t *f)
                 WRITE(zero32, f);
             }
         }
-        LOG_DEBUG("total handles saved: %d out of %d", debug_active_amount, cap);
+        // LOG_DEBUG("total handles saved: %d out of %d", debug_active_amount, cap);
     }
 }
 
@@ -311,7 +311,7 @@ void read_layer(layer *l, room *parent, stream_t *f)
         l->var_pool.table = handle_table_create((u16)slot_count);
         // l->var_pool.type_tag = 1; /* same tag used when writing */
 
-        u16 debug_active_amount = 0;
+        // u16 debug_active_amount = 0;
 
         for (u16 i = 0; i < (u16)slot_count; ++i)
         {
@@ -335,10 +335,10 @@ void read_layer(layer *l, room *parent, stream_t *f)
                 nb->size = b.size;
 
                 handle_table_set_slot(l->var_pool.table, i, nb, generation, active);
-                debug_active_amount++;
+                // debug_active_amount++;
             }
         }
-        LOG_DEBUG("restored %d active var handles", debug_active_amount);
+        // LOG_DEBUG("restored %d active var handles", debug_active_amount);
     }
 }
 

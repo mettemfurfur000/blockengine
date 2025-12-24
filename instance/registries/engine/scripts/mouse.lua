@@ -28,8 +28,8 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
     }
 
     ---@class Layer
-    G_mouse.home_layer = G_menu.mouse.layer
-    G_mouse.home_layer_index = G_menu.mouse.index
+    G_mouse.home_layer = G_view_menu.mouse.layer
+    G_mouse.home_layer_index = G_view_menu.mouse.index
     G_mouse.pos = pos
 
     G_mouse.home_layer:for_each(current_block, function(x, y)
@@ -73,7 +73,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, c
         return
     end
 
-    local cur_slice = render_rules.get_slice(g_render_rules, G_menu.mouse.index);
+    local cur_slice = render_rules.get_slice(g_render_rules, G_view_menu.mouse.index);
     G_mouse.pos = mouse_move(G_mouse.home_layer, cur_slice, {
         x = x,
         y = y
@@ -98,7 +98,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, stat
         return
     end
 
-    local cur_slice = render_rules.get_slice(g_render_rules, G_menu.mouse.index);
+    local cur_slice = render_rules.get_slice(g_render_rules, G_view_menu.mouse.index);
     local actual_pos = block_utils.pixels_to_blocks({
         x = x,
         y = y
@@ -106,10 +106,9 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, stat
 
     -- print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
 
-    local func = G_menu.objects.layer:get_input_handler(actual_pos.x, actual_pos.y, "click")
+    local func = G_view_menu.objects.layer:get_input_handler(actual_pos.x, actual_pos.y, "click")
 
     if func then
-        func(G_menu.objects.layer, actual_pos.x, actual_pos.y, 1)
+        func(G_view_menu.objects.layer, actual_pos.x, actual_pos.y, 1)
     end
 end)
-

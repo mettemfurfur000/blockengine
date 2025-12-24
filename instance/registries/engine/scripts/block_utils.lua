@@ -1,7 +1,7 @@
 local M = {}
 
 function M.pixels_to_blocks(pos, zoom)
-    zoom = zoom or render_rules.get_slice(g_render_rules, G_menu.mouse.index).zoom
+    zoom = zoom or render_rules.get_slice(g_render_rules, G_view_menu.mouse.index).zoom
     return {
         x = math.floor((pos.x + G_mouse.offset.x) / g_block_size / zoom),
         y = math.floor((pos.y + G_mouse.offset.y) / g_block_size / zoom)
@@ -9,7 +9,7 @@ function M.pixels_to_blocks(pos, zoom)
 end
 
 function M.pixel_to_blocks_no_offset(pos, zoom)
-    zoom = zoom or render_rules.get_slice(g_render_rules, G_menu.mouse.index).zoom
+    zoom = zoom or render_rules.get_slice(g_render_rules, G_view_menu.mouse.index).zoom
     return {
         x = math.floor(pos.x / g_block_size / zoom),
         y = math.floor(pos.y / g_block_size / zoom)

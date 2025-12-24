@@ -2,6 +2,8 @@ local sdl = require("registries.engine.scripts.definitions.sdl")
 local blockengine = require("registries.engine.scripts.definitions.blockengine")
 local wrappers = require("registries.engine.scripts.wrappers")
 local level_editor = require("registries.engine.scripts.definitions.level_editor")
+local camera_utils = require("registries.engine.scripts.camera_utils")
+
 require("registries.engine.scripts.constants")
 
 --- loads and registers layer editor functions
@@ -12,11 +14,13 @@ G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
 G_width_blocks = math.floor(2 * G_screen_width / (g_block_size * global_zoom))
 G_height_blocks = math.floor(2 * G_screen_height / (g_block_size * global_zoom))
 
-local function slice_gen(x, y, w, h, z, lay_ref)
+-- constructs a layer slice that dictates how the layer is rendered
+local function layer_slice(x, y, w, h, z, lay_ref)
     if lay_ref == nil then
         print("no ref layer to generate a slice")
         os.exit(0)
     end
+
     return {
         x = x,
         y = y,
@@ -31,8 +35,8 @@ local function slice_gen(x, y, w, h, z, lay_ref)
     }
 end
 
-local function slice_basic(lay_ref)
-    return slice_gen(0, 0, G_screen_width, G_screen_height, global_zoom, lay_ref)
+local function make_basic_slice(lay_ref)
+    return layer_slice(0, 0, G_screen_width, G_screen_height, global_zoom, lay_ref)
 end
 
 G_layers_amount = 0
@@ -43,7 +47,7 @@ local function layer_append_render(table_dest, __name, lay_ref, __is_ui)
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
-        slice = slice_basic(lay_ref)
+        slice = make_basic_slice(lay_ref)
     }
     G_layers_amount = G_layers_amount + 1
 end
@@ -56,121 +60,107 @@ local function layer_append_existing(table_dest, room_to_lookup, __name, __is_ui
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
-        slice = slice_basic(lay_ref)
+        slice = make_basic_slice(lay_ref)
     }
-
-    print("generated " .. __name)
 
     G_layers_amount = G_layers_amount + 1
 end
 
-local function layer_new_invisible(table_dest, __name, lay_ref)
-    table_dest[__name] = {
-        index = G_layers_amount,
-        name = __name,
-        layer = lay_ref,
-        is_ui = false,
-        slice = nil,
-        slice_push_ignore = true
-    }
-    G_layers_amount = G_layers_amount + 1
+local function set_slices(ref_table)
+    for k, v in pairs(ref_table) do
+        if v.slice_push_ignore ~= true then
+            render_rules.set_slice(g_render_rules, v.index, v.slice)
+        end
+    end
 end
 
 local function set_render_rule_order(ref_table)
     local order = {}
-    print("setting render rule order")
 
     for k, v in pairs(ref_table) do
         if v.slice_push_ignore ~= true then
-            print("putting " .. v.name .. " at " .. v.index)
             table.insert(order, v.index)
         end
     end
 
     table.sort(order)
 
-    print("order:")
-    wrappers.print_table(order)
-
     render_rules.set_order(g_render_rules, order)
+
+    set_slices(ref_table)
 end
 
-local function set_slices(ref_table)
-    print("setting slices")
-    for k, v in pairs(ref_table) do
-        if v.slice_push_ignore ~= true then
-            print(v.name .. " at index " .. v.index)
-            render_rules.set_slice(g_render_rules, v.index, v.slice)
+local function build_view(def, registry_name, loaded)
+    loaded = loaded or false
+
+    local view = {}
+
+    G_layers_amount = 0 -- make sure to start over
+
+    for key, def_entry in ipairs(def) do
+        if loaded then
+            layer_append_existing(view, G_menu_room, def_entry.name, def_entry.is_ui)
+        else
+            layer_append_render(view, def_entry.name,
+                wrappers.safe_layer_create(
+                    G_menu_room,
+                    registry_name,
+                    def_entry.bytes or 1,
+                    def_entry.use_vars or false
+                ),
+                def_entry.is_ui)
         end
     end
+
+    return view
 end
 
-local function make_test_level()
-    G_level = level_editor.create_level("test")
+local function define_layer(name, bytes, use_vars, is_ui)
+    if name == nil then
+        error("layer has to have a name")
+    end
+    return { name = name, bytes = bytes or 1, use_vars = use_vars or false, is_ui = is_ui or false }
+end
+
+local function create_menu()
+    G_level = level_editor.create_level("main_menu")
 
     if G_level == nil then
         wrappers.log_error("error creating level")
         os.exit()
     end
+
+    G_engine = wrappers.safe_registry_load(G_level, "engine")
+
+    G_menu_room = wrappers.safe_room_create(G_level, "menu", G_width_blocks, G_height_blocks)
 end
 
-local function generate_view_and_layers()
-    local menu = {}
+G_menu_definition = {
+    [1] = define_layer("floor", 1),
+    [2] = define_layer("objects", 1, true),
+    [3] = define_layer("pallete", 1, true, true),
+    [4] = define_layer("text", 1, true, true),
+    [5] = define_layer("mouse", 1, true, true),
+}
 
-    -- layer_new_invisible(g_menu, "dev", safe_layer_create(g_menu_room, "engine", 1, 0))
-    layer_append_render(menu, "floor", wrappers.safe_layer_create(G_menu_room, "engine", 1, 0))
-    layer_append_render(menu, "objects", wrappers.safe_layer_create(G_menu_room, "engine", 1, 2))
-    layer_append_render(menu, "pallete", wrappers.safe_layer_create(G_menu_room, "engine", 1, 0), true)
-    layer_append_render(menu, "text", wrappers.safe_layer_create(G_menu_room, "engine", 1, 2), true)
-    layer_append_render(menu, "mouse", wrappers.safe_layer_create(G_menu_room, "engine", 1, 2), true)
-    -- layer_append_render(g_menu, "ui_back", safe_layer_create(g_menu_room, "engine", 1, 2), true)
-    -- layer_append_render(g_menu, "ui_floor_select", safe_layer_create(g_menu_room, "engine", 1, 0), true)
-    -- layer_append_render(g_menu, "ui_engine_select", safe_layer_create(g_menu_room, "engine", 1, 0), true)
+local function init_menu()
+    G_level = level_editor.load_level("main_menu")
 
-    return menu
-end
+    local loaded = G_level ~= nil
 
-local function reflective_view_build()
-    local menu = {}
-
-    layer_append_existing(menu, G_menu_room, "floor")
-    layer_append_existing(menu, G_menu_room, "objects")
-    layer_append_existing(menu, G_menu_room, "pallete", true)
-    layer_append_existing(menu, G_menu_room, "text", true)
-    layer_append_existing(menu, G_menu_room, "mouse", true)
-
-    return menu
-end
-
-G_level = level_editor.load_level("test")
-
-if G_level == nil then
-    print("test.lvl file not found, creating from scratch")
-
-    make_test_level() -- allocates sum space for the level
-
-    G_engine = wrappers.safe_registry_load(G_level, "engine") -- load the engine registry
-
-    G_menu_room = wrappers.safe_menu_create(G_level, "menu", G_width_blocks, G_height_blocks) -- our first and only room
-
-    G_menu = generate_view_and_layers() -- creates all the layers
-else -- level was loaded, all the rooms are here, all the layers are here as well
-    print("loaded test.lvl")
-    -- we have to find all the objects ourselvs
-    G_engine = G_level:get_registries()[1]
-
-    G_menu_room = G_level:find_room("menu") -- menu should be here
-
-    if G_menu_room == nil then
-        -- print("menu not found")
-        wrappers.log_error("menu not found")
-        os.exit(0)
+    if loaded then                              -- level was loaded, all the rooms are here, all the layers are here as well
+        G_engine = G_level:get_registries()[1]
+        G_menu_room = G_level:find_room("menu") -- menu should be here
+        assert(G_menu_room)
+    else
+        create_menu() -- only creates the room, no layers yert
     end
 
-    -- now assemble the g_menu view structure
-    G_menu = reflective_view_build()
+    -- if the room was just created, build_view will allocate layers for said menu definition
+    G_view_menu = build_view(G_menu_definition, "engine", loaded)
 end
 
+init_menu()
 -- print_table(g_menu)
 
 -- utils
@@ -178,8 +168,8 @@ G_engine_table = G_engine:to_table()
 G_total_blocks = wrappers.tablelength(G_engine_table)
 G_character_id = wrappers.find_block(G_engine_table, "character").id
 
-G_menu.text.layer:for_each(G_character_id, function(x, y) -- clear all left ova text
-    G_menu.text.layer:paste_block(x, y, 0)
+G_view_menu.text.layer:for_each(G_character_id, function(x, y) -- clear all left ova text
+    G_view_menu.text.layer:paste_block(x, y, 0)
 end)
 
 G_tick = 0
@@ -188,20 +178,35 @@ G_sdl_tick = 0
 blockengine.register_handler(engine_events.ENGINE_TICK, function(code) -- tick over all existing jumpers
     G_tick = G_tick + 1
     G_sdl_tick = sdl.get_ticks()
-    G_menu.objects.layer:tick(0) -- default tick - resets all values in a preparation for an actual pass
-    G_menu.objects.layer:tick(1)
+    G_view_menu.objects.layer:tick(0) -- default tick - resets all values in a preparation for an actual pass
+    G_view_menu.objects.layer:tick(1)
 end)
 
 blockengine.register_handler(sdl_events.SDL_QUIT, function(code) -- tick over all existing jumpers
     if G_level then
         level_editor.save_level(G_level)
-        print("Saved level ")
+        print("Saved level")
     end
 end)
 
+blockengine.register_handler(sdl_events.SDL_WINDOWEVENT, function(width, height)
+    if width == G_screen_width and height == G_screen_height then return end
+    if width == nil or height == nil then return end
+
+    print("updated window size to " .. width .. "x" .. height)
+
+    G_screen_width = width
+    G_screen_height = height
+
+    camera_utils.recalc_camera_limits()
+
+    G_view_menu = build_view(G_menu_definition, "engine", true)
+
+    set_render_rule_order(G_view_menu)
+end)
+
 wrappers.try(function()
-    set_render_rule_order(G_menu)
-    set_slices(G_menu)
+    set_render_rule_order(G_view_menu)
 end, function(e)
     wrappers.log_error(e)
     os.exit()
