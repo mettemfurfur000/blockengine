@@ -31,7 +31,7 @@ static void print_usage(const char *program_name)
 {
     printf("Usage: %s [OPTIONS]\n\n", program_name);
     printf("Options:\n");
-    printf("  -l, --log <output>        Log output: 'stdout' or filename (default: client.log)\n");
+    printf("  -l, --log <output>        Log output: 'stdout' or filename\n");
     printf("  -w, --width <pixels>      Screen width (default: %d)\n", SCREEN_WIDTH);
     printf("  -h, --height <pixels>     Screen height (default: %d)\n", SCREEN_HEIGHT);
     printf("  -f, --fps <rate>          Target FPS (default: %d)\n", FPS);
@@ -47,7 +47,7 @@ static void print_usage(const char *program_name)
 
 static ClientConfig parse_arguments(int argc, char *argv[])
 {
-    ClientConfig config = {.log_output = "client.log",
+    ClientConfig config = {.log_output = "default",
                            .screen_width = SCREEN_WIDTH,
                            .screen_height = SCREEN_HEIGHT,
                            .target_fps = FPS,
@@ -162,7 +162,10 @@ int main(int argc, char *argv[])
     SCREEN_WIDTH = config.screen_width;
     SCREEN_HEIGHT = config.screen_height;
 
-    log_start(config.log_output);
+    if (strcmp(config.log_output, "default") == 0)
+        log_start_new("client");
+    else
+        log_start(config.log_output);
 
     init_backtrace();
     init_signal_handlers();

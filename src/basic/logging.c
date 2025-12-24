@@ -10,6 +10,16 @@ FILE *log_file = NULL;
 
 const int log_level = LOG_LEVEL;
 
+void log_start_new(const char *fname)
+{
+    time_t now = time(NULL);
+    struct tm *loctime = localtime(&now);
+    char fname_timestamped[256];
+    snprintf(fname_timestamped, sizeof(fname_timestamped), "%s_%d_%d_%d-%d_%d_%d.log", fname, 1900 + loctime->tm_year,
+             1 + loctime->tm_mon, loctime->tm_mday, loctime->tm_hour, loctime->tm_min, loctime->tm_sec);
+    log_start(fname_timestamped);
+}
+
 void log_start(const char *fname)
 {
     if (strcmp(fname, "stdout") == 0)

@@ -90,6 +90,19 @@ static void log_to_error_file(const char *format, ...)
     fprintf(stderr, "\n");
 }
 
+void open_crash_file()
+{
+    error_log_file = fopen(ERROR_LOG_FILENAME, "a");
+    if (!error_log_file)
+    {
+        LOG_WARNING("Failed to open crash log file: %s", ERROR_LOG_FILENAME);
+    }
+    else
+    {
+        LOG_DEBUG("Crash log file opened: %s", ERROR_LOG_FILENAME);
+    }
+}
+
 /**
  * Signal handler for critical errors
  */
@@ -115,6 +128,8 @@ static void critical_signal_handler(int sig)
         //     sig_name = "SIGBUS (Bus Error)";
         //     break;
     }
+
+    open_crash_file();
 
     // Get current timestamp
     time_t now = time(NULL);
@@ -159,17 +174,6 @@ static void critical_signal_handler(int sig)
 
 void init_signal_handlers(void)
 {
-    // Open error log file
-    error_log_file = fopen(ERROR_LOG_FILENAME, "a");
-    if (!error_log_file)
-    {
-        LOG_WARNING("Failed to open crash log file: %s", ERROR_LOG_FILENAME);
-    }
-    else
-    {
-        LOG_DEBUG("Crash log file opened: %s", ERROR_LOG_FILENAME);
-    }
-
 #ifdef _WIN32
     // Windows: Use signal() for basic exception handling
     // Note: Windows signal handling is more limited than POSIX

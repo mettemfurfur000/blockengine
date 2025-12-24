@@ -1,0 +1,57 @@
+[ ] - implement layer shadows:
+    [ ] - in render rules structure, if layer is assumed to be for "walls" or "roof":
+        [ ] - ??
+
+[ ] - add native support for particles
+[ ] - make resolution changeable
+[ ] - make fullscreen possible
+
+
+
+[ ] - level editor categories
+[ ] - text writing
+[ ] - brush sizes
+[ ] - zooming in and out
+[ ] - force place mode
+[ ] - general wiki for the level editor
+[x] - autotiling support, 3x3, 
+    [ ] - 47 autotiling still in works
+[ ] - level and layer manager
+
+[ ] - multiplayer
+    [ ] - add procedural generation for levels so only seeds of rooms needed to be exchanged
+        [ ] - assign a generate function for rooms that only take the seed in
+    [ ] - load a main menu room, with single player, multiplayer, settings, exit choices
+        [ ] - ...
+    [ ] - client has to:
+        [ ] - establish an encrypted connection, with an optional password
+        [ ] - accept the registry of the server on connection, also get the hash of the zip archive
+        [ ] - unzip it into a server-dependant folder, save the hash for next connections
+        [ ] - hash is calculated from the zip file, thats faster than doing hash from every file
+        [ ] - if connected to the server, check if any of installed registry hashes matches any locally installed hashes, then use that registry instead of downloading a new one
+        [ ] - from here, call the full_connected callback in Lua
+            [ ] - woud require some exposed networking functions to send arbitrary data from client to server Lua interpreters
+            [ ] - ask the server what rooms current client should see, get seeds and room types
+            [ ] - generate those rooms based on seeds and types
+            [ ] - push to a client view, start rendering and accepting inputs
+            [ ] - send player buttons only and other events that the server should be aware of
+            [ ] - maybe process ui changes on client side immediately without waiting for server confirmation, but store the changes on astack
+            [ ] - that all is subject to Lua coding and might be changed to anything by the registry developer, can be a chat room, an RPG game, anytin
+    [ ] - server has to:
+        [ ] - accept encrypted connections
+        [ ] - only if configured:
+            [ ] - require to not be banned
+            [ ] - require to be in a whitelist
+            [ ] - require to not appear in a blacklist
+            [ ] - require to not be in a particular IP range, aka region banning
+            [ ] - require a password
+            [ ] - require a username (if not configured, anonymous connections are allowed)
+        [ ] - if accepted, proceed, ofc!
+        [ ] - zip the local registry if didnt, get the hash, send to the client
+        [ ] - if he has the registry, don send the zip
+        [ ] - call the new client callback for Lua when fully connected to the server
+            [ ] - lua scripts will handle everythin to spawn a new player entity or prepare data structures for it
+        [ ] - expose networking functions for lua:
+            [ ] - send to a particular client
+            [ ] - broadcast to all clients
+            [ ] - get a list of connected clients

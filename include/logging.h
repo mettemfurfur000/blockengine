@@ -63,6 +63,7 @@ extern "C"
 #define LOG_DEBUG(format, ...) log_msg(0, "")
 #endif
 
+    void log_start_new(const char *fname);
     void log_start(const char *fname);
     void log_end();
     void log_msg(unsigned char level, const char *format, ...);

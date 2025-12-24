@@ -29,10 +29,11 @@ const float lerp(float a, float b, float f)
     [3][4][5]
     [6][7][8]
 */
+
 static u8 autotile_table_type_1[] = {4, 4, 4, 0, 4, 4, 2, 1, 4, 6, 4, 3, 8, 7, 5, 4};
 static u8 autotile_table_type_2[] = {15, 12, 3, 0, 14, 13, 2, 1, 11, 8, 7, 4, 10, 9, 6, 5};
 
-u8 autotile_select_shared(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
+u8 autotile_select_shared_9(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
 {
     bool match_west = false;
     bool match_east = false;
@@ -53,6 +54,41 @@ u8 autotile_select_shared(const layer *l, const u8 select_table[], const u64 ref
     return select_table[(match_east & 1) | ((match_south & 1) << 1) | ((match_west & 1) << 2) |
                         ((match_north & 1) << 3)];
 }
+
+// Full 47 autotiling scheme
+/*
+    [00][01][02][03][04][05][06][07]
+    [08][09][10][11][12][13][14][15]
+    [16][17][18][19][20][21][22][23]
+*/
+
+// static u8 autotile_table_type_3[] = {
+//     4, 4, 4, 0, 4, 4, 2, 1, //
+//     4, 6, 4, 3, 8, 7, 5, 4, //
+//     4, 6, 4, 3, 8, 7, 5, 4, //
+// };
+
+// u8 autotile_select_shared_47(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
+//{
+//     bool match_w = false;
+//     bool match_e = false;
+//     bool match_n = false;
+//     bool match_s = false;
+
+//    if (x > 0 && x < l->width - 1 && y >= 0)
+//    {
+//        match_w = *BLOCK_ID_PTR(l, x - 1, y) == ref_id;
+//        match_e = *BLOCK_ID_PTR(l, x + 1, y) == ref_id;
+//    }
+//    if (y > 0 && y < l->height - 1 && x >= 0)
+//    {
+//        match_n = *BLOCK_ID_PTR(l, x, y - 1) == ref_id;
+//        match_s = *BLOCK_ID_PTR(l, x, y + 1) == ref_id;
+//    }
+
+//    return select_table[(match_e & 1) | ((match_s & 1) << 1) | ((match_w & 1) << 2) |
+//                        ((match_n & 1) << 3)];
+//}
 
 u8 render_layer(layer_slice slice)
 {
@@ -179,9 +215,11 @@ u8 render_layer(layer_slice slice)
             }
 
             if (br.autotile_type == 1)
-                frame = autotile_select_shared(l, autotile_table_type_1, id, i, j);
+                frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
             if (br.autotile_type == 2)
-                frame = autotile_select_shared(l, autotile_table_type_2, id, i, j);
+                frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
+            // if (br.autotile_type == 3)
+            //  frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
 
             if (br.frames_per_second > 1)
             {

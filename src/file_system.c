@@ -4,7 +4,7 @@
 #include "include/handle.h"
 #include "include/level.h"
 #include "include/logging.h"
-// #include "include/vars.h"
+#include "include/vars.h"
 
 /* compression-related stuff */
 
@@ -107,18 +107,17 @@ void blob_vars_write(blob b, stream_t *f)
 {
     WRITE(b.length, f);
 
-    stream_write(b.ptr, b.length, f);
+    // stream_write(b.ptr, b.length, f);
 
-    // VAR_FOREACH(b, {
-    //     putc(b.ptr[i], f);
-    //     u8 size = b.ptr[i + 1];
-    //     putc(size, f);
-    //     u8 *val = VAR_VALUE(b.ptr, i);
-    //     if (size % 2 == 0 && size <= 8 && size > 0)
-    //         endianless_write(val, size, f);
-    //     else
-    //         fwrite(val, 1, size, f);
-    // });
+    VAR_FOREACH(b, {
+        char letter = b.ptr[i];
+        u8 size = b.ptr[i + 1];
+        u8 *val = b.ptr + i + 2;
+
+        stream_write(&letter, 1, f);
+        stream_write(&size, 1, f);
+        stream_write(val, size, f);
+    });
 }
 
 blob blob_vars_read(stream_t *f)
@@ -129,18 +128,16 @@ blob blob_vars_read(stream_t *f)
 
     assert(b.ptr != NULL);
 
-    stream_read(b.ptr, b.length, f);
+    VAR_FOREACH(b, {
+        char letter;
+        u8 size;
 
-    // VAR_FOREACH(b, {
-    //     b.ptr[i] = getc(f);
-    //     u8 size = getc(f);
-    //     b.ptr[i + 1] = size;
-    //     u8 *val = VAR_VALUE(b.ptr, i);
-    //     if (size % 2 == 0 && size <= 8 && size > 0)
-    //         endianless_read(val, size, f);
-    //     else
-    //         fread(val, 1, size, f);
-    // });
+        stream_read(&letter, 1, f);
+        stream_read(&size, 1, f);
+        b.ptr[i] = (u8)letter;
+        b.ptr[i + 1] = size;
+        stream_read(b.ptr + i + 2, size, f);
+    });
 
     return b;
 }
