@@ -117,23 +117,21 @@ u8 var_add_from_string(blob *b, const u8 type, const char letter, const char *to
     return SUCCESS;
 }
 
-// format:
+/*
+format:
 
-// { <letter> <type> = <value>
-//   <letter> <type> = <value>
-//   ...
-//   <letter> <type> = <value> }
+{ <character> <type> = <value>
+  <character> <type> = <value>
+  ...
+  <character> <type> = <value> }
 
-// acceptable types: digit, long, int, short, byte, string
-//
-// strings ends with \n letter, rember
-//
-// if type donesnt match, value will be copied as strings
-//
-// digits will be stripped for saving space, keep it in mind
-//
-// other numerical types will save their length in bytes, even if you pass it
-// with value of 0
+one-liners work better
+
+acceptable types: u8, u16, u32, u64
+    i8 and such also supported
+    str for strings
+
+*/
 
 u8 vars_parse(const char *str_to_cpy, blob *b)
 {

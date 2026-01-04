@@ -66,7 +66,7 @@ static void var_table_free_handle(var_handle_table *pool, handle32 h)
     handle_table_release(pool->table, h);
 }
 
-u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
+u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
 {
     assert(l != NULL);
     if (x >= l->width || y >= l->height)
@@ -96,7 +96,7 @@ u8 block_set_id(layer *l, u32 x, u32 y, u64 id)
     return SUCCESS;
 }
 
-u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
+u8 block_get_id(layer *l, u16 x, u16 y, u64 *id)
 {
     assert(l);
     assert(id);
@@ -128,7 +128,7 @@ u8 block_get_id(layer *l, u32 x, u32 y, u64 *id)
     return SUCCESS;
 }
 
-u32 block_get_vars_index(layer *l, u32 x, u32 y)
+u32 block_get_vars_index(layer *l, u16 x, u16 y)
 {
     assert(l);
 
@@ -139,12 +139,12 @@ u32 block_get_vars_index(layer *l, u32 x, u32 y)
         return 0;
 
     u32 var_index = 0;
-    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+    memcpy((u8 *)&var_index, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
 
     return var_index;
 }
 
-void block_var_index_set(layer *l, u32 x, u32 y, u32 index)
+void block_var_index_set(layer *l, u16 x, u16 y, u32 index)
 {
     assert(l);
     assert(l->blocks);
@@ -155,10 +155,10 @@ void block_var_index_set(layer *l, u32 x, u32 y, u32 index)
     if (l->var_pool.table == NULL)
         return;
 
-    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&index, l->var_index_size);
+    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&index, sizeof(handle32));
 }
 
-u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out)
+u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out)
 {
     assert(l);
     assert(vars_out);
@@ -169,7 +169,7 @@ u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out)
         return FAIL;
 
     u64 packed = 0;
-    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
 
     if (packed == 0)
         return FAIL;
@@ -188,7 +188,7 @@ u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out)
     return SUCCESS;
 }
 
-u8 block_delete_vars(layer *l, u32 x, u32 y)
+u8 block_delete_vars(layer *l, u16 x, u16 y)
 {
     assert(l);
     if (x >= l->width || y >= l->height)
@@ -198,7 +198,7 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
         return SUCCESS; // nothing to delete
 
     u64 packed = 0;
-    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
 
     if (packed != 0)
     {
@@ -207,18 +207,18 @@ u8 block_delete_vars(layer *l, u32 x, u32 y)
     }
 
     // Clear the var index in the block
-    memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, l->var_index_size);
+    memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, sizeof(handle32));
 
     return SUCCESS;
 }
 
-u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
+u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
 {
     assert(l);
     if (x >= l->width || y >= l->height)
         return FAIL;
 
-    // if (l->var_index_size == 0)
+    // if (sizeof(handle32) == 0)
     if (l->var_pool.table == NULL)
         return SUCCESS;
 
@@ -235,7 +235,7 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
 
     /* Check existing handle */
     u64 packed = 0;
-    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, l->var_index_size);
+    memcpy((u8 *)&packed, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
 
     if (packed != 0)
     {
@@ -260,12 +260,12 @@ u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars)
     }
 
     u64 store = u64_from_var_handle(newh);
-    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&store, l->var_index_size);
+    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&store, sizeof(handle32));
 
     return SUCCESS;
 }
 
-u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
+u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy)
 {
     assert(l);
 
@@ -284,8 +284,8 @@ u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy)
     if (id_dest != 0)
         return FAIL;
 
-    memcpy(dest_ptr, src_ptr, l->block_size + l->var_index_size);
-    memset(src_ptr, 0, l->block_size + l->var_index_size);
+    memcpy(dest_ptr, src_ptr, l->block_size + sizeof(handle32));
+    memset(src_ptr, 0, l->block_size + sizeof(handle32));
 
     return SUCCESS;
 }
@@ -302,18 +302,18 @@ u8 init_layer(layer *l, room *parent_room)
 
     if (l->width == 0 || l->height == 0)
         return FAIL;
-    if ((l->block_size + l->var_index_size) == 0)
+    if ((l->block_size + sizeof(handle32)) == 0)
         return FAIL;
-    l->total_bytes_per_block = l->block_size + l->var_index_size;
+    l->total_bytes_per_block = l->block_size + sizeof(handle32);
 
-    l->blocks = calloc(l->width * l->height, l->block_size + l->var_index_size);
+    l->blocks = calloc(l->width * l->height, l->block_size + sizeof(handle32));
 
     if (l->blocks == NULL)
     {
         LOG_ERROR("Failed to allocate memory for blocks");
         return FAIL;
     }
-    // l->blocks = calloc(l->width * l->width, l->block_size + l->var_index_size);
+    // l->blocks = calloc(l->width * l->width, l->block_size + sizeof(handle32));
 
     if (FLAG_GET(l->flags, LAYER_FLAG_USE_VARS))
     {
@@ -470,8 +470,7 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
 
     l->registry = registry_ref;
     l->block_size = bytes_per_block;
-    l->var_index_size = sizeof(handle32);
-    l->total_bytes_per_block = bytes_per_block + l->var_index_size;
+    l->total_bytes_per_block = bytes_per_block + sizeof(handle32);
     l->width = parent->width;
     l->height = parent->height;
     l->flags = flags;

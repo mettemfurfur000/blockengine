@@ -957,9 +957,9 @@ static int lua_layer_get_size(lua_State *L)
     lua_pushinteger(L, wrapper->l->width);
     lua_pushinteger(L, wrapper->l->height);
     lua_pushinteger(L, wrapper->l->block_size);
-    lua_pushinteger(L, wrapper->l->var_index_size);
+    // lua_pushinteger(L, wrapper->sizeof(handle32));
 
-    return 4;
+    return 3;
 }
 
 static int lua_layer_set_static(lua_State *L)

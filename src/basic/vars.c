@@ -3,15 +3,34 @@
 
 #include <stdlib.h>
 
+/*
+    Vars are dynamic structures that can hold any arbitrary key-value pairs, but key can only
+    be a single character, size of variables is a single byte, and payload can be anything
+
+    When a value is 2, 4 or 8 bytes long, it will be serialized with endianless functions to work across different
+    endian machines (theoretically, may not work at all...)
+
+    Values of any other lengths are not affected. If a string is 4 bytes long, i think its still fine if its
+   endianlessly shifted and reconstructed back on saves-loads.
+
+    Vars could theoretically hold handle32 values that point to other vars, creating tree-like structures, but i havent
+   tested that yet and it may not work across networks because not everything can be perfectly syncronized across
+   clients. Or maybe it can, we will see!
+
+    TODO: verify that Vars are perfectly syncronized between clients and servers, excluding the clientside overlay
+   layers
+
+*/
+
+/* Iterate entries safely. Each entry is laid out as:
+ * [letter (1)] [size (1)] [value (size)]
+ * Ensure we never read past b.size and detect malformed entries.
+ */
 i32 vars_pos(const blob b, const char letter)
 {
     if (b.size == 0 || b.ptr == 0)
         return FAIL;
 
-    /* Iterate entries safely. Each entry is laid out as:
-     * [letter (1)] [size (1)] [value (size)]
-     * Ensure we never read past b.size and detect malformed entries.
-     */
     u32 i = 0;
     while (i + 1 < b.size)
     {

@@ -7,6 +7,8 @@
 #include "handle.h"
 #include "hashtable.h"
 
+#include "update_system.h"
+
 #define LAYER_FLAG_USE_VARS 0b00000001
 #define LAYER_FLAG_HAS_REGISTRY 0b00000010
 #define LAYER_FLAG_STATIC 0b00000100
@@ -28,12 +30,10 @@ typedef struct layer
     block_registry *registry;
     u8 *blocks; // array of blocks, each of size bytes_per_block
 
-    u32 width;         //
-    u32 height;        //
+    u16 width;         //
+    u16 height;        //
     u8 block_size;     // bytes per block id
-    u8 var_index_size; // bytes per var index
-    // since we now use 32 bit handles it will be 4 bytes
-    u8 total_bytes_per_block; // sum of block_size and var_index_size
+    u8 total_bytes_per_block; // block_size + 4 (handle32)
 
     u8 flags; //
 } layer;
@@ -46,8 +46,8 @@ typedef struct room
     char *name;
     level *parent_level;
 
-    u32 width;
-    u32 height;
+    u16 width;
+    u16 height;
 
     vec_void_t layers;
     // physics_world_t physics_world; /* each room gets its own physics world */
@@ -68,17 +68,17 @@ typedef struct level
 #define BLOCK_ID_PTR(l, x, y) (l->blocks + (((y) * l->width) + (x)) * l->total_bytes_per_block)
 #define MERGE32_TO_64(a, b) (((u64)a << 32) | (u64)b)
 
-u8 block_set_id(layer *l, u32 x, u32 y, u64 id);
-u8 block_get_id(layer *l, u32 x, u32 y, u64 *id);
-u8 block_move(layer *l, u32 x, u32 y, u32 dx, u32 dy);
+u8 block_set_id(layer *l, u16 x, u16 y, u64 id);
+u8 block_get_id(layer *l, u16 x, u16 y, u64 *id);
+u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy);
 
-u8 block_get_vars(const layer *l, u32 x, u32 y, blob **vars_out);
+u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out);
 
-u32 block_get_vars_index(layer *l, u32 x, u32 y);
-void block_var_index_set(layer *l, u32 x, u32 y, u32 index);
+u32 block_get_vars_index(layer *l, u16 x, u16 y);
+void block_var_index_set(layer *l, u16 x, u16 y, u32 index);
 
-u8 block_delete_vars(layer *l, u32 x, u32 y);
-u8 block_copy_vars(layer *l, u32 x, u32 y, blob vars);
+u8 block_delete_vars(layer *l, u16 x, u16 y);
+u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars);
 
 // u8 layer_clean_vars(layer *l);
 

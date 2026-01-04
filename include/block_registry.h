@@ -74,22 +74,6 @@ typedef struct block_registry
 
 typedef vec_t(block_registry) vec_registries_t;
 
-/*
-format:
-
-{ <character> <type> = <value>
-  <character> <type> = <value>
-  ...
-  <character> <type> = <value> }
-
-one-liners work better
-
-acceptable types: u8, u16, u32, u64
-    i8 and such also supported
-    str for strings
-
-*/
-
 #define NOT_REQUIRED 0
 #define REQUIRED 1
 

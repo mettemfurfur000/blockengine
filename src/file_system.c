@@ -189,7 +189,6 @@ void read_hashtable(hash_node **t, stream_t *f)
 void write_layer(layer *l, stream_t *f)
 {
     WRITE(l->block_size, f);
-    WRITE(l->var_index_size, f);
     WRITE(l->flags, f);
     WRITE(l->width, f);
     WRITE(l->height, f);
@@ -212,7 +211,7 @@ void write_layer(layer *l, stream_t *f)
             }
             stream_write(&id, l->block_size, f);
             index = block_get_vars_index(l, x, y);
-            stream_write(&index, l->var_index_size, f);
+            stream_write(&index, sizeof(handle32), f);
         }
 
     /* Serialize handle table: write capacity (slot count) and for each slot write
@@ -254,9 +253,8 @@ void write_layer(layer *l, stream_t *f)
 void read_layer(layer *l, room *parent, stream_t *f)
 {
     READ(l->block_size, f);
-    READ(l->var_index_size, f);
 
-    l->total_bytes_per_block = l->block_size + l->var_index_size;
+    l->total_bytes_per_block = l->block_size + sizeof(handle32);
 
     READ(l->flags, f);
     READ(l->width, f);
@@ -295,7 +293,7 @@ void read_layer(layer *l, room *parent, stream_t *f)
                 block_set_id(l, x, y, 0);
             }
 
-            stream_read((u8 *)&index, l->var_index_size, f); // read var index
+            stream_read((u8 *)&index, sizeof(handle32), f); // read var index
             block_var_index_set(l, x, y, index);
         }
 
