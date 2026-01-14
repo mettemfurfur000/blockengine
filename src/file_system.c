@@ -105,6 +105,8 @@ void read_hashtable(hash_node **t, stream_t *f)
         blob key = blob_read(f);
         blob value = blob_read(f);
 
+        LOG_DEBUG("Read table entry: \'%s\' - \'%s\'", key.str, value.str);
+
         put_entry(t, key, value); // i could just put it in place but im not
                                   // sure about the order of them being called
     }

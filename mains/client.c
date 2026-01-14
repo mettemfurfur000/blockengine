@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    LUA_SET_GLOBAL_USER_OBJECT("g_block_registry", BlockRegistry, reg);
+    LUA_SET_GLOBAL_USER_OBJECT("G_block_registry", BlockRegistry, reg);
 
     u32 latest_logic_tick = SDL_GetTicks();
     

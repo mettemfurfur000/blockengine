@@ -1,5 +1,3 @@
-local constants = require("registries.engine.scripts.constants")
-
 local current_block = scripting_current_block_id
 
 local ticks = 0

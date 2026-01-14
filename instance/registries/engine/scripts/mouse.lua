@@ -2,8 +2,6 @@ local block_utils = require("registries.engine.scripts.block_utils")
 
 local current_block = scripting_current_block_id
 
-local M = {}
-
 G_mouse = {
     pos = {
         x = -1,

@@ -4,10 +4,12 @@ local wrappers = require("registries.engine.scripts.wrappers")
 local level_editor = require("registries.engine.scripts.definitions.level_editor")
 local camera_utils = require("registries.engine.scripts.camera_utils")
 
-require("registries.engine.scripts.constants")
+G_block_size = 16
+G_global_zoom = 2
+G_block_width_pixels = G_block_size * G_global_zoom
 
 --- loads and registers layer editor functions
-require("registries.engine.scripts.layer_editor")
+local _ = require("registries.engine.scripts.layer_editor")
 
 if render_rules == nil then
     wrappers.log_error("render_rules module not found")
@@ -16,8 +18,8 @@ end
 
 G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
 
-G_width_blocks = math.floor(2 * G_screen_width / (g_block_size * global_zoom))
-G_height_blocks = math.floor(2 * G_screen_height / (g_block_size * global_zoom))
+G_width_blocks = math.floor(2 * G_screen_width / (G_block_size * G_global_zoom))
+G_height_blocks = math.floor(2 * G_screen_height / (G_block_size * G_global_zoom))
 
 -- constructs a layer slice that dictates how the layer is rendered
 local function layer_slice(x, y, w, h, z, lay_ref)
@@ -41,7 +43,7 @@ local function layer_slice(x, y, w, h, z, lay_ref)
 end
 
 local function make_basic_slice(lay_ref)
-    return layer_slice(0, 0, G_screen_width, G_screen_height, global_zoom, lay_ref)
+    return layer_slice(0, 0, G_screen_width, G_screen_height, G_global_zoom, lay_ref)
 end
 
 G_layers_amount = 0
@@ -135,7 +137,7 @@ local function create_menu()
         os.exit()
     end
 
-    G_level:add_existing(g_block_registry) -- add the existing engine registry to the level
+    -- G_level:add_existing(G_block_registry) -- add the existing engine registry to the level
 
     G_menu_room = wrappers.safe_room_create(G_level, "menu", G_width_blocks, G_height_blocks)
 end
@@ -153,13 +155,25 @@ local function init_menu()
 
     local loaded = G_level ~= nil
 
+    print("menu level loaded: " .. tostring(loaded))
+
     if loaded then                              -- level was loaded, all the rooms are here, all the layers are here as well
-        G_engine = G_level:get_registries()[1]
+        -- G_engine = G_level:get_registries()[1]
         G_menu_room = G_level:find_room("menu") -- menu should be here
         assert(G_menu_room)
     else
         create_menu() -- only creates the room, no layers yert
-        G_engine = G_level:get_registries()[1]
+        -- G_engine = G_level:get_registries()[1]
+    end
+
+    G_engine = G_block_registry
+
+    G_level:add_existing(G_block_registry) -- add the existing engine registry to the level
+
+    -- safety check
+    if G_level:get_registries()[1] == nil then
+        print("engine registry not found in menu level")
+        os.exit()
     end
 
     -- if the room was just created, build_view will allocate layers for said menu definition
@@ -215,6 +229,10 @@ blockengine.register_handler(engine_events.ENGINE_INIT_GLOBALS, function()
 
     -- utils
     G_engine_table = G_engine:to_table()
+
+    -- dump some info
+    wrappers.print_table(G_engine_table)
+
     G_total_blocks = wrappers.tablelength(G_engine_table)
     G_character_id = wrappers.find_block(G_engine_table, "character").id
 

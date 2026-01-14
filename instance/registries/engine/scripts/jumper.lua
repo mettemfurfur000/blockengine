@@ -42,8 +42,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                         print("failed to advance even though it should be fine at " .. next_pos.x .. ":" .. next_pos.y)
                     end
 
-                    vars:set_i16("x", -delta.x * g_block_width_pixels)
-                    vars:set_i16("y", -delta.y * g_block_width_pixels)
+                    vars:set_i16("x", -delta.x * G_block_width_pixels)
+                    vars:set_i16("y", -delta.y * G_block_width_pixels)
 
                     vars:set_u32("t", G_sdl_tick)
 

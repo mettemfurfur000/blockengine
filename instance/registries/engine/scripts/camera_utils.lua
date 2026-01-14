@@ -1,5 +1,3 @@
-require("registries.engine.scripts.constants")
-
 local sdl = require("registries.engine.scripts.definitions.sdl")
 
 if g_render_rules == nil then
@@ -14,13 +12,11 @@ local camera_limit_x, camera_limit_y = G_screen_width, G_screen_height
 local zoom_min = 1
 local zoom_max = 4
 
-local cur_zoom = global_zoom
-
 local M = {}
 
 function M.recalc_camera_limits()
     G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
-    camera_limit_x, camera_limit_y = G_screen_width / cur_zoom, G_screen_height / cur_zoom
+    camera_limit_x, camera_limit_y = G_screen_width / G_global_zoom, G_screen_height / G_global_zoom
 end
 
 G_camera_current_pos = {
@@ -37,7 +33,7 @@ function M.set_target(pos)
 
             assert(slice)
 
-            local actual_block_width = cur_zoom * g_block_size
+            local actual_block_width = G_global_zoom * G_block_size
 
             -- print(camera_current_pos.x .. " : ".. camera_current_pos.y)
             -- print_table(slice)
@@ -72,13 +68,13 @@ function M.set_target(pos)
 end
 
 function M.camera_set_zoom(change_zoom)
-    cur_zoom = math.max(zoom_min, math.min(zoom_max, cur_zoom + change_zoom))
+    G_global_zoom = math.max(zoom_min, math.min(zoom_max, G_global_zoom + change_zoom))
 
     for k, v in pairs(G_view_menu) do
         if v.is_ui == false then
             local slice = v.slice
 
-            slice.zoom = cur_zoom
+            slice.zoom = G_global_zoom
 
             render_rules.set_slice(g_render_rules, v.index, slice)
         end

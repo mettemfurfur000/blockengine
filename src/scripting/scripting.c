@@ -7,9 +7,226 @@
 #include "include/logging.h"
 #include "include/scripting_bindings.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
 lua_State *g_L = 0;
 
 vec_int_t handlers[128] = {};
+
+/* module container magic */
+#define MOD_CONTAINER_MAGIC "MODL"
+
+typedef struct module_blob_t
+{
+    char *name;
+    unsigned char *data;
+    u32 size;
+} module_blob_t;
+
+static int module_list_find(module_blob_t *list, u32 count, const char *name)
+{
+    for (u32 i = 0; i < count; i++)
+        if (strcmp(list[i].name, name) == 0)
+            return (int)i;
+    return -1;
+}
+
+/* append u32 little-endian to buffer (grow via realloc) */
+static int append_u32(unsigned char **buf, size_t *cap, size_t *len, u32 v)
+{
+    if (*len + 4 > *cap)
+    {
+        *cap = (*len + 4) * 2;
+        unsigned char *nb = realloc(*buf, *cap);
+        if (!nb)
+            return -1;
+        *buf = nb;
+    }
+    (*buf)[(*len) + 0] = (unsigned char)(v & 0xFF);
+    (*buf)[(*len) + 1] = (unsigned char)((v >> 8) & 0xFF);
+    (*buf)[(*len) + 2] = (unsigned char)((v >> 16) & 0xFF);
+    (*buf)[(*len) + 3] = (unsigned char)((v >> 24) & 0xFF);
+    *len += 4;
+    return 0;
+}
+
+static int append_bytes(unsigned char **buf, size_t *cap, size_t *len, const void *data, size_t data_len)
+{
+    if (*len + data_len > *cap)
+    {
+        *cap = (*len + data_len) * 2;
+        unsigned char *nb = realloc(*buf, *cap);
+        if (!nb)
+            return -1;
+        *buf = nb;
+    }
+    memcpy(*buf + *len, data, data_len);
+    *len += data_len;
+    return 0;
+}
+
+/* writer state for lua_dump (defined early so collectors can use it) */
+struct dump_state
+{
+    unsigned char *buf;
+    size_t size;
+};
+
+static int lua_dump_writer(lua_State *L, const void *p, size_t sz, void *ud)
+{
+    struct dump_state *st = (struct dump_state *)ud;
+    unsigned char *newbuf = realloc(st->buf, st->size + sz);
+    if (!newbuf)
+        return 1; // memory error
+    st->buf = newbuf;
+    memcpy(st->buf + st->size, p, sz);
+    st->size += sz;
+    return 0;
+}
+
+static char *read_entire_file(const char *filename, size_t *out_size)
+{
+    FILE *f = fopen(filename, "rb");
+    if (!f)
+        return NULL;
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (sz < 0)
+    {
+        fclose(f);
+        return NULL;
+    }
+    char *buf = malloc((size_t)sz + 1);
+    if (!buf)
+    {
+        fclose(f);
+        return NULL;
+    }
+    size_t read = fread(buf, 1, (size_t)sz, f);
+    fclose(f);
+    buf[read] = '\0';
+    if (out_size)
+        *out_size = read;
+    return buf;
+}
+
+static int collect_module_recursive(const char *modname, module_blob_t **out_list, u32 *out_count);
+
+static void scan_and_collect_requires(const char *source, module_blob_t **out_list, u32 *out_count)
+{
+    const char *p = source;
+    while (*p)
+    {
+        const char *req = strstr(p, "require");
+        if (!req)
+            break;
+        const char *q = req + strlen("require");
+        while (*q && isspace((unsigned char)*q))
+            q++;
+        if (*q != '(')
+        {
+            p = q;
+            continue;
+        }
+        q++;
+        while (*q && isspace((unsigned char)*q))
+            q++;
+        if (*q != '"' && *q != '\'')
+        {
+            p = q;
+            continue;
+        }
+        char quote = *q++;
+        const char *start = q;
+        const char *end = strchr(start, quote);
+        if (!end)
+        {
+            p = q;
+            continue;
+        }
+        size_t modlen = end - start;
+        char *modname = malloc(modlen + 1);
+        strncpy(modname, start, modlen);
+        modname[modlen] = '\0';
+
+        collect_module_recursive(modname, out_list, out_count);
+
+        free(modname);
+
+        p = end + 1;
+    }
+}
+
+static int collect_module_recursive(const char *modname, module_blob_t **out_list, u32 *out_count)
+{
+    if (module_list_find(*out_list, *out_count, modname) != -1)
+        return 0; /* already collected */
+
+    /* build path */
+    char modpath[MAX_PATH_LENGTH] = {};
+    size_t modlen = strlen(modname);
+    size_t i;
+    for (i = 0; i < modlen && i + 6 < MAX_PATH_LENGTH; i++)
+        modpath[i] = (modname[i] == '.') ? '/' : modname[i];
+    modpath[i] = '\0';
+    strncat(modpath, ".lua", MAX_PATH_LENGTH - strlen(modpath) - 1);
+
+    size_t src_size = 0;
+    char *src = read_entire_file(modpath, &src_size);
+    if (!src)
+    {
+        LOG_WARNING("Could not read module %s at path %s", modname, modpath);
+        return -1;
+    }
+
+    /* scan nested requires first */
+    scan_and_collect_requires(src, out_list, out_count);
+
+    /* compile module source to bytecode */
+    int status = luaL_loadbuffer(g_L, src, strlen(src), modname);
+    if (status != LUA_OK)
+    {
+        LOG_WARNING("Could not compile module %s: %s", modname, lua_tostring(g_L, -1));
+        lua_pop(g_L, 1);
+        free(src);
+        return -1;
+    }
+
+    struct dump_state st = {malloc(BUFFER_SIZE), 0};
+    if (lua_dump(g_L, lua_dump_writer, &st, 0) != 0)
+    {
+        free(st.buf);
+        lua_pop(g_L, 1);
+        free(src);
+        return -1;
+    }
+    lua_pop(g_L, 1);
+
+    /* append to list */
+    module_blob_t *nl = realloc(*out_list, sizeof(module_blob_t) * (*out_count + 1));
+    if (!nl)
+    {
+        free(st.buf);
+        free(src);
+        return -1;
+    }
+    *out_list = nl;
+    (*out_list)[*out_count].name = strdup(modname);
+    (*out_list)[*out_count].data = st.buf;
+    (*out_list)[*out_count].size = (u32)st.size;
+    (*out_count)++;
+
+    free(src);
+    return 0;
+}
+
+/* forward declarations used by preprocess helpers */
+struct dump_state;
+static int lua_dump_writer(lua_State *L, const void *p, size_t sz, void *ud);
 
 static int lua_register_handler(lua_State *L)
 {
@@ -20,7 +237,6 @@ static int lua_register_handler(lua_State *L)
     scripting_register_event_handler(ref, event_id);
     return 0;
 }
-
 void scripting_register(lua_State *L)
 {
     const static luaL_Reg blockengine_lib[] = {
@@ -538,24 +754,7 @@ void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *n
     LOG_DEBUG("Pushed enum %s", name);
 }
 
-/* writer state for lua_dump */
-struct dump_state
-{
-    unsigned char *buf;
-    size_t size;
-};
-
-static int lua_dump_writer(lua_State *L, const void *p, size_t sz, void *ud)
-{
-    struct dump_state *st = (struct dump_state *)ud;
-    unsigned char *newbuf = realloc(st->buf, st->size + sz);
-    if (!newbuf)
-        return 1; // memory error
-    st->buf = newbuf;
-    memcpy(st->buf + st->size, p, sz);
-    st->size += sz;
-    return 0;
-}
+    
 
 int scripting_compile_file_to_bytecode(const char *reg_name, const char *short_filename, unsigned char **out_buf,
                                        u32 *out_size)
@@ -564,22 +763,79 @@ int scripting_compile_file_to_bytecode(const char *reg_name, const char *short_f
     snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
              reg_name, short_filename);
 
-    int status = luaL_loadfile(g_L, filename);
+    /* read source and collect required modules (compile them into blobs) */
+    size_t src_size = 0;
+    char *src = read_entire_file(filename, &src_size);
+    if (!src)
+    {
+        fprintf(stderr, "Failed to read lua source %s\n", filename);
+        return FAIL;
+    }
+
+    module_blob_t *modules = NULL;
+    u32 module_count = 0;
+    scan_and_collect_requires(src, &modules, &module_count);
+
+    /* compile main script */
+    int status = luaL_loadbuffer(g_L, src, strlen(src), short_filename);
+    free(src);
     if (status != LUA_OK)
     {
         fprintf(stderr, "Lua compile error in %s : %s\n", filename, lua_tostring(g_L, -1));
+        lua_pop(g_L, 1);
+        /* free collected modules */
+        for (u32 i = 0; i < module_count; i++)
+        {
+            free(modules[i].name);
+            free(modules[i].data);
+        }
+        free(modules);
         return FAIL;
     }
 
-    struct dump_state st = {malloc(BUFFER_SIZE), 0};
-    if (lua_dump(g_L, lua_dump_writer, &st, 0) != 0)
+    struct dump_state st_main = {malloc(BUFFER_SIZE), 0};
+    if (lua_dump(g_L, lua_dump_writer, &st_main, 0) != 0)
     {
-        free(st.buf);
+        free(st_main.buf);
+        for (u32 i = 0; i < module_count; i++)
+        {
+            free(modules[i].name);
+            free(modules[i].data);
+        }
+        free(modules);
         return FAIL;
     }
+    lua_pop(g_L, 1);
 
-    *out_buf = st.buf; /* ownership transferred to caller */
-    *out_size = (u32)st.size;
+    /* build container buffer: magic, module_count, [name_len,name,data_len,data]..., main_len, main_data */
+    unsigned char *buf = malloc(1024);
+    size_t cap = 1024;
+    size_t len = 0;
+    /* magic */
+    append_bytes(&buf, &cap, &len, MOD_CONTAINER_MAGIC, 4);
+    append_u32(&buf, &cap, &len, module_count);
+    for (u32 i = 0; i < module_count; i++)
+    {
+        u32 name_len = (u32)strlen(modules[i].name);
+        append_u32(&buf, &cap, &len, name_len);
+        append_bytes(&buf, &cap, &len, modules[i].name, name_len);
+        append_u32(&buf, &cap, &len, modules[i].size);
+        append_bytes(&buf, &cap, &len, modules[i].data, modules[i].size);
+    }
+    append_u32(&buf, &cap, &len, (u32)st_main.size);
+    append_bytes(&buf, &cap, &len, st_main.buf, st_main.size);
+
+    /* cleanup module list and main dump buffer ownership transferred to container */
+    free(st_main.buf);
+    for (u32 i = 0; i < module_count; i++)
+    {
+        free(modules[i].name);
+        free(modules[i].data);
+    }
+    free(modules);
+
+    *out_buf = buf;
+    *out_size = (u32)len;
     return SUCCESS;
 }
 
@@ -592,6 +848,81 @@ int scripting_load_compiled_blob(const char *reg_name, const char *short_filenam
 
     LOG_DEBUG("Loading compiled lua blob for registry %s, script %s, size %u bytes", reg_name, short_filename, size);
 
+    /* detect our MODL container format */
+    if (size >= 4 && memcmp(data, MOD_CONTAINER_MAGIC, 4) == 0)
+    {
+        size_t pos = 4;
+        if (pos + 4 > size)
+        {
+            LOG_ERROR("Malformed module container for %s", short_filename);
+            return FAIL;
+        }
+        u32 module_count = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+        pos += 4;
+
+        for (u32 i = 0; i < module_count; i++)
+        {
+            if (pos + 4 > size) { LOG_ERROR("Malformed module container"); return FAIL; }
+            u32 name_len = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+            pos += 4;
+            if (pos + name_len > size) { LOG_ERROR("Malformed module container"); return FAIL; }
+            char *name = malloc(name_len + 1);
+            memcpy(name, data + pos, name_len);
+            name[name_len] = '\0';
+            pos += name_len;
+
+            if (pos + 4 > size) { free(name); LOG_ERROR("Malformed module container"); return FAIL; }
+            u32 mod_size = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+            pos += 4;
+            if (pos + mod_size > size) { free(name); LOG_ERROR("Malformed module container"); return FAIL; }
+
+            const unsigned char *mod_data = data + pos;
+            pos += mod_size;
+
+            /* load module chunk and register into package.preload[name] */
+            int status = luaL_loadbuffer(g_L, (const char *)mod_data, (size_t)mod_size, name);
+            if (status != LUA_OK)
+            {
+                LOG_ERROR("Lua loadbuffer error for preload %s: %s", name, lua_tostring(g_L, -1));
+                lua_pop(g_L, 1);
+                free(name);
+                return FAIL;
+            }
+
+            /* stack: function */
+            lua_getglobal(g_L, "package"); /* function, package */
+            lua_getfield(g_L, -1, "preload"); /* function, package, preload */
+            lua_pushvalue(g_L, -3); /* copy function */
+            lua_setfield(g_L, -2, name); /* preload[name] = function */
+            lua_pop(g_L, 3); /* pop preload, package, original function */
+
+            free(name);
+        }
+
+        /* now remaining bytes are main script */
+        if (pos + 4 > size) { LOG_ERROR("Malformed module container end"); return FAIL; }
+        u32 main_size = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+        pos += 4;
+        if (pos + main_size > size) { LOG_ERROR("Malformed module container main"); return FAIL; }
+
+        int status = luaL_loadbuffer(g_L, (const char *)(data + pos), (size_t)main_size, short_filename ? short_filename : "<embedded>");
+        if (status != LUA_OK)
+        {
+            LOG_ERROR("Lua loadbuffer error for %s: %s", short_filename ? short_filename : "<embedded>", lua_tostring(g_L, -1));
+            lua_pop(g_L, 1);
+            return FAIL;
+        }
+        if (lua_pcall(g_L, 0, 0, 0) != LUA_OK)
+        {
+            LOG_ERROR("Lua pcall error for %s: %s", short_filename ? short_filename : "<embedded>", lua_tostring(g_L, -1));
+            lua_pop(g_L, 1);
+            return FAIL;
+        }
+
+        return SUCCESS;
+    }
+
+    /* legacy: single blob */
     int status = luaL_loadbuffer(g_L, (const char *)data, (size_t)size, short_filename ? short_filename : "<embedded>");
     if (status != LUA_OK)
     {

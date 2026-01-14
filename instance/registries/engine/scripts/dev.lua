@@ -94,12 +94,12 @@ function(layer, x, y, value)
                 print("failed to move dev to " .. next_pos.x .. ":" .. next_pos.y)
             end
 
-            vars:set_i16("x", -delta.x * g_block_width_pixels)
-            vars:set_i16("y", -delta.y * g_block_width_pixels)
+            vars:set_i16("x", -delta.x * G_block_width_pixels)
+            vars:set_i16("y", -delta.y * G_block_width_pixels)
 
             vars:set_u32("T", G_sdl_tick)
 
-            camera_utils.set_target(vec.mult(next_pos, g_block_width_pixels))
+            camera_utils.set_target(vec.mult(next_pos, G_block_width_pixels))
 
             vars:set_u8("f", 0) -- moved
         end

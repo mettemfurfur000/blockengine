@@ -1,5 +1,3 @@
-require("registries.engine.scripts.constants")
-
 local current_block = scripting_current_block_id
 
 ---@param layer Layer

@@ -117,11 +117,15 @@ function M.find_block(reg_table, filename)
     for k, v in pairs(reg_table) do
         if v.all_fields ~= nil then
             local file_src = v.all_fields.source_filename
+            if file_src == nil then
+                goto continue
+            end
             local match = string.gmatch(file_src, "/(%w+).blk$")()
             if match == filename then
                 return v
             end
         end
+        ::continue::
     end
 end
 
