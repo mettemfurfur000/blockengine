@@ -151,24 +151,21 @@ G_menu_definition = {
 }
 
 local function init_menu()
-    G_level = level_editor.load_level("main_menu")
+    G_level = level_editor.load_level("main_menu", G_block_registry)
 
     local loaded = G_level ~= nil
 
-    print("menu level loaded: " .. tostring(loaded))
-
     if loaded then                              -- level was loaded, all the rooms are here, all the layers are here as well
-        -- G_engine = G_level:get_registries()[1]
         G_menu_room = G_level:find_room("menu") -- menu should be here
         assert(G_menu_room)
+        print("loaded existing menu level")
     else
         create_menu() -- only creates the room, no layers yert
-        -- G_engine = G_level:get_registries()[1]
+        G_level:add_existing(G_block_registry) -- add the existing engine registry to the level
+        print("created new menu level")
     end
 
-    G_engine = G_block_registry
-
-    G_level:add_existing(G_block_registry) -- add the existing engine registry to the level
+    G_engine = G_block_registry -- might not work if used multiple registries
 
     -- safety check
     if G_level:get_registries()[1] == nil then
@@ -179,7 +176,6 @@ local function init_menu()
     -- if the room was just created, build_view will allocate layers for said menu definition
     G_view_menu = build_view(G_menu_definition, "engine", loaded)
 end
-
 
 G_tick = 0
 G_sdl_tick = 0
@@ -229,9 +225,6 @@ blockengine.register_handler(engine_events.ENGINE_INIT_GLOBALS, function()
 
     -- utils
     G_engine_table = G_engine:to_table()
-
-    -- dump some info
-    wrappers.print_table(G_engine_table)
 
     G_total_blocks = wrappers.tablelength(G_engine_table)
     G_character_id = wrappers.find_block(G_engine_table, "character").id

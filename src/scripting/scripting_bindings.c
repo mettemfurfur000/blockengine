@@ -1,4 +1,5 @@
 #include "include/scripting_bindings.h"
+#include "include/block_registry.h"
 #include "include/events.h"
 #include "include/file_system.h"
 #include "include/flags.h"
@@ -644,9 +645,11 @@ static int lua_level_create(lua_State *L)
 
 static int lua_load_level(lua_State *L)
 {
+    const char *name = luaL_checkstring(L, 1);
+    LUA_CHECK_USER_OBJECT(L, BlockRegistry, RegWrapper, 2)
     level *out = calloc(1, sizeof(level));
 
-    if (load_level(out, luaL_checkstring(L, 1)) == SUCCESS)
+    if (load_level_ack_registry(out, name, RegWrapper->reg) == SUCCESS)
     {
         NEW_USER_OBJECT(L, Level, out);
     }
@@ -702,9 +705,9 @@ static int lua_level_load_registry(lua_State *L)
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
     const char *registry_name = luaL_checkstring(L, 2);
 
-    block_registry *r = calloc(1, sizeof(block_registry));
+    block_registry *r = registry_load(registry_name);
 
-    if (read_block_registry(r, registry_name) == SUCCESS)
+    if (r != NULL)
     {
         (void)vec_push(&wrapper->lvl->registries, r);
         NEW_USER_OBJECT(L, BlockRegistry, r);

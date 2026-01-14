@@ -70,7 +70,7 @@ void write_hashtable(hash_node **t, stream_t *f)
     WRITE(size, f);     // write table size
     WRITE(elements, f); // write number of elements
 
-    if(elements == 0)
+    if (elements == 0)
         return;
 
     for (u32 i = 0; i < TABLE_SIZE; i++)
@@ -94,7 +94,7 @@ void read_hashtable(hash_node **t, stream_t *f)
     READ(size, f);
     READ(elements, f);
 
-    if(elements == 0)
+    if (elements == 0)
         return;
 
     if (size != TABLE_SIZE)
@@ -405,16 +405,75 @@ u8 load_level(level *lvl, const char *name_in)
     for (u32 i = 0; i < reg_count; i++)
     {
         char *name = blob_read(&s).str;
-        block_registry *reg = calloc(1, sizeof(block_registry));
-        assert(reg != NULL);
-        reg->name = name;
-        if (read_block_registry(reg, name) != SUCCESS)
+        // block_registry *reg = calloc(1, sizeof(block_registry));
+        // assert(reg != NULL);
+        // reg->name = name;
+        // if (read_block_registry(reg, name) != SUCCESS)
+        // {
+        //     LOG_WARNING("Failed to load registry %s", name);
+        //     free(name);
+        //     continue;
+        // }
+        // try looking up existing registry first in the level registries
+        block_registry *reg = find_registry(lvl->registries, name);
+        if (!reg)
         {
-            LOG_WARNING("Failed to load registry %s", name);
-            free(name);
-            continue;
+            LOG_WARNING("Registry %s not found in existing level registries, loading from disk", name);
+            reg = registry_load(name);
+            if (!reg)
+            {
+                LOG_WARNING("Failed to load registry %s", name);
+                free(name);
+                continue;
+            }
         }
+
         (void)vec_push(&lvl->registries, reg);
+    }
+
+    u32 room_count;
+    READ(room_count, &s);
+    for (u32 i = 0; i < room_count; i++)
+    {
+        room *new_room = calloc(1, sizeof(room));
+        assert(new_room != NULL);
+        new_room->parent_level = lvl;
+        read_room(new_room, &s);
+        (void)vec_push(&lvl->rooms, new_room);
+    }
+
+    stream_close(&s);
+    return SUCCESS;
+}
+
+u8 load_level_ack_registry(level *lvl, const char *name_in, block_registry *ack_reg)
+{
+    char path[256] = {};
+    sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
+
+    stream_t s;
+    if (stream_open_read(path, COMPRESS_LEVEL, &s) != 0)
+        return FAIL;
+
+    READ(lvl->uuid, &s);
+    lvl->name = blob_read(&s).str;
+
+    u32 reg_count;
+    READ(reg_count, &s);
+    for (u32 i = 0; i < reg_count; i++)
+    {
+        char *name = blob_read(&s).str;
+
+        if (strcmp(name, ack_reg->name) == 0)
+        {
+            block_registry *reg = ack_reg;
+            (void)vec_push(&lvl->registries, reg);
+        }
+        else
+        {
+            LOG_ERROR("Registry %s does not match acknowledged registry %s", name, ack_reg->name);
+            abort();
+        }
     }
 
     u32 room_count;
