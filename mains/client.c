@@ -203,9 +203,11 @@ int main(int argc, char *argv[])
 
     LUA_SET_GLOBAL_USER_OBJECT("g_block_registry", BlockRegistry, reg);
 
-    SDL_Event e;
     u32 latest_logic_tick = SDL_GetTicks();
-
+    
+    SDL_Event e;
+    e.type = ENGINE_INIT_GLOBALS; // supar-dupar initial event
+    call_handlers(e);
     e.type = ENGINE_INIT; // initial event
     call_handlers(e);
 

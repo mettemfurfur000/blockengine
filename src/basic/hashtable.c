@@ -316,7 +316,9 @@ u64 actual_size_of_table(hash_node **table)
 
 u64 table_elements(hash_node **table)
 {
-    assert(table);
+    // assert(table);
+    if(!table)
+        return 0;
 
     u64 count = 0;
 

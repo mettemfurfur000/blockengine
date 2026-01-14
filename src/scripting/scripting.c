@@ -4,6 +4,7 @@
 #include "include/events.h"
 #include "include/file_system.h"
 #include "include/folder_structure.h"
+#include "include/logging.h"
 #include "include/scripting_bindings.h"
 
 lua_State *g_L = 0;
@@ -74,6 +75,7 @@ void scripting_init()
 
         {          "ENGINE_TICK",           ENGINE_TICK},
         {          "ENGINE_INIT",           ENGINE_INIT},
+        {  "ENGINE_INIT_GLOBALS",   ENGINE_INIT_GLOBALS},
 
         {                   NULL,                     0},
     };
@@ -227,6 +229,7 @@ i32 get_lookup_id(u32 type)
         ENGINE_BLOB_CREATE,
         ENGINE_TICK,
         ENGINE_INIT,
+        ENGINE_INIT_GLOBALS,
     };
 
     for (u32 i = 0; i < sizeof(lookup_table) / sizeof(u32); i++)
@@ -586,6 +589,8 @@ int scripting_load_compiled_blob(const char *reg_name, const char *short_filenam
     assert(short_filename);
     assert(data);
     assert(size > 0);
+
+    LOG_DEBUG("Loading compiled lua blob for registry %s, script %s, size %u bytes", reg_name, short_filename, size);
 
     int status = luaL_loadbuffer(g_L, (const char *)data, (size_t)size, short_filename ? short_filename : "<embedded>");
     if (status != LUA_OK)

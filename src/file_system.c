@@ -70,6 +70,9 @@ void write_hashtable(hash_node **t, stream_t *f)
     WRITE(size, f);     // write table size
     WRITE(elements, f); // write number of elements
 
+    if(elements == 0)
+        return;
+
     for (u32 i = 0; i < TABLE_SIZE; i++)
     {
         hash_node *n = t[i];
@@ -90,6 +93,9 @@ void read_hashtable(hash_node **t, stream_t *f)
 
     READ(size, f);
     READ(elements, f);
+
+    if(elements == 0)
+        return;
 
     if (size != TABLE_SIZE)
         LOG_WARNING("Table size mismatch, expected %d, got %d", TABLE_SIZE, size);

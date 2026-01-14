@@ -119,6 +119,7 @@ end
 
 -- gets all the data
 blockengine.register_handler(engine_events.ENGINE_INIT, function()
+    print("initing level editor")
     ---@class Layer
     editor.pallete_layer = G_view_menu.pallete.layer
     ---@type number

@@ -159,6 +159,7 @@ local function init_menu()
         assert(G_menu_room)
     else
         create_menu() -- only creates the room, no layers yert
+        G_engine = G_level:get_registries()[1]
     end
 
     -- if the room was just created, build_view will allocate layers for said menu definition
@@ -202,8 +203,13 @@ blockengine.register_handler(sdl_events.SDL_WINDOWEVENT, function(width, height)
     set_render_rule_order(G_view_menu)
 end)
 
+did_init = false
+
 -- gets all the data
-blockengine.register_handler(engine_events.ENGINE_INIT, function()
+-- blockengine.register_handler(engine_events.ENGINE_INIT, function()
+blockengine.register_handler(engine_events.ENGINE_INIT_GLOBALS, function()
+    if did_init then return end
+    print("initing menu")
     init_menu()
     -- print_table(g_menu)
 
@@ -221,4 +227,6 @@ blockengine.register_handler(engine_events.ENGINE_INIT, function()
         wrappers.log_error(e)
         os.exit()
     end)
+
+    did_init = true
 end)

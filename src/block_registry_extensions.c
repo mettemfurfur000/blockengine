@@ -125,6 +125,9 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
             }
         },
         s)
+
+    // all fields written
+    write_hashtable(res.all_fields, s);
 }
 
 block_resources block_resource_read(block_registry *b, stream_t *s)
@@ -248,6 +251,10 @@ block_resources block_resource_read(block_registry *b, stream_t *s)
             }
         },
         s);
+    
+    // all fields
+    res.all_fields = alloc_table();
+    read_hashtable(res.all_fields, s);
 
     res.parent_registry = b;
 
@@ -400,7 +407,7 @@ block_registry *registry_load(const char *name)
             res = block_resource_read(reg, &s);
         },
         &s)
-    
+
     LOG_DEBUG("Finished reading %u block resources for registry %s", reg->resources.length, name);
 
     stream_close(&s);
