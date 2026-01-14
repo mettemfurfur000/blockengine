@@ -12,7 +12,7 @@
 #define COMPRESS_LEVEL 1
 #define BUFFER_SIZE 8192
 
-#define FILE_SYSTEM_DEBUG
+// #define FILE_SYSTEM_DEBUG
 
 /* compression-related stuff */
 

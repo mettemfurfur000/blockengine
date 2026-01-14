@@ -408,7 +408,10 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
             return SUCCESS;
         }
 
-    LOG_ERROR("Failed to register input %s", name);
+    LOG_ERROR("Input \"%s\" not found in block resources. All available inputs:", name);
+    for (u32 i = 0; i < res->input_names.length; i++)
+        LOG_ERROR("%s", res->input_names.data[i]);
+
     return FAIL;
 }
 

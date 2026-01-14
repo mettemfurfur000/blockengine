@@ -21,10 +21,22 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
     WRITE_VEC(res.repeat_skip, j, val, { WRITE(val, s); }, s);
 
     // write repeat increment
-    WRITE_VEC(res.repeat_increment, j, str, {
-        blob str_blob = blobify(str);
-        blob_write(str_blob, s);
-    }, s);
+    WRITE_VEC(
+        res.repeat_increment, j, str,
+        {
+            blob str_blob = blobify(str);
+            blob_write(str_blob, s);
+        },
+        s);
+
+    // input names
+    WRITE_VEC(
+        res.input_names, j, str,
+        {
+            blob str_blob = blobify(str);
+            blob_write(str_blob, s);
+        },
+        s);
 
     // render info
     WRITE(res.autotile_type, s);
@@ -55,54 +67,64 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
     }
 
     // image embed
-    WRITE_OPTIONAL(res.img != NULL, {
-        blob texture_name = blobify(res.texture_filename);
-        blob_write(texture_name, s);
-        // write image data
-        image *img = res.img;
-        u32 width = img->width;
-        u32 height = img->height;
-        u32 img_size = width * height * CHANNELS;
+    WRITE_OPTIONAL(
+        res.img != NULL,
+        {
+            blob texture_name = blobify(res.texture_filename);
+            blob_write(texture_name, s);
+            // write image data
+            image *img = res.img;
+            u32 width = img->width;
+            u32 height = img->height;
+            u32 img_size = width * height * CHANNELS;
 
-        WRITE(width, s);
-        WRITE(height, s);
-        WRITE_N(img->data, s, img_size);
-    }, s)
+            WRITE(width, s);
+            WRITE(height, s);
+            WRITE_N(img->data, s, img_size);
+        },
+        s)
 
     // sounds
-    WRITE_VEC(res.sounds, j, sound, {
-        LOG_DEBUG("Saving sound %s for block id %llu", sound.filename, res.id);
-        blob_write(blobify(sound.filename), s); // name of the sound file
-        LOG_DEBUG("Sound length ms: %u", sound.length_ms);
-        WRITE(sound.length_ms, s); // length in ms
-        // find the sound file path
-        char sound_full_path[MAX_PATH_LENGTH] = {};
-        PATH_SOUND_MAKE(sound_full_path, b->name, sound.filename);
-        stream_embed_file_write(sound_full_path, s);
-    }, s);
+    WRITE_VEC(
+        res.sounds, j, sound,
+        {
+            LOG_DEBUG("Saving sound %s for block id %llu", sound.filename, res.id);
+            blob_write(blobify(sound.filename), s); // name of the sound file
+            LOG_DEBUG("Sound length ms: %u", sound.length_ms);
+            WRITE(sound.length_ms, s); // length in ms
+            // find the sound file path
+            char sound_full_path[MAX_PATH_LENGTH] = {};
+            PATH_SOUND_MAKE(sound_full_path, b->name, sound.filename);
+            stream_embed_file_write(sound_full_path, s);
+        },
+        s);
 
     // script file
-    WRITE_OPTIONAL(res.lua_script_filename != NULL, {
-        /* write the short script filename so we keep filename info */
-        blob script_name_blob = blobify(res.lua_script_filename);
-        blob_write(script_name_blob, s);
-
-        /* compile the source file into lua bytecode and embed it */
-        unsigned char *bytecode = NULL;
-        u32 bytecode_size = 0;
-        if (scripting_compile_file_to_bytecode(b->name, res.lua_script_filename, &bytecode, &bytecode_size) != SUCCESS)
+    WRITE_OPTIONAL(
+        res.lua_script_filename != NULL,
         {
-            LOG_ERROR("Failed to compile lua script %s for registry %s", res.lua_script_filename, b->name);
-            bytecode_size = 0;
-        }
+            /* write the short script filename so we keep filename info */
+            blob script_name_blob = blobify(res.lua_script_filename);
+            blob_write(script_name_blob, s);
 
-        WRITE(bytecode_size, s);
-        if (bytecode_size > 0 && bytecode != NULL)
-        {
-            WRITE_N(bytecode, s, bytecode_size);
-            free(bytecode);
-        }
-    }, s)
+            /* compile the source file into lua bytecode and embed it */
+            unsigned char *bytecode = NULL;
+            u32 bytecode_size = 0;
+            if (scripting_compile_file_to_bytecode(b->name, res.lua_script_filename, &bytecode, &bytecode_size) !=
+                SUCCESS)
+            {
+                LOG_ERROR("Failed to compile lua script %s for registry %s", res.lua_script_filename, b->name);
+                bytecode_size = 0;
+            }
+
+            WRITE(bytecode_size, s);
+            if (bytecode_size > 0 && bytecode != NULL)
+            {
+                WRITE_N(bytecode, s, bytecode_size);
+                free(bytecode);
+            }
+        },
+        s)
 }
 
 block_resources block_resource_read(block_registry *b, stream_t *s)
@@ -119,10 +141,22 @@ block_resources block_resource_read(block_registry *b, stream_t *s)
 
     // read repeat increment
     char *str = NULL;
-    READ_VEC(res.repeat_increment, j, str, {
-        blob str_blob = blob_read(s);
-        str = str_blob.str;
-    }, s);
+    READ_VEC(
+        res.repeat_increment, j, str,
+        {
+            blob str_blob = blob_read(s);
+            str = str_blob.str;
+        },
+        s);
+
+    // input names
+    READ_VEC(
+        res.input_names, j, str,
+        {
+            blob str_blob = blob_read(s);
+            str = str_blob.str;
+        },
+        s);
 
     // render info
     READ(res.autotile_type, s);
@@ -155,58 +189,65 @@ block_resources block_resource_read(block_registry *b, stream_t *s)
     // image embed
     res.img = NULL;
 
-    READ_OPTIONAL({
-        blob texture_name = blob_read(s);
-        res.texture_filename = texture_name.str;
-        // read image data
-        u32 width = 0;
-        u32 height = 0;
-        READ(width, s);
-        READ(height, s);
-        image *img = image_create(width, height);
-        u32 img_size = width * height * CHANNELS;
-        READ_N(img->data, s, img_size);
-        res.img = img;
-    }, s)
+    READ_OPTIONAL(
+        {
+            blob texture_name = blob_read(s);
+            res.texture_filename = texture_name.str;
+            // read image data
+            u32 width = 0;
+            u32 height = 0;
+            READ(width, s);
+            READ(height, s);
+            image *img = image_create(width, height);
+            u32 img_size = width * height * CHANNELS;
+            READ_N(img->data, s, img_size);
+            res.img = img;
+        },
+        s)
 
     // sounds
     sound sound;
-    READ_VEC(res.sounds, j, sound, {
-        sound.filename = blob_read(s).str; // name of the sound file
-        LOG_DEBUG("Read sound %s for block id %llu", sound.filename, res.id);
-        READ(sound.length_ms, s); // length in ms
-        LOG_DEBUG("Sound length ms: %u", sound.length_ms);
-
-        // read the sound file data from the stream into memory and load via SDL
-        u8 *sound_data = NULL;
-        u32 sound_size = 0;
-        stream_embed_file_read_to_mem(s, &sound_data, &sound_size);
-        sound.obj = Mix_LoadWAV_RW(SDL_RWFromMem(sound_data, sound_size), 1);
-
-        if (sound.obj == NULL)
+    READ_VEC(
+        res.sounds, j, sound,
         {
-            LOG_ERROR("Couldn't load sound \"%s\" from memory, SDL error: \"%s\"", sound.filename, SDL_GetError());
+            sound.filename = blob_read(s).str; // name of the sound file
+            LOG_DEBUG("Read sound %s for block id %llu", sound.filename, res.id);
+            READ(sound.length_ms, s); // length in ms
+            LOG_DEBUG("Sound length ms: %u", sound.length_ms);
 
-            abort();
-        }
+            // read the sound file data from the stream into memory and load via SDL
+            u8 *sound_data = NULL;
+            u32 sound_size = 0;
+            stream_embed_file_read_to_mem(s, &sound_data, &sound_size);
+            sound.obj = Mix_LoadWAV_RW(SDL_RWFromMem(sound_data, sound_size), 1);
 
-        SAFE_FREE(sound_data);
-    }, s);
+            if (sound.obj == NULL)
+            {
+                LOG_ERROR("Couldn't load sound \"%s\" from memory, SDL error: \"%s\"", sound.filename, SDL_GetError());
+
+                abort();
+            }
+
+            SAFE_FREE(sound_data);
+        },
+        s);
 
     // pointers to scripts
-    READ_OPTIONAL({
-        blob name_blob = blob_read(s);
-        res.lua_script_filename = name_blob.str;
-
-        u32 bytecode_size = 0;
-        READ(bytecode_size, s);
-        if (bytecode_size > 0)
+    READ_OPTIONAL(
         {
-            res.lua_script_blob = malloc(bytecode_size);
-            res.lua_script_blob_size = bytecode_size;
-            READ_N(res.lua_script_blob, s, bytecode_size);
-        }
-    }, s);
+            blob name_blob = blob_read(s);
+            res.lua_script_filename = name_blob.str;
+
+            u32 bytecode_size = 0;
+            READ(bytecode_size, s);
+            if (bytecode_size > 0)
+            {
+                res.lua_script_blob = malloc(bytecode_size);
+                res.lua_script_blob_size = bytecode_size;
+                READ_N(res.lua_script_blob, s, bytecode_size);
+            }
+        },
+        s);
 
     res.parent_registry = b;
 
@@ -352,12 +393,21 @@ block_registry *registry_load(const char *name)
 
     // read all block resources
     block_resources res = {};
-    READ_VEC(reg->resources, i, res, {
-        res = block_resource_read(reg, &s);
-        (void)vec_push(&reg->resources, res);
-    }, &s)
+    READ_VEC(
+        reg->resources, i, res,
+        {
+            LOG_DEBUG("Reading block resource %u for registry %s", i, name);
+            res = block_resource_read(reg, &s);
+        },
+        &s)
+    
+    LOG_DEBUG("Finished reading %u block resources for registry %s", reg->resources.length, name);
 
     stream_close(&s);
+
+    sort_by_id(&reg->resources);
+
+    LOG_DEBUG("Loaded registry %s with %u blocks", name, reg->resources.length);
 
     // run all scripts to initialize any block-specific state, after init has run
     if (scripting_load_scripts(reg) != SUCCESS)

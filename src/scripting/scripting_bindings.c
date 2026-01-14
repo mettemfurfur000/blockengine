@@ -633,7 +633,7 @@ int lua_light_block_input_register(lua_State *L)
     int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
     lua_pushboolean(L, scripting_register_block_input((block_registry *)ptr, id, ref, name) == SUCCESS);
-    return 0;
+    return 1;
 }
 
 static int lua_level_create(lua_State *L)
