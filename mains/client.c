@@ -2,6 +2,7 @@
 #include "SDL_timer.h"
 #include "SDL_video.h"
 
+#include "include/block_registry.h"
 #include "include/events.h"
 #include "include/logging.h"
 #include "include/rendering.h"
@@ -16,15 +17,15 @@
 
 typedef struct
 {
-    const char *log_output;  // "stdout" or filename (default: "client.log")
-    int screen_width;        // Screen width (default: SCREEN_WIDTH)
-    int screen_height;       // Screen height (default: SCREEN_HEIGHT)
-    int target_fps;          // Target FPS (default: FPS)
-    int target_tps;          // Target TPS (default: TPS)
-    int fullscreen;          // 1 for fullscreen, 0 for windowed, -1 for default
-    const char *registry;    // Registry path (default: "engine")
-    const char *init_script; // Init script file (default: "init.lua")
-    int enable_perf_checks;  // 1 to enable, 0 to disable, -1 for default
+    const char *log_output; // "stdout" or filename (default: "client.log")
+    int screen_width;       // Screen width (default: SCREEN_WIDTH)
+    int screen_height;      // Screen height (default: SCREEN_HEIGHT)
+    int target_fps;         // Target FPS (default: FPS)
+    int target_tps;         // Target TPS (default: TPS)
+    int fullscreen;         // 1 for fullscreen, 0 for windowed, -1 for default
+    const char *registry;   // Registry path (default: "engine")
+    // const char *init_script; // Init script file (default: "init.lua")
+    int enable_perf_checks; // 1 to enable, 0 to disable, -1 for default
 } ClientConfig;
 
 static void print_usage(const char *program_name)
@@ -39,7 +40,7 @@ static void print_usage(const char *program_name)
     printf("  -F, --fullscreen          Start in fullscreen mode\n");
     printf("  -W, --windowed            Start in windowed mode\n");
     printf("  -r, --registry <path>     Registry path (default: engine)\n");
-    printf("  -s, --script <file>       Init script file (default: init.lua)\n");
+    // printf("  -s, --script <file>       Init script file (default: init.lua)\n");
     printf("  -p, --perf-checks         Enable performance checks (default: enabled)\n");
     printf("  -P, --no-perf-checks      Disable performance checks\n");
     printf("  --help                    Show this help message\n");
@@ -54,7 +55,7 @@ static ClientConfig parse_arguments(int argc, char *argv[])
                            .target_tps = TPS,
                            .fullscreen = -1,
                            .registry = "engine",
-                           .init_script = "init.lua",
+                           //    .init_script = "init.lua",
                            .enable_perf_checks = -1};
 
     static struct option long_options[] = {
@@ -66,7 +67,7 @@ static ClientConfig parse_arguments(int argc, char *argv[])
         {    "fullscreen",       no_argument, 0, 'F'},
         {      "windowed",       no_argument, 0, 'W'},
         {      "registry", required_argument, 0, 'r'},
-        {        "script", required_argument, 0, 's'},
+        // {        "script", required_argument, 0, 's'},
         {   "perf-checks",       no_argument, 0, 'p'},
         {"no-perf-checks",       no_argument, 0, 'P'},
         {          "help",       no_argument, 0, 'H'},
@@ -124,9 +125,9 @@ static ClientConfig parse_arguments(int argc, char *argv[])
         case 'r':
             config.registry = optarg;
             break;
-        case 's':
-            config.init_script = optarg;
-            break;
+        // case 's':
+        //     config.init_script = optarg;
+        //     break;
         case 'p':
             config.enable_perf_checks = 1;
             break;
@@ -188,14 +189,24 @@ int main(int argc, char *argv[])
 
     scripting_init();
 
-    LUA_SET_GLOBAL_OBJECT("g_render_rules", &rules);
+    LUA_SET_GLOBAL_OBJECT("g_render_rules", &rules); // TODO: instead of pushing a light userdata push a proper user object with a metatable
 
-    scripting_load_file(config.registry, config.init_script);
+    // scripting_do_script(config.registry, config.init_script);
+
+    block_registry *reg = registry_load(config.registry);
+
+    if (reg == NULL)
+    {
+        LOG_ERROR("No registry found");
+        return -1;
+    }
+
+    LUA_SET_GLOBAL_USER_OBJECT("g_block_registry", BlockRegistry, reg);
 
     SDL_Event e;
     u32 latest_logic_tick = SDL_GetTicks();
 
-    e.type = ENGINE_INIT;
+    e.type = ENGINE_INIT; // initial event
     call_handlers(e);
 
     float total_ms_took = 0;

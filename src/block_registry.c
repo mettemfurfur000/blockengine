@@ -258,10 +258,8 @@ u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
     for (u32 i = 0; i < tmp.length; i++)
     {
         sound t = {};
-
-        snprintf(sound_full_path, sizeof(sound_full_path),
-                 FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR FOLDER_REG_SND SEPARATOR_STR "%s", b_reg->name,
-                 tmp.data[i]);
+        
+        PATH_SOUND_MAKE(sound_full_path, b_reg->name, tmp.data[i]);
 
         sound_load(&t, sound_full_path);
         (void)vec_push(&dest->sounds, t);
@@ -282,7 +280,7 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
 {
     if (strcmp(data, clean_token) == 0)
     {
-        free_image(dest->img);
+        image_free(dest->img);
         dest->img = 0;
 
         SAFE_FREE(dest->texture_filename);
@@ -305,10 +303,10 @@ u8 block_res_texture_handler(const char *data, block_resources *dest)
     // later!
 
     // return texture_load(&dest->block_texture, texture_full_path);
-    // return load_image_alt(&dest->img, &dest->block_texture,
+    // return image_load_alt(&dest->img, &dest->block_texture,
     // texture_full_path);
 
-    dest->img = load_image(texture_full_path);
+    dest->img = image_load(texture_full_path);
 
     if (dest->img == NULL)
     {
@@ -945,6 +943,19 @@ void free_block_resources(block_resources *b)
     if (b->id != 0 && FLAG_GET(b->flags, RESOURCE_FLAG_IS_FILLER) == 0) // ignore filler blocks and an air block, they
                                                                         // are created by engine
         free_table(b->all_fields);
+
+    if (b->lua_script_blob)
+    {
+        free(b->lua_script_blob);
+        b->lua_script_blob = NULL;
+        b->lua_script_blob_size = 0;
+    }
+
+    if (b->lua_script_filename)
+    {
+        free(b->lua_script_filename);
+        b->lua_script_filename = NULL;
+    }
 }
 
 void free_block_registry(block_registry *b_reg)

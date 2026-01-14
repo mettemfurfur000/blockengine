@@ -67,14 +67,22 @@ function M.print_table(t, indent)
 end
 
 function M.safe_registry_load(level, name)
-    local status, reg_table = level:load_registry(name)
+    local registry = level:deserialize_registry(name)
 
-    if status == false then
-        M.log_error("error loading engine registry")
-        os.exit()
+    if registry == nil then
+        M.log_error("error deserializing engine registry, reading from folders instead")
+
+        registry = level:load_registry(name)
+
+        if registry == nil then
+            M.log_error("error loading engine registry")
+            os.exit()
+        end
     end
 
-    return reg_table
+    M.log_message("loaded registry " .. name)
+
+    return registry
 end
 
 function M.safe_room_create(level, name, width, height)

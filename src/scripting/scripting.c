@@ -2,6 +2,7 @@
 // #include "include/image_editing.h"
 #include "SDL_events.h"
 #include "include/events.h"
+#include "include/file_system.h"
 #include "include/folder_structure.h"
 #include "include/scripting_bindings.h"
 
@@ -411,7 +412,7 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
     return FAIL;
 }
 
-int scripting_load_file(const char *reg_name, const char *short_filename)
+int scripting_do_script(const char *reg_name, const char *short_filename)
 {
     char filename[MAX_PATH_LENGTH] = {};
     snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
@@ -430,31 +431,52 @@ int scripting_load_file(const char *reg_name, const char *short_filename)
 u8 scripting_load_scripts(block_registry *registry)
 {
     block_resources_t *reg = &registry->resources;
-    const int length = reg->length;
-
     const char *reg_name = registry->name;
 
-    for (u32 i = 0; i < length; i++)
+    for (u32 i = 0; i < reg->length; i++)
     {
         block_resources *res = &reg->data[i];
         const char *lua_file = res->lua_script_filename;
 
-        if (lua_file)
+        lua_pushinteger(g_L, res->id);
+        lua_setglobal(g_L, "scripting_current_block_id");
+        lua_pushcfunction(g_L, lua_light_block_input_register);
+        lua_setglobal(g_L, "scripting_light_block_input_register");
+        lua_pushlightuserdata(g_L, registry);
+        lua_setglobal(g_L, "scripting_current_light_registry");
+
+        if (res->lua_script_blob != NULL && res->lua_script_blob_size > 0) // embedded bytecode load
+        {
+            LOG_DEBUG("Loading embedded script %s (bytecode)",
+                      res->lua_script_filename ? res->lua_script_filename : "<anon>");
+
+            if (scripting_load_compiled_blob(reg_name,
+                                             res->lua_script_filename ? res->lua_script_filename : "<embedded>",
+                                             res->lua_script_blob, res->lua_script_blob_size) != SUCCESS)
+            {
+                LOG_ERROR("Failed to load embedded script for block %d", res->id);
+                return FAIL;
+            }
+
+            /* free blob after successful load to avoid holding extra memory */
+            free(res->lua_script_blob);
+            res->lua_script_blob = NULL;
+            res->lua_script_blob_size = 0;
+        }
+        else if (lua_file) // legacy source file load
         {
             LOG_DEBUG("Loading script %s", lua_file);
 
-            lua_pushinteger(g_L, res->id);
-            lua_setglobal(g_L, "scripting_current_block_id");
-            lua_pushcfunction(g_L, lua_light_block_input_register);
-            lua_setglobal(g_L, "scripting_light_block_input_register");
-            lua_pushlightuserdata(g_L, registry);
-            lua_setglobal(g_L, "scripting_current_light_registry");
+            scripting_do_script(reg_name, lua_file);
 
-            scripting_load_file(reg_name, lua_file);
+            /* free blob after successful load to avoid holding extra memory */
+            free(res->lua_script_blob);
+            res->lua_script_blob = NULL;
+            res->lua_script_blob_size = 0;
         }
 
         // checking if all inputs hav a handler
-
+        // should match if the script actually registered them
         if (res->input_names.length != res->input_refs.length)
         {
             LOG_ERROR("Block %d has %d inputs but %d handlers", res->id, res->input_names.length,
@@ -462,7 +484,7 @@ u8 scripting_load_scripts(block_registry *registry)
             return FAIL;
         }
 
-        u8 failed = 0;
+        bool failed = false;
 
         for (u32 j = 0; j < res->input_refs.length; j++)
         {
@@ -472,7 +494,7 @@ u8 scripting_load_scripts(block_registry *registry)
                 LOG_ERROR("Input %s of block %d has no handler, register it in "
                           "your lua script",
                           res->input_names.data[j], res->id);
-                failed = 1;
+                failed = true;
             }
         }
 
@@ -508,4 +530,75 @@ void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *n
 
     lua_setglobal(L, name);
     LOG_DEBUG("Pushed enum %s", name);
+}
+
+/* writer state for lua_dump */
+struct dump_state
+{
+    unsigned char *buf;
+    size_t size;
+};
+
+static int lua_dump_writer(lua_State *L, const void *p, size_t sz, void *ud)
+{
+    struct dump_state *st = (struct dump_state *)ud;
+    unsigned char *newbuf = realloc(st->buf, st->size + sz);
+    if (!newbuf)
+        return 1; // memory error
+    st->buf = newbuf;
+    memcpy(st->buf + st->size, p, sz);
+    st->size += sz;
+    return 0;
+}
+
+int scripting_compile_file_to_bytecode(const char *reg_name, const char *short_filename, unsigned char **out_buf,
+                                       u32 *out_size)
+{
+    char filename[MAX_PATH_LENGTH] = {};
+    snprintf(filename, MAX_PATH_LENGTH, FOLDER_REG SEPARATOR_STR "%s" SEPARATOR_STR FOLDER_REG_SCR SEPARATOR_STR "%s",
+             reg_name, short_filename);
+
+    int status = luaL_loadfile(g_L, filename);
+    if (status != LUA_OK)
+    {
+        fprintf(stderr, "Lua compile error in %s : %s\n", filename, lua_tostring(g_L, -1));
+        return FAIL;
+    }
+
+    struct dump_state st = {malloc(BUFFER_SIZE), 0};
+    if (lua_dump(g_L, lua_dump_writer, &st, 0) != 0)
+    {
+        free(st.buf);
+        return FAIL;
+    }
+
+    *out_buf = st.buf; /* ownership transferred to caller */
+    *out_size = (u32)st.size;
+    return SUCCESS;
+}
+
+int scripting_load_compiled_blob(const char *reg_name, const char *short_filename, const unsigned char *data, u32 size)
+{
+    assert(reg_name);
+    assert(short_filename);
+    assert(data);
+    assert(size > 0);
+
+    int status = luaL_loadbuffer(g_L, (const char *)data, (size_t)size, short_filename ? short_filename : "<embedded>");
+    if (status != LUA_OK)
+    {
+        LOG_ERROR("Lua loadbuffer error for %s: %s", short_filename ? short_filename : "<embedded>",
+                  lua_tostring(g_L, -1));
+        lua_pop(g_L, 1);
+        return FAIL;
+    }
+
+    if (lua_pcall(g_L, 0, 0, 0) != LUA_OK)
+    {
+        LOG_ERROR("Lua pcall error for %s: %s", short_filename ? short_filename : "<embedded>", lua_tostring(g_L, -1));
+        lua_pop(g_L, 1);
+        return FAIL;
+    }
+
+    return SUCCESS;
 }

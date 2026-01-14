@@ -98,7 +98,7 @@ build_again:;
 
     LOG_DEBUG("atlas generator guessed %dx%d", guess_w, guess_h);
 
-    image *atlas = create_image(guess_w, guess_h);
+    image *atlas = image_create(guess_w, guess_h);
 
     // sort by width
     sort_by_volume(reg);
@@ -139,7 +139,7 @@ build_again:;
                 // LOG_DEBUG("atlas gen successful fit: %s at %d,%d : %dx%d", r->texture_filename, i, j, tex_w, tex_h);
                 // mark as taken and put it on da atlas
                 mark_taken(obuf, obuf_w, obuf_h, i, j, tex_w, tex_h);
-                overlay_image(atlas, img, i * g_block_width, j * g_block_width);
+                image_overlay(atlas, img, i * g_block_width, j * g_block_width);
 
                 // also write our offset to de registry, in pixels
                 r->info.atlas_offset_x = i;
@@ -174,15 +174,15 @@ build_again:;
         else
             guess_w *= 2;
 
-        free_image(atlas);
+        image_free(atlas);
         goto build_again;
     }
 
-    save_image(atlas, "atlas_latest_debug.png"); // REMOVE ME MAYBE
+    image_save(atlas, "atlas_latest_debug.png"); // REMOVE ME MAYBE
     sort_by_id(&reg->resources);
 
     reg->atlas_texture_uid = gl_bind_texture(atlas);
 
-    // free_image(atlas);
+    // image_free(atlas);
     reg->atlas = atlas;
 }

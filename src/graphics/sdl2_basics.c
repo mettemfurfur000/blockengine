@@ -197,7 +197,7 @@ int exit_graphics()
 //     return SUCCESS;
 // }
 
-// int load_image_alt(image *img_dst, atlas_info *atlas_info,  char
+// int image_load_alt(image *img_dst, atlas_info *atlas_info,  char
 // *path_to_file)
 // {
 //     assert(img_dst);

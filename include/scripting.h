@@ -31,6 +31,8 @@ typedef struct LuaHolder
 
 #define LUA_CHECK_USER_OBJECT(L, type, name, index) LuaHolder *name = (LuaHolder *)luaL_checkudata(L, index, #type);
 
+// Macro to create a new user object and set its metatable
+// Usage: NEW_USER_OBJECT(L, TypeName, pointer_to_object);
 #define NEW_USER_OBJECT(L, type, pointer)                                                                              \
     ((LuaHolder *)lua_newuserdata(L, sizeof(void *)))->ptr = (pointer);                                                \
     luaL_getmetatable(L, #type);                                                                                       \
@@ -39,6 +41,12 @@ typedef struct LuaHolder
 #define LUA_SET_GLOBAL_OBJECT(name, ptr)                                                                               \
     {                                                                                                                  \
         lua_pushlightuserdata(g_L, ptr);                                                                               \
+        lua_setglobal(g_L, name);                                                                                      \
+    }
+
+#define LUA_SET_GLOBAL_USER_OBJECT(name, type, ptr)                                                                    \
+    {                                                                                                                  \
+        NEW_USER_OBJECT(g_L, type, ptr);                                                                               \
         lua_setglobal(g_L, name);                                                                                      \
     }
 
@@ -68,7 +76,19 @@ void call_handlers(SDL_Event e);
 void scripting_register_event_handler(int ref, int event_type);
 
 u8 scripting_load_scripts(block_registry *registry);
-int scripting_load_file(const char *reg_name, const char *short_filename);
+int scripting_do_script(const char *reg_name, const char *short_filename);
+
+/* Compile a lua source file (from registry folder) into bytecode.
+    On success `*out_buf` will be malloc'd with size `*out_size` and should be freed by caller.
+    Returns SUCCESS/FAIL.
+*/
+int scripting_compile_file_to_bytecode(const char *reg_name, const char *short_filename, unsigned char **out_buf,
+                                       u32 *out_size);
+
+/* Load & execute compiled lua bytecode from memory (produced by compile function).
+    Returns SUCCESS/FAIL.
+*/
+int scripting_load_compiled_blob(const char *reg_name, const char *short_filename, const unsigned char *data, u32 size);
 
 u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const char *name);
 

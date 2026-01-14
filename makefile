@@ -79,7 +79,11 @@ endif
 client_app: mains/client.c registry vec $(objects)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
 	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS) -lstdc++
-# no more -lbox2d 
+
+.PHONY: builder
+builder: mains/builder.c registry vec $(objects)
+	gcc -o obj/builder.o -c mains/builder.c ${CFLAGS}
+	g++ ${CFLAGS} -o build/builder obj/builder.o obj/vec.o $(objects) $(LDFLAGS) -lstdc++
 
 .PHONY: run_client
 run_client: client_app

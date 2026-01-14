@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     g_L = luaL_newstate(); /* opens Lua */
     luaL_openlibs(g_L);
 
-    load_image_editing_library(g_L);
+    image_load_editing_library(g_L);
 
     lua_pushstring(g_L, output_name);
     lua_setglobal(g_L, "output_file");
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     lua_pushstring(g_L, input_name);
     lua_setglobal(g_L, "input_file");
 
-    scripting_load_file("texgen", script_name);
+    scripting_do_script("texgen", script_name);
 
     scripting_close();
 

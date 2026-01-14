@@ -33,19 +33,19 @@ static int image_gc(lua_State *L)
 
     if (wrapper->img)
     {
-        free_image(wrapper->img);
+        image_free(wrapper->img);
         wrapper->img = NULL;
     }
 
     return 0;
 }
 
-static int create_image_lua(lua_State *L)
+static int image_create_lua(lua_State *L)
 {
     u32 width = luaL_checkinteger(L, 1);
     u32 height = luaL_checkinteger(L, 2);
 
-    PUSHNEWIMAGE(L, create_image(width, height), wrapper);
+    PUSHNEWIMAGE(L, image_create(width, height), wrapper);
     return 1;
 }
 
@@ -59,29 +59,29 @@ static int image_size_lua(lua_State *L)
     return 2;
 }
 
-static int clear_image_lua(lua_State *L)
+static int image_clear_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    clear_image(wrapper->img);
+    image_clear(wrapper->img);
 
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static int adjust_brightness_lua(lua_State *L)
+static int image_adjust_brightness_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
     float brightness = luaL_checknumber(L, 2);
 
-    adjust_brightness(wrapper->img, brightness);
+    image_adjust_brightness(wrapper->img, brightness);
 
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static int apply_color_lua(lua_State *L)
+static int image_apply_color_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
@@ -89,7 +89,7 @@ static int apply_color_lua(lua_State *L)
 
     };
 
-    apply_color(wrapper->img, color);
+    image_apply_color(wrapper->img, color);
 
     lua_pushvalue(L, 1);
     return 1;
@@ -101,7 +101,7 @@ static int get_average_color(lua_State *L)
 
     u8 color_out[4] = {};
 
-    get_avg_color_noalpha(wrapper->img, color_out);
+    image_get_avg_color(wrapper->img, color_out);
 
     lua_pushinteger(L, color_out[0]);
     lua_pushinteger(L, color_out[1]);
@@ -111,31 +111,31 @@ static int get_average_color(lua_State *L)
     return 4;
 }
 
-static int gamma_correction_lua(lua_State *L)
+static int image_gamma_correction_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
     float gamma = luaL_checknumber(L, 2);
 
-    gamma_correction(wrapper->img, gamma);
+    image_gamma_correction(wrapper->img, gamma);
 
     lua_pushvalue(L, 1);
 
     return 1;
 }
 
-static int fill_color_lua(lua_State *L)
+static int image_fill_color_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
     u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)};
 
-    fill_color(wrapper->img, color);
+    image_fill_color(wrapper->img, color);
 
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static int overlay_image_lua(lua_State *L)
+static int image_overlay_lua(lua_State *L)
 {
     ImageWrapper *dst = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
     ImageWrapper *src = (ImageWrapper *)luaL_checkudata(L, 2, "Image");
@@ -143,71 +143,71 @@ static int overlay_image_lua(lua_State *L)
     u32 x = luaL_checkinteger(L, 3);
     u32 y = luaL_checkinteger(L, 4);
 
-    overlay_image(dst->img, src->img, x, y);
+    image_overlay(dst->img, src->img, x, y);
 
     lua_pushvalue(L, 1);
     return 1;
 }
 
-static int rotate_image_lua(lua_State *L)
+static int image_rotate_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
     u8 angle = luaL_checkinteger(L, 2);
 
-    PUSHNEWIMAGE(L, rotate_image(wrapper->img, angle), result);
+    PUSHNEWIMAGE(L, image_rotate(wrapper->img, angle), result);
 
     return 1;
 }
 
-static int flip_image_horizontal_lua(lua_State *L)
+static int image_flip_horizontal_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    PUSHNEWIMAGE(L, flip_image_horizontal(wrapper->img), result);
+    PUSHNEWIMAGE(L, image_flip_horizontal(wrapper->img), result);
 
     return 1;
 }
 
-static int flip_image_vertical_lua(lua_State *L)
+static int image_flip_vertical_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    PUSHNEWIMAGE(L, flip_image_vertical(wrapper->img), result);
+    PUSHNEWIMAGE(L, image_flip_vertical(wrapper->img), result);
 
     return 1;
 }
 
-static int copy_image_lua(lua_State *L)
+static int image_copy_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    PUSHNEWIMAGE(L, copy_image(wrapper->img), result);
+    PUSHNEWIMAGE(L, image_copy(wrapper->img), result);
 
     return 1;
 }
 
-static int save_image_lua(lua_State *L)
+static int image_save_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
     const char *path = luaL_checkstring(L, 2);
-    save_image(wrapper->img, path);
+    image_save(wrapper->img, path);
 
     return 0;
 }
 
-static int load_image_lua(lua_State *L)
+static int image_load_lua(lua_State *L)
 {
     const char *path = luaL_checkstring(L, 1);
 
-    PUSHNEWIMAGE(L, load_image(path), result);
+    PUSHNEWIMAGE(L, image_load(path), result);
     return 1;
 }
 
 // geometry
 
-static int crop_image_lua(lua_State *L)
+static int image_crop_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
@@ -216,39 +216,39 @@ static int crop_image_lua(lua_State *L)
     u32 width = luaL_checkinteger(L, 4);
     u32 height = luaL_checkinteger(L, 5);
 
-    PUSHNEWIMAGE(L, crop_image(wrapper->img, x, y, width, height), result);
+    PUSHNEWIMAGE(L, image_crop(wrapper->img, x, y, width, height), result);
     return 1;
 }
 
-void load_image_editing_library(lua_State *L)
+void image_load_editing_library(lua_State *L)
 {
     const static luaL_Reg image_methods[] = {
-        {            "crop",            crop_image_lua},
-        {          "rotate",          rotate_image_lua},
-        { "flip_horizontal", flip_image_horizontal_lua},
-        {   "flip_vertical",   flip_image_vertical_lua},
+        {                  "crop",              image_crop_lua},
+        {                "rotate",            image_rotate_lua},
+        {       "flip_horizontal",   image_flip_horizontal_lua},
+        {         "flip_vertical",     image_flip_vertical_lua},
 
-        {  "add_brightness",     adjust_brightness_lua},
-        {       "add_color",           apply_color_lua},
-        {   "get_avg_color",         get_average_color},
-        {"gamma_correction",      gamma_correction_lua},
+        {        "add_brightness", image_adjust_brightness_lua},
+        {             "add_color",       image_apply_color_lua},
+        {         "get_avg_color",           get_average_color},
+        {"image_gamma_correction",  image_gamma_correction_lua},
 
         //{"blend", blend_images_lua},
-        {            "size",            image_size_lua},
-        {         "overlay",         overlay_image_lua},
+        {                  "size",              image_size_lua},
+        {               "overlay",           image_overlay_lua},
 
-        {           "clear",           clear_image_lua},
-        {            "fill",            fill_color_lua},
-        {            "copy",            copy_image_lua},
+        {                 "clear",             image_clear_lua},
+        {                  "fill",        image_fill_color_lua},
+        {                  "copy",              image_copy_lua},
 
-        {            "save",            save_image_lua},
+        {                  "save",              image_save_lua},
 
-        {              NULL,                      NULL}
+        {                    NULL,                        NULL}
     };
 
     const static luaL_Reg image_editing_lib[] = {
-        {"create", create_image_lua},
-        {  "load",   load_image_lua},
+        {"create", image_create_lua},
+        {  "load",   image_load_lua},
         {    NULL,             NULL}
     };
 
@@ -665,6 +665,38 @@ static int lua_save_level(lua_State *L)
     return 1;
 }
 
+static int lua_level_registry_serialize(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
+    const u32 index = luaL_checkinteger(L, 2);
+
+    if (index >= wrapper->lvl->registries.length)
+        luaL_error(L, "Index out of range");
+
+    lua_pushboolean(L, registry_save(wrapper->lvl->registries.data[index]) == SUCCESS ? 1 : 0);
+    return 1;
+}
+
+static int lua_level_registry_deserialize(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
+    const char *name = luaL_checkstring(L, 2);
+
+    block_registry *r = registry_load(name);
+
+    if (r)
+    {
+        (void)vec_push(&wrapper->lvl->registries, r);
+        NEW_USER_OBJECT(L, BlockRegistry, r);
+    }
+    else
+    {
+        lua_pushnil(L);
+    }
+
+    return 1;
+}
+
 static int lua_level_load_registry(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
@@ -672,26 +704,18 @@ static int lua_level_load_registry(lua_State *L)
 
     block_registry *r = calloc(1, sizeof(block_registry));
 
-    int success = read_block_registry(r, registry_name) == SUCCESS;
-    lua_pushboolean(L, success);
-
-    if (success)
+    if (read_block_registry(r, registry_name) == SUCCESS)
     {
         (void)vec_push(&wrapper->lvl->registries, r);
-
-        // if (scripting_load_scripts(r) != SUCCESS)
-        // {
-        //     lua_pushboolean(L, 0);
-        //     return 1;
-        // }
         NEW_USER_OBJECT(L, BlockRegistry, r);
     }
     else
     {
         free(r);
+        lua_pushnil(L);
     }
 
-    return success ? 2 : 1;
+    return 1;
 }
 
 static int lua_level_get_registries(lua_State *L)
@@ -709,6 +733,16 @@ static int lua_level_get_registries(lua_State *L)
     }
 
     return 1;
+}
+
+static int lua_level_add_existing(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
+    LUA_CHECK_USER_OBJECT(L, BlockRegistry, reg_wrapper, 2);
+
+    (void)vec_push(&wrapper->lvl->registries, reg_wrapper->reg);
+
+    return 0;
 }
 
 static int lua_level_gc(lua_State *L)
@@ -1190,16 +1224,19 @@ void lua_block_registry_register(lua_State *L)
 void lua_level_register(lua_State *L)
 {
     const static luaL_Reg level_methods[] = {
-        { "load_registry",    lua_level_load_registry},
-        {"get_registries",   lua_level_get_registries},
-        {"get_room_count",   lua_level_get_room_count},
-        {     "find_room", lua_level_get_room_by_name},
-        {      "get_name",         lua_level_get_name},
-        {      "get_room",         lua_level_get_room},
-        {      "new_room",         lua_level_new_room},
-        {          "uuid",         lua_uuid_universal},
-        {          "__gc",               lua_level_gc},
-        {            NULL,                       NULL},
+        {       "load_registry",        lua_level_load_registry},
+        {  "serialize_registry",   lua_level_registry_serialize},
+        {"deserialize_registry", lua_level_registry_deserialize},
+        {      "get_registries",       lua_level_get_registries},
+        {        "add_existing",         lua_level_add_existing},
+        {      "get_room_count",       lua_level_get_room_count},
+        {           "find_room",     lua_level_get_room_by_name},
+        {            "get_name",             lua_level_get_name},
+        {            "get_room",             lua_level_get_room},
+        {            "new_room",             lua_level_new_room},
+        {                "uuid",             lua_uuid_universal},
+        {                "__gc",                   lua_level_gc},
+        {                  NULL,                           NULL},
     };
 
     luaL_newmetatable(L, "Level");
@@ -1284,6 +1321,6 @@ void lua_register_engine_objects(lua_State *L)
     // lua_entity_register(L);
     lua_block_registry_register(L);
     lua_sound_register(L);
-    load_image_editing_library(L); /* image editing */
+    image_load_editing_library(L); /* image editing */
     lua_varhandle_register(L);
 }

@@ -7,7 +7,7 @@
 #include <lua.h>
 #include <lualib.h>
 
-void load_image_editing_library(lua_State *L);
+void image_load_editing_library(lua_State *L);
 void lua_register_render_rules(lua_State *L);
 
 /*

@@ -71,8 +71,9 @@ local sound = {}
 local registry = {}
 
 ---@class BlockLevel
----@field load_registry fun(self:BlockLevel, name:string):BlockRegistry
+---@field load_registry fun(self:BlockLevel, name:string):BlockRegistry|nil
 ---@field get_registries fun(self:BlockLevel):BlockRegistry[]
+---@field add_existing fun(self:BlockLevel, registry:BlockRegistry):nil
 ---@field get_room_count fun(self:BlockLevel):integer
 ---@field find_room fun(self:BlockLevel, name:string):Room|nil
 ---@field get_name fun(self:BlockLevel):string

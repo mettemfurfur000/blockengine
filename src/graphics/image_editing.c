@@ -5,9 +5,9 @@
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 
-image *create_image(u16 width, u16 height)
+image *image_create(u16 width, u16 height)
 {
-    LOG_DEBUG("create_image: %dx%d", width, height);
+    LOG_DEBUG("image_create: %dx%d", width, height);
 
     image *img = (image *)malloc(sizeof(image));
 
@@ -22,19 +22,19 @@ image *create_image(u16 width, u16 height)
     return img;
 }
 
-void free_image(image *img)
+void image_free(image *img)
 {
-    LOG_DEBUG("free_image: %dx%d", img->width, img->height);
+    LOG_DEBUG("image_free: %dx%d", img->width, img->height);
 
     SAFE_FREE(img->pixels);
     SAFE_FREE(img);
 }
 
-image *copy_image(const image *src)
+image *image_copy(const image *src)
 {
-    LOG_DEBUG("copy_image: %dx%d", src->width, src->height);
+    LOG_DEBUG("image_copy: %dx%d", src->width, src->height);
 
-    image *img = create_image(src->width, src->height);
+    image *img = image_create(src->width, src->height);
     memcpy(img->pixels, src->pixels, src->width * src->height * CHANNELS);
     return img;
 }
@@ -46,11 +46,11 @@ image *copy_image(const image *src)
 #define CHANNEL_BLEND(a, b) (u8)(255 - ((255 - a) * (255 - b) / 255.0f))
 #define CHANNEL_OVERLAY(a, b) a < 128 ? 2 * a *b / 255.0f : 255 - 2 * (255 - a) * (255 - b) / 255.0f
 
-#define CHANNEL_GAMMA_CORRECTION(a, gamma) (u8)(pow(a / 255.0f, 1.0f / gamma) * 255.0f)
+#define CHANNEL_image_gamma_correction(a, gamma) (u8)(pow(a / 255.0f, 1.0f / gamma) * 255.0f)
 
 // file system
 
-image *load_image(const char *filename)
+image *image_load(const char *filename)
 {
     i32 width, height, channels;
     u8 *image_data;
@@ -61,9 +61,9 @@ image *load_image(const char *filename)
         return NULL;
     }
 
-    // LOG_DEBUG("load_image: %s %dx%d", filename, width, height);
+    // LOG_DEBUG("image_load: %s %dx%d", filename, width, height);
 
-    // image *img = create_image(width, height, channels);
+    // image *img = image_create(width, height, channels);
 
     image *img = (image *)malloc(sizeof(image));
 
@@ -77,16 +77,16 @@ image *load_image(const char *filename)
     return img;
 }
 
-void save_image(const image *img, const char *filename)
+void image_save(const image *img, const char *filename)
 {
-    LOG_DEBUG("save_image: %s", filename);
+    LOG_DEBUG("image_save: %s", filename);
 
     stbi_write_png(filename, img->width, img->height, CHANNELS, img->pixels, img->width * CHANNELS);
 }
 
 // funny part
 
-void adjust_brightness(image *img, float factor)
+void image_adjust_brightness(image *img, float factor)
 {
     for (u32 j = 0; j < img->height; j++)
         for (u32 i = 0; i < img->width; i++)
@@ -94,9 +94,9 @@ void adjust_brightness(image *img, float factor)
                 *ACCESS_CHANNEL(img, i, j, c) = KEEPINLIMITS(*ACCESS_CHANNEL(img, i, j, c) * factor, 0x00, 0xff);
 }
 
-void apply_color(image *img, u8 color[4])
+void image_apply_color(image *img, u8 color[4])
 {
-    LOG_DEBUG("apply_color: %d %d %d %d", color[0], color[1], color[2], color[3]);
+    LOG_DEBUG("image_apply_color: %d %d %d %d", color[0], color[1], color[2], color[3]);
 
     for (u32 j = 0; j < img->height; j++)
         for (u32 i = 0; i < img->width; i++)
@@ -104,25 +104,25 @@ void apply_color(image *img, u8 color[4])
                 *ACCESS_CHANNEL(img, i, j, c) = CHANNEL_BLEND(color[c], *ACCESS_CHANNEL(img, i, j, c));
 }
 
-void gamma_correction(image *img, float gamma)
+void image_gamma_correction(image *img, float gamma)
 {
     for (u32 j = 0; j < img->height; j++)
         for (u32 i = 0; i < img->width; i++)
             for (u32 c = 0; c < CHANNELS; c++)
-                *ACCESS_CHANNEL(img, i, j, c) = CHANNEL_GAMMA_CORRECTION(*ACCESS_CHANNEL(img, i, j, c), gamma);
+                *ACCESS_CHANNEL(img, i, j, c) = CHANNEL_image_gamma_correction(*ACCESS_CHANNEL(img, i, j, c), gamma);
 }
 
-image *crop_image(const image *src, u16 x, u16 y, u16 width, u16 height)
+image *image_crop(const image *src, u16 x, u16 y, u16 width, u16 height)
 {
     if (x >= src->width || y >= src->height)
     {
-        LOG_ERROR("crop_image Error: out of bounds");
+        LOG_ERROR("image_crop Error: out of bounds");
         return NULL;
     }
 
     if (width == 0 || height == 0)
     {
-        LOG_ERROR("crop_image Error: width or height is 0");
+        LOG_ERROR("image_crop Error: width or height is 0");
         return NULL;
     }
 
@@ -131,11 +131,11 @@ image *crop_image(const image *src, u16 x, u16 y, u16 width, u16 height)
 
     if (end_x > src->width || end_y > src->height)
     {
-        LOG_ERROR("crop_image Error: out of bounds");
+        LOG_ERROR("image_crop Error: out of bounds");
         return NULL;
     }
 
-    image *img = create_image(width, height);
+    image *img = image_create(width, height);
 
     for (u32 j = y; j < end_y; j++)
         for (u32 i = x; i < end_x; i++)
@@ -145,11 +145,11 @@ image *crop_image(const image *src, u16 x, u16 y, u16 width, u16 height)
     return img;
 }
 
-image *rotate_image(const image *src, i8 clockwise_rotations)
+image *image_rotate(const image *src, i8 clockwise_rotations)
 {
     if (clockwise_rotations == 0)
     {
-        return copy_image(src);
+        return image_copy(src);
     }
 
     clockwise_rotations = clockwise_rotations % 4;
@@ -160,9 +160,9 @@ image *rotate_image(const image *src, i8 clockwise_rotations)
     // swap width and height if rotation is not 180 degrees
     image *img = NULL;
     if (clockwise_rotations % 2 == 0)
-        img = create_image(src->width, src->height);
+        img = image_create(src->width, src->height);
     else
-        img = create_image(src->height, src->width);
+        img = image_create(src->height, src->width);
 
     for (u32 j = 0; j < src->height; j++)
         for (u32 i = 0; i < src->width; i++)
@@ -186,7 +186,7 @@ image *rotate_image(const image *src, i8 clockwise_rotations)
                 dest_y = src->width - i - 1;
                 break;
             default:
-                LOG_ERROR("rotate_image Error: invalid rotation");
+                LOG_ERROR("image_rotate Error: invalid rotation");
                 return NULL;
             }
 
@@ -197,9 +197,9 @@ image *rotate_image(const image *src, i8 clockwise_rotations)
     return img;
 }
 
-image *flip_image_horizontal(const image *src)
+image *image_flip_horizontal(const image *src)
 {
-    image *img = create_image(src->width, src->height);
+    image *img = image_create(src->width, src->height);
 
     for (u32 j = 0; j < src->height; j++)
         for (u32 i = 0; i < src->width; i++)
@@ -209,9 +209,9 @@ image *flip_image_horizontal(const image *src)
     return img;
 }
 
-image *flip_image_vertical(const image *src)
+image *image_flip_vertical(const image *src)
 {
-    image *img = create_image(src->width, src->height);
+    image *img = image_create(src->width, src->height);
 
     for (u32 j = 0; j < src->height; j++)
         for (u32 i = 0; i < src->width; i++)
@@ -223,17 +223,17 @@ image *flip_image_vertical(const image *src)
 
 // more fun stuff
 
-void overlay_image(image *dst, const image *src, u16 x, u16 y)
+void image_overlay(image *dst, const image *src, u16 x, u16 y)
 {
     if (x >= dst->width || y >= dst->height)
     {
-        LOG_ERROR("overlay_image Error: out of bounds");
+        LOG_ERROR("image_overlay Error: out of bounds");
         return;
     }
 
     if (src->width == 0 || src->height == 0)
     {
-        LOG_ERROR("overlay_image Error: source image is empty");
+        LOG_ERROR("image_overlay Error: source image is empty");
         return;
     }
 
@@ -255,22 +255,22 @@ void overlay_image(image *dst, const image *src, u16 x, u16 y)
 }
 
 // Utility functions
-void clear_image(image *img)
+void image_clear(image *img)
 {
     if (img == NULL)
     {
-        LOG_ERROR("clear_image Error: image is NULL");
+        LOG_ERROR("image_clear Error: image is NULL");
         return;
     }
 
     memset(img->data, 0, img->width * img->height * CHANNELS);
 }
 
-void fill_color(image *img, u8 color[4])
+void image_fill_color(image *img, u8 color[4])
 {
     if (img == NULL)
     {
-        LOG_ERROR("fill_color Error: image is NULL");
+        LOG_ERROR("image_fill_color Error: image is NULL");
         return;
     }
 
@@ -280,11 +280,11 @@ void fill_color(image *img, u8 color[4])
                 *ACCESS_CHANNEL(img, i, j, c) = color[c];
 }
 
-void get_avg_color_noalpha(image *img, u8 color_out[4])
+void image_get_avg_color(image *img, u8 color_out[4])
 {
     if (img == NULL)
     {
-        LOG_ERROR("fill_color Error: image is NULL");
+        LOG_ERROR("image_fill_color Error: image is NULL");
         return;
     }
 

@@ -15,13 +15,15 @@
 #define RESOURCE_FLAG_AUTO_ID 0b00001000
 #define RESOURCE_FLAG_RANGED 0b00010000
 
+#define REGISTRY_VERSION_MAGIC "BRG1"
+
 typedef struct block_resources
 {
     hash_node **all_fields;
     void *parent_registry;
     u64 id;
 
-    blob vars_sample;
+    blob vars_sample; // sample vars blob for this block, ready to use
 
     u64 repeat_times;
     vec_int_t repeat_skip;
@@ -32,13 +34,16 @@ typedef struct block_resources
 
     char *texture_filename;
     char *lua_script_filename;
+    // compiled lua bytecode embedded in .brg (owned by this struct)
+    unsigned char *lua_script_blob;
+    u32 lua_script_blob_size;
 
     vec_sound_t sounds;
 
     vec_int_t input_refs;
     vec_str_t input_names;
 
-    i32 input_tick_ref;
+    i32 input_tick_ref; // which input causes a tick update, as a lua ref
     u8 autotile_type;
     // char autotile_update_key;
     // char autotile_cache_key;
@@ -102,5 +107,10 @@ u32 read_all_registries(char *folder, vec_registries_t *dest);
 block_registry *find_registry(vec_void_t src, char *name);
 
 void debug_print_registry(block_registry *ref);
+
+// extensions for reading/writing registries
+
+u8 registry_save(block_registry *b);
+block_registry *registry_load(const char *name);
 
 #endif

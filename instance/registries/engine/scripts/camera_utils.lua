@@ -2,6 +2,11 @@ require("registries.engine.scripts.constants")
 
 local sdl = require("registries.engine.scripts.definitions.sdl")
 
+if g_render_rules == nil then
+    print("camera_utils.lua requires render_rules to be defined, camera utils will not work")
+    return
+end
+
 G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
 
 local camera_limit_x, camera_limit_y = G_screen_width, G_screen_height

@@ -1,91 +1,11 @@
 #include "include/file_system.h"
-#include "include/endianless.h"
 #include "include/folder_structure.h"
 #include "include/handle.h"
 #include "include/level.h"
 #include "include/logging.h"
 #include "include/vars.h"
 
-/* compression-related stuff */
-
-typedef enum
-{
-    STREAM_PLAIN, /* ordinary FILE* */
-    STREAM_GZIP   /* gzFile from zlib   */
-} stream_mode_t;
-
-/* The struct that all functions will actually receive. */
-typedef struct
-{
-    stream_mode_t mode;
-    union
-    {
-        FILE *plain; /* when mode == STREAM_PLAIN */
-        gzFile gz;   /* when mode == STREAM_GZIP  */
-    } handle;
-} stream_t;
-
-/* Compatibility shim – lets us keep the old signatures */
-#define AS_STREAM(p) ((stream_t *)(p))
-
-static u8 flip_buf[8] = {};
-
-static inline int stream_write(const void *buf, size_t size, stream_t *s)
-{
-    if (size % 2 == 0 && size <= 8 && size > 0)
-    {
-        memcpy(flip_buf, buf, size);
-        make_endianless(flip_buf, size);
-        buf = flip_buf;
-    }
-
-    if (s->mode == STREAM_PLAIN)
-    {
-        return fwrite(buf, 1, size, s->handle.plain) == size ? 0 : -1;
-    }
-    else
-    { /* STREAM_GZIP */
-        int written = gzwrite(s->handle.gz, buf, (unsigned int)size);
-        return written == (int)size ? 0 : -1;
-    }
-}
-
-static inline int stream_read(void *buf, size_t size, stream_t *s)
-{
-    int ret_code = true;
-    if (s->mode == STREAM_PLAIN)
-    {
-        ret_code = fread(buf, 1, size, s->handle.plain) == size ? 0 : -1;
-    }
-    else
-    { /* STREAM_GZIP */
-        int read = gzread(s->handle.gz, buf, (unsigned int)size);
-        ret_code = read == (int)size ? 0 : -1;
-    }
-
-    if (size % 2 == 0 && size < 9 && size > 0)
-        make_endianless(buf, size);
-
-    return ret_code;
-}
-
-#define WRITE(object, s)                                                                                               \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (stream_write(&(object), sizeof(object), AS_STREAM(s)) != 0)                                                \
-        {                                                                                                              \
-            LOG_ERROR("Write failed for %s", #object);                                                                 \
-        }                                                                                                              \
-    } while (0)
-
-#define READ(object, s)                                                                                                \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (stream_read(&(object), sizeof(object), AS_STREAM(s)) != 0)                                                 \
-        {                                                                                                              \
-            LOG_ERROR("Read failed for %s", #object);                                                                  \
-        }                                                                                                              \
-    } while (0)
+u8 flip_buf[8] = {};
 
 void blob_write(blob b, stream_t *f)
 {
@@ -96,11 +16,11 @@ void blob_write(blob b, stream_t *f)
 
 blob blob_read(stream_t *f)
 {
-    blob t;
-    READ(t.length, f);
-    t.str = malloc(t.length);
-    stream_read(t.str, t.length, f);
-    return t;
+    blob b;
+    READ(b.length, f);
+    b.str = malloc(b.length);
+    stream_read(b.str, b.length, f);
+    return b;
 }
 
 void blob_vars_write(blob b, stream_t *f)
@@ -123,8 +43,8 @@ void blob_vars_write(blob b, stream_t *f)
 blob blob_vars_read(stream_t *f)
 {
     blob b;
-    READ(b.size, f);
-    b.ptr = calloc(b.size, 1);
+    READ(b.length, f);
+    b.ptr = calloc(b.length, 1);
 
     assert(b.ptr != NULL);
 
@@ -182,6 +102,61 @@ void read_hashtable(hash_node **t, stream_t *f)
         put_entry(t, key, value); // i could just put it in place but im not
                                   // sure about the order of them being called
     }
+}
+
+void stream_embed_file_write(const char *file_path, stream_t *s)
+{
+    // open the file
+    FILE *file = fopen(file_path, "rb");
+    // get file size
+    fseek(file, 0, SEEK_END);
+    u32 file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    // write file size
+    WRITE(file_size, s);
+
+    // read and write file data in chunks
+    u8 buffer[BUFFER_SIZE];
+    u32 bytes_remaining = file_size;
+    while (bytes_remaining > 0)
+    {
+        u32 bytes_to_read = bytes_remaining < sizeof(buffer) ? bytes_remaining : sizeof(buffer);
+        size_t read_bytes = fread(buffer, 1, bytes_to_read, file);
+        if (read_bytes == 0)
+        {
+            LOG_ERROR("Failed to read from file during embedding: %s", file_path);
+            break;
+        }
+        WRITE_N(buffer, s, read_bytes);
+        bytes_remaining -= (u32)read_bytes;
+    }
+
+    fclose(file);
+}
+
+void stream_embed_file_read_to_mem(stream_t *s, u8 **out_data, u32 *out_size)
+{
+    // read file size
+    u32 file_size = 0;
+    READ(file_size, s);
+    *out_size = file_size;
+
+    // allocate memory
+    u8 *data = malloc(file_size);
+    assert(data != NULL);
+
+    // read file data in chunks
+    u32 bytes_remaining = file_size;
+    u8 *data_ptr = data;
+    while (bytes_remaining > 0)
+    {
+        u32 bytes_to_read = bytes_remaining < BUFFER_SIZE ? bytes_remaining : BUFFER_SIZE;
+        READ_N(data_ptr, s, bytes_to_read);
+        data_ptr += bytes_to_read;
+        bytes_remaining -= bytes_to_read;
+    }
+
+    *out_data = data;
 }
 
 // TODO: this serialization code is stinky, mayb remake in a more modular way?/
@@ -376,80 +351,13 @@ void read_room(room *r, stream_t *f)
     }
 }
 
-/* Open for writing.  If `compress` is true we create a gzip stream. */
-static int stream_open_write(const char *path, int compress, stream_t *out)
-{
-    if (compress)
-    {
-        out->mode = STREAM_GZIP;
-        out->handle.gz = gzopen(path, "wb9"); /* max compression */
-        if (!out->handle.gz)
-        {
-            LOG_ERROR("gzopen failed for %s", path);
-            return -1;
-        }
-    }
-    else
-    {
-        out->mode = STREAM_PLAIN;
-        out->handle.plain = fopen(path, "wb");
-        if (!out->handle.plain)
-        {
-            LOG_ERROR("fopen failed for %s", path);
-            return -1;
-        }
-    }
-    return 0;
-}
-
-/* Open for reading.  If `compress` is true we expect a gzip stream. */
-static int stream_open_read(const char *path, int compress, stream_t *out)
-{
-    if (compress)
-    {
-        out->mode = STREAM_GZIP;
-        out->handle.gz = gzopen(path, "rb");
-        if (!out->handle.gz)
-        {
-            LOG_ERROR("gzopen failed for %s", path);
-            return -1;
-        }
-    }
-    else
-    {
-        out->mode = STREAM_PLAIN;
-        out->handle.plain = fopen(path, "rb");
-        if (!out->handle.plain)
-        {
-            LOG_ERROR("fopen failed for %s", path);
-            return -1;
-        }
-    }
-    return 0;
-}
-
-/* Close the abstract stream */
-static void stream_close(stream_t *s)
-{
-    if (s->mode == STREAM_PLAIN)
-    {
-        if (s->handle.plain)
-            fclose(s->handle.plain);
-    }
-    else
-    {
-        if (s->handle.gz)
-            gzclose(s->handle.gz);
-    }
-}
-
 u8 save_level(level lvl)
 {
     char path[256] = {};
     sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", lvl.name);
 
     stream_t s;
-    if (stream_open_write(path, COMPRESS_LEVELS, &s) != 0)
+    if (stream_open_write(path, COMPRESS_LEVEL, &s) != 0)
         return FAIL;
 
     /* The rest of the function stays exactly the same – just pass &s instead of FILE* */
@@ -478,7 +386,7 @@ u8 load_level(level *lvl, const char *name_in)
     sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
 
     stream_t s;
-    if (stream_open_read(path, COMPRESS_LEVELS, &s) != 0)
+    if (stream_open_read(path, COMPRESS_LEVEL, &s) != 0)
         return FAIL;
 
     READ(lvl->uuid, &s);

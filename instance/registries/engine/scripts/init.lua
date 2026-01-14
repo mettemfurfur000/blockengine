@@ -9,6 +9,11 @@ require("registries.engine.scripts.constants")
 --- loads and registers layer editor functions
 require("registries.engine.scripts.layer_editor")
 
+if render_rules == nil then
+    wrappers.log_error("render_rules module not found")
+    return
+end
+
 G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
 
 G_width_blocks = math.floor(2 * G_screen_width / (g_block_size * global_zoom))
@@ -130,7 +135,7 @@ local function create_menu()
         os.exit()
     end
 
-    G_engine = wrappers.safe_registry_load(G_level, "engine")
+    G_level:add_existing(g_block_registry) -- add the existing engine registry to the level
 
     G_menu_room = wrappers.safe_room_create(G_level, "menu", G_width_blocks, G_height_blocks)
 end
@@ -160,17 +165,6 @@ local function init_menu()
     G_view_menu = build_view(G_menu_definition, "engine", loaded)
 end
 
-init_menu()
--- print_table(g_menu)
-
--- utils
-G_engine_table = G_engine:to_table()
-G_total_blocks = wrappers.tablelength(G_engine_table)
-G_character_id = wrappers.find_block(G_engine_table, "character").id
-
-G_view_menu.text.layer:for_each(G_character_id, function(x, y) -- clear all left ova text
-    G_view_menu.text.layer:paste_block(x, y, 0)
-end)
 
 G_tick = 0
 G_sdl_tick = 0
@@ -187,6 +181,9 @@ blockengine.register_handler(sdl_events.SDL_QUIT, function(code) -- tick over al
         level_editor.save_level(G_level)
         print("Saved level")
     end
+
+    -- test serialize
+    -- G_level:serialize_registry(0)
 end)
 
 blockengine.register_handler(sdl_events.SDL_WINDOWEVENT, function(width, height)
@@ -205,9 +202,23 @@ blockengine.register_handler(sdl_events.SDL_WINDOWEVENT, function(width, height)
     set_render_rule_order(G_view_menu)
 end)
 
-wrappers.try(function()
-    set_render_rule_order(G_view_menu)
-end, function(e)
-    wrappers.log_error(e)
-    os.exit()
+-- gets all the data
+blockengine.register_handler(engine_events.ENGINE_INIT, function()
+    init_menu()
+    -- print_table(g_menu)
+
+    -- utils
+    G_engine_table = G_engine:to_table()
+    G_total_blocks = wrappers.tablelength(G_engine_table)
+    G_character_id = wrappers.find_block(G_engine_table, "character").id
+
+    G_view_menu.text.layer:for_each(G_character_id, function(x, y) -- clear all left ova text
+        G_view_menu.text.layer:paste_block(x, y, 0)
+    end)
+    wrappers.try(function()
+        set_render_rule_order(G_view_menu)
+    end, function(e)
+        wrappers.log_error(e)
+        os.exit()
+    end)
 end)
