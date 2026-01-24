@@ -46,6 +46,11 @@ typedef struct {
     // update_var_t vars; // TODO: do variables
 } update_acc;
 
+// Function declarations
+update_acc new_update_acc(void);
+void push_block_update(update_acc *a, u16 x, u16 y, u64 id, u8 true_width);
+update_block read_block_update(update_acc *a, u32 index, u8 true_width);
+
 // typedef struct
 // {
 //     u16 room_index;

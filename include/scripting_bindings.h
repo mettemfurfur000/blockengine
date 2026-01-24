@@ -28,6 +28,9 @@ void lua_level_editing_lib_register(lua_State *L);
 // includes all above + some extra
 void lua_register_engine_objects(lua_State *L);
 
+// networking
+void lua_network_register(lua_State *L);
+
 void lua_entity_register(lua_State *L);
 
 // some public lua functions

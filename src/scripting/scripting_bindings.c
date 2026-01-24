@@ -5,17 +5,12 @@
 #include "include/flags.h"
 #include "include/image_editing.h"
 #include "include/level.h"
+#include "include/network.h"
 #include "include/rendering.h"
 #include "include/scripting.h"
 #include "include/scripting_var_handles.h"
+#include "include/update_system.h"
 
-#include <SDL_mixer.h>
-#include <SDL_timer.h>
-
-// #include <time.h>
-
-#include <lauxlib.h>
-#include <lua.h>
 
 #define PUSHNEWIMAGE(L, i, name)                                                                                       \
     ImageWrapper *name = (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper));                                     \
@@ -929,6 +924,9 @@ static int lua_layer_paste_block(lua_State *L)
     if (block_set_id(wrapper->l, x, y, id) != SUCCESS)
         luaL_error(L, "Failed to set id at: %d, %d", x, y);
 
+    /* Push block update to layer accumulator */
+    // push_block_update(&wrapper->l->updates, x, y, id, wrapper->l->block_size);
+
     block_update_event e = {
         .type = ENGINE_BLOCK_CREATE,
         .x = x,
@@ -1055,7 +1053,16 @@ static int lua_layer_set_id(lua_State *L)
     u32 y = luaL_checknumber(L, 3);
     u64 id = luaL_checknumber(L, 4);
 
-    lua_pushboolean(L, block_set_id(wrapper->l, x, y, id) == SUCCESS);
+    if (block_set_id(wrapper->l, x, y, id) == SUCCESS)
+    {
+        /* Push block update to layer accumulator */
+        // push_block_update(&wrapper->l->updates, x, y, id, wrapper->l->block_size);
+        lua_pushboolean(L, 1);
+    }
+    else
+    {
+        lua_pushboolean(L, 0);
+    }
 
     return 1;
 }
@@ -1325,5 +1332,54 @@ void lua_register_engine_objects(lua_State *L)
     lua_block_registry_register(L);
     lua_sound_register(L);
     image_load_editing_library(L); /* image editing */
+    // lua_network_register(L); 
     lua_varhandle_register(L);
 }
+
+// // ------- Networking Lua bindings -------
+// static int lua_net_init(lua_State *L)
+// {
+//     u16 port = (u16)luaL_checkinteger(L, 1);
+//     int r = net_server_init(port, MAX_CLIENTS);
+//     lua_pushinteger(L, r);
+//     return 1;
+// }
+
+// static int lua_net_shutdown(lua_State *L)
+// {
+//     (void)L;
+//     net_server_shutdown();
+//     return 0;
+// }
+
+// static int lua_net_broadcast(lua_State *L)
+// {
+//     u16 layer = (u16)luaL_checkinteger(L, 1);
+//     int true_width = (int)luaL_checkinteger(L, 2);
+//     size_t len = 0;
+//     const char *data = luaL_checklstring(L, 3, &len);
+
+//     update_acc acc = {};
+//     vec_init(&acc.block_updates_raw);
+//     if (len)
+//         vec_pusharr(&acc.block_updates_raw, (u8 *)data, (u32)len);
+
+//     // net_broadcast_update(layer, &acc, (u8)true_width);
+
+//     vec_deinit(&acc.block_updates_raw);
+
+//     return 0;
+// }
+
+// void lua_network_register(lua_State *L)
+// {
+//     const static luaL_Reg net_lib[] = {
+//         {             "init",      lua_net_init},
+//         {         "shutdown",  lua_net_shutdown},
+//         {"broadcast_updates", lua_net_broadcast},
+//         {               NULL,              NULL},
+//     };
+
+//     luaL_newlib(L, net_lib);
+//     lua_setglobal(L, "net");
+// }

@@ -1,122 +1,94 @@
-CFLAGS += -O0 -Wall -g # -pg -no-pie
-LDFLAGS += -lm -g -lz -lunwind # -pg
+CFLAGS += -O0 -Wall -g -MMD
+LDFLAGS += -lm -g -lz -lunwind
+
+# uncomment to do sum 
+ifeq ($(PERF),1)
+    CFLAGS += -pg -no-pie
+    LDFLAGS += -pg
+endif
+
+# enables including from projects root directory
+CFLAGS += -I$(CURDIR)
 
 ifeq ($(OS),Windows_NT)
-	CFLAGS += -IC:/msys64/mingw64/include/SDL2 -Dmain=SDL_main -IC:/msys64$(shell pwd)
-	LDFLAGS += ~/../../mingw64/lib/liblua.a -LC:/msys64/mingw64/lib -lmingw32 -lws2_32 -lbacktrace
+    CFLAGS += -IC:/msys64/mingw64/include/SDL2 
+    CFLAGS += -Dmain=SDL_main
+    
+    LDFLAGS += -LC:/msys64/mingw64/lib
+    LDFLAGS += -llua
+    LDFLAGS += -lmingw32
+    LDFLAGS += -lws2_32
+    LDFLAGS += -lbacktrace
 else
-	CFLAGS += -I$(shell pwd)
-	CFLAGS += -I/usr/include/lua5.4/
-	CFLAGS += -I/usr/include/SDL2
-	LDFLAGS += -lbacktrace
+    CFLAGS += -I/usr/include/lua5.4/
+    CFLAGS += -I/usr/include/SDL2
+
+    LDFLAGS += -lbacktrace
 endif
+
+# general libraries 
 
 LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer
 
+# opengl stuff
 ifeq ($(OS),Windows_NT)
-	LDFLAGS += -lopengl32 -lepoxy.dll
+    LDFLAGS += -lopengl32 -lepoxy.dll
+    LDFLAGS += -lWinmm # sum weird time lib that enet uses
 else
-	LDFLAGS += -lGL -lepoxy -llua5.4
+    LDFLAGS += -lGL -lepoxy -llua5.4
 endif
 
-# sources := $(shell cd src;echo *.c)
-sources_c := $(shell cd src;find . -name '*.c')
-sources_cpp := $(shell cd src;find . -name '*.cpp')
-sources += $(sources_c) $(sources_cpp)
+SRCS_C := $(shell cd src;find . -name '*.c')
+SRCS_CPP := $(shell cd src;find . -name '*.cpp')
+SRCS := $(SRCS_C) $(SRCS_CPP)
 
-objects_c := $(patsubst %.c,obj/%.o,$(sources_c))
-objects_cpp := $(patsubst %.cpp,obj/%.o,$(sources_cpp))
-objects := $(objects_c) $(objects_cpp)
-objects := $(shell echo $(objects) | sed 's#/./#/#')
-headers := $(shell cd include;echo *.h)
+OBJS_C := $(patsubst %.c,obj/%.o,$(SRCS_C))
+OBJS_CPP := $(patsubst %.cpp,obj/%.o,$(SRCS_CPP))
+OBJS := $(OBJS_C) $(OBJS_CPP)
+OBJS := $(shell echo $(OBJS) | sed 's#/./#/#')
+
+DEPS_C := $(patsubst %.c,obj/%.d,$(SRCS_C))
+DEPS_CPP := $(patsubst %.cpp,obj/%.d,$(SRCS_CPP))
+DEPS := $(DEPS_C) $(DEPS_CPP)
+# DEPS := $(shell echo $(DEPS) | sed 's#/./#/#')
+
+-include $(DEPS)
+
+all: client_app builder
 
 #our vector library
 .PHONY: vec
 vec:
 	gcc -o obj/vec.o -c vec/src/vec.c -Wall -Wextra -Ivec/src
 
-.PHONY: make_folders
-make_folders:
-	mkdir -p obj
-	mkdir -p build
-
-#part with registry copy
-.PHONY: registry
-registry: make_folders
+#part with copy_instance copy
+.PHONY: copy_instance
+copy_instance:
 	mkdir -p build
 	cp -r instance/* build/
 
 obj/%.o : src/%.c
 	mkdir -p $(shell echo $@ | sed -r "s/(.+)\/.+/\1/")
-	gcc $(CFLAGS) -c $^ -o $@
+	gcc $(CFLAGS) -c $< -o $@
 
 obj/%.o : src/%.cpp
-	g++ -std=c++17 $(CFLAGS) -c $^ -o $@
-
-# $(executable): $(objects)
-# 	gcc $(CFLAGS) -o build/$@ $^ $(LDFLAGS)
-
-.PHONY: test
-test: mains/test.c registry vec $(objects)
-	gcc -o obj/test.o -c mains/test.c ${CFLAGS}
-	gcc ${CFLAGS} -o build/test obj/test.o obj/vec.o $(objects) $(LDFLAGS)
-
-.PHONY: graphic
-graphic: mains/graphics_test.c registry vec $(objects)
-	gcc -o obj/g_test.o -c mains/graphics_test.c ${CFLAGS}
-	gcc ${CFLAGS} -o build/g_test obj/g_test.o obj/vec.o $(objects) $(LDFLAGS)
-
-.PHONY: test_lua
-test_lua: mains/lua_test.c
-	gcc -o obj/lua_test.o -c mains/lua_test.c
-ifeq ($(OS),Windows_NT)
-	gcc -o build/lua_test obj/lua_test.o ~/../../mingw64/lib/liblua.a -lm
-else
-	gcc -o build/lua_test obj/lua_test.o lua/src/liblua.a -lm
-endif
+	g++ -std=c++17 $(CFLAGS) -c $< -o $@
 
 .PHONY: client_app
-client_app: mains/client.c registry vec $(objects)
+client_app: mains/client.c copy_instance vec $(OBJS)
 	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
-	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(objects) $(LDFLAGS) -lstdc++
+	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
 .PHONY: builder
-builder: mains/builder.c registry vec $(objects)
+builder: mains/builder.c copy_instance vec $(OBJS)
 	gcc -o obj/builder.o -c mains/builder.c ${CFLAGS}
-	g++ ${CFLAGS} -o build/builder obj/builder.o obj/vec.o $(objects) $(LDFLAGS) -lstdc++
+	g++ ${CFLAGS} -o build/builder obj/builder.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
-.PHONY: run_client
-run_client: client_app
-ifeq ($(OS),Windows_NT)
-	cd build;./client.exe
-else
-	cd build;./client
-endif
-
+# use this when packaging to get all the dll-s used
 .PHONY: grab_client_dlls
 grab_client_dlls:
 	-./grab_dlls.sh build/client.exe /mingw64/bin 2
 
-.PHONY: texgen
-texgen: mains/texgen.c registry vec $(objects)
-	gcc -o obj/texgen.o -c mains/texgen.c ${CFLAGS}
-	gcc ${CFLAGS} -o build/texgen obj/texgen.o obj/vec.o $(objects) $(LDFLAGS)
-#	-./grab_dlls.sh build/client.exe /mingw64/bin 1
-
-.PHONY: networking
-networking: mains/network_test_server.c mains/network_test_client.c vec $(objects)
-ifeq ($(OS),Windows_NT)
-	gcc -o obj/network_test_server.o -c mains/network_test_server.c ${CFLAGS}
-	gcc -o obj/network_test_client.o -c mains/network_test_client.c ${CFLAGS}
-	gcc ${CFLAGS} -o build/test_server obj/network_test_server.o obj/vec.o $(objects) $(LDFLAGS)
-	gcc ${CFLAGS} -o build/test_client obj/network_test_client.o obj/vec.o $(objects) $(LDFLAGS)
-else
-	gcc -o build/test_server mains/network_test_server.o -Wall
-	gcc -o build/test_client mains/network_test_client.o -Wall
-endif
-	
 clean:
 	rm -rf build/*
 	rm -rf obj/*
-
-all: test graphic test_lua client_app networking

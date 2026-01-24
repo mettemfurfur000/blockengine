@@ -36,6 +36,8 @@ typedef struct layer
     u8 total_bytes_per_block; // block_size + 4 (handle32)
 
     u8 flags; //
+    
+    update_acc updates; // accumulator for block updates on this layer
 } layer;
 
 typedef struct level level;

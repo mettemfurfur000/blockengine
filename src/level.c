@@ -4,6 +4,7 @@
 #include "include/logging.h"
 #include "include/uuid.h"
 #include "include/vars.h"
+#include "include/update_system.h"
 
 #include "include/flags.h"
 #include <stdarg.h>
@@ -321,6 +322,9 @@ u8 init_layer(layer *l, room *parent_room)
         // l->var_pool.type_tag = 1;                     /* choose tag 1 for vars */
     }
 
+    /* Initialize update accumulator for network broadcasting */
+    l->updates = new_update_acc();
+
     return SUCCESS;
 }
 
@@ -382,6 +386,9 @@ u8 free_layer(layer *l)
             l->var_pool.table = NULL;
         }
     }
+
+    /* Cleanup update accumulator */
+    vec_deinit(&l->updates.block_updates_raw);
 
     l->uuid = 0;
 
