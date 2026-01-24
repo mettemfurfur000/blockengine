@@ -18,11 +18,7 @@ you may also need `git` to clone this repo, you can install it with `pacman -S g
 
 # part with actual building
 
-open mingw64 shell (blue one), naviate to blockengine project folder and run `make test`
-
-this will build the test executable, which will run the test suite and print out the results. if you see "total success", you're good to go, i guess...
-
-theres also other `target`s you can run, try them out
+open mingw64 shell (blue one), naviate to blockengine project folder and run `make`
 
 if youre failed somewhere, then, uhh, leave an issue, ill try to help you
 
@@ -50,11 +46,13 @@ for fancy autocomplete and analysys,
 come to the project root, and:
 
 ```bash
-python3 -m venv .env
-source .env/bin/activate
+python3 -m venv .compiledbenv
+source .compiledbenv/bin/activate
 pip install compiledb
-make clean client_app VERBOSE=1 -B > ./build_log.txt
+make VERBOSE=1 -j 8 -B > ./build_log.txt
 compiledb < build_log.txt
 ```
 
-then clangd thing should work
+or use `get_compile_commands.sh`, it gets the job done too, but will rebuild the whole thing and will also remove the python env that was created in the process
+
+then clangd thing should work immediately, or after a window reload, ykwim

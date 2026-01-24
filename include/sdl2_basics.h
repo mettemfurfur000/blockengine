@@ -8,7 +8,7 @@
 #include "general.h"
 // #include "rendering.h"
 
-#include "../vec/src/vec.h"
+#include "vec/src/vec.h"
 // #include "../stb/stb_image.h"
 #include "image_editing.h"
 

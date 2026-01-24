@@ -7,8 +7,18 @@ ifeq ($(PERF),1)
     LDFLAGS += -pg
 endif
 
+ifeq ($(OS),Windows_NT)
+# this trick is required for clang, since it doesn really know what to do with unix paths on windows
+    MSYSINSTALLDIR := $(shell cd /;pwd -W)
+    ROOTDIR := $(MSYSINSTALLDIR)$(CURDIR)
+else
+    ROOTDIR := $(CURDIR) 
+endif
+
 # enables including from projects root directory
-CFLAGS += -I$(CURDIR)
+CFLAGS += -I$(ROOTDIR)
+# enables including directly from libs folder
+CFLAGS += -I$(ROOTDIR)/libs
 
 ifeq ($(OS),Windows_NT)
     CFLAGS += -IC:/msys64/mingw64/include/SDL2 
@@ -52,14 +62,14 @@ DEPS_CPP := $(patsubst %.cpp,obj/%.d,$(SRCS_CPP))
 DEPS := $(DEPS_C) $(DEPS_CPP)
 # DEPS := $(shell echo $(DEPS) | sed 's#/./#/#')
 
--include $(DEPS)
-
 all: client_app builder
 
-#our vector library
+-include $(DEPS)
+
+# our vector library
 .PHONY: vec
 vec:
-	gcc -o obj/vec.o -c vec/src/vec.c -Wall -Wextra -Ivec/src
+	gcc -o obj/vec.o -c libs/vec/src/vec.c -Wall -Wextra -Ilibs/vec/src
 
 #part with copy_instance copy
 .PHONY: copy_instance

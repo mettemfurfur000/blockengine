@@ -1,7 +1,7 @@
 #ifndef LEVEL_H
 #define LEVEL_H 1
 
-#include "../vec/src/vec.h"
+#include "vec/src/vec.h"
 #include "block_registry.h"
 #include "general.h"
 #include "handle.h"

@@ -1,6 +1,6 @@
 [submodule "vec"]
-	path = vec
+	path = libs/vec
 	url = https://github.com/rxi/vec
 [submodule "dirent"]
-	path = dirent
+	path = libs/dirent
 	url = https://github.com/tronkko/dirent

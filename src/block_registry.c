@@ -9,7 +9,7 @@
 #include "include/vars_utils.h"
 
 #ifdef _WIN64
-#include "../dirent/include/dirent.h"
+#include "dirent/include/dirent.h"
 #else
 #include <dirent.h>
 #endif

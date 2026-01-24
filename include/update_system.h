@@ -3,7 +3,7 @@
 
 #include "vec/src/vec.h"
 // #include "level.h"
-#include "../vec/src/vec.h"
+#include "vec/src/vec.h"
 #include "general.h"
 #include "handle.h"
 #include <assert.h>

@@ -7,7 +7,7 @@
 #include "hashtable.h"
 #include "sdl2_basics.h"
 
-#include "../vec/src/vec.h"
+#include "vec/src/vec.h"
 
 #define RESOURCE_FLAG_IGNORE_TYPE 0b00000001
 #define RESOURCE_FLAG_RANDOM_POS 0b00000010
