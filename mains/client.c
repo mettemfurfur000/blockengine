@@ -189,7 +189,8 @@ int main(int argc, char *argv[])
 
     scripting_init();
 
-    LUA_SET_GLOBAL_OBJECT("g_render_rules", &rules); // TODO: instead of pushing a light userdata push a proper user object with a metatable
+    LUA_SET_GLOBAL_OBJECT("g_render_rules", &rules);
+    // TODO: instead of pushing a light userdata push a proper user object with a metatable
 
     // scripting_do_script(config.registry, config.init_script);
 
@@ -204,7 +205,7 @@ int main(int argc, char *argv[])
     LUA_SET_GLOBAL_USER_OBJECT("G_block_registry", BlockRegistry, reg);
 
     u32 latest_logic_tick = SDL_GetTicks();
-    
+
     SDL_Event e;
     e.type = ENGINE_INIT_GLOBALS; // supar-dupar initial event
     call_handlers(e);
@@ -262,8 +263,17 @@ int main(int argc, char *argv[])
             call_handlers(e);
         }
 
+        // call an event before rendering the frame
+        e.type = ENGINE_FRAME_PRE;
+        call_handlers(e);
+
         client_render(rules);
         SDL_GL_SwapWindow(g_window);
+
+        e.type = ENGINE_FRAME_POST;
+        call_handlers(e);
+
+        // add a post frame event
 
         int loop_took = SDL_GetTicks() - frame_begin_tick;
         int chill_time = ms_per_frame - loop_took;

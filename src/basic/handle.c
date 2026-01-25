@@ -115,34 +115,6 @@ u16 util_get_new_handle_index(handle_table *table)
     return slot_index;
 }
 
-/* Helpers to build / parse handle32 */
-
-u32 handle_to_u32(handle32 h)
-{
-    u32 v = 0;
-    /* layout: [31..24 unused][23..15 validation(9)][14..9 type(6)][8 active][7..0 index(8?) ]
-       But original fixed size: index is u16; we'll pack as: (index << 0) | (validation << 16) | (type << 25) | (active
-       << 31) To keep simple and reversible, store fields into a u32 with enough bits:
-       - index: bits 0..15 (16 bits)
-       - validation: bits 16..24 (9 bits)
-       - type: bits 25..30 (6 bits)
-       - active: bit 31
-    */
-    v = ((u32)h.index & INVALID_HANDLE_INDEX) | (((u32)h.validation & 0x1FFu) << 16) | (((u32)h.type & 0x3Fu) << 25) |
-        (((u32)h.active & 0x1u) << 31);
-    return v;
-}
-
-handle32 handle_from_u32(u32 v)
-{
-    handle32 h;
-    h.index = (u16)(v & INVALID_HANDLE_INDEX);
-    h.validation = (u16)((v >> 16) & 0x1FFu);
-    h.type = (u16)((v >> 25) & 0x3Fu);
-    h.active = (u16)((v >> 31) & 0x1u);
-    return h;
-}
-
 /* Acquire a slot: return handle with 1-based index? The header expects index be u16; we use 0..capacity-1.
    However we must ensure invalid handle uses 0xFFFF (INVALID_HANDLE_INDEX) as index. */
 
@@ -163,7 +135,7 @@ handle32 handle_table_put(handle_table *table, void *obj)
 
     handle32 h;
     h.index = slot_index;
-    h.validation = (u16)(s->generation & 0x1FFu);
+    h.validation = (u16)(s->generation);
     h.active = s->active;
 
     return h;
@@ -180,41 +152,41 @@ void handle_table_release(handle_table *table, handle32 h)
     /* Only release if handle matches current generation and active */
     if (!s->active)
         return;
-    if ((u16)(s->generation & 0x1FFu) != (u16)(h.validation & 0x1FFu))
+    if ((u16)(s->generation) != (u16)(h.validation))
         return;
 
     s->active = 0;
     s->ptr = NULL;
-    s->generation = (u16)((s->generation + 1) & 0xFFFFu); /* increment generation */
+    s->generation = (u16)((s->generation + 1)); /* increment generation */
 }
 
 void *handle_table_get(handle_table *table, handle32 h)
 {
     if (!table)
     {
-        LOG_DEBUG("to table privided");
+        // LOG_DEBUG("no table provided");
         return NULL;
     }
     if (h.index == INVALID_HANDLE_INDEX)
     {
-        LOG_DEBUG("invalid index - %d", h.index);
+        // LOG_DEBUG("invalid index - %d", h.index);
         return NULL;
     }
     if (h.index >= table->capacity)
     {
-        LOG_DEBUG("out of bounds - %d", h.index);
+        // LOG_DEBUG("out of bounds - %d", h.index);
         return NULL;
     }
 
     struct handle_table_slot *s = &table->slots[h.index];
     if (!s->active)
     {
-        LOG_DEBUG("is inactive - %d", h.index);
+        // LOG_DEBUG("is inactive - %d", h.index);
         return NULL;
     }
-    if ((u16)(s->generation & 0x1FFu) != (u16)(h.validation & 0x1FFu))
+    if ((u16)(s->generation) != (u16)(h.validation))
     {
-        LOG_DEBUG("generation or validation doesn match - g %d, validation - %d", s->generation, h.validation);
+        // LOG_DEBUG("validation %d != validation - %d", s->generation, h.validation);
         return NULL;
     }
 

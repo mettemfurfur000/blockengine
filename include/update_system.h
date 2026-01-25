@@ -5,23 +5,17 @@
 // #include "level.h"
 #include "vec/src/vec.h"
 #include "general.h"
-#include "handle.h"
+// #include "handle.h"
 #include <assert.h>
 
-typedef struct { // struct that is decoded from the update
-    u16 x;
-    u16 y;
-    u64 id;
-} update_block;
+// typedef struct
+// {
+//     handle32 var_handle;
+//     u8 length;
+//     u8 bytes[256];
+// } update_var;
 
-typedef struct
-{
-    handle32 var_handle;
-    u8 length;
-    u8 bytes[256];
-} update_var;
-
-typedef vec_t(update_var) update_var_t;
+// typedef vec_t(update_var) update_var_t;
 
 // sinc updates can happen out of order to de elements of our massive arrays of both blocks and vars,
 // we have to hold a big accumulator to store all the updates in here
@@ -39,17 +33,22 @@ typedef vec_t(update_var) update_var_t;
 // which can be optimized further, if each block of a layer is updated every frame, we can record the whole 
 // layer byte by byte and apply some fast compression to it, then it will only depend on how random the updates are
 
-typedef vec_t(u8) vec_i8_t;
+typedef struct { // struct that is decoded from the update
+    u64 id;
+    u16 x;
+    u16 y;
+} update_block;
+
+typedef vec_t(u8) vec_u8_t;
 
 typedef struct {
-    vec_i8_t block_updates_raw;
-    // update_var_t vars; // TODO: do variables
-} update_acc;
+    vec_u8_t raw_updates;
+    u32 update_count;
+} update_block_acc;
 
-// Function declarations
-update_acc new_update_acc(void);
-void push_block_update(update_acc *a, u16 x, u16 y, u64 id, u8 true_width);
-update_block read_block_update(update_acc *a, u32 index, u8 true_width);
+// x y for pos, id for value, true_width for width of the value in bytes
+void update_block_push(update_block_acc *a, u16 x, u16 y, u64 id, u8 true_width);
+update_block update_block_read(update_block_acc a, u32 index, u8 true_width);
 
 // typedef struct
 // {

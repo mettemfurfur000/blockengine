@@ -77,6 +77,7 @@ local registry = {}
 ---@field get_room_count fun(self:BlockLevel):integer
 ---@field find_room fun(self:BlockLevel, name:string):Room|nil
 ---@field get_name fun(self:BlockLevel):string
+---@field apply_updates fun(self:BlockLevel):nil
 ---@field get_room fun(self:BlockLevel, index:integer):Room
 ---@field new_room fun(self:BlockLevel, name:string, width:integer, height:integer):Room
 ---@field uuid fun(self:BlockLevel):integer

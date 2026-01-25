@@ -15,10 +15,10 @@ else
     ROOTDIR := $(CURDIR) 
 endif
 
-# enables including from projects root directory
+# enables including from various places 
 CFLAGS += -I$(ROOTDIR)
-# enables including directly from libs folder
 CFLAGS += -I$(ROOTDIR)/libs
+# CFLAGS += -I$(ROOTDIR)/include
 
 ifeq ($(OS),Windows_NT)
     CFLAGS += -IC:/msys64/mingw64/include/SDL2 

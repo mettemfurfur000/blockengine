@@ -118,7 +118,7 @@ local function select_layer(number)
 end
 
 -- gets all the data
-blockengine.register_handler(engine_events.ENGINE_INIT, function()
+blockengine.register_handler(events.ENGINE_INIT, function()
     print("initing level editor")
     ---@class Layer
     editor.pallete_layer = G_view_menu.pallete.layer
@@ -153,14 +153,14 @@ local function ui_update()
 end
 
 -- Scrolls the pallete
-blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
+blockengine.register_handler(events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
     local slice = render_rules.get_slice(g_render_rules, editor.pallete_index)
     slice.y = math.max(0, math.min(G_screen_height, (slice.y or 0) - y * 32))
     render_rules.set_slice(g_render_rules, editor.pallete_index, slice)
 end)
 
 -- clicks on the pallete choose the tile
-blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
+blockengine.register_handler(events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
     local blk = block_utils.pixel_to_layer_blocks(editor.pallete_index, {
         x = x,
         y = y
@@ -194,7 +194,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, stat
     mouse_action(x, y, button)
 end)
 
-blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, clicks, button)
+blockengine.register_handler(events.SDL_MOUSEMOTION, function(x, y, state, clicks, button)
     mouse_action(x, y, button)
     editor.lastpos = vec.new(x, y)
 end)
@@ -233,7 +233,7 @@ local function keybind_handle(keysym, char)
     ui_update()
 end
 
-blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)
+blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
     if rep ~= nil and rep == 0 and state == 1 then
         local char = keysym < 256 and string.char(keysym) or nil
         editor.keystate[char or -1] = 1
@@ -241,14 +241,14 @@ blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state
     end
 end)
 
-blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, rep)
+blockengine.register_handler(events.SDL_KEYUP, function(keysym, mod, state, rep)
     if rep ~= nil and rep == 0 and state == 0 then
         local char = keysym < 256 and string.char(keysym) or nil
         editor.keystate[char or -1] = 0
     end
 end)
 
-blockengine.register_handler(engine_events.ENGINE_TICK, function(code)
+blockengine.register_handler(events.ENGINE_TICK, function(code)
     if editor.lastpos ~= nil then
         mouse_action(editor.lastpos.x, editor.lastpos.y)
     end

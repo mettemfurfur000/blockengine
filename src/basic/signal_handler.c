@@ -24,7 +24,6 @@ static const char *ERROR_LOG_FILENAME = "crash_log.txt";
  */
 static int signal_backtrace_callback(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
 {
-    (void)data; // Unused
     FILE *f = (FILE *)data;
 
     if (filename == NULL)
@@ -35,6 +34,7 @@ static int signal_backtrace_callback(void *data, uintptr_t pc, const char *filen
     if (f)
     {
         fprintf(f, "  [0x%lx] %s:%d in %s\n", (unsigned long)pc, filename, lineno, function);
+        printf("  [0x%lx] %s:%d in %s\n", (unsigned long)pc, filename, lineno, function);
         fflush(f);
     }
 

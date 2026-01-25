@@ -37,7 +37,7 @@ typedef struct layer
 
     u8 flags; //
     
-    update_acc updates; // accumulator for block updates on this layer
+    update_block_acc updates; // accumulator for block updates on this layer
 } layer;
 
 typedef struct level level;
@@ -74,10 +74,13 @@ u8 block_set_id(layer *l, u16 x, u16 y, u64 id);
 u8 block_get_id(layer *l, u16 x, u16 y, u64 *id);
 u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy);
 
+u8 block_set_id_now(layer *l, u16 x, u16 y, u64 id);
+u8 block_apply_updates(layer *l);
+
 u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out);
 
-u32 block_get_vars_index(layer *l, u16 x, u16 y);
-void block_var_index_set(layer *l, u16 x, u16 y, u32 index);
+handle32 block_get_var_handle(layer *l, u16 x, u16 y);
+void block_set_var_handle(layer *l, u16 x, u16 y, handle32 handle);
 
 u8 block_delete_vars(layer *l, u16 x, u16 y);
 u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars);

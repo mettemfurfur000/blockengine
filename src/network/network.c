@@ -44,12 +44,12 @@ void net_server_shutdown(void)
 
 // Packet layout:
 // [u8 packet_type][u16 layer_index][u8 true_width][u32 payload_len][payload bytes...]
-int net_broadcast_update(u16 layer_index, update_acc *acc, u8 true_width)
+int net_broadcast_update(u16 layer_index, update_block_acc *acc, u8 true_width)
 {
     if (!server_host || !acc)
         return -1;
 
-    u32 payload_len = acc->block_updates_raw.length;
+    u32 payload_len = acc->raw_updates.length;
     u32 header_size = 1 + 2 + 1 + 4;
     u32 total = header_size + payload_len;
 
@@ -76,7 +76,7 @@ int net_broadcast_update(u16 layer_index, update_acc *acc, u8 true_width)
 
     // payload
     if (payload_len)
-        memcpy(p, acc->block_updates_raw.data, payload_len);
+        memcpy(p, acc->raw_updates.data, payload_len);
 
     ENetPacket *packet = enet_packet_create(buf, total, ENET_PACKET_FLAG_RELIABLE);
     free(buf);

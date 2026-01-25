@@ -17,7 +17,7 @@ G_mouse = {
     vars = nil
 }
 
-blockengine.register_handler(engine_events.ENGINE_INIT, function()
+blockengine.register_handler(events.ENGINE_INIT, function()
     local width, height = render_rules.get_size(g_render_rules)
 
     local pos = { -- puts it just wherevr
@@ -66,7 +66,7 @@ local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
     return old_pos_blocks
 end
 
-blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, clicks)
+blockengine.register_handler(events.SDL_MOUSEMOTION, function(x, y, state, clicks)
     if G_mouse.home_layer == nil then
         return
     end
@@ -78,7 +78,7 @@ blockengine.register_handler(sdl_events.SDL_MOUSEMOTION, function(x, y, state, c
     }, G_mouse.pos)
 end)
 
-blockengine.register_handler(sdl_events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
+blockengine.register_handler(events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
     if G_mouse.home_layer == nil then
         return
     end
@@ -91,7 +91,7 @@ end)
 
 -- print("registering a mouse input")
 
-blockengine.register_handler(sdl_events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
+blockengine.register_handler(events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)
     if G_mouse.home_layer == nil then
         return
     end

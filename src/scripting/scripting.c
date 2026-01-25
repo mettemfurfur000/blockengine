@@ -7,10 +7,10 @@
 #include "include/logging.h"
 #include "include/scripting_bindings.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 lua_State *g_L = 0;
 
@@ -277,30 +277,9 @@ void scripting_init()
     lua_register_render_rules(g_L);
 
     /* push an event enum */
-
-    enum_entry entries[] = {
-        {  "ENGINE_BLOCK_UDPATE",   ENGINE_BLOCK_UDPATE},
-        {  "ENGINE_BLOCK_ERASED",   ENGINE_BLOCK_ERASED},
-        {  "ENGINE_BLOCK_CREATE",   ENGINE_BLOCK_CREATE},
-
-        {   "ENGINE_BLOB_UPDATE",    ENGINE_BLOB_UPDATE},
-        {   "ENGINE_BLOB_ERASED",    ENGINE_BLOB_ERASED},
-        {   "ENGINE_BLOB_CREATE",    ENGINE_BLOB_CREATE},
-
-        {"ENGINE_SPECIAL_SIGNAL", ENGINE_SPECIAL_SIGNAL},
-
-        {          "ENGINE_TICK",           ENGINE_TICK},
-        {          "ENGINE_INIT",           ENGINE_INIT},
-        {  "ENGINE_INIT_GLOBALS",   ENGINE_INIT_GLOBALS},
-
-        {                   NULL,                     0},
-    };
-
     // TODO: sync it wit de script
 
-    scripting_set_global_enum(g_L, entries, "engine_events");
-
-    enum_entry sdl_events[] = {
+    enum_entry entries[] = {
         {                                "SDL_FIRSTEVENT",                                 SDL_FIRSTEVENT},
         {                                      "SDL_QUIT",                                       SDL_QUIT},
         {                           "SDL_APP_TERMINATING",                            SDL_APP_TERMINATING},
@@ -362,10 +341,26 @@ void scripting_init()
         {                              "SDL_POLLSENTINEL",                               SDL_POLLSENTINEL},
         {                                 "SDL_USEREVENT",                                  SDL_USEREVENT},
         {                                 "SDL_LASTEVENT",                                  SDL_LASTEVENT},
+        {                           "ENGINE_BLOCK_UDPATE",                            ENGINE_BLOCK_UDPATE},
+        {                           "ENGINE_BLOCK_ERASED",                            ENGINE_BLOCK_ERASED},
+        {                           "ENGINE_BLOCK_CREATE",                            ENGINE_BLOCK_CREATE},
+
+        {                            "ENGINE_BLOB_UPDATE",                             ENGINE_BLOB_UPDATE},
+        {                            "ENGINE_BLOB_ERASED",                             ENGINE_BLOB_ERASED},
+        {                            "ENGINE_BLOB_CREATE",                             ENGINE_BLOB_CREATE},
+
+        {                         "ENGINE_SPECIAL_SIGNAL",                          ENGINE_SPECIAL_SIGNAL},
+
+        {                                   "ENGINE_TICK",                                    ENGINE_TICK},
+        {                                   "ENGINE_INIT",                                    ENGINE_INIT},
+        {                           "ENGINE_INIT_GLOBALS",                            ENGINE_INIT_GLOBALS},
+
+        {                                  "ENGINE_FRAME_PRE",                                   ENGINE_FRAME_PRE},
+        {                             "ENGINE_FRAME_POST",                              ENGINE_FRAME_POST},
         {                                            NULL,                                              0},
     };
 
-    scripting_set_global_enum(g_L, sdl_events, "sdl_events");
+    scripting_set_global_enum(g_L, entries, "events");
 }
 
 void scripting_close()
@@ -446,6 +441,8 @@ i32 get_lookup_id(u32 type)
         ENGINE_TICK,
         ENGINE_INIT,
         ENGINE_INIT_GLOBALS,
+        ENGINE_FRAME_PRE,
+        ENGINE_FRAME_POST,
     };
 
     for (u32 i = 0; i < sizeof(lookup_table) / sizeof(u32); i++)
@@ -754,8 +751,6 @@ void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *n
     LOG_DEBUG("Pushed enum %s", name);
 }
 
-    
-
 int scripting_compile_file_to_bytecode(const char *reg_name, const char *short_filename, unsigned char **out_buf,
                                        u32 *out_size)
 {
@@ -857,24 +852,42 @@ int scripting_load_compiled_blob(const char *reg_name, const char *short_filenam
             LOG_ERROR("Malformed module container for %s", short_filename);
             return FAIL;
         }
-        u32 module_count = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+        u32 module_count = (u32)(data[pos] | (data[pos + 1] << 8) | (data[pos + 2] << 16) | (data[pos + 3] << 24));
         pos += 4;
 
         for (u32 i = 0; i < module_count; i++)
         {
-            if (pos + 4 > size) { LOG_ERROR("Malformed module container"); return FAIL; }
-            u32 name_len = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+            if (pos + 4 > size)
+            {
+                LOG_ERROR("Malformed module container");
+                return FAIL;
+            }
+            u32 name_len = (u32)(data[pos] | (data[pos + 1] << 8) | (data[pos + 2] << 16) | (data[pos + 3] << 24));
             pos += 4;
-            if (pos + name_len > size) { LOG_ERROR("Malformed module container"); return FAIL; }
+            if (pos + name_len > size)
+            {
+                LOG_ERROR("Malformed module container");
+                return FAIL;
+            }
             char *name = malloc(name_len + 1);
             memcpy(name, data + pos, name_len);
             name[name_len] = '\0';
             pos += name_len;
 
-            if (pos + 4 > size) { free(name); LOG_ERROR("Malformed module container"); return FAIL; }
-            u32 mod_size = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+            if (pos + 4 > size)
+            {
+                free(name);
+                LOG_ERROR("Malformed module container");
+                return FAIL;
+            }
+            u32 mod_size = (u32)(data[pos] | (data[pos + 1] << 8) | (data[pos + 2] << 16) | (data[pos + 3] << 24));
             pos += 4;
-            if (pos + mod_size > size) { free(name); LOG_ERROR("Malformed module container"); return FAIL; }
+            if (pos + mod_size > size)
+            {
+                free(name);
+                LOG_ERROR("Malformed module container");
+                return FAIL;
+            }
 
             const unsigned char *mod_data = data + pos;
             pos += mod_size;
@@ -890,31 +903,42 @@ int scripting_load_compiled_blob(const char *reg_name, const char *short_filenam
             }
 
             /* stack: function */
-            lua_getglobal(g_L, "package"); /* function, package */
+            lua_getglobal(g_L, "package");    /* function, package */
             lua_getfield(g_L, -1, "preload"); /* function, package, preload */
-            lua_pushvalue(g_L, -3); /* copy function */
-            lua_setfield(g_L, -2, name); /* preload[name] = function */
-            lua_pop(g_L, 3); /* pop preload, package, original function */
+            lua_pushvalue(g_L, -3);           /* copy function */
+            lua_setfield(g_L, -2, name);      /* preload[name] = function */
+            lua_pop(g_L, 3);                  /* pop preload, package, original function */
 
             free(name);
         }
 
         /* now remaining bytes are main script */
-        if (pos + 4 > size) { LOG_ERROR("Malformed module container end"); return FAIL; }
-        u32 main_size = (u32)(data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24));
+        if (pos + 4 > size)
+        {
+            LOG_ERROR("Malformed module container end");
+            return FAIL;
+        }
+        u32 main_size = (u32)(data[pos] | (data[pos + 1] << 8) | (data[pos + 2] << 16) | (data[pos + 3] << 24));
         pos += 4;
-        if (pos + main_size > size) { LOG_ERROR("Malformed module container main"); return FAIL; }
+        if (pos + main_size > size)
+        {
+            LOG_ERROR("Malformed module container main");
+            return FAIL;
+        }
 
-        int status = luaL_loadbuffer(g_L, (const char *)(data + pos), (size_t)main_size, short_filename ? short_filename : "<embedded>");
+        int status = luaL_loadbuffer(g_L, (const char *)(data + pos), (size_t)main_size,
+                                     short_filename ? short_filename : "<embedded>");
         if (status != LUA_OK)
         {
-            LOG_ERROR("Lua loadbuffer error for %s: %s", short_filename ? short_filename : "<embedded>", lua_tostring(g_L, -1));
+            LOG_ERROR("Lua loadbuffer error for %s: %s", short_filename ? short_filename : "<embedded>",
+                      lua_tostring(g_L, -1));
             lua_pop(g_L, 1);
             return FAIL;
         }
         if (lua_pcall(g_L, 0, 0, 0) != LUA_OK)
         {
-            LOG_ERROR("Lua pcall error for %s: %s", short_filename ? short_filename : "<embedded>", lua_tostring(g_L, -1));
+            LOG_ERROR("Lua pcall error for %s: %s", short_filename ? short_filename : "<embedded>",
+                      lua_tostring(g_L, -1));
             lua_pop(g_L, 1);
             return FAIL;
         }

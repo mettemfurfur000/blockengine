@@ -16,9 +16,22 @@
 typedef struct VarHandleUser
 {
     layer *l;
-    u32 packed; /* u32 representation of handle32 (use handle_to_u32/handle_from_u32)
-                  stored in a u32 for easy passing to Lua */
+    handle32 h;
 } VarHandleUser;
+
+/* Construct a VarHandle userdata from layer + packed handle (u32) on the stack.
+   Used by engine when returning handles to scripts. */
+int push_varhandle(lua_State *L, layer *l, handle32 handle)
+{
+    VarHandleUser *vh = (VarHandleUser *)lua_newuserdata(L, sizeof(VarHandleUser));
+
+    vh->l = l;
+    vh->h = handle;
+
+    luaL_getmetatable(L, "VarHandle");
+    lua_setmetatable(L, -2);
+    return 1;
+}
 
 static int lua_varhandle_is_valid(lua_State *L)
 {
@@ -29,7 +42,7 @@ static int lua_varhandle_is_valid(lua_State *L)
         return 1;
     }
 
-    handle32 h = handle_from_u32(vh->packed);
+    handle32 h = vh->h;
     lua_pushboolean(L, handle_is_valid(vh->l->var_pool.table, h));
     return 1;
 }
@@ -43,7 +56,7 @@ static int lua_varhandle_release(lua_State *L)
         return 1;
     }
 
-    handle32 h = handle_from_u32(vh->packed);
+    handle32 h = vh->h;
     /* free stored blob and release handle */
     blob *b = (blob *)handle_table_get(vh->l->var_pool.table, h);
     if (b)
@@ -54,18 +67,6 @@ static int lua_varhandle_release(lua_State *L)
     handle_table_release(vh->l->var_pool.table, h);
 
     lua_pushboolean(L, 1);
-    return 1;
-}
-
-/* Construct a VarHandle userdata from layer + packed handle (u32) on the stack.
-   Used by engine when returning handles to scripts. */
-int push_varhandle(lua_State *L, layer *l, u32 packed)
-{
-    VarHandleUser *vh = (VarHandleUser *)lua_newuserdata(L, sizeof(VarHandleUser));
-    vh->l = l;
-    vh->packed = packed;
-    luaL_getmetatable(L, "VarHandle");
-    lua_setmetatable(L, -2);
     return 1;
 }
 
@@ -80,17 +81,16 @@ blob *get_blob_from_varhandle(lua_State *L, int idx)
     if (!vh || !vh->l || !vh->l->var_pool.table)
         return NULL;
 
-    handle32 h = handle_from_u32(vh->packed);
+    handle32 h = vh->h;
     return (blob *)handle_table_get(vh->l->var_pool.table, h);
 }
 
 /* File-scope macro to fetch the blob pointer protected by the VarHandle. */
 #define VH_GET_BLOB_FROM_L(L, _b_out)                                                                                  \
-    handle32 _h = handle_from_u32(((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->packed);                      \
-    layer *_l = ((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->l;                                              \
-    if (!_l || !_l->var_pool.table)                                                                                    \
+    VarHandleUser *_vh = (VarHandleUser *)luaL_checkudata(L, 1, "VarHandle");                                          \
+    if (!_vh->l || !_vh->l->var_pool.table)                                                                            \
         return luaL_error(L, "Invalid VarHandle (no layer/table)");                                                    \
-    blob *_b_out = (blob *)handle_table_get(_l->var_pool.table, _h);                                                   \
+    blob *_b_out = (blob *)handle_table_get(_vh->l->var_pool.table, _vh->h);                                           \
     if (!_b_out)                                                                                                       \
         return luaL_error(L, "Invalid VarHandle (slot not active)");
 
@@ -195,10 +195,11 @@ static int lua_varhandle_parse(lua_State *L)
 
 static int lua_varhandle_raw(lua_State *L)
 {
-    handle32 _h = handle_from_u32(((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->packed);
-    // layer *_l = ((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->l;
+    handle32 _h = ((VarHandleUser *)luaL_checkudata(L, 1, "VarHandle"))->h;
+
     lua_pushinteger(L, _h.index);
     lua_pushinteger(L, _h.validation);
+
     return 2;
 }
 

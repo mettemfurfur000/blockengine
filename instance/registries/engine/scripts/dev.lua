@@ -24,7 +24,7 @@ local function input_delta()
     }
 end
 
-blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state, rep)
+blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
     if rep ~= nil and rep <= 1 and state ~= 0 then
         -- keystate[string.char(keysym)] = state
         wrapeprs.try(function()
@@ -34,7 +34,7 @@ blockengine.register_handler(sdl_events.SDL_KEYDOWN, function(keysym, mod, state
     end
 end)
 
-blockengine.register_handler(sdl_events.SDL_KEYUP, function(keysym, mod, state, rep)
+blockengine.register_handler(events.SDL_KEYUP, function(keysym, mod, state, rep)
     if rep ~= nil and rep <= 0 and state ~= 1 then
         wrapeprs.try(function()
             keystate[string.char(keysym)] = state

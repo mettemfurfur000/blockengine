@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
             //     if (upd_evt->layer_ptr)
             //     {
             //         layer *l = (layer *)upd_evt->layer_ptr;
-            //         push_block_update(&l->updates, upd_evt->x, upd_evt->y, upd_evt->new_id, l->block_size);
+            //         update_block_push(&l->updates, upd_evt->x, upd_evt->y, upd_evt->new_id, l->block_size);
             //     }
             //     break;
             // }

@@ -160,7 +160,7 @@ local function init_menu()
         assert(G_menu_room)
         print("loaded existing menu level")
     else
-        create_menu() -- only creates the room, no layers yert
+        create_menu()                          -- only creates the room, no layers yert
         G_level:add_existing(G_block_registry) -- add the existing engine registry to the level
         print("created new menu level")
     end
@@ -180,14 +180,19 @@ end
 G_tick = 0
 G_sdl_tick = 0
 
-blockengine.register_handler(engine_events.ENGINE_TICK, function(code) -- tick over all existing jumpers
+blockengine.register_handler(events.ENGINE_TICK, function(code) -- tick over all existing jumpers
     G_tick = G_tick + 1
     G_sdl_tick = sdl.get_ticks()
     G_view_menu.objects.layer:tick(0) -- default tick - resets all values in a preparation for an actual pass
     G_view_menu.objects.layer:tick(1)
+    -- G_level:apply_updates()
 end)
 
-blockengine.register_handler(sdl_events.SDL_QUIT, function(code) -- tick over all existing jumpers
+blockengine.register_handler(events.ENGINE_FRAME_PRE, function(code) -- tick over all existing jumpers
+    G_level:apply_updates()
+end)
+
+blockengine.register_handler(events.SDL_QUIT, function(code) -- tick over all existing jumpers
     if G_level then
         level_editor.save_level(G_level)
         print("Saved level")
@@ -197,7 +202,7 @@ blockengine.register_handler(sdl_events.SDL_QUIT, function(code) -- tick over al
     -- G_level:serialize_registry(0)
 end)
 
-blockengine.register_handler(sdl_events.SDL_WINDOWEVENT, function(width, height)
+blockengine.register_handler(events.SDL_WINDOWEVENT, function(width, height)
     if width == G_screen_width and height == G_screen_height then return end
     if width == nil or height == nil then return end
 
@@ -216,8 +221,8 @@ end)
 did_init = false
 
 -- gets all the data
--- blockengine.register_handler(engine_events.ENGINE_INIT, function()
-blockengine.register_handler(engine_events.ENGINE_INIT_GLOBALS, function()
+-- blockengine.register_handler(events.ENGINE_INIT, function()
+blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
     if did_init then return end
     print("initing menu")
     init_menu()
@@ -229,9 +234,13 @@ blockengine.register_handler(engine_events.ENGINE_INIT_GLOBALS, function()
     G_total_blocks = wrappers.tablelength(G_engine_table)
     G_character_id = wrappers.find_block(G_engine_table, "character").id
 
+    -- print("attempting to clear all leftover text with id " .. G_character_id)
+
     G_view_menu.text.layer:for_each(G_character_id, function(x, y) -- clear all left ova text
+        -- print("found some text at " .. x .. ", " .. y)
         G_view_menu.text.layer:paste_block(x, y, 0)
     end)
+
     wrappers.try(function()
         set_render_rule_order(G_view_menu)
     end, function(e)

@@ -3,14 +3,13 @@
 #include "include/events.h"
 #include "include/file_system.h"
 #include "include/flags.h"
+#include "include/handle.h"
 #include "include/image_editing.h"
 #include "include/level.h"
-#include "include/network.h"
+#include "include/logging.h"
 #include "include/rendering.h"
 #include "include/scripting.h"
 #include "include/scripting_var_handles.h"
-#include "include/update_system.h"
-
 
 #define PUSHNEWIMAGE(L, i, name)                                                                                       \
     ImageWrapper *name = (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper));                                     \
@@ -663,6 +662,23 @@ static int lua_save_level(lua_State *L)
     return 1;
 }
 
+static int lua_level_apply_updates(lua_State *L)
+{
+    LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
+
+    for (u32 ri = 0; ri < wrapper->lvl->rooms.length; ri++)
+    {
+        room *r = wrapper->lvl->rooms.data[ri];
+
+        for (u32 i = 0; i < r->layers.length; i++)
+        {
+            block_apply_updates(r->layers.data[i]);
+        }
+    }
+
+    return 0;
+}
+
 static int lua_level_registry_serialize(lua_State *L)
 {
     LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
@@ -925,7 +941,7 @@ static int lua_layer_paste_block(lua_State *L)
         luaL_error(L, "Failed to set id at: %d, %d", x, y);
 
     /* Push block update to layer accumulator */
-    // push_block_update(&wrapper->l->updates, x, y, id, wrapper->l->block_size);
+    // update_block_push(&wrapper->l->updates, x, y, id, wrapper->l->block_size);
 
     block_update_event e = {
         .type = ENGINE_BLOCK_CREATE,
@@ -1027,6 +1043,8 @@ static int lua_layer_for_each(lua_State *L)
                 return 0;
             }
 
+            // LOG_DEBUG("foreach found %d agains filter id %d", id, filter);
+
             if (id == filter)
             {
                 lua_pushvalue(L, 3);
@@ -1090,8 +1108,9 @@ static int lua_block_get_vars(lua_State *L)
     u32 x = luaL_checknumber(L, 2);
     u32 y = luaL_checknumber(L, 3);
     /* Return a VarHandle instead of raw Vars pointer. First return boolean success, then handle or nil */
-    u32 packed = block_get_vars_index(wrapper->l, x, y);
-    if (packed == 0)
+    handle32 h = block_get_var_handle(wrapper->l, x, y);
+
+    if (!handle_is_valid(wrapper->l->var_pool.table, h)) // not valid nuh uh
     {
         lua_pushboolean(L, 0);
         lua_pushnil(L);
@@ -1099,8 +1118,7 @@ static int lua_block_get_vars(lua_State *L)
     }
 
     lua_pushboolean(L, 1);
-    /* push VarHandle userdata (packed is u32 representation stored in low bits) */
-    push_varhandle(L, wrapper->l, (u32)packed);
+    push_varhandle(L, wrapper->l, h);
     return 2;
 }
 
@@ -1173,14 +1191,14 @@ static int lua_layer_tick_blocks(lua_State *L)
                 return 1;
             }
 
-            if (id == 0 || id >= wrapper->l->registry->resources.length)
+            if (id == 0 || id >= wrapper->l->registry->resources.length) // ignore invalid values or empty blocks
                 continue;
 
-            ref = reg->resources.data[id].input_tick_ref;
+            ref = reg->resources.data[id].input_tick_ref; // get the tick function from the registry
             if (ref == 0)
                 continue;
 
-            if (lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION)
+            if (lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION) // execute it
             {
                 lua_pushvalue(L, 1);
                 lua_pushinteger(L, i);
@@ -1237,6 +1255,7 @@ void lua_level_register(lua_State *L)
         {       "load_registry",        lua_level_load_registry},
         {  "serialize_registry",   lua_level_registry_serialize},
         {"deserialize_registry", lua_level_registry_deserialize},
+        {       "apply_updates",        lua_level_apply_updates},
         {      "get_registries",       lua_level_get_registries},
         {        "add_existing",         lua_level_add_existing},
         {      "get_room_count",       lua_level_get_room_count},
@@ -1332,7 +1351,7 @@ void lua_register_engine_objects(lua_State *L)
     lua_block_registry_register(L);
     lua_sound_register(L);
     image_load_editing_library(L); /* image editing */
-    // lua_network_register(L); 
+    // lua_network_register(L);
     lua_varhandle_register(L);
 }
 
@@ -1359,7 +1378,7 @@ void lua_register_engine_objects(lua_State *L)
 //     size_t len = 0;
 //     const char *data = luaL_checklstring(L, 3, &len);
 
-//     update_acc acc = {};
+//     update_block_acc acc = {};
 //     vec_init(&acc.block_updates_raw);
 //     if (len)
 //         vec_pusharr(&acc.block_updates_raw, (u8 *)data, (u32)len);

@@ -183,7 +183,7 @@ void write_layer(layer *l, stream_t *f)
         blob_write(blobify((char *)l->registry->name), f);
 
     u64 id = 0;
-    u32 index = 0;
+    handle32 h = {};
     for (u32 y = 0; y < l->height; y++)
         for (u32 x = 0; x < l->width; x++)
         {
@@ -193,8 +193,8 @@ void write_layer(layer *l, stream_t *f)
                 return;
             }
             stream_write(&id, l->block_size, f);
-            index = block_get_vars_index(l, x, y);
-            stream_write(&index, sizeof(handle32), f);
+            h = block_get_var_handle(l, x, y);
+            stream_write(&h, sizeof(handle32), f);
         }
 
     /* Serialize handle table: write capacity (slot count) and for each slot write
@@ -264,20 +264,20 @@ void read_layer(layer *l, room *parent, stream_t *f)
     init_layer(l, parent);
 
     u64 id = 0;
-    u32 index = 0;
+    handle32 h = {};
     for (u32 y = 0; y < l->height; y++)
         for (u32 x = 0; x < l->width; x++)
         {
             stream_read((u8 *)&id, l->block_size, f); // read id
 
-            if (block_set_id(l, x, y, id) != SUCCESS)
+            if (block_set_id_now(l, x, y, id) != SUCCESS)
             {
                 LOG_WARNING("Failed to read block at %d, %d", x, y);
-                block_set_id(l, x, y, 0);
+                block_set_id_now(l, x, y, 0);
             }
 
-            stream_read((u8 *)&index, sizeof(handle32), f); // read var index
-            block_var_index_set(l, x, y, index);
+            stream_read((u8 *)&h, sizeof(handle32), f); // read var index
+            block_set_var_handle(l, x, y, h);
         }
 
     u32 slot_count = 0;
