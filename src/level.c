@@ -221,8 +221,8 @@ u8 block_delete_vars(layer *l, u16 x, u16 y)
     handle32 handle = {};
     memcpy((u8 *)&handle, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
 
-    if (handle_is_valid(l->var_pool.table, handle))
-        var_table_free_handle(&l->var_pool, handle);
+    // if (handle_is_valid(l->var_pool.table, handle))
+    var_table_free_handle(&l->var_pool, handle);
 
     // Clear the var index in the block
     memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, sizeof(handle32));

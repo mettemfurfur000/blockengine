@@ -80,8 +80,11 @@ static int image_apply_color_lua(lua_State *L)
 {
     ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
 
-    u8 color[4] = {luaL_checkinteger(L, 2), luaL_checkinteger(L, 3), luaL_checkinteger(L, 4), luaL_checkinteger(L, 5)
-
+    u8 color[4] = {
+        luaL_checkinteger(L, 2), // r
+        luaL_checkinteger(L, 3), // g
+        luaL_checkinteger(L, 4), // b
+        luaL_checkinteger(L, 5)  // a
     };
 
     image_apply_color(wrapper->img, color);
@@ -215,36 +218,84 @@ static int image_crop_lua(lua_State *L)
     return 1;
 }
 
+// conversion
+
+static int image_to_bytes_lua(lua_State *L)
+{
+    ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
+
+    size_t out_size = wrapper->img->width * wrapper->img->height * CHANNELS;
+    u8 *bytes = wrapper->img->data;
+
+    lua_pushlstring(L, (const char *)bytes, out_size);
+    return 1;
+}
+
+static int image_from_bytes_lua(lua_State *L)
+{
+    size_t bytes_size;
+    const char *bytes = luaL_checklstring(L, 1, &bytes_size);
+
+    u16 width = luaL_checkinteger(L, 2);
+    u16 height = luaL_checkinteger(L, 3);
+
+    image *img = image_create(width, height);
+    memcpy(img->data, bytes, bytes_size);
+
+    PUSHNEWIMAGE(L, img, result);
+    return 1;
+}
+
+static int image_quantize_n_lua(lua_State *L)
+{
+    ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
+
+    u8 n = luaL_checkinteger(L, 2);
+
+    image_quantize_n(wrapper->img, n);
+
+    return 0;
+}
+
+static int image_dither_floyd_steinberg_lua(lua_State *L)
+{
+    ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
+
+    u8 n = luaL_checkinteger(L, 2);
+
+    image_dither_floyd_steinberg(wrapper->img, n);
+
+    lua_pushvalue(L, 1);
+    return 0;
+}
+
 void image_load_editing_library(lua_State *L)
 {
     const static luaL_Reg image_methods[] = {
-        {                  "crop",              image_crop_lua},
-        {                "rotate",            image_rotate_lua},
-        {       "flip_horizontal",   image_flip_horizontal_lua},
-        {         "flip_vertical",     image_flip_vertical_lua},
+        {                  "crop",                   image_crop_lua},
+        {                "rotate",                 image_rotate_lua},
+        {       "flip_horizontal",        image_flip_horizontal_lua},
+        {         "flip_vertical",          image_flip_vertical_lua},
 
-        {        "add_brightness", image_adjust_brightness_lua},
-        {             "add_color",       image_apply_color_lua},
-        {         "get_avg_color",           get_average_color},
-        {"image_gamma_correction",  image_gamma_correction_lua},
+        {        "add_brightness",      image_adjust_brightness_lua},
+        {             "add_color",            image_apply_color_lua},
+        {         "get_avg_color",                get_average_color},
+        {"image_gamma_correction",       image_gamma_correction_lua},
 
         //{"blend", blend_images_lua},
-        {                  "size",              image_size_lua},
-        {               "overlay",           image_overlay_lua},
+        {                  "size",                   image_size_lua},
+        {               "overlay",                image_overlay_lua},
 
-        {                 "clear",             image_clear_lua},
-        {                  "fill",        image_fill_color_lua},
-        {                  "copy",              image_copy_lua},
+        {                 "clear",                  image_clear_lua},
+        {                  "fill",             image_fill_color_lua},
+        {                  "copy",                   image_copy_lua},
 
-        {                  "save",              image_save_lua},
+        {                  "save",                   image_save_lua},
+        {              "to_bytes",               image_to_bytes_lua},
+        {              "quantize",             image_quantize_n_lua},
+        {                "dither", image_dither_floyd_steinberg_lua},
 
-        {                    NULL,                        NULL}
-    };
-
-    const static luaL_Reg image_editing_lib[] = {
-        {"create", image_create_lua},
-        {  "load",   image_load_lua},
-        {    NULL,             NULL}
+        {                    NULL,                             NULL}
     };
 
     // Create metatable for Image userdata
@@ -255,6 +306,13 @@ void image_load_editing_library(lua_State *L)
     lua_pushcfunction(L, image_gc);
     lua_setfield(L, -2, "__gc");
     lua_pop(L, 1);
+
+    const static luaL_Reg image_editing_lib[] = {
+        {           "create",     image_create_lua},
+        {             "load",       image_load_lua},
+        {"create_from_bytes", image_from_bytes_lua},
+        {               NULL,                 NULL}
+    };
 
     // Create library
     luaL_newlib(L, image_editing_lib);

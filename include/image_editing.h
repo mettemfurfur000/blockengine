@@ -47,4 +47,7 @@ void image_clear(image *img);
 void image_fill_color(image *img, u8 color[4]);
 void image_get_avg_color(image *img, u8 color_out[4]);
 
+void image_quantize_n(image *img, u8 n);
+void image_dither_floyd_steinberg(image *img, u8 n);
+
 #endif

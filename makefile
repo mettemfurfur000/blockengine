@@ -1,5 +1,8 @@
-CFLAGS += -O0 -Wall -g -MMD
-LDFLAGS += -lm -g -lz -lunwind
+CFLAGS += -O3 -Wall -MMD
+LDFLAGS += -lm -lz -lunwind
+
+# CFLAGS += -g
+# LDFLAGS += -g
 
 # uncomment to do sum 
 ifeq ($(PERF),1)
@@ -93,6 +96,11 @@ client_app: mains/client.c copy_instance vec $(OBJS)
 builder: mains/builder.c copy_instance vec $(OBJS)
 	gcc -o obj/builder.o -c mains/builder.c ${CFLAGS}
 	g++ ${CFLAGS} -o build/builder obj/builder.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
+
+.PHONY: tex_gen
+tex_gen: mains/tex_gen.c copy_instance vec $(OBJS)
+	gcc -o obj/tex_gen.o -c mains/tex_gen.c ${CFLAGS}
+	g++ ${CFLAGS} -o build/tex_gen obj/tex_gen.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
 # use this when packaging to get all the dll-s used
 .PHONY: grab_client_dlls

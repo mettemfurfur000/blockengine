@@ -300,3 +300,58 @@ void image_get_avg_color(image *img, u8 color_out[4])
     for (u8 c = 0; c < CHANNELS; c++)
         color_out[c] = color[c] / colors;
 }
+
+u8 dither_n_function(u8 value, u8 n)
+{
+    double step = 255.0f / (n - 1);
+    return (u8)(round(value / step) * step);
+}
+
+void image_quantize_n(image *img, u8 n)
+{
+    if (img == NULL)
+    {
+        LOG_ERROR("image_quantize_n Error: image is NULL");
+        return;
+    }
+
+    for (u32 j = 0; j < img->height; j++)
+        for (u32 i = 0; i < img->width; i++)
+            for (u8 c = 0; c < CHANNELS; c++)
+                *ACCESS_CHANNEL(img, i, j, c) = dither_n_function(*ACCESS_CHANNEL(img, i, j, c), n);
+}
+
+void image_dither_floyd_steinberg(image *img, u8 n)
+{
+    if (img == NULL)
+    {
+        LOG_ERROR("image_dither_floyd_steinberg Error: image is NULL");
+        return;
+    }
+
+    #define CHANNEL_SPREAD_ERROR(a, error) KEEPINLIMITS((a) + (error), 0x00, 0xff)
+
+    for (u32 j = 0; j < img->height; j++)
+        for (u32 i = 0; i < img->width; i++)
+            for (u8 c = 0; c < CHANNELS; c++)
+            {
+                u8 old_value = *ACCESS_CHANNEL(img, i, j, c);
+                u8 new_value = dither_n_function(old_value, n);
+
+                *ACCESS_CHANNEL(img, i, j, c) = new_value;
+                int error = old_value - new_value;
+
+                if (i + 1 < img->width)
+                    *ACCESS_CHANNEL(img, i + 1, j, c) =
+                        CHANNEL_SPREAD_ERROR(*ACCESS_CHANNEL(img, i + 1, j, c), error * 7 / 16);
+                if (i > 0 && j + 1 < img->height)
+                    *ACCESS_CHANNEL(img, i - 1, j + 1, c) =
+                        CHANNEL_SPREAD_ERROR(*ACCESS_CHANNEL(img, i - 1, j + 1, c), error * 3 / 16);
+                if (j + 1 < img->height)
+                    *ACCESS_CHANNEL(img, i, j + 1, c) =
+                        CHANNEL_SPREAD_ERROR(*ACCESS_CHANNEL(img, i, j + 1, c), error * 5 / 16);
+                if (i + 1 < img->width && j + 1 < img->height)
+                    *ACCESS_CHANNEL(img, i + 1, j + 1, c) =
+                        CHANNEL_SPREAD_ERROR(*ACCESS_CHANNEL(img, i + 1, j + 1, c), error * 1 / 16);
+            }
+}
