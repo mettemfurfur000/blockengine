@@ -3,6 +3,7 @@
 #include "include/flags.h"
 #include "include/general.h"
 #include "include/level.h"
+#include "include/logging.h"
 #include "include/vars.h"
 
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,
@@ -56,11 +57,6 @@ u8 autotile_select_shared_9(const layer *l, const u8 select_table[], const u64 r
 }
 
 // Full 47 autotiling scheme
-/*
-    [00][01][02][03][04][05][06][07]
-    [08][09][10][11][12][13][14][15]
-    [16][17][18][19][20][21][22][23]
-*/
 
 // static u8 autotile_table_type_3[] = {
 //     4, 4, 4, 0, 4, 4, 2, 1, //
@@ -68,27 +64,103 @@ u8 autotile_select_shared_9(const layer *l, const u8 select_table[], const u64 r
 //     4, 6, 4, 3, 8, 7, 5, 4, //
 // };
 
-// u8 autotile_select_shared_47(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
-//{
-//     bool match_w = false;
-//     bool match_e = false;
-//     bool match_n = false;
-//     bool match_s = false;
+// generated with
+// ./tex_gen.exe autotile_comp.lua --input=registries/engine/textures/autotile_47_test.png
 
-//    if (x > 0 && x < l->width - 1 && y >= 0)
-//    {
-//        match_w = *BLOCK_ID_PTR(l, x - 1, y) == ref_id;
-//        match_e = *BLOCK_ID_PTR(l, x + 1, y) == ref_id;
-//    }
-//    if (y > 0 && y < l->height - 1 && x >= 0)
-//    {
-//        match_n = *BLOCK_ID_PTR(l, x, y - 1) == ref_id;
-//        match_s = *BLOCK_ID_PTR(l, x, y + 1) == ref_id;
-//    }
+static u8 autotile_table_type_3[] = {
+    [0b00000010] = 0,  [0b00001010] = 1,  [0b00011010] = 2,  [0b00010010] = 3,  [0b11011010] = 4,  [0b00011011] = 5,
+    [0b00011110] = 6,  [0b01111010] = 7,  [0b00001011] = 8,  [0b01011111] = 9,  [0b00011111] = 10, [0b00010110] = 11,
+    [0b01000010] = 12, [0b01001010] = 13, [0b01011010] = 14, [0b01010010] = 15, [0b01001011] = 16, [0b01111111] = 17,
+    [0b11011111] = 18, [0b01010110] = 19, [0b01101011] = 20, [0b01111110] = 21, [0b10000000] = 22, [0b11011110] = 23,
+    [0b01000000] = 24, [0b01001000] = 25, [0b01011000] = 26, [0b01010000] = 27, [0b01101010] = 28, [0b11111011] = 29,
+    [0b11111110] = 30, [0b11010010] = 31, [0b01111011] = 32, [0b11111111] = 33, [0b11011011] = 34, [0b11010110] = 35,
+    [0b00000000] = 36, [0b00001000] = 37, [0b00011000] = 38, [0b00010000] = 39, [0b01011110] = 40, [0b01111000] = 41,
+    [0b11011000] = 42, [0b01011011] = 43, [0b01101000] = 44, [0b11111000] = 45, [0b11111010] = 46, [0b11010000] = 47,
 
-//    return select_table[(match_e & 1) | ((match_s & 1) << 1) | ((match_w & 1) << 2) |
-//                        ((match_n & 1) << 3)];
-//}
+};
+
+// 0b10000000 one is not pointing to a valid tile
+
+/*
+mask format in bits
+[0][1][2]
+[3][ ][4]
+[5][6][7]
+
+so 0-th bit indicates that thers a neighbour to the top-left of the block, that would look like
+`0x01`
+
+in right shifts that would be
+[7][6][5]
+[4][ ][3]
+[2][1][0]
+*/
+#define BIT(n) (1 << n)
+#define BITN(n) (1 << (7 - n))
+
+#define IS_BITN_TRUE(mask, n) (mask & BITN(n)) != 0
+#define IS_BITN_FALSE(mask, n) (mask & BITN(n)) == 0
+
+#define INVALIDATE_EDGE(mask, nq, nn1, nn2)                                                                            \
+    if (IS_BITN_TRUE(mask, nq) && (IS_BITN_FALSE(mask, nn1) || IS_BITN_FALSE(mask, nn2)))                              \
+        FLAG_FLIP(mask, BITN(nq));
+
+void invalidate_bit_edge(u8 *in, const u8 nc, const u8 n1, const u8 n2)
+{
+    u16 bitmap = *in;
+    if (IS_BITN_FALSE(bitmap, nc))
+        return;
+    if ((IS_BITN_TRUE(bitmap, n1) && IS_BITN_TRUE(bitmap, n2)))
+        return;
+    FLAG_FLIP(bitmap, BITN(nc));
+
+    // if ((IS_BITN_FALSE(bitmap, n1) || IS_BITN_FALSE(bitmap, n2)))
+    //     FLAG_FLIP(bitmap, BITN(nc));
+
+    *in = bitmap;
+}
+
+// edges that dont have 2 neighbours will be set to 0
+u8 invalidate_edges(u8 bitmap)
+{
+    invalidate_bit_edge(&bitmap, 0, 1, 3);
+    invalidate_bit_edge(&bitmap, 2, 1, 4);
+    invalidate_bit_edge(&bitmap, 5, 3, 6);
+    invalidate_bit_edge(&bitmap, 7, 6, 4);
+
+    return bitmap;
+}
+
+bool block_matches(const layer *l, const u64 ref_id, const i32 x, const i32 y)
+{
+    if (x < 0 || x >= l->width)
+        return false;
+    if (y < 0 || y >= l->height)
+        return false;
+    return *BLOCK_ID_PTR(l, x, y) == ref_id;
+}
+
+u8 autotile_select_shared_47(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
+{
+#define MATCH(num) (match##num << (7 - num))
+    bool match0 = block_matches(l, ref_id, x - 1, y - 1) ? 1 : 0;
+    bool match1 = block_matches(l, ref_id, x, y - 1) ? 1 : 0;
+    bool match2 = block_matches(l, ref_id, x + 1, y - 1) ? 1 : 0;
+    bool match3 = block_matches(l, ref_id, x - 1, y) ? 1 : 0;
+
+    bool match4 = block_matches(l, ref_id, x + 1, y) ? 1 : 0;
+    bool match5 = block_matches(l, ref_id, x - 1, y + 1) ? 1 : 0;
+    bool match6 = block_matches(l, ref_id, x, y + 1) ? 1 : 0;
+    bool match7 = block_matches(l, ref_id, x + 1, y + 1) ? 1 : 0;
+
+    u8 bitmap = MATCH(0) | MATCH(1) | MATCH(2) | MATCH(3) | //
+                MATCH(4) | MATCH(5) | MATCH(6) | MATCH(7);
+
+    u8 index = invalidate_edges(bitmap);
+    // u8 index = bitmap;
+
+    return select_table[index];
+}
 
 u8 render_layer(layer_slice slice)
 {
@@ -218,8 +290,8 @@ u8 render_layer(layer_slice slice)
                 frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
             if (br.autotile_type == 2)
                 frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
-            // if (br.autotile_type == 3)
-            //  frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
+            if (br.autotile_type == 3)
+                frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
 
             if (br.frames_per_second > 1)
             {

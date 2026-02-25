@@ -519,6 +519,7 @@ const static resource_entry_handler res_handlers[] = {
     // 0 - no type, default
     // 1 - 3x3 tileset, 4 neighbours, lines default to center tile
     // 2 - 4x4, 4 neighbours, full coverage on all cases
+    // 3 - 47 autotile scheme, 8 neighbour scheme
     // {
     //  .function = &block_res_autotile_update_key_handler,
     //  .name = "autotile_update_key",
@@ -532,7 +533,7 @@ const static resource_entry_handler res_handlers[] = {
     {
      .function = &block_res_autotile_type_handler,
      .name = "autotile_type",
-     .deps = {"autotile_update_key", "autotile_cache_key"},
+    //  .deps = {"autotile_update_key", "autotile_cache_key"},
      .slots = {"frame_control"},
      },
 

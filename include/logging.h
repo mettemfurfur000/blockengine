@@ -68,6 +68,7 @@ extern "C"
     void log_end();
     void log_msg(unsigned char level, const char *format, ...);
 
+    char *to_bin(unsigned char n, char *buf);
     // lua
 
     void lua_logging_register(lua_State *L);

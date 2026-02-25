@@ -44,6 +44,9 @@ typedef struct block_resources
     vec_str_t input_names;
 
     i32 input_tick_ref; // which input causes a tick update, as a lua ref
+    // 1 - 3x3 tileset, 4 neighbours, lines default to center tile
+    // 2 - 4x4, 4 neighbours, full coverage on all cases
+    // 3 - 47 autotile scheme, 8 neighbour scheme
     u8 autotile_type;
     // char autotile_update_key;
     // char autotile_cache_key;

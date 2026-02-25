@@ -11,6 +11,9 @@
 #include "include/scripting.h"
 #include "include/scripting_var_handles.h"
 
+#include <lauxlib.h>
+#include <lua.h>
+
 #define PUSHNEWIMAGE(L, i, name)                                                                                       \
     ImageWrapper *name = (ImageWrapper *)lua_newuserdata(L, sizeof(ImageWrapper));                                     \
     name->img = (i);                                                                                                   \
@@ -199,7 +202,14 @@ static int image_load_lua(lua_State *L)
 {
     const char *path = luaL_checkstring(L, 1);
 
-    PUSHNEWIMAGE(L, image_load(path), result);
+    image *i = image_load(path);
+
+    if (i != NULL)
+    {
+        PUSHNEWIMAGE(L, i, result);
+    }
+    else
+        lua_pushnil(L);
     return 1;
 }
 
@@ -215,6 +225,39 @@ static int image_crop_lua(lua_State *L)
     u32 height = luaL_checkinteger(L, 5);
 
     PUSHNEWIMAGE(L, image_crop(wrapper->img, x, y, width, height), result);
+    return 1;
+}
+
+// direct access
+
+static int image_get_pixel(lua_State *L)
+{
+    ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
+
+    u32 x = luaL_checkinteger(L, 2);
+    u32 y = luaL_checkinteger(L, 3);
+
+    lua_pushinteger(L, *ACCESS_CHANNEL(wrapper->img, x, y, 0));
+    lua_pushinteger(L, *ACCESS_CHANNEL(wrapper->img, x, y, 1));
+    lua_pushinteger(L, *ACCESS_CHANNEL(wrapper->img, x, y, 2));
+    lua_pushinteger(L, *ACCESS_CHANNEL(wrapper->img, x, y, 3));
+
+    return 4;
+}
+
+static int image_set_pixel(lua_State *L)
+{
+    ImageWrapper *wrapper = (ImageWrapper *)luaL_checkudata(L, 1, "Image");
+
+    u32 x = luaL_checkinteger(L, 2);
+    u32 y = luaL_checkinteger(L, 3);
+
+    *ACCESS_CHANNEL(wrapper->img, x, y, 0) = (luaL_checkinteger(L, 4));
+    *ACCESS_CHANNEL(wrapper->img, x, y, 1) = (luaL_checkinteger(L, 5));
+    *ACCESS_CHANNEL(wrapper->img, x, y, 2) = (luaL_checkinteger(L, 6));
+    *ACCESS_CHANNEL(wrapper->img, x, y, 3) = (luaL_checkinteger(L, 7));
+
+    lua_pushvalue(L, 1);
     return 1;
 }
 
@@ -289,6 +332,9 @@ void image_load_editing_library(lua_State *L)
         {                 "clear",                  image_clear_lua},
         {                  "fill",             image_fill_color_lua},
         {                  "copy",                   image_copy_lua},
+
+        {             "get_pixel",                  image_get_pixel},
+        {             "set_pixel",                  image_set_pixel},
 
         {                  "save",                   image_save_lua},
         {              "to_bytes",               image_to_bytes_lua},

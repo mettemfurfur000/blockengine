@@ -15,8 +15,9 @@ void log_start_new(const char *fname)
     time_t now = time(NULL);
     struct tm *loctime = localtime(&now);
     char fname_timestamped[256];
-    snprintf(fname_timestamped, sizeof(fname_timestamped), "logs/%s_%d_%d_%d-%d_%d_%d.log", fname, 1900 + loctime->tm_year,
-             1 + loctime->tm_mon, loctime->tm_mday, loctime->tm_hour, loctime->tm_min, loctime->tm_sec);
+    snprintf(fname_timestamped, sizeof(fname_timestamped), "logs/%s_%d_%d_%d-%d_%d_%d.log", fname,
+             1900 + loctime->tm_year, 1 + loctime->tm_mon, loctime->tm_mday, loctime->tm_hour, loctime->tm_min,
+             loctime->tm_sec);
     log_start(fname_timestamped);
 }
 
@@ -94,6 +95,18 @@ void log_msg(unsigned char level, const char *format, ...)
     fflush(log_file);
 
     pthread_mutex_unlock(&log_mutex);
+}
+
+char *to_bin(unsigned char n, char *buf)
+{
+    int i;
+    for (i = 7; i >= 0; i--)
+    {
+        buf[7 - i] = ((n & 1) ? '1' : '0');
+        n >>= 1;
+    }
+    buf[8] = '\0';
+    return buf;
 }
 
 // a special function so lua can also use our logging system

@@ -1,8 +1,8 @@
-CFLAGS += -O3 -Wall -MMD
+CFLAGS += -O0 -Wall -MMD
 LDFLAGS += -lm -lz -lunwind
 
-# CFLAGS += -g
-# LDFLAGS += -g
+CFLAGS += -g
+LDFLAGS += -g
 
 # uncomment to do sum 
 ifeq ($(PERF),1)
