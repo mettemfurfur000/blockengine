@@ -14,6 +14,15 @@ typedef struct
     u16 active : 1;      // Is the handle active?
 } handle32;
 
+typedef struct
+{
+    union
+    {
+        handle32 h;
+        u32 i;
+    };
+} handle32convertor;
+
 static_assert(sizeof(handle32) == sizeof(u32), "");
 
 /* Invalid handle helper */

@@ -20,7 +20,7 @@
 [ ] - zooming in and out
 [ ] - force place mode
 [x] - autotiling support, 3x3, 
-    [ ] - 47 autotiling still in works
+    [x] - 47 autotiling still in works
 
 [ ] - multiplayer
     [ ] - add procedural generation for levels so only seeds of rooms needed to be exchanged

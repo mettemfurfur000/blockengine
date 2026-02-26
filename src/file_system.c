@@ -42,8 +42,11 @@ void blob_vars_write(blob b, stream_t *f)
 
 blob blob_vars_read(stream_t *f)
 {
-    blob b;
+    blob b = {};
     READ(b.length, f);
+    if (b.length == 0)
+        return b;
+
     b.ptr = calloc(b.length, 1);
 
     assert(b.ptr != NULL);
@@ -277,7 +280,7 @@ void read_layer(layer *l, room *parent, stream_t *f)
             }
 
             stream_read((u8 *)&h, sizeof(handle32), f); // read var index
-            block_set_var_handle(l, x, y, h);
+            block_set_var_handle_now(l, x, y, h);
         }
 
     u32 slot_count = 0;

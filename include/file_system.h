@@ -209,8 +209,8 @@ static inline void stream_read_debug_meta(char *expected_var_name, size_t expect
     if (var_size != expected_var_size)
     {
         LOG_ERROR("Debug meta variable size %zu does not match expected size %zu for variable %s", var_size,
-                    expected_var_size, expected_var_name);
-                    abort();
+                  expected_var_size, expected_var_name);
+        abort();
     }
 
     char var_name[256];

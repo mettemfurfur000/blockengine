@@ -23,18 +23,21 @@ void main() {
     vec2 centered = scaledPos - vec2(0.5, 0.5) * aInstanceScale;
     
     // Apply rotation around center
-    float cosR = cos(aInstanceRotation);
-    float sinR = sin(aInstanceRotation);
-    vec2 rotatedPos = vec2(
-        centered.x * cosR - centered.y * sinR,
-        centered.x * sinR + centered.y * cosR
-    );
+    if(aInstanceRotation != 0.0) {
+        float cosR = cos(aInstanceRotation);
+        float sinR = sin(aInstanceRotation);
+        vec2 rotatedPos = vec2(
+            centered.x * cosR - centered.y * sinR,
+            centered.x * sinR + centered.y * cosR
+        );
+        centered = rotatedPos;
+    }
     
     // Move back from origin
-    rotatedPos += vec2(0.5, 0.5) * aInstanceScale;
+    centered += vec2(0.5, 0.5) * aInstanceScale;
 
     // Apply position and block width
-    vec2 finalPos = rotatedPos * uBlockWidth + aInstancePos;
+    vec2 finalPos = centered * uBlockWidth + aInstancePos;
     
     // Set final position
     gl_Position = uProjection * vec4(finalPos, 0.0, 1.0);

@@ -13,4 +13,8 @@ void endianless_copy(u8 *dest, u8 *src, int size);
 int endianless_write(u8 *data, int size, FILE *f);
 int endianless_read(u8 *data, int size, FILE *f);
 
+u16 endian_flip_u16(u16 value);
+u32 endian_flip_u32(u32 value);
+u64 endian_flip_u64(u64 value);
+
 #endif

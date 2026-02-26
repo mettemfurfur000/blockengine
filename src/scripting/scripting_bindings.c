@@ -1029,15 +1029,8 @@ static int lua_layer_paste_block(lua_State *L)
 
     u64 old_id = 0;
 
-    if (id == 0)
-    {
-        block_delete_vars(wrapper->l, x, y);
-    }
-    else
-    {
-        if (block_copy_vars(wrapper->l, x, y, res->vars_sample) != SUCCESS)
-            luaL_error(L, "Failed to copy vars at: %d, %d", x, y);
-    }
+    if (block_copy_vars(wrapper->l, x, y, id == 0 ? (blob){} : res->vars_sample) != SUCCESS)
+        luaL_error(L, "Failed to copy vars at: %d, %d", x, y);
 
     if (block_get_id(wrapper->l, x, y, &old_id) != SUCCESS)
         luaL_error(L, "Failed to get id at: %d, %d", x, y);
@@ -1045,7 +1038,7 @@ static int lua_layer_paste_block(lua_State *L)
         luaL_error(L, "Failed to set id at: %d, %d", x, y);
 
     /* Push block update to layer accumulator */
-    // update_block_push(&wrapper->l->updates, x, y, id, wrapper->l->block_size);
+    // update_block_push(&wrapper->l->id_updates, x, y, id, wrapper->l->block_size);
 
     block_update_event e = {
         .type = ENGINE_BLOCK_CREATE,
@@ -1178,7 +1171,7 @@ static int lua_layer_set_id(lua_State *L)
     if (block_set_id(wrapper->l, x, y, id) == SUCCESS)
     {
         /* Push block update to layer accumulator */
-        // push_block_update(&wrapper->l->updates, x, y, id, wrapper->l->block_size);
+        // push_block_update(&wrapper->l->id_updates, x, y, id, wrapper->l->block_size);
         lua_pushboolean(L, 1);
     }
     else
@@ -1482,7 +1475,7 @@ void lua_register_engine_objects(lua_State *L)
 //     size_t len = 0;
 //     const char *data = luaL_checklstring(L, 3, &len);
 
-//     update_block_acc acc = {};
+//     update_accumulator acc = {};
 //     vec_init(&acc.block_updates_raw);
 //     if (len)
 //         vec_pusharr(&acc.block_updates_raw, (u8 *)data, (u32)len);

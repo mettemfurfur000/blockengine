@@ -58,12 +58,6 @@ u8 autotile_select_shared_9(const layer *l, const u8 select_table[], const u64 r
 
 // Full 47 autotiling scheme
 
-// static u8 autotile_table_type_3[] = {
-//     4, 4, 4, 0, 4, 4, 2, 1, //
-//     4, 6, 4, 3, 8, 7, 5, 4, //
-//     4, 6, 4, 3, 8, 7, 5, 4, //
-// };
-
 // generated with
 // ./tex_gen.exe autotile_comp.lua --input=registries/engine/textures/autotile_47_test.png
 
@@ -76,7 +70,6 @@ static u8 autotile_table_type_3[] = {
     [0b11111110] = 30, [0b11010010] = 31, [0b01111011] = 32, [0b11111111] = 33, [0b11011011] = 34, [0b11010110] = 35,
     [0b00000000] = 36, [0b00001000] = 37, [0b00011000] = 38, [0b00010000] = 39, [0b01011110] = 40, [0b01111000] = 41,
     [0b11011000] = 42, [0b01011011] = 43, [0b01101000] = 44, [0b11111000] = 45, [0b11111010] = 46, [0b11010000] = 47,
-
 };
 
 // 0b10000000 one is not pointing to a valid tile
@@ -113,9 +106,6 @@ void invalidate_bit_edge(u8 *in, const u8 nc, const u8 n1, const u8 n2)
     if ((IS_BITN_TRUE(bitmap, n1) && IS_BITN_TRUE(bitmap, n2)))
         return;
     FLAG_FLIP(bitmap, BITN(nc));
-
-    // if ((IS_BITN_FALSE(bitmap, n1) || IS_BITN_FALSE(bitmap, n2)))
-    //     FLAG_FLIP(bitmap, BITN(nc));
 
     *in = bitmap;
 }

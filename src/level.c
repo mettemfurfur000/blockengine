@@ -1,6 +1,7 @@
 #include "include/level.h"
 #include "include/general.h"
 #include "include/handle.h"
+#include "include/hashtable.h"
 #include "include/logging.h"
 #include "include/update_system.h"
 #include "include/uuid.h"
@@ -10,6 +11,154 @@
 #include "vec/src/vec.h"
 #include <stdarg.h>
 #include <stdio.h>
+
+// overrides
+
+#define DIRECT 0
+
+void block_push_var_change(layer *l, u16 x, u16 y, handle32 handle)
+{
+#if DIRECT == 1
+    block_set_var_handle_now(l, x, y, handle);
+#else
+    update_var_push(&l->var_updates, x, y, handle);
+#endif
+}
+
+void block_push_block_change(layer *l, u16 x, u16 y, u64 id)
+{
+#if DIRECT == 1
+    block_set_id_now(l, x, y, id);
+#else
+    update_block_push(&l->id_updates, x, y, id, l->block_size);
+#endif
+}
+
+//
+// BLOCK ID OPERATIONS
+//
+
+u8 block_get_id(layer *l, u16 x, u16 y, u64 *id)
+{
+    assert(l);
+    assert(id);
+
+    if (x >= l->width || y >= l->height)
+        return FAIL;
+
+    void *ptr = BLOCK_ID_PTR(l, x, y);
+
+    switch (l->block_size)
+    {
+    case 1:
+        *id = *(u8 *)ptr;
+        break;
+    case 2:
+        *id = *(u16 *)ptr;
+        break;
+    case 4:
+        *id = *(u32 *)ptr;
+        break;
+    case 8:
+        *id = *(u64 *)ptr;
+        break;
+    default:
+        LOG_ERROR("layer cannot have block size width %d bytes", l->block_size);
+        return FAIL;
+    }
+
+    return SUCCESS;
+}
+
+u8 block_set_id_now(layer *l, u16 x, u16 y, u64 id)
+{
+    assert(l != NULL);
+    if (x >= l->width || y >= l->height)
+        return FAIL;
+    void *ptr = BLOCK_ID_PTR(l, x, y);
+
+    switch (l->block_size)
+    {
+    case 1:
+        *(u8 *)ptr = id;
+        break;
+    case 2:
+        *(u16 *)ptr = id;
+        break;
+    case 4:
+        *(u32 *)ptr = id;
+        break;
+    case 8:
+        *(u64 *)ptr = id;
+        break;
+    default:
+        LOG_ERROR("layer cannot have block size width %d bytes", l->block_size);
+        return FAIL;
+    }
+    return SUCCESS;
+}
+
+u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy)
+{
+    assert(l);
+
+    u32 dest_x = x + dx;
+    u32 dest_y = y + dy;
+    if (x >= l->width || y >= l->height)
+        return FAIL;
+    if (dest_x >= l->width || dest_y >= l->height)
+        return FAIL;
+
+    // moves id
+    u64 src_id = 0;
+    block_get_id(l, x, y, &src_id);
+
+    block_set_id(l, dest_x, dest_y, src_id);
+    block_set_id(l, x, y, 0);
+
+    // moves handle
+    if (l->var_pool.table == NULL)
+        return SUCCESS;
+
+    if (src_id == 6)
+    {
+        // LOG_DEBUG("attempting to move dev at %d %d", x, y);
+    }
+
+    handle32 h_src = block_get_var_handle(l, x, y);
+
+    block_set_var_handle(l, dest_x, dest_y, h_src);
+    block_set_var_handle(l, x, y, (handle32){});
+
+    return SUCCESS;
+}
+
+u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
+{
+    assert(l != NULL);
+    if (x >= l->width || y >= l->height)
+        return FAIL;
+
+    block_push_block_change(l, x, y, id);
+
+    return SUCCESS;
+}
+
+void block_apply_id_changes(layer *l)
+{
+    for (u32 i = 0; i < l->id_updates.update_count; i++)
+    {
+        update_block u = update_block_read(l->id_updates, i, l->block_size);
+        block_set_id_now(l, u.x, u.y, u.id);
+    }
+
+    vec_clear(&l->id_updates.raw_updates);
+    l->id_updates.update_count = 0;
+}
+
+//
+//
+//
 
 /* Create a new blob in the pool and return the handle. The blob memory is
    allocated and the contents copied from `vars`. Returns INVALID_HANDLE on
@@ -58,100 +207,17 @@ static void var_table_free_handle(var_handle_table *pool, handle32 h)
     handle_table_release(pool->table, h);
 }
 
-u8 block_set_id_now(layer *l, u16 x, u16 y, u64 id)
+void block_apply_varhandle_changes(layer *l)
 {
-    assert(l != NULL);
-    if (x >= l->width || y >= l->height)
-        return FAIL;
-    void *ptr = BLOCK_ID_PTR(l, x, y);
-
-    switch (l->block_size)
+    for (u32 i = 0; i < l->var_updates.update_count; i++)
     {
-    case 1:
-        *(u8 *)ptr = id;
-        break;
-    case 2:
-        *(u16 *)ptr = id;
-        break;
-    case 4:
-        *(u32 *)ptr = id;
-        break;
-    case 8:
-        *(u64 *)ptr = id;
-        break;
-    default:
-        LOG_ERROR("layer cannot have block size width %d bytes", l->block_size);
-        return FAIL;
-    }
-    return SUCCESS;
-}
-
-u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
-{
-    assert(l != NULL);
-    if (x >= l->width || y >= l->height)
-        return FAIL;
-
-    update_block_push(&l->updates, x, y, id, l->block_size);
-    // if (id != 0)
-    //     LOG_DEBUG("upd (%llx,%d,%d) to %d", l->uuid, x, y, id);
-
-    return SUCCESS;
-}
-
-u8 block_apply_updates(layer *l)
-{
-    if (l->updates.update_count == 0)
-        return SUCCESS;
-
-    // LOG_DEBUG("applying %d updates to layer %llx", l->updates.update_count, l->uuid);
-
-    for (u32 i = 0; i < l->updates.update_count; i++)
-    {
-        update_block u = update_block_read(l->updates, i, l->block_size);
-
-        // if (u.id != 0)
-        // LOG_DEBUG("set (%llx,%d,%d) to %d", l->uuid, u.x, u.y, u.id);
-
-        block_set_id_now(l, u.x, u.y, u.id);
+        update_varhandle u = update_var_read(l->var_updates, i);
+        // LOG_DEBUG("moved %d to %d:%d", u.h.index, u.x, u.y);
+        block_set_var_handle_now(l, u.x, u.y, u.h);
     }
 
-    l->updates.raw_updates.length = 0;
-    l->updates.update_count = 0;
-
-    return SUCCESS;
-}
-
-u8 block_get_id(layer *l, u16 x, u16 y, u64 *id)
-{
-    assert(l);
-    assert(id);
-
-    if (x >= l->width || y >= l->height)
-        return FAIL;
-
-    void *ptr = BLOCK_ID_PTR(l, x, y);
-
-    switch (l->block_size)
-    {
-    case 1:
-        *id = *(u8 *)ptr;
-        break;
-    case 2:
-        *id = *(u16 *)ptr;
-        break;
-    case 4:
-        *id = *(u32 *)ptr;
-        break;
-    case 8:
-        *id = *(u64 *)ptr;
-        break;
-    default:
-        LOG_ERROR("layer cannot have block size width %d bytes", l->block_size);
-        return FAIL;
-    }
-
-    return SUCCESS;
+    vec_clear(&l->var_updates.raw_updates);
+    l->var_updates.update_count = 0;
 }
 
 handle32 block_get_var_handle(layer *l, u16 x, u16 y)
@@ -170,18 +236,35 @@ handle32 block_get_var_handle(layer *l, u16 x, u16 y)
     return handle;
 }
 
-void block_set_var_handle(layer *l, u16 x, u16 y, handle32 handle)
+void block_set_var_handle_now(layer *l, u16 x, u16 y, handle32 handle)
 {
     assert(l);
     assert(l->blocks);
-    if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
-        return;
     if (x >= l->width || y >= l->height)
         return;
     if (l->var_pool.table == NULL)
         return;
 
+    handle32 existing = block_get_var_handle(l, x, y);
+
+    if (handle_is_valid(l->var_pool.table, existing) && handle_is_valid(l->var_pool.table, handle))
+    {
+        block_delete_vars_now(l, x, y);
+    }
+
     memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&handle, sizeof(handle32));
+}
+
+void block_set_var_handle(layer *l, u16 x, u16 y, handle32 handle)
+{
+    assert(l);
+    assert(l->blocks);
+    if (x >= l->width || y >= l->height)
+        return;
+    if (l->var_pool.table == NULL)
+        return;
+
+    block_push_var_change(l, x, y, handle);
 }
 
 u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out)
@@ -209,7 +292,7 @@ u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out)
     return SUCCESS;
 }
 
-u8 block_delete_vars(layer *l, u16 x, u16 y)
+u8 block_delete_vars_now(layer *l, u16 x, u16 y)
 {
     assert(l);
     if (x >= l->width || y >= l->height)
@@ -226,6 +309,20 @@ u8 block_delete_vars(layer *l, u16 x, u16 y)
 
     // Clear the var index in the block
     memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, sizeof(handle32));
+
+    return SUCCESS;
+}
+
+u8 block_delete_vars(layer *l, u16 x, u16 y)
+{
+    assert(l);
+    if (x >= l->width || y >= l->height)
+        return FAIL;
+
+    if (l->var_pool.table == NULL)
+        return SUCCESS; // nothing to delete
+
+    block_push_var_change(l, x, y, INVALID_HANDLE);
 
     return SUCCESS;
 }
@@ -251,22 +348,21 @@ u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
         return SUCCESS;
     }
 
-    /* Check existing handle */
-    handle32 handle = {};
-    memcpy((u8 *)&handle, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
+    handle32 existing = block_get_var_handle(l, x, y);
+    blob *blob_ptr = NULL;
 
-    if (handle_is_valid(l->var_pool.table, handle))
+    if (handle_is_valid(l->var_pool.table, existing))
     {
-        blob *existing = (blob *)handle_table_get(l->var_pool.table, handle);
-        if (existing && existing->size >= vars.size)
+        blob_ptr = (blob *)handle_table_get(l->var_pool.table, existing);
+        if (blob_ptr && blob_ptr->size >= vars.size)
         {
-            existing->size = vars.size;
-            memcpy(existing->ptr, vars.ptr, vars.size);
+            blob_ptr->size = vars.size;
+            memcpy(blob_ptr->ptr, vars.ptr, vars.size);
             return SUCCESS;
         }
 
         /* free existing and allocate new below */
-        var_table_free_handle(&l->var_pool, handle);
+        block_delete_vars(l, x, y);
     }
 
     handle32 newh = var_table_alloc_blob(&l->var_pool, vars);
@@ -276,32 +372,21 @@ u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
         return FAIL;
     }
 
-    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&newh, sizeof(handle32));
+    blob_ptr = handle_table_get(l->var_pool.table, newh);
+    assert(blob_ptr);
+    memcpy(blob_ptr->ptr, vars.ptr, vars.size);
+
+    block_set_var_handle(l, x, y, newh);
 
     return SUCCESS;
 }
 
-u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy)
+// updates
+
+u8 block_apply_updates(layer *l)
 {
-    assert(l);
-
-    u32 dest_x = x + dx;
-    u32 dest_y = y + dy;
-    if (x >= l->width || y >= l->height)
-        return FAIL;
-    if (dest_x >= l->width || dest_y >= l->height)
-        return FAIL;
-
-    u64 id_dest = 0;
-    u8 *dest_ptr = BLOCK_ID_PTR(l, dest_x, dest_y);
-    u8 *src_ptr = BLOCK_ID_PTR(l, x, y);
-
-    memcpy((u8 *)&id_dest, dest_ptr, l->block_size);
-    if (id_dest != 0)
-        return FAIL;
-
-    memcpy(dest_ptr, src_ptr, l->block_size + sizeof(handle32));
-    memset(src_ptr, 0, l->block_size + sizeof(handle32));
+    block_apply_id_changes(l);
+    block_apply_varhandle_changes(l);
 
     return SUCCESS;
 }
@@ -337,7 +422,7 @@ u8 init_layer(layer *l, room *parent_room)
     }
 
     /* Initialize update accumulator for network broadcasting */
-    l->updates = (update_block_acc){};
+    l->id_updates = update_acc_new();
 
     return SUCCESS;
 }
@@ -402,7 +487,7 @@ u8 free_layer(layer *l)
     }
 
     /* Cleanup update accumulator */
-    vec_deinit(&l->updates.raw_updates);
+    update_acc_free(&l->id_updates);
 
     l->uuid = 0;
 
@@ -506,8 +591,6 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
 void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
 {
     assert(l);
-    if (FLAG_GET(l->flags, LAYER_FLAG_STATIC))
-        return;
     assert(l->blocks);
 
     char buffer[1024] = {0};
@@ -519,7 +602,9 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
     int x = orig_x;
     int y = orig_y;
 
-    blob vars_space = l->registry->resources.data[character_block_id].vars_sample;
+    blob vars_scratch = {};
+
+    blob_dup(&vars_scratch, l->registry->resources.data[character_block_id].vars_sample);
 
     char c = ' ';
 
@@ -533,26 +618,21 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
         }
         else
         {
+            bool write_new = false;
             block_set_id(l, x, y, character_block_id);
 
             blob *vars = NULL;
             if (block_get_vars(l, x, y, &vars) != SUCCESS)
             {
-                block_copy_vars(l, x, y, vars_space);
-                if (block_get_vars(l, x, y, &vars) != SUCCESS)
-                {
-                    LOG_ERROR("bprintf Failed create a variable");
-                    va_end(args);
-                    return;
-                }
+                write_new = true;
+                vars = &vars_scratch;
             }
 
             if (var_set_u8(vars, 'v', c) != SUCCESS)
-            {
                 LOG_WARNING("bprintf Failed to set a u8 var for char block at %d:%d", x, y);
-                // va_end(args);
-                // return;
-            }
+
+            if (write_new)
+                block_copy_vars(l, x, y, vars_scratch);
         }
 
         switch (*ptr)
@@ -577,5 +657,6 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
         ptr++;
     }
 
+    SAFE_FREE(vars_scratch.ptr);
     va_end(args);
 }

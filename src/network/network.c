@@ -44,7 +44,7 @@ void net_server_shutdown(void)
 
 // Packet layout:
 // [u8 packet_type][u16 layer_index][u8 true_width][u32 payload_len][payload bytes...]
-int net_broadcast_update(u16 layer_index, update_block_acc *acc, u8 true_width)
+int net_broadcast_update(u16 layer_index, update_accumulator *acc, u8 true_width)
 {
     if (!server_host || !acc)
         return -1;

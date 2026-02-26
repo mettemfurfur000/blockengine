@@ -1,11 +1,12 @@
 #ifndef LEVEL_H
 #define LEVEL_H 1
 
-#include "vec/src/vec.h"
 #include "block_registry.h"
 #include "general.h"
 #include "handle.h"
 #include "hashtable.h"
+#include "vec/src/vec.h"
+
 
 #include "update_system.h"
 
@@ -30,14 +31,15 @@ typedef struct layer
     block_registry *registry;
     u8 *blocks; // array of blocks, each of size bytes_per_block
 
-    u16 width;         //
-    u16 height;        //
-    u8 block_size;     // bytes per block id
+    u16 width;                //
+    u16 height;               //
+    u8 block_size;            // bytes per block id
     u8 total_bytes_per_block; // block_size + 4 (handle32)
 
     u8 flags; //
-    
-    update_block_acc updates; // accumulator for block updates on this layer
+
+    update_accumulator id_updates;  // accumulator for block updates on this layer
+    update_accumulator var_updates; // for var updates
 } layer;
 
 typedef struct level level;
@@ -75,6 +77,8 @@ u8 block_get_id(layer *l, u16 x, u16 y, u64 *id);
 u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy);
 
 u8 block_set_id_now(layer *l, u16 x, u16 y, u64 id);
+u8 block_delete_vars_now(layer *l, u16 x, u16 y);
+void block_set_var_handle_now(layer *l, u16 x, u16 y, handle32 handle);
 u8 block_apply_updates(layer *l);
 
 u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out);

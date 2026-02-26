@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
     {
         u32 frame_begin_tick = SDL_GetTicks();
 
-        // Poll SDL events (quit, block updates, etc.)
+        // Poll SDL events (quit, block id_updates, etc.)
         while (SDL_PollEvent(&e))
         {
             switch (e.type)
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
             //     if (upd_evt->layer_ptr)
             //     {
             //         layer *l = (layer *)upd_evt->layer_ptr;
-            //         update_block_push(&l->updates, upd_evt->x, upd_evt->y, upd_evt->new_id, l->block_size);
+            //         update_block_push(&l->id_updates, upd_evt->x, upd_evt->y, upd_evt->new_id, l->block_size);
             //     }
             //     break;
             // }
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
             e.type = ENGINE_TICK;
             call_handlers(e);
 
-            // TODO: Broadcast accumulated updates from all layers at tick time (if any)
+            // TODO: Broadcast accumulated id_updates from all layers at tick time (if any)
             // For now, this happens on-demand via Lua or when you explicitly call net_broadcast_update()
         }
 

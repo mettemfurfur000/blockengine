@@ -184,7 +184,7 @@ blockengine.register_handler(events.ENGINE_TICK, function(code) -- tick over all
     G_tick = G_tick + 1
     G_sdl_tick = sdl.get_ticks()
     G_view_menu.objects.layer:tick(0) -- default tick - resets all values in a preparation for an actual pass
-    G_view_menu.objects.layer:tick(1)
+    -- G_view_menu.objects.layer:tick(1)
     -- G_level:apply_updates()
 end)
 

@@ -44,20 +44,18 @@ blockengine.register_handler(events.SDL_KEYUP, function(keysym, mod, state, rep)
 end)
 
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
----@param layer Layer
-function(layer, x, y, value)
+    ---@param layer Layer
+    function(layer, x, y, value)
         local status, vars = layer:get_vars(x, y)
         if status == false then
             error("error getting vars for the dev")
             return
         end
 
-        if value == 0 then
-            vars:set_u8("f", 1) -- ready to perform a move
-            return
-        end
-
-        if vars:get_u8("f") == 0 then -- if 0 that means that it already moved
+        local moved_on_tick = vars:get_u32("T")
+        -- print("move tick is " .. moved_on_tick .. ", current is " .. G_sdl_tick)
+        if moved_on_tick == G_sdl_tick then -- already moved at this tick
+            -- print("moved already!")
             return
         end
 
@@ -100,8 +98,6 @@ function(layer, x, y, value)
             vars:set_u32("T", G_sdl_tick)
 
             camera_utils.set_target(vec.mult(next_pos, G_block_width_pixels))
-
-            vars:set_u8("f", 0) -- moved
         end
     end
 )

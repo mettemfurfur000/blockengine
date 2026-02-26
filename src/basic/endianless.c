@@ -79,3 +79,34 @@ int make_endianless(u8 *bytes, int size)
         return flip_bytes_in_place(bytes, size);
     return SUCCESS;
 }
+
+u16 endian_flip_u16(u16 value)
+{
+    if (is_big_endian())
+        return ((value & 0xff00) >> 8) | ((value & 0x00ff) << 8);
+    return value;
+}
+
+u32 endian_flip_u32(u32 value)
+{
+    if (is_big_endian())
+        return ((value & 0xff000000) >> 24) | //
+               ((value & 0x00ff0000) >> 8) |  //
+               ((value & 0x0000ff00) << 8) |  //
+               ((value & 0x000000ff) << 24);
+    return value;
+}
+
+u64 endian_flip_u64(u64 value)
+{
+    if (is_big_endian())
+        return ((value & 0xff00000000000000ULL) >> 56) | //
+               ((value & 0x00ff000000000000ULL) >> 40) | //
+               ((value & 0x0000ff0000000000ULL) >> 24) | //
+               ((value & 0x000000ff00000000ULL) >> 8) |  //
+               ((value & 0x00000000ff000000ULL) << 8) |  //
+               ((value & 0x0000000000ff0000ULL) << 24) | //
+               ((value & 0x000000000000ff00ULL) << 40) | //
+               ((value & 0x00000000000000ffULL) << 56);
+    return value;
+}
