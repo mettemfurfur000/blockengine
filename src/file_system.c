@@ -108,14 +108,14 @@ void read_layer(layer *l, room *parent, stream_t *f)
         {
             stream_read((u8 *)&id, l->block_size, f); // read id
 
-            if (block_set_id_now(l, x, y, id) != SUCCESS)
+            if (block_set_id(l, x, y, id) != SUCCESS)
             {
                 LOG_WARNING("Failed to read block at %d, %d", x, y);
-                block_set_id_now(l, x, y, 0);
+                block_set_id(l, x, y, 0);
             }
 
             stream_read((u8 *)&h, sizeof(handle32), f); // read var index
-            block_set_var_handle_now(l, x, y, h);
+            block_set_var_handle(l, x, y, h);
         }
 
     u32 slot_count = 0;
