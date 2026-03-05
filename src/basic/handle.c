@@ -1,4 +1,5 @@
 #include "include/handle.h"
+#include "include/general.h"
 #include "include/logging.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -101,8 +102,7 @@ u16 util_get_new_handle_index(handle_table *table)
 
     /* Copy old slots to new table */
     for (u16 i = 0; i < table->capacity; ++i)
-        if (table->slots[i].active)
-            new_slots[i] = table->slots[i];
+        new_slots[i] = table->slots[i];
 
     free(table->slots);
     table->slots = new_slots;
@@ -132,6 +132,33 @@ handle32 handle_table_put(handle_table *table, void *obj)
     s->ptr = obj;
     s->active = 1;
     /* generation is left as-is if reused; otherwise default 0 */
+
+    handle32 h;
+    h.index = slot_index;
+    h.validation = (u16)(s->generation);
+    h.active = s->active;
+
+    return h;
+}
+
+/* sets an object at a said handle index */
+
+handle32 handle_table_set(handle_table *table, handle32 handle, void *obj)
+{
+    if (!table)
+        return INVALID_HANDLE;
+
+    /* Try to find an unused slot */
+    u16 slot_index = handle.index;
+    if (slot_index == INVALID_HANDLE_INDEX)
+        return INVALID_HANDLE;
+
+    struct handle_table_slot *s = &table->slots[slot_index];
+
+    SAFE_FREE(s->ptr);
+
+    s->ptr = obj;
+    s->active = 1;
 
     handle32 h;
     h.index = slot_index;

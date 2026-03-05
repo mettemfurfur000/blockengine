@@ -5,7 +5,7 @@ local level_editor = require("registries.engine.scripts.definitions.level_editor
 local camera_utils = require("registries.engine.scripts.camera_utils")
 
 G_block_size = 16
-G_global_zoom = 2
+G_global_zoom = 1
 G_block_width_pixels = G_block_size * G_global_zoom
 
 --- loads and registers layer editor functions

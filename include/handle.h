@@ -46,6 +46,9 @@ extern "C"
          handle (index == 0xFFFF) on failure. */
     handle32 handle_table_put(handle_table *table, void *obj);
 
+    /* Puts the object at said handle index, frees the old one if it was here */
+    handle32 handle_table_set(handle_table *table, handle32 handle, void *obj);
+
     /* Release a previously acquired handle. If the handle is invalid or already freed
          this is a no-op. */
     void handle_table_release(handle_table *table, handle32 h);

@@ -122,9 +122,15 @@ static int lua_varhandle_set_string(lua_State *L)
     VH_GET_BLOB_FROM_L(L, _b);
     const char *key = luaL_checkstring(L, 2);
     const char *value = luaL_checkstring(L, 3);
+
     if (strlen(key) > 1)
         return luaL_error(L, "Key must be a single character");
+
     lua_pushboolean(L, var_set_str(_b, key[0], value) == SUCCESS);
+    lua_pushboolean(L, true);
+
+    update_component_set_push(&_vh->l->var_component_updates, _vh->h, key[0], strlen(value), (void *)value);
+
     return 1;
 }
 
@@ -133,18 +139,30 @@ static int lua_varhandle_add_variable(lua_State *L)
     VH_GET_BLOB_FROM_L(L, _b);
     const char *key = luaL_checkstring(L, 2);
     const int length = luaL_checknumber(L, 3);
+
     if (strlen(key) > 1)
         return luaL_error(L, "Key must be a single character");
+
     lua_pushboolean(L, var_add(_b, key[0], length) == SUCCESS);
+    lua_pushboolean(L, true);
+
+    update_component_add_push(&_vh->l->var_component_updates, _vh->h, key[0], length);
+
     return 1;
 }
 static int lua_varhandle_remove(lua_State *L)
 {
     VH_GET_BLOB_FROM_L(L, _b);
     const char *key = luaL_checkstring(L, 2);
+
     if (strlen(key) > 1)
         return luaL_error(L, "Key must be a single character");
+
     lua_pushboolean(L, var_delete(_b, key[0]) == SUCCESS);
+    lua_pushboolean(L, true);
+
+    update_component_delete_push(&_vh->l->var_component_updates, _vh->h, key[0]);
+
     return 1;
 }
 
@@ -153,9 +171,15 @@ static int lua_varhandle_resize(lua_State *L)
     VH_GET_BLOB_FROM_L(L, _b);
     const char *key = luaL_checkstring(L, 2);
     const int new_size = luaL_checknumber(L, 3);
+
     if (strlen(key) > 1)
         return luaL_error(L, "Key must be a single character");
+
     lua_pushboolean(L, var_resize(_b, key[0], (u8)new_size) == SUCCESS);
+    lua_pushboolean(L, true);
+
+    update_component_resize_push(&_vh->l->var_component_updates, _vh->h, key[0], new_size);
+
     return 1;
 }
 
@@ -164,24 +188,15 @@ static int lua_varhandle_rename(lua_State *L)
     VH_GET_BLOB_FROM_L(L, _b);
     const char *old_key = luaL_checkstring(L, 2);
     const char *new_key = luaL_checkstring(L, 3);
+
     if (strlen(old_key) > 1 || strlen(new_key) > 1)
         return luaL_error(L, "Keys must be single characters");
-    lua_pushboolean(L, var_rename(_b, old_key[0], new_key[0]) == SUCCESS);
-    return 1;
-}
 
-static int lua_varhandle_ensure(lua_State *L)
-{
-    VH_GET_BLOB_FROM_L(L, _b);
-    const char *key = luaL_checkstring(L, 2);
-    const int needed = luaL_checknumber(L, 3);
-    if (strlen(key) > 1)
-        return luaL_error(L, "Key must be a single character");
-    i32 pos = ensure_tag(_b, key[0], needed);
-    if (pos < 0)
-        lua_pushnil(L);
-    else
-        lua_pushinteger(L, pos);
+    lua_pushboolean(L, var_rename(_b, old_key[0], new_key[0]) == SUCCESS);
+    lua_pushboolean(L, true);
+
+    update_component_rename_push(&_vh->l->var_component_updates, _vh->h, old_key[0], new_key[0]);
+
     return 1;
 }
 
@@ -228,15 +243,16 @@ static int lua_varhandle_tostring(lua_State *L)
 }
 
 /* typed setters/getters */
-#define VH_SETTER_FN(type, cname)                                                                                      \
-    static int lua_varhandle_set_##cname(lua_State *L)                                                                 \
+#define VH_SETTER_FN(type)                                                                                             \
+    static int lua_varhandle_set_##type(lua_State *L)                                                                  \
     {                                                                                                                  \
         VH_GET_BLOB_FROM_L(L, _b);                                                                                     \
         const char *key = luaL_checkstring(L, 2);                                                                      \
         lua_Number number = luaL_checknumber(L, 3);                                                                    \
         if (strlen(key) > 1)                                                                                           \
             return luaL_error(L, "Key must be a single character");                                                    \
-        lua_pushboolean(L, var_set_##cname(_b, key[0], (type)number) == SUCCESS);                                      \
+        update_component_set_push_##type(&_vh->l->var_component_updates, _vh->h, key[0], (type)number);                \
+        lua_pushboolean(L, var_set_##type(_b, key[0], (type)number) == SUCCESS);                                       \
         return 1;                                                                                                      \
     }
 
@@ -255,15 +271,15 @@ static int lua_varhandle_tostring(lua_State *L)
         return 1;                                                                                                      \
     }
 
-VH_SETTER_FN(i8, i8)
-VH_SETTER_FN(i16, i16)
-VH_SETTER_FN(i32, i32)
-VH_SETTER_FN(i64, i64)
+VH_SETTER_FN(i8)
+VH_SETTER_FN(i16)
+VH_SETTER_FN(i32)
+VH_SETTER_FN(i64)
 
-VH_SETTER_FN(u8, u8)
-VH_SETTER_FN(u16, u16)
-VH_SETTER_FN(u32, u32)
-VH_SETTER_FN(u64, u64)
+VH_SETTER_FN(u8)
+VH_SETTER_FN(u16)
+VH_SETTER_FN(u32)
+VH_SETTER_FN(u64)
 
 VH_GETTER_FN(i8, i8)
 VH_GETTER_FN(i16, i16)
@@ -311,7 +327,7 @@ void lua_varhandle_register(lua_State *L)
         {    "remove",       lua_varhandle_remove},
         {    "resize",       lua_varhandle_resize},
         {    "rename",       lua_varhandle_rename},
-        {    "ensure",       lua_varhandle_ensure},
+        // {    "ensure",       lua_varhandle_ensure},
 
         {        NULL,                       NULL},
     };

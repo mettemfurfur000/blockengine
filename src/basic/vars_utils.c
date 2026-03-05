@@ -68,8 +68,6 @@ u8 var_type_length(u8 type)
     return 0;
 }
 
-#define SWITCH_SETTER
-
 u8 var_add_from_string(blob *b, const u8 type, const char letter, const char *token)
 {
     u8 length = var_type_length(type);

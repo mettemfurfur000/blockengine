@@ -1,5 +1,4 @@
 #include "include/vars.h"
-#include "include/endianless.h"
 
 #include <stdlib.h>
 
@@ -241,47 +240,6 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size)
     return pos;
 }
 
-// will affect src
-i32 data_set_num_endianless(blob *b, char letter, void *src, int size)
-{
-    assert(b);
-    assert(src);
-
-    i32 pos = vars_pos(*b, letter);
-    if (pos < 0)
-        return FAIL;
-
-    if (make_endianless(src, size) != SUCCESS)
-        return FAIL;
-
-    memcpy(VAR_VALUE(b->ptr, pos), src, size);
-
-    return SUCCESS;
-}
-
-// will affect dest
-i32 data_get_num_endianless(blob b, char letter, void *dest, int size)
-{
-    if (!dest)
-        return FAIL;
-
-    i32 pos = vars_pos(b, letter);
-    if (pos < 0)
-        return FAIL;
-
-    u32 var_size = VAR_SIZE(b.ptr, pos);
-
-    if (var_size > size) // not enough space in dest ptr
-        return FAIL;
-
-    memcpy(dest, VAR_VALUE(b.ptr, pos), var_size);
-
-    if (make_endianless(dest, var_size) != SUCCESS)
-        return FAIL;
-
-    return SUCCESS;
-}
-
 // set
 
 u8 var_set_str(blob *b, char letter, const char *str)
@@ -301,6 +259,24 @@ u8 var_set_str(blob *b, char letter, const char *str)
     return SUCCESS;
 }
 
+u8 var_set_raw(blob *b, char letter, blob raw)
+{
+    assert(b);
+    assert(b->ptr);
+    assert(raw.ptr);
+    u32 len = b->length;
+    assert(len != 0);
+    assert(len <= 0xff - 1);
+
+    i32 pos = vars_pos(*b, letter);
+    if (pos < 0)
+        return FAIL;
+
+    memcpy(VAR_VALUE(b->ptr, pos), raw.ptr, len);
+
+    return SUCCESS;
+}
+
 SETTER_IMP(u8)
 SETTER_IMP(u16)
 SETTER_IMP(u32)
@@ -312,6 +288,20 @@ SETTER_IMP(i32)
 SETTER_IMP(i64)
 
 // get
+
+u8 var_get_raw(blob b, char letter, blob *dest)
+{
+    if (!dest)
+        return FAIL;
+
+    i32 pos = vars_pos(b, letter);
+    if (pos < 0)
+        return FAIL;
+
+    dest->ptr = (u8 *)VAR_VALUE(b.ptr, pos);
+
+    return SUCCESS;
+}
 
 u8 var_get_str(blob b, char letter, char **dest)
 {

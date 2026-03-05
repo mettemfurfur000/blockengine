@@ -1,11 +1,12 @@
-#include "include/handle.h"
+#include "data_io.h"
 #ifndef LEVEL_UPDATE_SYSTEM_H
 #define LEVEL_UPDATE_SYSTEM_H 1
 
-#include "vec/src/vec.h"
 #include "general.h"
+// #include "vec/src/vec.h"
 
-#include "include/endianless.h"
+#include "handle.h"
+#include "hashtable.h"
 #include <assert.h>
 
 // typedef struct
@@ -33,6 +34,8 @@
 // which can be optimized further, if each block of a layer is updated every frame, we can record the whole
 // layer byte by byte and apply some fast compression to it, then it will only depend on how random the updates are
 
+// when set to 1 the update system should be inactive
+
 typedef struct
 { // struct that is decoded from the update
     u64 id;
@@ -47,11 +50,35 @@ typedef struct
     u16 y;
 } update_varhandle;
 
-typedef vec_t(u8) vec_u8_t;
+typedef enum
+{
+    COMPONENT_UPDATE_NEW,    // new var created
+    COMPONENT_UPDATE_SET,    // singular component updated
+    COMPONENT_UPDATE_ADD,    // singular component appended
+    COMPONENT_UPDATE_DELETE, // component deleted
+    COMPONENT_UPDATE_RESIZE, // component resized
+    COMPONENT_UPDATE_RENAME, // component renamed
+} update_component_type;
 
 typedef struct
 {
-    vec_u8_t raw_updates;
+    union
+    {
+        blob* blob;
+        u8 *raw;
+    };
+    handle32 h;
+    u16 x;
+    u16 y;
+    char letter;
+    char new_char;
+    u8 size;
+    update_component_type type;
+} update_var_component;
+
+typedef struct
+{
+    stream_t update_stream;
     u32 update_count; // amount of packets recorded
 } update_accumulator;
 
@@ -60,16 +87,32 @@ void update_acc_free(update_accumulator *a);
 
 // x y for pos, id for value, true_width for width of the value in bytes
 void update_block_push(update_accumulator *a, u16 x, u16 y, u64 id, u8 true_width);
-update_block update_block_read(update_accumulator a, u32 index, u8 true_width);
+update_block update_block_read(update_accumulator a, u8 true_width);
 
 void update_var_push(update_accumulator *a, u16 x, u16 y, handle32 handle);
-update_varhandle update_var_read(update_accumulator a, u32 index);
+update_varhandle update_var_read(update_accumulator a);
 
-#define SET_FIELD_RAW(ptr, offset, type, val) *(type *)(ptr + offset) = (val);
-#define SET_FIELD(ptr, offset, type, val) SET_FIELD_RAW(ptr, offset, type, endian_flip_##type(val))
+void update_component_new_push(update_accumulator *a, handle32 handle, blob b);
+void update_component_set_push(update_accumulator *a, handle32 handle, char c, u8 len, u8 *ptr);
 
-#define GET_FIELD_RAW(ptr, offset, type) (*(type *)(ptr + offset))
-#define GET_FIELD(ptr, offset, type) endian_flip_##type(GET_FIELD_RAW(ptr, offset, type))
+#define UPDATE_COMP_SET_GEN_NAME(T)                                                                                    \
+    void update_component_set_push_##T(update_accumulator *a, handle32 handle, char c, T value);
 
+UPDATE_COMP_SET_GEN_NAME(u8)
+UPDATE_COMP_SET_GEN_NAME(u16)
+UPDATE_COMP_SET_GEN_NAME(u32)
+UPDATE_COMP_SET_GEN_NAME(u64)
+
+UPDATE_COMP_SET_GEN_NAME(i8)
+UPDATE_COMP_SET_GEN_NAME(i16)
+UPDATE_COMP_SET_GEN_NAME(i32)
+UPDATE_COMP_SET_GEN_NAME(i64)
+
+void update_component_add_push(update_accumulator *a, handle32 handle, char c, u8 size);
+void update_component_delete_push(update_accumulator *a, handle32 handle, char c);
+void update_component_resize_push(update_accumulator *a, handle32 handle, char c, u8 new_size);
+void update_component_rename_push(update_accumulator *a, handle32 handle, char c, char new_name);
+
+update_var_component update_component_read(update_accumulator a);
 
 #endif

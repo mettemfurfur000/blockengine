@@ -42,50 +42,52 @@ void net_server_shutdown(void)
     enet_deinitialize();
 }
 
-// Packet layout:
-// [u8 packet_type][u16 layer_index][u8 true_width][u32 payload_len][payload bytes...]
-int net_broadcast_update(u16 layer_index, update_accumulator *acc, u8 true_width)
-{
-    if (!server_host || !acc)
-        return -1;
+// TODO: figure out network packet serialization later
 
-    u32 payload_len = acc->raw_updates.length;
-    u32 header_size = 1 + 2 + 1 + 4;
-    u32 total = header_size + payload_len;
+// // Packet layout:
+// // [u8 packet_type][u16 layer_index][u8 true_width][u32 payload_len][payload bytes...]
+// int net_broadcast_update(u16 layer_index, update_accumulator *acc, u8 true_width)
+// {
+//     if (!server_host || !acc)
+//         return -1;
 
-    u8 *buf = malloc(total);
-    if (!buf)
-        return -1;
+//     u32 payload_len = acc->update_stream.handle.raw.bytes.length;
+//     u32 header_size = 1 + 2 + 1 + 4;
+//     u32 total = header_size + payload_len;
 
-    u8 *p = buf;
-    p[0] = (u8)PACKET_TYPE_LAYER_UPDATE;
-    p += 1;
+//     u8 *buf = malloc(total);
+//     if (!buf)
+//         return -1;
 
-    // write layer_index (2 bytes)
-    memcpy(p, &layer_index, 2);
-    make_endianless(p, 2);
-    p += 2;
+//     u8 *p = buf;
+//     p[0] = (u8)PACKET_TYPE_LAYER_UPDATE;
+//     p += 1;
 
-    *p = true_width;
-    p += 1;
+//     // write layer_index (2 bytes)
+//     memcpy(p, &layer_index, 2);
+//     make_endianless(p, 2);
+//     p += 2;
 
-    // payload length (4 bytes)
-    memcpy(p, &payload_len, 4);
-    make_endianless(p, 4);
-    p += 4;
+//     *p = true_width;
+//     p += 1;
 
-    // payload
-    if (payload_len)
-        memcpy(p, acc->raw_updates.data, payload_len);
+//     // payload length (4 bytes)
+//     memcpy(p, &payload_len, 4);
+//     make_endianless(p, 4);
+//     p += 4;
 
-    ENetPacket *packet = enet_packet_create(buf, total, ENET_PACKET_FLAG_RELIABLE);
-    free(buf);
+//     // payload
+//     if (payload_len)
+//         memcpy(p, acc->raw_updates.data, payload_len);
 
-    if (!packet)
-        return -1;
+//     ENetPacket *packet = enet_packet_create(buf, total, ENET_PACKET_FLAG_RELIABLE);
+//     free(buf);
 
-    enet_host_broadcast(server_host, 0, packet);
-    enet_host_flush(server_host);
+//     if (!packet)
+//         return -1;
 
-    return 0;
-}
+//     enet_host_broadcast(server_host, 0, packet);
+//     enet_host_flush(server_host);
+
+//     return 0;
+// }

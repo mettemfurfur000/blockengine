@@ -1,118 +1,256 @@
 #include "include/update_system.h"
+#include "include/data_io.h"
 #include "include/general.h"
-#include "include/logging.h"
+
 #include "vec/src/vec.h"
 
 update_accumulator update_acc_new()
 {
     update_accumulator ret = {};
+    ret.update_stream.mode = STREAM_BUF;
     return ret;
 }
 
 void update_acc_free(update_accumulator *a)
 {
-    vec_deinit(&a->raw_updates);
+    vec_deinit(&a->update_stream.handle.raw.bytes);
 }
 
-static inline void endianless_set_dynamic(u8 *dest, u8 offset, u8 width, u64 val)
+static inline void write_variable(stream dest, u8 width, u64 val)
 {
     assert(width % 2 == 0 || width == 1);
 
     switch (width)
     {
-    case sizeof(u8):
-        SET_FIELD_RAW(dest, offset, u8, val);
+    case sizeof(u8):;
+        u8 t8 = val;
+        WRITE(t8, dest);
         break;
-    case sizeof(u16):
-        SET_FIELD(dest, offset, u16, val);
+    case sizeof(u16):;
+        u16 t16 = val;
+        WRITE(t16, dest);
         break;
-    case sizeof(u32):
-        SET_FIELD(dest, offset, u32, val);
+    case sizeof(u32):;
+        u32 t32 = val;
+        WRITE(t32, dest);
         break;
-    case sizeof(u64):
-        SET_FIELD(dest, offset, u64, val);
+    case sizeof(u64):;
+        WRITE(val, dest);
         break;
     default:
         assert(0 && "unreachable!");
     }
 }
 
-static inline u64 endianless_get_dynamic(u8 *src, u8 offset, u8 width)
+static inline void read_variable(stream src, u8 width, u64 *dest)
 {
     assert(width % 2 == 0 || width == 1);
 
     switch (width)
     {
-    case sizeof(u8):
-        return GET_FIELD_RAW(src, offset, u8);
-    case sizeof(u16):
-        return GET_FIELD(src, offset, u16);
-    case sizeof(u32):
-        return GET_FIELD(src, offset, u32);
-    case sizeof(u64):
-        return GET_FIELD(src, offset, u64);
+    case sizeof(u8):;
+        u8 t8 = 0;
+        READ(t8, src);
+        *dest = t8;
+        break;
+    case sizeof(u16):;
+        u16 t16 = 0;
+        READ(t16, src);
+        *dest = t16;
+        break;
+    case sizeof(u32):;
+        u32 t32 = 0;
+        READ(t32, src);
+        *dest = t32;
+        break;
+    case sizeof(u64):;
+        u64 t64 = 0;
+        READ(t64, src);
+        *dest = t64;
+        break;
     default:
         assert(0 && "unreachable!");
     }
 }
+
+// blocks logic
+//
 
 void update_block_push(update_accumulator *a, u16 x, u16 y, u64 id, u8 true_width)
 {
-    const u8 update_width = 4 + true_width;
-    u8 upd_buf[16] = {};
+    WRITE(x, &a->update_stream);
+    WRITE(y, &a->update_stream);
+    write_variable(&a->update_stream, true_width, id);
 
-    SET_FIELD(upd_buf, 0, u16, x)
-    SET_FIELD(upd_buf, 2, u16, y)
-
-    endianless_set_dynamic(upd_buf, 4, true_width, id);
-
-    vec_pusharr(&a->raw_updates, upd_buf, update_width);
     a->update_count++;
 }
 
-update_block update_block_read(update_accumulator a, u32 index, u8 true_width)
+update_block update_block_read(update_accumulator a, u8 true_width)
 {
     assert(true_width % 2 == 0 || true_width == 1);
-    assert(index < a.update_count);
 
-    const u8 update_width = 4 + true_width;
+    // const u8 update_width = 4 + true_width;
     update_block update = {};
 
-    u8 *raw_upd = a.raw_updates.data + update_width * index;
-
-    update.x = GET_FIELD(raw_upd, 0, u16);
-    update.y = GET_FIELD(raw_upd, 2, u16);
-    update.id = endianless_get_dynamic(raw_upd, 4, true_width);
+    READ(update.x, &a.update_stream);
+    READ(update.y, &a.update_stream);
+    read_variable(&a.update_stream, true_width, &update.id);
 
     return update;
 }
+
+// var logic
+//
 
 void update_var_push(update_accumulator *a, u16 x, u16 y, handle32 handle)
 {
-    u8 upd_buf[16] = {};
+    WRITE(x, &a->update_stream);
+    WRITE(y, &a->update_stream);
+    WRITE(handle, &a->update_stream);
+    a->update_count++;
+}
 
-    SET_FIELD(upd_buf, 0, u16, x)
-    SET_FIELD(upd_buf, 2, u16, y)
-    handle32convertor c = {.h = handle};
-    SET_FIELD(upd_buf, 4, u32, c.i);
-    vec_pusharr(&a->raw_updates, upd_buf, sizeof(update_varhandle));
+update_varhandle update_var_read(update_accumulator a)
+{
+    update_varhandle update = {};
+
+    READ(update.x, &a.update_stream);
+    READ(update.y, &a.update_stream);
+    READ(update.h, &a.update_stream);
+
+    return update;
+}
+
+// component logic
+//
+
+void update_component_new_push(update_accumulator *a, handle32 handle, blob b)
+{
+    u8 type = COMPONENT_UPDATE_NEW;
+    WRITE(type, &a->update_stream);
+    WRITE(handle, &a->update_stream);
+
+    blob_vars_write(b, &a->update_stream);
 
     a->update_count++;
 }
 
-update_varhandle update_var_read(update_accumulator a, u32 index)
+#define UPDATE_COMP_SET_GEN(T)                                                                                         \
+    void update_component_set_push_##T(update_accumulator *a, handle32 handle, char c, T value)                        \
+    {                                                                                                                  \
+        u8 type = COMPONENT_UPDATE_SET;                                                                                \
+        WRITE(type, &a->update_stream);                                                                                \
+        WRITE(handle, &a->update_stream);                                                                              \
+        WRITE(c, &a->update_stream);                                                                                   \
+        u8 len = sizeof(T);                                                                                            \
+        WRITE(len, &a->update_stream);                                                                                 \
+        WRITE(value, &a->update_stream);                                                                               \
+    }
+
+void update_component_set_push(update_accumulator *a, handle32 handle, char c, u8 len, u8 *ptr)
 {
-    assert(index < a.update_count);
+    u8 type = COMPONENT_UPDATE_SET;
+    WRITE(type, &a->update_stream);
+    WRITE(handle, &a->update_stream);
 
-    update_varhandle update = {};
+    WRITE(c, &a->update_stream);
+    WRITE(len, &a->update_stream);
+    WRITE_N(ptr, &a->update_stream, len);
+}
 
-    u8 *raw_upd = a.raw_updates.data + (sizeof(update_varhandle) * index);
+UPDATE_COMP_SET_GEN(u8)
+UPDATE_COMP_SET_GEN(u16)
+UPDATE_COMP_SET_GEN(u32)
+UPDATE_COMP_SET_GEN(u64)
 
-    update.x = GET_FIELD(raw_upd, 0, u16);
-    update.y = GET_FIELD(raw_upd, 2, u16);
-    handle32convertor c = {};
-    c.i = GET_FIELD(raw_upd, 4, u32);
-    update.h = c.h;
+UPDATE_COMP_SET_GEN(i8)
+UPDATE_COMP_SET_GEN(i16)
+UPDATE_COMP_SET_GEN(i32)
+UPDATE_COMP_SET_GEN(i64)
 
-    return update;
+void update_component_add_push(update_accumulator *a, handle32 handle, char c, u8 size)
+{
+    u8 type = COMPONENT_UPDATE_ADD;
+    WRITE(type, &a->update_stream);
+    WRITE(handle, &a->update_stream);
+
+    WRITE(c, &a->update_stream);
+    WRITE(size, &a->update_stream);
+}
+
+void update_component_delete_push(update_accumulator *a, handle32 handle, char c)
+{
+    u8 type = COMPONENT_UPDATE_DELETE;
+    WRITE(type, &a->update_stream);
+    WRITE(handle, &a->update_stream);
+
+    WRITE(c, &a->update_stream);
+}
+
+void update_component_resize_push(update_accumulator *a, handle32 handle, char c, u8 new_size)
+{
+    u8 type = COMPONENT_UPDATE_RESIZE;
+    WRITE(type, &a->update_stream);
+    WRITE(handle, &a->update_stream);
+
+    WRITE(c, &a->update_stream);
+    WRITE(new_size, &a->update_stream);
+}
+
+void update_component_rename_push(update_accumulator *a, handle32 handle, char c, char new_name)
+{
+    u8 type = COMPONENT_UPDATE_RENAME;
+    WRITE(type, &a->update_stream);
+    WRITE(handle, &a->update_stream);
+
+    WRITE(c, &a->update_stream);
+    WRITE(new_name, &a->update_stream);
+}
+
+static u8 var_set_buf[256] = {};
+
+update_var_component update_component_read(update_accumulator a)
+{
+    update_var_component u = {};
+
+    READ(u.type, &a.update_stream);
+
+    switch (u.type)
+    {
+    case COMPONENT_UPDATE_NEW:
+        READ(u.h, &a.update_stream);
+        blob *nb = calloc(1, sizeof(blob));
+        assert(nb != NULL);
+        *nb = blob_vars_read(&a.update_stream);
+        u.blob = nb;
+        break;
+    case COMPONENT_UPDATE_SET:
+        READ(u.h, &a.update_stream);
+        READ(u.letter, &a.update_stream);
+        READ(u.size, &a.update_stream);
+        READ_N(var_set_buf, &a.update_stream, u.size);
+        u.raw = var_set_buf;
+        break;
+    case COMPONENT_UPDATE_ADD:
+        READ(u.h, &a.update_stream);
+        READ(u.letter, &a.update_stream);
+        READ(u.size, &a.update_stream);
+        break;
+    case COMPONENT_UPDATE_DELETE:
+        READ(u.h, &a.update_stream);
+        READ(u.letter, &a.update_stream);
+        break;
+    case COMPONENT_UPDATE_RESIZE:
+        READ(u.h, &a.update_stream);
+        READ(u.letter, &a.update_stream);
+        READ(u.size, &a.update_stream);
+        break;
+    case COMPONENT_UPDATE_RENAME:
+        READ(u.h, &a.update_stream);
+        READ(u.letter, &a.update_stream);
+        READ(u.new_char, &a.update_stream);
+        break;
+    }
+
+    return u;
 }

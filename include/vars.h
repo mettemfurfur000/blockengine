@@ -59,6 +59,7 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
     }
 
 u8 var_set_str(blob *b, char letter, const char *str);
+u8 var_set_raw(blob *b, char letter, blob raw);
 
 SETTER_DEF(u8)
 SETTER_DEF(u16)
@@ -72,6 +73,9 @@ SETTER_DEF(i64)
 
 // get
 
+u8 var_get_str(blob b, char letter, char **dest);
+u8 var_get_raw(blob b, char letter, blob *dest);
+
 GETTER_DEF(u8)
 GETTER_DEF(u16)
 GETTER_DEF(u32)
@@ -82,11 +86,7 @@ GETTER_DEF(i16)
 GETTER_DEF(i32)
 GETTER_DEF(i64)
 
-u8 var_get_str(blob b, char letter, char **dest);
 
 void dbg_data_layout(blob b, char *ret);
-
-i32 data_get_num_endianless(blob b, char letter, void *dest, int size);
-i32 data_set_num_endianless(blob *b, char letter, void *src, int size);
 
 #endif

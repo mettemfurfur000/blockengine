@@ -9,34 +9,9 @@
 
 #include "include/flags.h"
 #include "vec/src/vec.h"
+
 #include <stdarg.h>
 #include <stdio.h>
-
-// overrides
-
-#define DIRECT 0
-
-void block_push_var_change(layer *l, u16 x, u16 y, handle32 handle)
-{
-#if DIRECT == 1
-    block_set_var_handle_now(l, x, y, handle);
-#else
-    update_var_push(&l->var_updates, x, y, handle);
-#endif
-}
-
-void block_push_block_change(layer *l, u16 x, u16 y, u64 id)
-{
-#if DIRECT == 1
-    block_set_id_now(l, x, y, id);
-#else
-    update_block_push(&l->id_updates, x, y, id, l->block_size);
-#endif
-}
-
-//
-// BLOCK ID OPERATIONS
-//
 
 u8 block_get_id(layer *l, u16 x, u16 y, u64 *id)
 {
@@ -70,36 +45,11 @@ u8 block_get_id(layer *l, u16 x, u16 y, u64 *id)
     return SUCCESS;
 }
 
-u8 block_set_id_now(layer *l, u16 x, u16 y, u64 id)
-{
-    assert(l != NULL);
-    if (x >= l->width || y >= l->height)
-        return FAIL;
-    void *ptr = BLOCK_ID_PTR(l, x, y);
-
-    switch (l->block_size)
-    {
-    case 1:
-        *(u8 *)ptr = id;
-        break;
-    case 2:
-        *(u16 *)ptr = id;
-        break;
-    case 4:
-        *(u32 *)ptr = id;
-        break;
-    case 8:
-        *(u64 *)ptr = id;
-        break;
-    default:
-        LOG_ERROR("layer cannot have block size width %d bytes", l->block_size);
-        return FAIL;
-    }
-    return SUCCESS;
-}
-
 u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy)
 {
+    if (dx == 0 && dy == 0)
+        return SUCCESS;
+
     assert(l);
 
     u32 dest_x = x + dx;
@@ -120,11 +70,6 @@ u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy)
     if (l->var_pool.table == NULL)
         return SUCCESS;
 
-    if (src_id == 6)
-    {
-        // LOG_DEBUG("attempting to move dev at %d %d", x, y);
-    }
-
     handle32 h_src = block_get_var_handle(l, x, y);
 
     block_set_var_handle(l, dest_x, dest_y, h_src);
@@ -139,7 +84,28 @@ u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
     if (x >= l->width || y >= l->height)
         return FAIL;
 
-    block_push_block_change(l, x, y, id);
+    void *ptr = BLOCK_ID_PTR(l, x, y);
+
+    switch (l->block_size)
+    {
+    case 1:
+        *(u8 *)ptr = id;
+        break;
+    case 2:
+        *(u16 *)ptr = id;
+        break;
+    case 4:
+        *(u32 *)ptr = id;
+        break;
+    case 8:
+        *(u64 *)ptr = id;
+        break;
+    default:
+        assert(0 || "unreachable");
+        return FAIL;
+    }
+
+    update_block_push(&l->id_updates, x, y, id, l->block_size);
 
     return SUCCESS;
 }
@@ -148,11 +114,14 @@ void block_apply_id_changes(layer *l)
 {
     for (u32 i = 0; i < l->id_updates.update_count; i++)
     {
-        update_block u = update_block_read(l->id_updates, i, l->block_size);
-        block_set_id_now(l, u.x, u.y, u.id);
+        // TODO: Updates dont actually do anything because there is no real netcode at the moment and updates are not
+        // being sent around the network
+
+        // update_block u = update_block_read(l->id_updates, l->block_size);
+        // block_set_id_now(l, u.x, u.y, u.id);
     }
 
-    vec_clear(&l->id_updates.raw_updates);
+    vec_clear(&l->id_updates.update_stream.handle.raw.bytes);
     l->id_updates.update_count = 0;
 }
 
@@ -162,8 +131,11 @@ void block_apply_id_changes(layer *l)
 
 /* Create a new blob in the pool and return the handle. The blob memory is
    allocated and the contents copied from `vars`. Returns INVALID_HANDLE on
-   failure. */
-static handle32 var_table_alloc_blob(var_handle_table *pool, blob vars)
+   failure.
+
+   Set parsed to true if blob originates from a parse function
+   */
+static handle32 var_table_alloc_blob(var_handle_table *pool, blob vars, bool parsed)
 {
     if (!pool || !pool->table)
         return INVALID_HANDLE;
@@ -171,15 +143,22 @@ static handle32 var_table_alloc_blob(var_handle_table *pool, blob vars)
     blob *b = calloc(1, sizeof(blob));
     if (!b)
         return INVALID_HANDLE;
-    b->ptr = calloc(vars.size ? vars.size : 1, 1);
-    if (!b->ptr)
+    if (!parsed)
     {
-        SAFE_FREE(b);
-        return INVALID_HANDLE;
+        b->ptr = calloc(vars.size ? vars.size : 1, 1);
+        if (!b->ptr)
+        {
+            SAFE_FREE(b);
+            return INVALID_HANDLE;
+        }
+        if (vars.size && vars.ptr)
+            memcpy(b->ptr, vars.ptr, vars.size);
+        b->size = vars.size;
     }
-    if (vars.size && vars.ptr)
-        memcpy(b->ptr, vars.ptr, vars.size);
-    b->size = vars.size;
+    else
+    {
+        *b = vars;
+    }
 
     handle32 h = handle_table_put(pool->table, b);
 
@@ -211,12 +190,13 @@ void block_apply_varhandle_changes(layer *l)
 {
     for (u32 i = 0; i < l->var_updates.update_count; i++)
     {
-        update_varhandle u = update_var_read(l->var_updates, i);
-        // LOG_DEBUG("moved %d to %d:%d", u.h.index, u.x, u.y);
-        block_set_var_handle_now(l, u.x, u.y, u.h);
+        // TODO: Updates dont actually do anything because there is no real netcode at the moment and updates are not
+        // being sent around the network
+        // update_varhandle u = update_var_read(l->var_updates);
+        // block_set_var_handle_now(l, u.x, u.y, u.h);
     }
 
-    vec_clear(&l->var_updates.raw_updates);
+    vec_clear(&l->var_updates.update_stream.handle.raw.bytes);
     l->var_updates.update_count = 0;
 }
 
@@ -236,25 +216,6 @@ handle32 block_get_var_handle(layer *l, u16 x, u16 y)
     return handle;
 }
 
-void block_set_var_handle_now(layer *l, u16 x, u16 y, handle32 handle)
-{
-    assert(l);
-    assert(l->blocks);
-    if (x >= l->width || y >= l->height)
-        return;
-    if (l->var_pool.table == NULL)
-        return;
-
-    handle32 existing = block_get_var_handle(l, x, y);
-
-    if (handle_is_valid(l->var_pool.table, existing) && handle_is_valid(l->var_pool.table, handle))
-    {
-        block_delete_vars_now(l, x, y);
-    }
-
-    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&handle, sizeof(handle32));
-}
-
 void block_set_var_handle(layer *l, u16 x, u16 y, handle32 handle)
 {
     assert(l);
@@ -264,7 +225,9 @@ void block_set_var_handle(layer *l, u16 x, u16 y, handle32 handle)
     if (l->var_pool.table == NULL)
         return;
 
-    block_push_var_change(l, x, y, handle);
+    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&handle, sizeof(handle32));
+
+    update_var_push(&l->var_updates, x, y, handle);
 }
 
 u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out)
@@ -292,27 +255,6 @@ u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out)
     return SUCCESS;
 }
 
-u8 block_delete_vars_now(layer *l, u16 x, u16 y)
-{
-    assert(l);
-    if (x >= l->width || y >= l->height)
-        return FAIL;
-
-    if (l->var_pool.table == NULL)
-        return SUCCESS; // nothing to delete
-
-    handle32 handle = {};
-    memcpy((u8 *)&handle, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
-
-    // if (handle_is_valid(l->var_pool.table, handle))
-    var_table_free_handle(&l->var_pool, handle);
-
-    // Clear the var index in the block
-    memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, sizeof(handle32));
-
-    return SUCCESS;
-}
-
 u8 block_delete_vars(layer *l, u16 x, u16 y)
 {
     assert(l);
@@ -322,7 +264,16 @@ u8 block_delete_vars(layer *l, u16 x, u16 y)
     if (l->var_pool.table == NULL)
         return SUCCESS; // nothing to delete
 
-    block_push_var_change(l, x, y, INVALID_HANDLE);
+    // block_push_var_change(l, x, y, INVALID_HANDLE);
+    
+    handle32 handle = {};
+    memcpy((u8 *)&handle, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
+
+    // if (handle_is_valid(l->var_pool.table, handle))
+    var_table_free_handle(&l->var_pool, handle);
+
+    // Clear the var index in the block
+    memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, sizeof(handle32));
 
     return SUCCESS;
 }
@@ -351,6 +302,7 @@ u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
     handle32 existing = block_get_var_handle(l, x, y);
     blob *blob_ptr = NULL;
 
+    // try getting an existing var and reusing it for new vars
     if (handle_is_valid(l->var_pool.table, existing))
     {
         blob_ptr = (blob *)handle_table_get(l->var_pool.table, existing);
@@ -358,6 +310,8 @@ u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
         {
             blob_ptr->size = vars.size;
             memcpy(blob_ptr->ptr, vars.ptr, vars.size);
+
+            update_component_new_push(&l->var_updates, existing, vars);
             return SUCCESS;
         }
 
@@ -365,7 +319,9 @@ u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
         block_delete_vars(l, x, y);
     }
 
-    handle32 newh = var_table_alloc_blob(&l->var_pool, vars);
+    // have to create a new var handle for this
+
+    handle32 newh = var_table_alloc_blob(&l->var_pool, vars, false);
     if (newh.index == INVALID_HANDLE_INDEX)
     {
         LOG_ERROR("Failed to create a new var");
@@ -376,9 +332,84 @@ u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
     assert(blob_ptr);
     memcpy(blob_ptr->ptr, vars.ptr, vars.size);
 
+    update_component_new_push(&l->var_updates, newh, vars);
+
     block_set_var_handle(l, x, y, newh);
 
     return SUCCESS;
+}
+
+void block_apply_var_component_changes(layer *l)
+{
+    if (!l->var_pool.table)
+        return;
+
+    // TODO: Updates dont actually do anything because there is no real netcode at the moment and updates are not
+    // being sent around the network
+    goto skip;
+
+    for (u32 i = 0; i < l->var_component_updates.update_count; i++)
+    {
+        update_var_component u = update_component_read(l->var_component_updates);
+
+        switch (u.type)
+        {
+        case COMPONENT_UPDATE_NEW:;
+            LOG_DEBUG("COMPONENT_UPDATE_NEW %d", u.size);
+            handle32 ret = handle_table_set(l->var_pool.table, u.h, u.blob);
+            assert(ret.index != INVALID_HANDLE_INDEX);
+            assert(ret.index == u.h.index);
+            break;
+        case COMPONENT_UPDATE_SET:;
+            LOG_DEBUG("COMPONENT_UPDATE_SET");
+            blob *b = (blob *)handle_table_get(l->var_pool.table, u.h);
+            assert(b);
+            assert(u.size);
+            switch (u.size)
+            {
+            case 1:
+                assert(var_set_u8(b, u.letter, *u.raw) == SUCCESS);
+                break;
+            case 2:
+                assert(var_set_u16(b, u.letter, *(u16 *)u.raw) == SUCCESS);
+                break;
+            case 4:
+                assert(var_set_u32(b, u.letter, *(u32 *)u.raw) == SUCCESS);
+                break;
+            case 8:
+                assert(var_set_u64(b, u.letter, *(u64 *)u.raw) == SUCCESS);
+                break;
+            default:
+                assert(var_set_raw(b, u.letter, (blob){.ptr = u.raw, .length = u.size}) == SUCCESS);
+                break;
+            }
+            break;
+        case COMPONENT_UPDATE_ADD:
+            LOG_DEBUG("COMPONENT_UPDATE_ADD");
+            blob *b2 = (blob *)handle_table_get(l->var_pool.table, u.h);
+            assert(b2);
+            assert(var_add(b2, u.letter, u.size) == SUCCESS);
+            break;
+        case COMPONENT_UPDATE_DELETE:
+            LOG_DEBUG("COMPONENT_UPDATE_DELETE");
+            blob *b3 = (blob *)handle_table_get(l->var_pool.table, u.h);
+            assert(b3);
+            assert(var_delete(b3, u.letter) == SUCCESS);
+            break;
+        case COMPONENT_UPDATE_RESIZE:
+            LOG_DEBUG("COMPONENT_UPDATE_RESIZE");
+            blob *b4 = (blob *)handle_table_get(l->var_pool.table, u.h);
+            assert(b4);
+            assert(var_resize(b4, u.letter, u.size) == SUCCESS);
+            break;
+        case COMPONENT_UPDATE_RENAME:
+            break;
+        }
+    }
+skip:
+
+    vec_clear(&l->var_component_updates.update_stream.handle.raw.bytes);
+    l->var_component_updates.update_count = 0;
 }
 
 // updates
@@ -387,6 +418,7 @@ u8 block_apply_updates(layer *l)
 {
     block_apply_id_changes(l);
     block_apply_varhandle_changes(l);
+    block_apply_var_component_changes(l);
 
     return SUCCESS;
 }
@@ -423,6 +455,8 @@ u8 init_layer(layer *l, room *parent_room)
 
     /* Initialize update accumulator for network broadcasting */
     l->id_updates = update_acc_new();
+    l->var_updates = update_acc_new();
+    l->var_component_updates = update_acc_new();
 
     return SUCCESS;
 }
@@ -488,6 +522,8 @@ u8 free_layer(layer *l)
 
     /* Cleanup update accumulator */
     update_acc_free(&l->id_updates);
+    update_acc_free(&l->var_updates);
+    update_acc_free(&l->var_component_updates);
 
     l->uuid = 0;
 
@@ -588,7 +624,7 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
     return l;
 }
 
-void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
+void bprintf(layer *l, const u64 letter_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...)
 {
     assert(l);
     assert(l->blocks);
@@ -604,7 +640,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
 
     blob vars_scratch = {};
 
-    blob_dup(&vars_scratch, l->registry->resources.data[character_block_id].vars_sample);
+    blob_dup(&vars_scratch, l->registry->resources.data[letter_block_id].vars_sample);
 
     char c = ' ';
 
@@ -619,7 +655,7 @@ void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32
         else
         {
             bool write_new = false;
-            block_set_id(l, x, y, character_block_id);
+            block_set_id(l, x, y, letter_block_id);
 
             blob *vars = NULL;
             if (block_get_vars(l, x, y, &vars) != SUCCESS)

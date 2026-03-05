@@ -4,8 +4,8 @@ local vec = require("registries.engine.scripts.vector_additions")
 
 local current_block = scripting_current_block_id
 
-G_pallete_width = 8
-G_ui_width = 32
+G_pallete_width = 4
+G_ui_width = 24
 G_ui_offset_layer_name = 0
 G_ui_offset_mode = 1
 G_ui_offset_block_name = 3
@@ -111,8 +111,14 @@ end
 
 local function select_layer(number)
     local desired_layer = math.max(0, math.min(G_layers_amount, (editor.layer_being_edited_index or 0) + number))
+    local selected_layer = get_layer_by_id(desired_layer)
+
+    if selected_layer == nil then
+        return
+    end
+
+    editor.layer_being_edited = selected_layer
     editor.layer_being_edited_index = desired_layer
-    editor.layer_being_edited = get_layer_by_id(desired_layer)
     ---@class Layer
     editor.layer_being_edited.layer = editor.layer_being_edited.layer
 end

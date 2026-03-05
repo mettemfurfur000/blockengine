@@ -48,7 +48,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
     function(layer, x, y, value)
         local status, vars = layer:get_vars(x, y)
         if status == false then
-            error("error getting vars for the dev")
+            error("error getting vars for the dev, nuking it")
+            layer:set_id(x, y, 0)
             return
         end
 
