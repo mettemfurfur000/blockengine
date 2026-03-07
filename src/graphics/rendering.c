@@ -4,7 +4,10 @@
 #include "include/general.h"
 #include "include/level.h"
 #include "include/logging.h"
+#include "include/spatial_grid.h"
 #include "include/vars.h"
+
+#define BLOCKS_EXTRA 1
 
 const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,
                                      6307353, 1532671, 6233633, 873473,  685613};
@@ -23,18 +26,10 @@ const float lerp(float a, float b, float f)
     return a + f * (b - a);
 }
 
-// simple autotile with only 9 types of tiles, all other default to the center one
-/*
-    as in:
-    [0][1][2]
-    [3][4][5]
-    [6][7][8]
-*/
-
 static u8 autotile_table_type_1[] = {4, 4, 4, 0, 4, 4, 2, 1, 4, 6, 4, 3, 8, 7, 5, 4};
 static u8 autotile_table_type_2[] = {15, 12, 3, 0, 14, 13, 2, 1, 11, 8, 7, 4, 10, 9, 6, 5};
 
-u8 autotile_select_shared_9(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
+static u8 autotile_select_shared_9(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
 {
     bool match_west = false;
     bool match_east = false;
@@ -56,11 +51,6 @@ u8 autotile_select_shared_9(const layer *l, const u8 select_table[], const u64 r
                         ((match_north & 1) << 3)];
 }
 
-// Full 47 autotiling scheme
-
-// generated with
-// ./tex_gen.exe autotile_comp.lua --input=registries/engine/textures/autotile_47_test.png
-
 static u8 autotile_table_type_3[] = {
     [0b00000010] = 0,  [0b00001010] = 1,  [0b00011010] = 2,  [0b00010010] = 3,  [0b11011010] = 4,  [0b00011011] = 5,
     [0b00011110] = 6,  [0b01111010] = 7,  [0b00001011] = 8,  [0b01011111] = 9,  [0b00011111] = 10, [0b00010110] = 11,
@@ -72,56 +62,7 @@ static u8 autotile_table_type_3[] = {
     [0b11011000] = 42, [0b01011011] = 43, [0b01101000] = 44, [0b11111000] = 45, [0b11111010] = 46, [0b11010000] = 47,
 };
 
-// 0b10000000 one is not pointing to a valid tile
-
-/*
-mask format in bits
-[0][1][2]
-[3][ ][4]
-[5][6][7]
-
-so 0-th bit indicates that thers a neighbour to the top-left of the block, that would look like
-`0x01`
-
-in right shifts that would be
-[7][6][5]
-[4][ ][3]
-[2][1][0]
-*/
-#define BIT(n) (1 << n)
-#define BITN(n) (1 << (7 - n))
-
-#define IS_BITN_TRUE(mask, n) (mask & BITN(n)) != 0
-#define IS_BITN_FALSE(mask, n) (mask & BITN(n)) == 0
-
-#define INVALIDATE_EDGE(mask, nq, nn1, nn2)                                                                            \
-    if (IS_BITN_TRUE(mask, nq) && (IS_BITN_FALSE(mask, nn1) || IS_BITN_FALSE(mask, nn2)))                              \
-        FLAG_FLIP(mask, BITN(nq));
-
-void invalidate_bit_edge(u8 *in, const u8 nc, const u8 n1, const u8 n2)
-{
-    u16 bitmap = *in;
-    if (IS_BITN_FALSE(bitmap, nc))
-        return;
-    if ((IS_BITN_TRUE(bitmap, n1) && IS_BITN_TRUE(bitmap, n2)))
-        return;
-    FLAG_FLIP(bitmap, BITN(nc));
-
-    *in = bitmap;
-}
-
-// edges that dont have 2 neighbours will be set to 0
-u8 invalidate_edges(u8 bitmap)
-{
-    invalidate_bit_edge(&bitmap, 0, 1, 3);
-    invalidate_bit_edge(&bitmap, 2, 1, 4);
-    invalidate_bit_edge(&bitmap, 5, 3, 6);
-    invalidate_bit_edge(&bitmap, 7, 6, 4);
-
-    return bitmap;
-}
-
-bool block_matches(const layer *l, const u64 ref_id, const i32 x, const i32 y)
+static bool block_matches(const layer *l, const u64 ref_id, const i32 x, const i32 y)
 {
     if (x < 0 || x >= l->width)
         return false;
@@ -130,7 +71,37 @@ bool block_matches(const layer *l, const u64 ref_id, const i32 x, const i32 y)
     return *BLOCK_ID_PTR(l, x, y) == ref_id;
 }
 
-u8 autotile_select_shared_47(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
+#define BITN(n) (1 << (7 - n))
+#define IS_BITN_TRUE(mask, n) (mask & BITN(n)) != 0
+#define IS_BITN_FALSE(mask, n) (mask & BITN(n)) == 0
+
+static void invalidate_bit_edge(u8 *in, const u8 nc, const u8 n1, const u8 n2)
+{
+    u16 bitmap = *in;
+    if (IS_BITN_FALSE(bitmap, nc))
+        return;
+    if ((IS_BITN_TRUE(bitmap, n1) && IS_BITN_TRUE(bitmap, n2)))
+        return;
+    FLAG_FLIP(bitmap, BITN(nc));
+    *in = bitmap;
+}
+
+static u8 invalidate_edges(u8 bitmap)
+{
+
+    invalidate_bit_edge(&bitmap, 0, 1, 3);
+    invalidate_bit_edge(&bitmap, 2, 1, 4);
+    invalidate_bit_edge(&bitmap, 5, 3, 6);
+    invalidate_bit_edge(&bitmap, 7, 6, 4);
+
+    return bitmap;
+
+#undef IS_BITN_TRUE
+#undef IS_BITN_FALSE
+#undef BITN
+}
+
+static u8 autotile_select_shared_47(const layer *l, const u8 select_table[], const u64 ref_id, const i32 x, const i32 y)
 {
 #define MATCH(num) (match##num << (7 - num))
     bool match0 = block_matches(l, ref_id, x - 1, y - 1) ? 1 : 0;
@@ -147,9 +118,121 @@ u8 autotile_select_shared_47(const layer *l, const u8 select_table[], const u64 
                 MATCH(4) | MATCH(5) | MATCH(6) | MATCH(7);
 
     u8 index = invalidate_edges(bitmap);
-    // u8 index = bitmap;
-
     return select_table[index];
+#undef MATCH
+}
+
+typedef struct
+{
+    layer_slice slice;
+    block_registry *b_reg;
+    layer *l;
+    int local_block_width;
+    i32 block_x_offset;
+    i32 block_y_offset;
+    i32 start_block_x;
+    i32 start_block_y;
+    u32 ms_since_start;
+    float seconds_since_start;
+} render_context;
+
+static void render_block_callback(void *ctx, u16 x, u16 y)
+{
+    render_context *rc = (render_context *)ctx;
+
+    i32 i = (i32)x;
+    i32 j = (i32)y;
+
+    layer *l = rc->l;
+    const u8 bytes_per_block = l->total_bytes_per_block;
+    const int local_block_width = rc->local_block_width;
+
+    i32 dest_x =
+        -rc->block_x_offset - local_block_width * (BLOCKS_EXTRA + 1) + (i - rc->start_block_x + 1) * local_block_width;
+    i32 dest_y =
+        -rc->block_y_offset - local_block_width * (BLOCKS_EXTRA + 1) + (j - rc->start_block_y + 1) * local_block_width;
+
+    u64 id = *(l->blocks + ((j * l->width) + i) * bytes_per_block);
+
+    if (id == 0)
+        return;
+
+    block_resources br = rc->b_reg->resources.data[id];
+
+    u8 frame = 0;
+    u8 type = 0;
+    u8 flip = 0;
+    i16 rotation = 0;
+    i16 offset_x = 0;
+    i16 offset_y = 0;
+
+    blob *var = NULL;
+    u32 ms_started_moving = rc->slice.timestamp_old;
+
+    if (block_get_vars(l, i, j, &var) == SUCCESS)
+    {
+        if (br.type_controller != 0)
+            var_get_u8_fast(*var, br.type_controller, br.vars_offsets, &type);
+
+        if (br.flip_controller != 0)
+            var_get_u8_fast(*var, br.flip_controller, br.vars_offsets, &flip);
+
+        if (br.rotation_controller != 0)
+            var_get_i16_fast(*var, br.rotation_controller, br.vars_offsets, &rotation);
+
+        if (br.anim_controller != 0)
+            var_get_u8_fast(*var, br.anim_controller, br.vars_offsets, &frame);
+
+        if (br.offset_x_controller != 0)
+            var_get_i16_fast(*var, br.offset_x_controller, br.vars_offsets, &offset_x);
+
+        if (br.offset_y_controller != 0)
+            var_get_i16_fast(*var, br.offset_y_controller, br.vars_offsets, &offset_y);
+
+        if (br.interp_takes != 0 && br.interp_timestamp_controller != 0)
+        {
+            var_get_u32_fast(*var, br.interp_timestamp_controller, br.vars_offsets, &ms_started_moving);
+
+            const float pos = (rc->ms_since_start - ms_started_moving) / (float)br.interp_takes;
+            const float clamp_pos = fmax(0.0f, fmin(1.0, pos));
+
+            offset_x = (i16)lerp((float)offset_x, 0, clamp_pos);
+            offset_y = (i16)lerp((float)offset_y, 0, clamp_pos);
+        }
+    }
+
+    if (br.autotile_type == 1)
+        frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
+    if (br.autotile_type == 2)
+        frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
+    if (br.autotile_type == 3)
+        frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
+
+    if (br.frames_per_second > 1)
+    {
+        int fps = br.frames_per_second;
+        frame = (u8)(rc->seconds_since_start * fps);
+    }
+
+    if (FLAG_GET(br.flags, RESOURCE_FLAG_RANDOM_POS))
+    {
+        frame = tile_rand(i, j) % br.info.total_frames;
+    }
+
+    if (br.override_frame != 0)
+        frame = br.override_frame;
+
+    block_renderer_create_instance(br.info, dest_x + offset_x, dest_y + offset_y);
+
+    if (frame || type || flip || rotation)
+    {
+        u8 actual_frame = frame % br.info.frames;
+        u8 actual_type =
+            FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(frame / br.info.frames) : (type % br.info.types);
+        block_renderer_set_instance_properties(br.info.atlas_offset_x + actual_frame,
+                                               br.info.atlas_offset_y + actual_type, flip, 1.0f, 1.0f,
+                                               (float)rotation * (M_PI / 180.0f));
+    }
 }
 
 u8 render_layer(layer_slice slice)
@@ -179,137 +262,42 @@ u8 render_layer(layer_slice slice)
     slice.x = lerp(slice.old_x, slice.x, slice_clamp_pos);
     slice.y = lerp(slice.old_y, slice.y, slice_clamp_pos);
 
-#define BLOCKS_EXTRA 1
-
     const i32 start_block_x = ((slice.x / local_block_width) - BLOCKS_EXTRA);
     const i32 start_block_y = ((slice.y / local_block_width) - BLOCKS_EXTRA);
 
     const i32 end_block_x = start_block_x + width + BLOCKS_EXTRA + 1;
     const i32 end_block_y = start_block_y + height + BLOCKS_EXTRA + 1;
 
-    const i32 block_x_offset = slice.x % local_block_width; /* offset in pixels for smooth rendering of blocks */
+    const i32 block_x_offset = slice.x % local_block_width;
     const i32 block_y_offset = slice.y % local_block_width;
 
     GLuint texture = b_reg->atlas_texture_uid;
 
-    i32 dest_x, dest_y;
-    dest_x = -block_x_offset - local_block_width * (BLOCKS_EXTRA + 1);
-
     block_renderer_begin_batch();
 
-    const layer *l = slice.ref;
-    const u8 bytes_per_block = l->total_bytes_per_block;
+    layer *l = (layer *)slice.ref;
 
-    for (i32 i = start_block_x; i < end_block_x; i++)
+    if (l->spatial.cells == NULL)
     {
-        dest_x += local_block_width;
-        dest_y = -block_y_offset - local_block_width * (BLOCKS_EXTRA + 1);
-
-        for (i32 j = start_block_y; j < end_block_y; j++)
-        {
-            dest_y += local_block_width;
-
-            if (i > l->width || j > l->height || i < 0 || j < 0)
-                continue;
-
-            u64 id = *(l->blocks + ((j * l->width) + i) * bytes_per_block);
-
-            if (id == 0)
-                continue;
-
-            u8 frame = 0;
-            u8 type = 0;
-            u8 flip = 0;
-            i16 rotation = 0;
-
-            i16 offset_x = 0;
-            i16 offset_y = 0;
-
-            block_resources br = b_reg->resources.data[id];
-
-            blob *var = NULL;
-            if (block_get_vars(l, i, j, &var) == SUCCESS)
-            {
-                // assert(var->ptr == NULL);;
-
-                /* process autotiling for said tile */
-                // if (br.autotile_type == 1)
-                // {
-                //     // u8 update_frame = 0;
-                //     // var_get_u8(*var, br.autotile_update_key, &update_frame);
-                //     // if(update_frame)
-                //     // {
-                //     //     u8 cached_frame = 0;
-                //     frame = autotile_get_type_1(l, id, i, j);
-                //     // }else{
-
-                //     // }
-                // }
-
-                if (br.type_controller != 0)
-                    var_get_u8(*var, br.type_controller, &type);
-
-                if (br.flip_controller != 0)
-                    var_get_u8(*var, br.flip_controller, &flip);
-
-                if (br.rotation_controller != 0)
-                    var_get_i16(*var, br.rotation_controller, &rotation);
-
-                if (br.anim_controller != 0)
-                    var_get_u8(*var, br.anim_controller, &frame);
-
-                if (br.offset_x_controller != 0)
-                    var_get_i16(*var, br.offset_x_controller, &offset_x);
-
-                if (br.offset_y_controller != 0)
-                    var_get_i16(*var, br.offset_y_controller, &offset_y);
-
-                if (br.interp_takes != 0 && br.interp_timestamp_controller != 0)
-                {
-                    var_get_u32(*var, br.interp_timestamp_controller, &ms_started_moving);
-
-                    const float pos = (ms_since_start - ms_started_moving) / (float)br.interp_takes;
-                    const float clamp_pos = fmax(0.0f, fmin(1.0, pos));
-
-                    offset_x = lerp(offset_x, 0, clamp_pos);
-                    offset_y = lerp(offset_y, 0, clamp_pos);
-                }
-            }
-
-            if (br.autotile_type == 1)
-                frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
-            if (br.autotile_type == 2)
-                frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
-            if (br.autotile_type == 3)
-                frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
-
-            if (br.frames_per_second > 1)
-            {
-                int fps = br.frames_per_second;
-                frame = (u8)(seconds_since_start * fps);
-            }
-
-            if (FLAG_GET(br.flags, RESOURCE_FLAG_RANDOM_POS))
-            {
-                frame = tile_rand(i, j) % br.info.total_frames;
-            }
-
-            if (br.override_frame != 0)
-                frame = br.override_frame;
-
-            block_renderer_create_instance(br.info, dest_x + offset_x, dest_y + offset_y);
-
-            if (frame || type || flip || rotation)
-            {
-                u8 actual_frame = frame % br.info.frames;
-                u8 actual_type = FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(frame / br.info.frames)
-                                                                               : (type % br.info.types);
-                block_renderer_set_instance_properties(br.info.atlas_offset_x + actual_frame,
-                                                       br.info.atlas_offset_y + actual_type, flip, 1.0f, 1.0f,
-                                                       (float)rotation * (M_PI / 180.0f));
-            }
-        }
+        spatial_grid_build_from_layer(&l->spatial, l->width, l->height, l->block_size, l->blocks,
+                                      l->total_bytes_per_block);
     }
+
+    render_context rc = {
+        .slice = slice,
+        .b_reg = b_reg,
+        .l = l,
+        .local_block_width = local_block_width,
+        .block_x_offset = block_x_offset,
+        .block_y_offset = block_y_offset,
+        .start_block_x = start_block_x,
+        .start_block_y = start_block_y,
+        .ms_since_start = ms_since_start,
+        .seconds_since_start = seconds_since_start,
+    };
+
+    spatial_grid_get_visible((spatial_grid *)&l->spatial, start_block_x, start_block_y, end_block_x, end_block_y, &rc,
+                             render_block_callback);
 
     block_renderer_end_batch(b_reg->atlas, texture, local_block_width);
 

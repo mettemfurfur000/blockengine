@@ -5,6 +5,7 @@
 #include "general.h"
 #include "handle.h"
 #include "hashtable.h"
+#include "spatial_grid.h"
 #include "vec/src/vec.h"
 
 #include "update_system.h"
@@ -36,6 +37,8 @@ typedef struct layer
     u8 total_bytes_per_block; // block_size + 4 (handle32)
 
     u8 flags; //
+
+    spatial_grid spatial; // spatial partitioning grid for rendering
 
     update_accumulator id_updates;  // accumulator for block updates on this layer
     update_accumulator var_updates; // for var updates
@@ -106,5 +109,7 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
 // supposed to be used with a special character block
 
 void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...);
+
+void layer_build_spatial_grid(layer *l);
 
 #endif

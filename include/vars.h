@@ -15,7 +15,28 @@
 
 #define VAR_FOREACH(blob, code)                                                                                        \
     for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)                                                                 \
-    code
+        code
+
+#define VARS_MAX_INDEX_ENTRIES 32
+
+typedef struct
+{
+    u8 valid;
+    u8 letter;
+    u32 offset;
+} var_index_entry;
+
+typedef struct
+{
+    var_index_entry entries[VARS_MAX_INDEX_ENTRIES];
+    u8 count;
+} var_index;
+
+void var_index_build(var_index *idx, const blob b);
+void var_index_clear(var_index *idx);
+i32 var_index_lookup(const var_index *idx, const blob b, char letter);
+
+i32 vars_pos_fast(const blob b, const char letter, const i32 *offsets);
 
 i32 vars_pos(const blob b, const char letter);
 void *var_offset(const blob b, const char letter);
@@ -86,6 +107,16 @@ GETTER_DEF(i16)
 GETTER_DEF(i32)
 GETTER_DEF(i64)
 
+#define GETTER_FAST_DEF(type) u8 var_get_##type##_fast(blob b, char letter, const i32 *offsets, type *dest);
+
+GETTER_FAST_DEF(u8)
+GETTER_FAST_DEF(u16)
+GETTER_FAST_DEF(u32)
+GETTER_FAST_DEF(u64)
+GETTER_FAST_DEF(i8)
+GETTER_FAST_DEF(i16)
+GETTER_FAST_DEF(i32)
+GETTER_FAST_DEF(i64)
 
 void dbg_data_layout(blob b, char *ret);
 

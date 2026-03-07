@@ -24,6 +24,7 @@ typedef struct block_resources
     u64 id;
 
     blob vars_sample; // sample vars blob for this block, ready to use
+    i32 vars_offsets[256]; // pre-computed offsets for each letter (-1 = not present)
 
     u64 repeat_times;
     vec_int_t repeat_skip;

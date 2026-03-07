@@ -84,26 +84,33 @@ u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
     if (x >= l->width || y >= l->height)
         return FAIL;
 
+    u64 old_id = 0;
     void *ptr = BLOCK_ID_PTR(l, x, y);
 
     switch (l->block_size)
     {
     case 1:
+        old_id = *(u8 *)ptr;
         *(u8 *)ptr = id;
         break;
     case 2:
+        old_id = *(u16 *)ptr;
         *(u16 *)ptr = id;
         break;
     case 4:
+        old_id = *(u32 *)ptr;
         *(u32 *)ptr = id;
         break;
     case 8:
+        old_id = *(u64 *)ptr;
         *(u64 *)ptr = id;
         break;
     default:
         assert(0 || "unreachable");
         return FAIL;
     }
+
+    spatial_grid_update(&l->spatial, x, y, old_id, id);
 
     update_block_push(&l->id_updates, x, y, id, l->block_size);
 
@@ -447,6 +454,8 @@ u8 init_layer(layer *l, room *parent_room)
         return FAIL;
     }
 
+    l->spatial = spatial_grid_create(l->width, l->height, 16);
+
     if (FLAG_GET(l->flags, LAYER_FLAG_USE_VARS))
     {
         l->var_pool.table = handle_table_create(256); /* default capacity */
@@ -499,6 +508,9 @@ u8 free_layer(layer *l)
 {
     assert(l);
     assert(l->blocks);
+
+    spatial_grid_destroy(&l->spatial);
+
     if (FLAG_GET(l->flags, LAYER_FLAG_USE_VARS))
     {
         /* Free any blobs stored in the handle table and destroy it */
@@ -695,4 +707,11 @@ void bprintf(layer *l, const u64 letter_block_id, u32 orig_x, u32 orig_y, u32 le
 
     SAFE_FREE(vars_scratch.ptr);
     va_end(args);
+}
+
+void layer_build_spatial_grid(layer *l)
+{
+    if (!l || !l->blocks)
+        return;
+    spatial_grid_build_from_layer(&l->spatial, l->width, l->height, l->block_size, l->blocks, l->total_bytes_per_block);
 }

@@ -25,10 +25,106 @@
  * [letter (1)] [size (1)] [value (size)]
  * Ensure we never read past b.size and detect malformed entries.
  */
+
+#define VARS_CACHE_SIZE 4
+
+typedef struct
+{
+    const u8 *blob_ptr;
+    u32 blob_size;
+    char letter;
+    i32 position;
+} vars_cache_entry;
+
+static vars_cache_entry vars_cache[VARS_CACHE_SIZE] = {0};
+static u8 vars_cache_index = 0;
+
+static i32 vars_pos_cached(const blob b, const char letter)
+{
+    if (b.size == 0 || b.ptr == 0)
+        return FAIL;
+
+    for (u8 c = 0; c < VARS_CACHE_SIZE; c++)
+    {
+        vars_cache_entry *e = &vars_cache[c];
+        if (e->blob_ptr == b.ptr && e->blob_size == b.size && e->letter == letter)
+        {
+            if (e->position >= 0 && (u32)e->position < b.size)
+            {
+                return e->position;
+            }
+        }
+    }
+
+    return FAIL;
+}
+
+static void vars_pos_update_cache(const blob b, const char letter, i32 position)
+{
+    vars_cache_entry *e = &vars_cache[vars_cache_index];
+    e->blob_ptr = b.ptr;
+    e->blob_size = b.size;
+    e->letter = letter;
+    e->position = position;
+    vars_cache_index = (vars_cache_index + 1) % VARS_CACHE_SIZE;
+}
+
+void var_index_build(var_index *idx, const blob b)
+{
+    idx->count = 0;
+    if (b.size == 0 || b.ptr == 0)
+        return;
+
+    u32 i = 0;
+    while (i + 1 < b.size && idx->count < VARS_MAX_INDEX_ENTRIES)
+    {
+        u8 entry_size = b.ptr[i + 1];
+
+        if ((u32)i + 2 + (u32)entry_size > b.size)
+            break;
+
+        idx->entries[idx->count].valid = 1;
+        idx->entries[idx->count].letter = b.ptr[i];
+        idx->entries[idx->count].offset = i;
+        idx->count++;
+
+        i += (u32)entry_size + 2;
+    }
+}
+
+void var_index_clear(var_index *idx)
+{
+    idx->count = 0;
+    for (u8 i = 0; i < VARS_MAX_INDEX_ENTRIES; i++)
+    {
+        idx->entries[i].valid = 0;
+    }
+}
+
+i32 var_index_lookup(const var_index *idx, const blob b, char letter)
+{
+    for (u8 i = 0; i < idx->count; i++)
+    {
+        if (idx->entries[i].valid && idx->entries[i].letter == (u8)letter)
+        {
+            u32 offset = idx->entries[i].offset;
+            if (offset < b.size)
+            {
+                return (i32)offset;
+            }
+        }
+    }
+    return FAIL;
+}
+
 i32 vars_pos(const blob b, const char letter)
 {
     if (b.size == 0 || b.ptr == 0)
         return FAIL;
+
+    i32 cached = vars_pos_cached(b, letter);
+    if (cached != FAIL)
+        return cached;
 
     u32 i = 0;
     while (i + 1 < b.size)
@@ -43,12 +139,36 @@ i32 vars_pos(const blob b, const char letter)
         }
 
         if (b.ptr[i] == (u8)letter)
+        {
+            vars_pos_update_cache(b, letter, (i32)i);
             return (i32)i;
+        }
 
         i += (u32)entry_size + 2;
     }
 
-    return FAIL; // not found
+    vars_pos_update_cache(b, letter, FAIL);
+    return FAIL;
+}
+
+i32 vars_pos_fast(const blob b, const char letter, const i32 *offsets)
+{
+    if (b.size == 0 || b.ptr == 0)
+        return FAIL;
+
+    if (offsets)
+    {
+        i32 offset = offsets[(u8)letter];
+        if (offset != FAIL)
+        {
+            if ((u32)offset + 2 <= b.size)
+            {
+                return offset;
+            }
+        }
+    }
+
+    return vars_pos(b, letter);
 }
 
 void *var_offset(const blob b, const char letter)
@@ -326,6 +446,27 @@ GETTER_IMP(i8)
 GETTER_IMP(i16)
 GETTER_IMP(i32)
 GETTER_IMP(i64)
+
+#define GETTER_FAST_IMP(type)                                                                                           \
+    u8 var_get_##type##_fast(blob b, char letter, const i32 *offsets, type *dest)                                      \
+    {                                                                                                                  \
+        assert(dest);                                                                                                  \
+        i32 pos = vars_pos_fast(b, letter, offsets);                                                                   \
+        if (pos < 0)                                                                                                   \
+            return FAIL;                                                                                               \
+        *dest = *(type *)VAR_VALUE(b.ptr, pos);                                                                        \
+        return SUCCESS;                                                                                                \
+    }
+
+GETTER_FAST_IMP(u8)
+GETTER_FAST_IMP(u16)
+GETTER_FAST_IMP(u32)
+GETTER_FAST_IMP(u64)
+
+GETTER_FAST_IMP(i8)
+GETTER_FAST_IMP(i16)
+GETTER_FAST_IMP(i32)
+GETTER_FAST_IMP(i64)
 
 // utils
 

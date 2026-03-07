@@ -1,5 +1,4 @@
 #include "include/block_registry.h"
-#include "include/file_system.h"
 #include "include/folder_structure.h"
 #include "include/general.h"
 #include "include/logging.h"
@@ -133,9 +132,25 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
 block_resources block_resource_read(block_registry *b, stream_t *s)
 {
     block_resources res = {};
+    for (i32 i = 0; i < sizeof(res.vars_offsets) / sizeof(res.vars_offsets[0]); i++)
+        res.vars_offsets[i] = FAIL;
+
     READ(res.id, s);
     LOG_DEBUG("Loading block id %llu", res.id);
     res.vars_sample = blob_vars_read(s);
+
+    if (res.vars_sample.ptr && res.vars_sample.size > 0)
+    {
+        u32 pos = 0;
+        while (pos + 1 < res.vars_sample.size)
+        {
+            u8 letter = res.vars_sample.ptr[pos];
+            u8 size = res.vars_sample.ptr[pos + 1];
+            res.vars_offsets[letter] = (i32)pos;
+            pos += (u32)size + 2;
+        }
+    }
+
     // repeat info
     READ(res.repeat_times, s);
     // read repeat skip

@@ -158,7 +158,7 @@ int block_renderer_init()
     glEnableVertexAttribArray(7);
     glVertexAttribDivisor(7, 1);
 
-    std->instance_capacity = 1000;
+    std->instance_capacity = 10000;
     std->data = (block_layer_instance *)malloc(std->instance_capacity * sizeof(block_layer_instance));
     std->instance_count = 0;
 
