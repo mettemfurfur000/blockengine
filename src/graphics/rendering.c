@@ -136,7 +136,7 @@ typedef struct
     float seconds_since_start;
 } render_context;
 
-static void render_block_callback(void *ctx, u16 x, u16 y)
+static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 {
     render_context *rc = (render_context *)ctx;
 
@@ -202,11 +202,35 @@ static void render_block_callback(void *ctx, u16 x, u16 y)
     }
 
     if (br.autotile_type == 1)
-        frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
-    if (br.autotile_type == 2)
-        frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
-    if (br.autotile_type == 3)
-        frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
+    {
+        if (*cached_frame != AUTOTILE_CACHE_INVALID)
+            frame = *cached_frame;
+        else
+        {
+            frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
+            *cached_frame = frame;
+        }
+    }
+    else if (br.autotile_type == 2)
+    {
+        if (*cached_frame != AUTOTILE_CACHE_INVALID)
+            frame = *cached_frame;
+        else
+        {
+            frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
+            *cached_frame = frame;
+        }
+    }
+    else if (br.autotile_type == 3)
+    {
+        if (*cached_frame != AUTOTILE_CACHE_INVALID)
+            frame = *cached_frame;
+        else
+        {
+            frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
+            *cached_frame = frame;
+        }
+    }
 
     if (br.frames_per_second > 1)
     {

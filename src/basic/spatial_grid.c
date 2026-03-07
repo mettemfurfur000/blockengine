@@ -108,6 +108,7 @@ static void spatial_grid_cell_add(spatial_cell *cell, u16 x, u16 y)
     }
     cell->positions[cell->count].x = x;
     cell->positions[cell->count].y = y;
+    cell->positions[cell->count].cached_autotile_frame = AUTOTILE_CACHE_INVALID;
     cell->count++;
 }
 
@@ -128,12 +129,50 @@ static void spatial_grid_cell_remove(spatial_cell *cell, u16 x, u16 y)
     }
 }
 
+static void invalidate_neighbor_cache(spatial_grid *grid, u16 x, u16 y)
+{
+    if (!grid || !grid->cells)
+        return;
+
+    for (i32 dy = -1; dy <= 1; dy++)
+    {
+        for (i32 dx = -1; dx <= 1; dx++)
+        {
+            if (dx == 0 && dy == 0)
+                continue;
+
+            i32 nx = (i32)x + dx;
+            i32 ny = (i32)y + dy;
+
+            if (nx < 0 || ny < 0 || nx >= (i32)(grid->grid_width * grid->cell_size) || ny >= (i32)(grid->grid_height * grid->cell_size))
+                continue;
+
+            u32 cell_index = spatial_grid_get_cell_index(grid, (u16)nx, (u16)ny);
+            spatial_cell *cell = &grid->cells[cell_index];
+
+            for (u32 i = 0; i < cell->count; i++)
+            {
+                if (cell->positions[i].x == (u16)nx && cell->positions[i].y == (u16)ny)
+                {
+                    cell->positions[i].cached_autotile_frame = AUTOTILE_CACHE_INVALID;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void spatial_grid_update(spatial_grid *grid, u16 x, u16 y, u64 old_id, u64 new_id)
 {
     if (!grid || !grid->cells)
         return;
     if (x >= grid->grid_width * grid->cell_size || y >= grid->grid_height * grid->cell_size)
         return;
+
+    if (old_id != new_id)
+    {
+        invalidate_neighbor_cache(grid, x, y);
+    }
 
     u32 cell_index = spatial_grid_get_cell_index(grid, x, y);
     spatial_cell *cell = &grid->cells[cell_index];
@@ -151,7 +190,7 @@ void spatial_grid_update(spatial_grid *grid, u16 x, u16 y, u64 old_id, u64 new_i
 
 void spatial_grid_get_visible(spatial_grid *grid, i32 start_x, i32 start_y, i32 end_x, i32 end_y,
                               void *callback_ctx,
-                              void (*callback)(void *ctx, u16 x, u16 y))
+                              void (*callback)(void *ctx, u16 x, u16 y, u8 *cached_frame))
 {
     if (!grid || !grid->cells)
         return;
@@ -184,9 +223,29 @@ void spatial_grid_get_visible(spatial_grid *grid, i32 start_x, i32 start_y, i32 
                 if ((i32)bx >= cell_start_x && (i32)bx < cell_end_x &&
                     (i32)by >= cell_start_y && (i32)by < cell_end_y)
                 {
-                    callback(callback_ctx, bx, by);
+                    callback(callback_ctx, bx, by, &cell->positions[i].cached_autotile_frame);
                 }
             }
+        }
+    }
+}
+
+void spatial_grid_set_cached_frame(spatial_grid *grid, u16 x, u16 y, u8 frame)
+{
+    if (!grid || !grid->cells)
+        return;
+    if (x >= grid->grid_width * grid->cell_size || y >= grid->grid_height * grid->cell_size)
+        return;
+
+    u32 cell_index = spatial_grid_get_cell_index(grid, x, y);
+    spatial_cell *cell = &grid->cells[cell_index];
+
+    for (u32 i = 0; i < cell->count; i++)
+    {
+        if (cell->positions[i].x == x && cell->positions[i].y == y)
+        {
+            cell->positions[i].cached_autotile_frame = frame;
+            return;
         }
     }
 }
