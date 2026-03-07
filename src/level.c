@@ -273,14 +273,13 @@ u8 block_delete_vars(layer *l, u16 x, u16 y)
 
     // block_push_var_change(l, x, y, INVALID_HANDLE);
     
-    handle32 handle = {};
+    handle32 handle = INVALID_HANDLE;
     memcpy((u8 *)&handle, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
 
-    // if (handle_is_valid(l->var_pool.table, handle))
     var_table_free_handle(&l->var_pool, handle);
 
-    // Clear the var index in the block
-    memset(BLOCK_ID_PTR(l, x, y) + l->block_size, 0, sizeof(handle32));
+    handle = INVALID_HANDLE;
+    memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&handle, sizeof(handle32));
 
     return SUCCESS;
 }

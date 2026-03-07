@@ -66,10 +66,16 @@ u16 util_get_new_handle_index(handle_table *table)
 {
     u16 slot_index = INVALID_HANDLE_INDEX;
 
+    if (table->count == 0)
+    {
+        table->slots[0].active = 1;
+        table->count++;
+    }
+
     /* if capacity limit is not reached yet, return the last one in our list */
     if (table->count < table->capacity)
     {
-        slot_index = table->count; /* 0-based */
+        slot_index = table->count;
         table->count++;
         return slot_index;
     }

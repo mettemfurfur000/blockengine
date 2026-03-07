@@ -26,7 +26,8 @@ typedef struct
 static_assert(sizeof(handle32) == sizeof(u32), "");
 
 /* Invalid handle helper */
-#define INVALID_HANDLE_INDEX 0xFFFFu
+// #define INVALID_HANDLE_INDEX 0xFFFFu
+#define INVALID_HANDLE_INDEX 0
 #define INVALID_HANDLE (handle32){.index = INVALID_HANDLE_INDEX, .validation = 0, .active = 0}
 
 #ifdef __cplusplus

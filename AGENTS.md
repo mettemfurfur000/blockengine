@@ -204,3 +204,61 @@ blockengine/
 - Enable debug logging: Set `#define LOG_LEVEL 5` in `include/logging.h`
 - Use `LOG_DEBUG()` for verbose output
 - Backtraces are printed on assert failures (debug builds)
+
+## Rendering Performance Optimization
+
+The rendering pipeline has been optimized with several key improvements:
+
+### 1. Spatial Partitioning (`include/spatial_grid.h`, `src/basic/spatial_grid.c`)
+
+The layer uses a spatial grid (16x16 cell size) to partition blocks. Instead of iterating all blocks in the viewport, only non-empty blocks in visible cells are processed.
+
+- `spatial_grid_create()` - Initialize grid for a layer
+- `spatial_grid_update()` - Update grid when blocks change (automatically called by `block_set_id()`)
+- `spatial_grid_get_visible()` - Iterate only visible non-empty blocks via callback
+
+### 2. O(1) Block Vars Lookup
+
+Block variables are accessed frequently during rendering. The lookup was optimized using a pre-computed offset table:
+
+- `block_resources.vars_offsets[256]` - Array of byte offsets for each variable letter
+- Built when registry loads in `block_resource_read()`
+- Fast getters: `var_get_u8_fast()`, `var_get_i16_fast()`, etc. (`include/vars.h`)
+
+These functions take the offsets array as a parameter and do O(1) lookup instead of O(n) linear search.
+
+### 3. Autotile Caching
+
+Autotile frame calculation (checking 8 neighbors) is expensive. The spatial grid now caches computed frames:
+
+- `block_pos.cached_autotile_frame` - Stores computed frame per block
+- Cache invalidated when:
+  - Block ID changes at that position
+  - Any of the 8 neighbors change (via `invalidate_neighbor_cache()`)
+- First render computes the frame and caches it; subsequent frames use cache
+
+### 4. Instance Buffer
+
+The block renderer instance buffer was increased from 1000 to 10000 to reduce runtime reallocations during large viewport renders.
+
+### Profiling
+
+To profile the client:
+```bash
+# Build with profiling flags
+make PERF=1
+
+# Run with profiling
+./build/client_app
+
+# Analyze
+gprof build/client_app gmon.out > analysis.txt
+```
+
+### Key Hotspots to Watch
+
+Based on profiling:
+- `render_block_callback()` - Main render loop (should be minimal now)
+- `spatial_grid_get_visible()` - Spatial grid iteration
+- `vars_pos()` / `vars_pos_fast()` - Variable lookups
+- `autotile_select_shared_47()` - Autotile calculation (now cached)
