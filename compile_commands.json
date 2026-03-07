@@ -197,6 +197,25 @@
    "-IC:/msys64/mingw64/include/SDL2",
    "-Dmain=SDL_main",
    "-c",
+   "src/./basic/spatial_grid.c",
+   "-o",
+   "obj/./basic/spatial_grid.o"
+  ],
+  "file": "src/./basic/spatial_grid.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-MMD",
+   "-g",
+   "-IC:/msys64/home/tem/blockengine",
+   "-IC:/msys64/home/tem/blockengine/libs",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
    "src/./basic/vars.c",
    "-o",
    "obj/./basic/vars.o"
@@ -335,6 +354,25 @@
    "obj/./graphics/block_renderer.o"
   ],
   "file": "src/./graphics/block_renderer.c"
+ },
+ {
+  "directory": "C:/msys64/home/tem/blockengine",
+  "arguments": [
+   "gcc",
+   "-O0",
+   "-Wall",
+   "-MMD",
+   "-g",
+   "-IC:/msys64/home/tem/blockengine",
+   "-IC:/msys64/home/tem/blockengine/libs",
+   "-IC:/msys64/mingw64/include/SDL2",
+   "-Dmain=SDL_main",
+   "-c",
+   "src/./graphics/block_renderer_v2.c",
+   "-o",
+   "obj/./graphics/block_renderer_v2.o"
+  ],
+  "file": "src/./graphics/block_renderer_v2.c"
  },
  {
   "directory": "C:/msys64/home/tem/blockengine",

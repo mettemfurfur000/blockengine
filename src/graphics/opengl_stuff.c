@@ -1,5 +1,5 @@
 #include "include/opengl_stuff.h"
-#include "include/block_renderer.h"
+#include "include/block_renderer_v2.h"
 #include "include/folder_structure.h"
 // #include "SDL_opengl.h"
 #include <epoxy/gl_generated.h>
@@ -12,13 +12,12 @@ void setup_opengl(u16 width, u16 height)
 
     glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
 
-    block_renderer_init();
+    renderer_v2_init();
 }
 
 u32 load_shader(const char *shader_path, GLenum shader_type)
 {
-    // Load and compile the shader
-    FILE *shader_file = fopen(shader_path, "r");
+    FILE *shader_file = fopen(shader_path, "rb");
     if (!shader_file)
     {
         LOG_ERROR("Failed to open shader file: %s", shader_path);
@@ -29,15 +28,33 @@ u32 load_shader(const char *shader_path, GLenum shader_type)
     long shader_size = ftell(shader_file);
     fseek(shader_file, 0, SEEK_SET);
 
-    char *shader_source = (char *)calloc(shader_size + 1, 1);
-    assert(shader_source != NULL);
+    if (shader_size <= 0)
+    {
+        LOG_ERROR("Shader file is empty: %s", shader_path);
+        fclose(shader_file);
+        return 0;
+    }
 
-    fread(shader_source, 1, shader_size, shader_file);
-    shader_source[shader_size] = '\0';
+    char *shader_source = (char *)calloc(shader_size + 1, 1);
+    if (!shader_source)
+    {
+        LOG_ERROR("Failed to allocate memory for shader");
+        fclose(shader_file);
+        return 0;
+    }
+
+    size_t bytes_read = fread(shader_source, 1, shader_size, shader_file);
+    if (bytes_read == 0)
+    {
+        LOG_ERROR("Failed to read shader file: %s", shader_path);
+        free(shader_source);
+        fclose(shader_file);
+        return 0;
+    }
+    shader_source[bytes_read] = '\0';
     fclose(shader_file);
 
-    // replace \r's with \n's
-    for (u32 i = 0; i < shader_size; i++)
+    for (u32 i = 0; i < bytes_read; i++)
         if (shader_source[i] == '\r')
             shader_source[i] = '\n';
 
@@ -140,8 +157,6 @@ GLuint gl_bind_texture(image *src)
 
     GLuint texture_id;
 
-    // Create and bind texture
-
     glGenTextures(1, &texture_id);
     glBindTexture(GL_TEXTURE_2D, texture_id);
 
@@ -149,6 +164,14 @@ GLuint gl_bind_texture(image *src)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     return texture_id;
+}
+
+void gl_delete_texture(GLuint texture_id)
+{
+    if (texture_id != 0)
+        glDeleteTextures(1, &texture_id);
 }

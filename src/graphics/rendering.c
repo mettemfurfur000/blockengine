@@ -1,9 +1,9 @@
 #include "include/rendering.h"
-#include "include/block_renderer.h"
+#include "include/block_renderer_v2.h"
 #include "include/flags.h"
 #include "include/general.h"
 #include "include/level.h"
-#include "include/logging.h"
+#include "include/sdl2_basics.h"
 #include "include/spatial_grid.h"
 #include "include/vars.h"
 
@@ -246,16 +246,19 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
     if (br.override_frame != 0)
         frame = br.override_frame;
 
-    block_renderer_create_instance(br.info, dest_x + offset_x, dest_y + offset_y);
-
     if (frame || type || flip || rotation)
     {
         u8 actual_frame = frame % br.info.frames;
         u8 actual_type =
             FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(frame / br.info.frames) : (type % br.info.types);
-        block_renderer_set_instance_properties(br.info.atlas_offset_x + actual_frame,
-                                               br.info.atlas_offset_y + actual_type, flip, 1.0f, 1.0f,
-                                               (float)rotation * (M_PI / 180.0f));
+        renderer_v2_add_instance(dest_x + offset_x, dest_y + offset_y, br.info.atlas_offset_x + actual_frame,
+                                 br.info.atlas_offset_y + actual_type, flip, 1.0f, 1.0f,
+                                 (float)rotation * (M_PI / 180.0f));
+    }
+    else
+    {
+        renderer_v2_add_instance(dest_x + offset_x, dest_y + offset_y, br.info.atlas_offset_x, br.info.atlas_offset_y,
+                                 0, 1.0f, 1.0f, 0);
     }
 }
 
@@ -297,7 +300,7 @@ u8 render_layer(layer_slice slice)
 
     GLuint texture = b_reg->atlas_texture_uid;
 
-    block_renderer_begin_batch();
+    renderer_v2_begin_batch(texture, b_reg->atlas, g_block_width);
 
     layer *l = (layer *)slice.ref;
 
@@ -323,55 +326,55 @@ u8 render_layer(layer_slice slice)
     spatial_grid_get_visible((spatial_grid *)&l->spatial, start_block_x, start_block_y, end_block_x, end_block_y, &rc,
                              render_block_callback);
 
-    block_renderer_end_batch(b_reg->atlas, texture, local_block_width);
+    renderer_v2_end_batch();
 
     return SUCCESS;
 }
 
-u8 render_layer_to_framebuffer(layer_slice *slice)
-{
-    layer *l = slice->ref;
+// u8 render_layer_to_framebuffer(layer_slice *slice)
+// {
+//     layer *l = slice->ref;
 
-    u32 width = l->width * g_block_width;
-    u32 height = l->height * g_block_width;
+//     u32 width = l->width * g_block_width;
+//     u32 height = l->height * g_block_width;
 
-    framebuffer fb = slice->framebuffer == 0 || slice->framebuffer_texture == 0
-                         ? create_framebuffer_object(width, height)
-                         : (framebuffer){
-                               .fbo = slice->framebuffer,
-                               .texture = slice->framebuffer_texture,
-                           };
+//     framebuffer fb = slice->framebuffer == 0 || slice->framebuffer_texture == 0
+//                          ? create_framebuffer_object(width, height)
+//                          : (framebuffer){
+//                                .fbo = slice->framebuffer,
+//                                .texture = slice->framebuffer_texture,
+//                            };
 
-    if (fb.fbo == 0 || fb.texture == 0)
-    {
-        LOG_ERROR("Failed to create framebuffer");
-        return FAIL;
-    }
+//     if (fb.fbo == 0 || fb.texture == 0)
+//     {
+//         LOG_ERROR("Failed to create framebuffer");
+//         return FAIL;
+//     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
+//     glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
 
-    // Create a fresh slice for the full layer render
-    layer_slice full_slice = *slice;
-    full_slice.x = 0;
-    full_slice.y = 0;
-    full_slice.w = width;
-    full_slice.h = height;
-    full_slice.zoom = 1;
-    full_slice.flags = 0;
+//     // Create a fresh slice for the full layer render
+//     layer_slice full_slice = *slice;
+//     full_slice.x = 0;
+//     full_slice.y = 0;
+//     full_slice.w = width;
+//     full_slice.h = height;
+//     full_slice.zoom = 1;
+//     full_slice.flags = 0;
 
-    render_layer(full_slice);
+//     render_layer(full_slice);
 
-    (*slice).framebuffer = fb.fbo;
-    (*slice).framebuffer_texture = fb.texture;
+//     (*slice).framebuffer = fb.fbo;
+//     (*slice).framebuffer_texture = fb.texture;
 
-    FLAG_SET((*slice).flags, LAYER_SLICE_FLAG_RENDER_COMPLETE, 1);
+//     FLAG_SET((*slice).flags, LAYER_SLICE_FLAG_RENDER_COMPLETE, 1);
 
-    return SUCCESS;
-}
+//     return SUCCESS;
+// }
 
 u8 client_render(const client_render_rules rules)
 {
-    block_renderer_begin_frame();
+    renderer_v2_begin_frame();
 
     for (u32 i = 0; i < rules.draw_order.length; i++)
     {
@@ -381,7 +384,7 @@ u8 client_render(const client_render_rules rules)
         render_layer(slice);
     }
 
-    block_renderer_end_frame();
+    renderer_v2_end_frame();
 
     return SUCCESS;
 }

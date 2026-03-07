@@ -14,5 +14,6 @@ u32 compile_shader_program(u32 *shaders, u8 len);
 u32 assemble_shader(const char *shader_name);
 
 GLuint gl_bind_texture(image *src);
+void gl_delete_texture(GLuint texture_id);
 
 #endif

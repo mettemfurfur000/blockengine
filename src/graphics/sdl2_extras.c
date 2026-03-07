@@ -1,5 +1,5 @@
 #include "include/sdl2_extras.h"
-#include "include/block_renderer.h"
+#include "include/block_renderer_v2.h"
 #include "include/sdl2_basics.h"
 
 void set_fullscreen(client_render_rules *rules, bool set_full)
@@ -18,5 +18,5 @@ void set_fullscreen(client_render_rules *rules, bool set_full)
         rules->slices.data[i].w = SCREEN_WIDTH;
     }
 
-    block_renderer_update_size();
+    renderer_v2_resize(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
