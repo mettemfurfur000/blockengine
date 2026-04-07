@@ -9,322 +9,322 @@
 
 void write_layer(layer *l, stream_t *f)
 {
-    WRITE(l->block_size, f);
-    WRITE(l->flags, f);
-    WRITE(l->width, f);
-    WRITE(l->height, f);
-    WRITE(l->uuid, f);
+	WRITE(l->block_size, f);
+	WRITE(l->flags, f);
+	WRITE(l->width, f);
+	WRITE(l->height, f);
+	WRITE(l->uuid, f);
 
-    if (!l->registry)
-        blob_write(blobify("no_registry"), f);
-    else
-        blob_write(blobify((char *)l->registry->name), f);
+	if (!l->registry)
+		blob_write(blobify("no_registry"), f);
+	else
+		blob_write(blobify((char *)l->registry->name), f);
 
-    u64 id = 0;
-    handle32 h = {};
-    for (u32 y = 0; y < l->height; y++)
-        for (u32 x = 0; x < l->width; x++)
-        {
-            if (block_get_id(l, x, y, &id) != SUCCESS)
-            {
-                LOG_ERROR("failed to read the block id on %d %d", x, y);
-                return;
-            }
-            WRITE_N(&id, f, l->block_size);
-            h = block_get_var_handle(l, x, y);
-            WRITE_N(&h, f, sizeof(handle32));
-        }
+	u64 id = 0;
+	handle32 h = {};
+	for (u32 y = 0; y < l->height; y++)
+		for (u32 x = 0; x < l->width; x++)
+		{
+			if (block_get_id(l, x, y, &id) != SUCCESS)
+			{
+				LOG_ERROR("failed to read the block id on %d %d", x, y);
+				return;
+			}
+			WRITE_N(&id, f, l->block_size);
+			h = block_get_var_handle(l, x, y);
+			WRITE_N(&h, f, sizeof(handle32));
+		}
 
-    /* Serialize handle table: write capacity (slot count) and for each slot write
-       active flag and blob contents (or zero blob for empty slots). */
-    if (!l->var_pool.table)
-    {
-        u32 zero32 = 0;
-        WRITE(zero32, f);
-    }
-    else
-    {
-        // u16 debug_active_amount = 0;
-        u16 cap = handle_table_capacity(l->var_pool.table);
-        u32 cap32 = (u32)cap;
-        WRITE(cap32, f);
-        for (u16 i = 0; i < cap; ++i)
-        {
-            void *p = handle_table_slot_ptr(l->var_pool.table, i);
-            u8 active = handle_table_slot_active(l->var_pool.table, i);
-            WRITE(active, f);
-            u16 generation = handle_table_slot_generation(l->var_pool.table, i);
-            WRITE(generation, f);
-            if (p)
-            {
-                // debug_active_amount++;
-                blob_vars_write(*(blob *)p, f);
-            }
-            else
-            {
-                /* write empty blob */
-                u32 zero32 = 0;
-                WRITE(zero32, f);
-            }
-        }
-        // LOG_DEBUG("total handles saved: %d out of %d", debug_active_amount, cap);
-    }
+	/* Serialize handle table: write capacity (slot count) and for each slot write
+	   active flag and blob contents (or zero blob for empty slots). */
+	if (!l->var_pool.table)
+	{
+		u32 zero32 = 0;
+		WRITE(zero32, f);
+	}
+	else
+	{
+		// u16 debug_active_amount = 0;
+		u16 cap = handle_table_capacity(l->var_pool.table);
+		u32 cap32 = (u32)cap;
+		WRITE(cap32, f);
+		for (u16 i = 0; i < cap; ++i)
+		{
+			void *p = handle_table_slot_ptr(l->var_pool.table, i);
+			u8 active = handle_table_slot_active(l->var_pool.table, i);
+			WRITE(active, f);
+			u16 generation = handle_table_slot_generation(l->var_pool.table, i);
+			WRITE(generation, f);
+			if (p)
+			{
+				// debug_active_amount++;
+				blob_vars_write(*(blob *)p, f);
+			}
+			else
+			{
+				/* write empty blob */
+				u32 zero32 = 0;
+				WRITE(zero32, f);
+			}
+		}
+		// LOG_DEBUG("total handles saved: %d out of %d", debug_active_amount, cap);
+	}
 }
 
 void read_layer(layer *l, room *parent, stream_t *f)
 {
-    READ(l->block_size, f);
+	READ(l->block_size, f);
 
-    l->total_bytes_per_block = l->block_size + sizeof(handle32);
+	l->total_bytes_per_block = l->block_size + sizeof(handle32);
 
-    READ(l->flags, f);
-    READ(l->width, f);
-    READ(l->height, f);
-    READ(l->uuid, f);
+	READ(l->flags, f);
+	READ(l->width, f);
+	READ(l->height, f);
+	READ(l->uuid, f);
 
-    blob registry_name = blob_read(f);
+	blob registry_name = blob_read(f);
 
-    if (registry_name.length == 0)
-        l->registry = NULL;
-    else
-    {
-        if (strcmp(registry_name.str, "no_registry") != 0)
-        {
-            l->registry = find_registry(((level *)parent->parent_level)->registries, registry_name.str);
+	if (registry_name.length == 0)
+		l->registry = NULL;
+	else
+	{
+		if (strcmp(registry_name.str, "no_registry") != 0)
+		{
+			l->registry = find_registry(((level *)parent->parent_level)->registries, registry_name.str);
 
-            if (!l->registry)
-                LOG_WARNING("Registry %s not found", registry_name.str);
-        }
+			if (!l->registry)
+				LOG_WARNING("Registry %s not found", registry_name.str);
+		}
 
-        free(registry_name.str);
-    }
+		free(registry_name.str);
+	}
 
-    init_layer(l, parent);
+	init_layer(l, parent);
 
-    u64 id = 0;
-    handle32 h = {};
-    for (u32 y = 0; y < l->height; y++)
-        for (u32 x = 0; x < l->width; x++)
-        {
-            stream_read((u8 *)&id, l->block_size, f); // read id
+	u64 id = 0;
+	handle32 h = {};
+	for (u32 y = 0; y < l->height; y++)
+		for (u32 x = 0; x < l->width; x++)
+		{
+			stream_read((u8 *)&id, l->block_size, f); // read id
 
-            if (block_set_id(l, x, y, id) != SUCCESS)
-            {
-                LOG_WARNING("Failed to read block at %d, %d", x, y);
-                block_set_id(l, x, y, 0);
-            }
+			if (block_set_id(l, x, y, id) != SUCCESS)
+			{
+				LOG_WARNING("Failed to read block at %d, %d", x, y);
+				block_set_id(l, x, y, 0);
+			}
 
-            stream_read((u8 *)&h, sizeof(handle32), f); // read var index
-            block_set_var_handle(l, x, y, h);
-        }
+			stream_read((u8 *)&h, sizeof(handle32), f); // read var index
+			block_set_var_handle(l, x, y, h);
+		}
 
-    u32 slot_count = 0;
-    READ(slot_count, f);
-    if (slot_count == 0)
-    {
-        /* no table */
-    }
-    else
-    {
-        /* create a handle table with slot_count capacity and fill slots */
-        l->var_pool.table = handle_table_create((u16)slot_count);
-        // l->var_pool.type_tag = 1; /* same tag used when writing */
+	u32 slot_count = 0;
+	READ(slot_count, f);
+	if (slot_count == 0)
+	{
+		/* no table */
+	}
+	else
+	{
+		/* create a handle table with slot_count capacity and fill slots */
+		l->var_pool.table = handle_table_create((u16)slot_count);
+		// l->var_pool.type_tag = 1; /* same tag used when writing */
 
-        // u16 debug_active_amount = 0;
+		// u16 debug_active_amount = 0;
 
-        for (u16 i = 0; i < (u16)slot_count; ++i)
-        {
-            u8 active = 0;
-            READ(active, f);
-            u16 generation = 0;
-            READ(generation, f);
-            blob b = blob_vars_read(f);
-            if (b.size == 0 || b.ptr == NULL)
-            {
-                /* empty slot */
-                handle_table_set_slot(l->var_pool.table, i, NULL, 0, 0);
-            }
-            else
-            {
-                /* allocate new blob and set raw slot */
-                blob *nb = calloc(1, sizeof(blob));
-                assert(nb != NULL);
+		for (u16 i = 0; i < (u16)slot_count; ++i)
+		{
+			u8 active = 0;
+			READ(active, f);
+			u16 generation = 0;
+			READ(generation, f);
+			blob b = blob_vars_read(f);
+			if (b.size == 0 || b.ptr == NULL)
+			{
+				/* empty slot */
+				handle_table_set_slot(l->var_pool.table, i, NULL, 0, 0);
+			}
+			else
+			{
+				/* allocate new blob and set raw slot */
+				blob *nb = calloc(1, sizeof(blob));
+				assert(nb != NULL);
 
-                nb->ptr = b.ptr;
-                nb->size = b.size;
+				nb->ptr = b.ptr;
+				nb->size = b.size;
 
-                handle_table_set_slot(l->var_pool.table, i, nb, generation, active);
-                // debug_active_amount++;
-            }
-        }
-        // LOG_DEBUG("restored %d active var handles", debug_active_amount);
-    }
+				handle_table_set_slot(l->var_pool.table, i, nb, generation, active);
+				// debug_active_amount++;
+			}
+		}
+		// LOG_DEBUG("restored %d active var handles", debug_active_amount);
+	}
 }
 
 void write_room(room *r, stream_t *f)
 {
-    WRITE(r->uuid, f);
-    WRITE(r->width, f);
-    WRITE(r->height, f);
+	WRITE(r->uuid, f);
+	WRITE(r->width, f);
+	WRITE(r->height, f);
 
-    assert(r->name);
-    blob_write(blobify(r->name), f);
+	assert(r->name);
+	blob_write(blobify(r->name), f);
 
-    WRITE(r->layers.length, f);
+	WRITE(r->layers.length, f);
 
-    for (u32 i = 0; i < r->layers.length; i++)
-        write_layer(r->layers.data[i], f);
+	for (u32 i = 0; i < r->layers.length; i++)
+		write_layer(r->layers.data[i], f);
 }
 
 void read_room(room *r, stream_t *f)
 {
-    READ(r->uuid, f);
-    READ(r->width, f);
-    READ(r->height, f);
+	READ(r->uuid, f);
+	READ(r->width, f);
+	READ(r->height, f);
 
-    r->name = blob_read(f).str;
+	r->name = blob_read(f).str;
 
-    READ(r->layers.length, f);
-    vec_reserve(&r->layers, r->layers.length);
+	READ(r->layers.length, f);
+	vec_reserve(&r->layers, r->layers.length);
 
-    for (u32 i = 0; i < r->layers.length; i++)
-    {
-        layer *l = calloc(1, sizeof(layer));
-        assert(l != NULL);
+	for (u32 i = 0; i < r->layers.length; i++)
+	{
+		layer *l = calloc(1, sizeof(layer));
+		assert(l != NULL);
 
-        read_layer(l, r, f);
-        r->layers.data[i] = l;
-    }
+		read_layer(l, r, f);
+		r->layers.data[i] = l;
+	}
 }
 
 u8 save_level(level lvl)
 {
-    char path[256] = {};
-    sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", lvl.name);
+	char path[256] = {};
+	sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", lvl.name);
 
-    stream_t s;
-    if (stream_open_write(path, COMPRESS_LEVEL, &s) != 0)
-        return FAIL;
+	stream_t s;
+	if (stream_open_write(path, COMPRESS_LEVEL, &s) != 0)
+		return FAIL;
 
-    /* The rest of the function stays exactly the same – just pass &s instead of FILE* */
-    WRITE(lvl.uuid, &s);
-    blob_write(blobify(lvl.name), &s);
+	/* The rest of the function stays exactly the same – just pass &s instead of FILE* */
+	WRITE(lvl.uuid, &s);
+	blob_write(blobify(lvl.name), &s);
 
-    WRITE(lvl.registries.length, &s);
-    for (u32 i = 0; i < lvl.registries.length; i++)
-    {
-        const char *reg_name = ((block_registry *)lvl.registries.data[i])->name;
-        assert(reg_name);
-        blob_write(blobify((char *)reg_name), &s);
-    }
+	WRITE(lvl.registries.length, &s);
+	for (u32 i = 0; i < lvl.registries.length; i++)
+	{
+		const char *reg_name = ((block_registry *)lvl.registries.data[i])->name;
+		assert(reg_name);
+		blob_write(blobify((char *)reg_name), &s);
+	}
 
-    WRITE(lvl.rooms.length, &s);
-    for (u32 i = 0; i < lvl.rooms.length; i++)
-        write_room(lvl.rooms.data[i], &s);
+	WRITE(lvl.rooms.length, &s);
+	for (u32 i = 0; i < lvl.rooms.length; i++)
+		write_room(lvl.rooms.data[i], &s);
 
-    stream_close(&s);
-    return SUCCESS;
+	stream_close(&s);
+	return SUCCESS;
 }
 
 u8 load_level(level *lvl, const char *name_in)
 {
-    char path[256] = {};
-    sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
+	char path[256] = {};
+	sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
 
-    stream_t s;
-    if (stream_open_read(path, COMPRESS_LEVEL, &s) != 0)
-        return FAIL;
+	stream_t s;
+	if (stream_open_read(path, COMPRESS_LEVEL, &s) != 0)
+		return FAIL;
 
-    READ(lvl->uuid, &s);
-    lvl->name = blob_read(&s).str;
+	READ(lvl->uuid, &s);
+	lvl->name = blob_read(&s).str;
 
-    u32 reg_count;
-    READ(reg_count, &s);
-    for (u32 i = 0; i < reg_count; i++)
-    {
-        char *name = blob_read(&s).str;
-        // block_registry *reg = calloc(1, sizeof(block_registry));
-        // assert(reg != NULL);
-        // reg->name = name;
-        // if (read_block_registry(reg, name) != SUCCESS)
-        // {
-        //     LOG_WARNING("Failed to load registry %s", name);
-        //     free(name);
-        //     continue;
-        // }
-        // try looking up existing registry first in the level registries
-        block_registry *reg = find_registry(lvl->registries, name);
-        if (!reg)
-        {
-            LOG_WARNING("Registry %s not found in existing level registries, loading from disk", name);
-            reg = registry_load(name);
-            if (!reg)
-            {
-                LOG_WARNING("Failed to load registry %s", name);
-                free(name);
-                continue;
-            }
-        }
+	u32 reg_count;
+	READ(reg_count, &s);
+	for (u32 i = 0; i < reg_count; i++)
+	{
+		char *name = blob_read(&s).str;
+		// block_registry *reg = calloc(1, sizeof(block_registry));
+		// assert(reg != NULL);
+		// reg->name = name;
+		// if (read_block_registry(reg, name) != SUCCESS)
+		// {
+		//     LOG_WARNING("Failed to load registry %s", name);
+		//     free(name);
+		//     continue;
+		// }
+		// try looking up existing registry first in the level registries
+		block_registry *reg = find_registry(lvl->registries, name);
+		if (!reg)
+		{
+			LOG_WARNING("Registry %s not found in existing level registries, loading from disk", name);
+			reg = registry_load(name);
+			if (!reg)
+			{
+				LOG_WARNING("Failed to load registry %s", name);
+				free(name);
+				continue;
+			}
+		}
 
-        (void)vec_push(&lvl->registries, reg);
-    }
+		(void)vec_push(&lvl->registries, reg);
+	}
 
-    u32 room_count;
-    READ(room_count, &s);
-    for (u32 i = 0; i < room_count; i++)
-    {
-        room *new_room = calloc(1, sizeof(room));
-        assert(new_room != NULL);
-        new_room->parent_level = lvl;
-        read_room(new_room, &s);
-        (void)vec_push(&lvl->rooms, new_room);
-    }
+	u32 room_count;
+	READ(room_count, &s);
+	for (u32 i = 0; i < room_count; i++)
+	{
+		room *new_room = calloc(1, sizeof(room));
+		assert(new_room != NULL);
+		new_room->parent_level = lvl;
+		read_room(new_room, &s);
+		(void)vec_push(&lvl->rooms, new_room);
+	}
 
-    stream_close(&s);
-    return SUCCESS;
+	stream_close(&s);
+	return SUCCESS;
 }
 
 u8 load_level_ack_registry(level *lvl, const char *name_in, block_registry *ack_reg)
 {
-    char path[256] = {};
-    sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
+	char path[256] = {};
+	sprintf(path, FOLDER_LVL SEPARATOR_STR "%s.lvl", name_in);
 
-    stream_t s;
-    if (stream_open_read(path, COMPRESS_LEVEL, &s) != 0)
-        return FAIL;
+	stream_t s;
+	if (stream_open_read(path, COMPRESS_LEVEL, &s) != 0)
+		return FAIL;
 
-    READ(lvl->uuid, &s);
-    lvl->name = blob_read(&s).str;
+	READ(lvl->uuid, &s);
+	lvl->name = blob_read(&s).str;
 
-    u32 reg_count;
-    READ(reg_count, &s);
-    for (u32 i = 0; i < reg_count; i++)
-    {
-        char *name = blob_read(&s).str;
+	u32 reg_count;
+	READ(reg_count, &s);
+	for (u32 i = 0; i < reg_count; i++)
+	{
+		char *name = blob_read(&s).str;
 
-        if (strcmp(name, ack_reg->name) == 0)
-        {
-            block_registry *reg = ack_reg;
-            (void)vec_push(&lvl->registries, reg);
-        }
-        else
-        {
-            LOG_ERROR("Registry %s does not match acknowledged registry %s", name, ack_reg->name);
-            abort();
-        }
-    }
+		if (strcmp(name, ack_reg->name) == 0)
+		{
+			block_registry *reg = ack_reg;
+			(void)vec_push(&lvl->registries, reg);
+		}
+		else
+		{
+			LOG_ERROR("Registry %s does not match acknowledged registry %s", name, ack_reg->name);
+			abort();
+		}
+	}
 
-    u32 room_count;
-    READ(room_count, &s);
-    for (u32 i = 0; i < room_count; i++)
-    {
-        room *new_room = calloc(1, sizeof(room));
-        assert(new_room != NULL);
-        new_room->parent_level = lvl;
-        read_room(new_room, &s);
-        (void)vec_push(&lvl->rooms, new_room);
-    }
+	u32 room_count;
+	READ(room_count, &s);
+	for (u32 i = 0; i < room_count; i++)
+	{
+		room *new_room = calloc(1, sizeof(room));
+		assert(new_room != NULL);
+		new_room->parent_level = lvl;
+		read_room(new_room, &s);
+		(void)vec_push(&lvl->rooms, new_room);
+	}
 
-    stream_close(&s);
-    return SUCCESS;
+	stream_close(&s);
+	return SUCCESS;
 }

@@ -9,24 +9,24 @@
 
 typedef struct blob
 {
-    union
-    {
-        u8 *ptr;
-        char *str;
-    };
+	union
+	{
+		u8 *ptr;
+		char *str;
+	};
 
-    union
-    {
-        u32 length;
-        u32 size;
-    };
+	union
+	{
+		u32 length;
+		u32 size;
+	};
 } blob;
 
 typedef struct hash_node
 {
-    blob key;
-    blob value;
-    struct hash_node *next;
+	blob key;
+	blob value;
+	struct hash_node *next;
 } hash_node;
 
 unsigned long hash_function(blob key);
@@ -49,18 +49,18 @@ u64 actual_size_of_table(hash_node **table);
 u64 table_elements(hash_node **table);
 
 #define HASHTABLE_FOREACH_EXEC(table, node_name, code)                                                                 \
-    {                                                                                                                  \
-        assert(table);                                                                                                 \
-        hash_node *node_name;                                                                                          \
-        for (u32 __i = 0; __i < TABLE_SIZE; ++__i)                                                                     \
-        {                                                                                                              \
-            node_name = table[__i];                                                                                    \
-            while (node_name != NULL)                                                                                  \
-            {                                                                                                          \
-                code;                                                                                                  \
-                node_name = node_name->next;                                                                           \
-            }                                                                                                          \
-        }                                                                                                              \
-    }
+	{                                                                                                                  \
+		assert(table);                                                                                                 \
+		hash_node *node_name;                                                                                          \
+		for (u32 __i = 0; __i < TABLE_SIZE; ++__i)                                                                     \
+		{                                                                                                              \
+			node_name = table[__i];                                                                                    \
+			while (node_name != NULL)                                                                                  \
+			{                                                                                                          \
+				code;                                                                                                  \
+				node_name = node_name->next;                                                                           \
+			}                                                                                                          \
+		}                                                                                                              \
+	}
 
 #endif

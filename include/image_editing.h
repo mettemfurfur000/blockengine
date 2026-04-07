@@ -5,14 +5,14 @@
 
 typedef struct image
 {
-    union
-    {
-        u8 *data;
-        u8 *pixels;
-    };
+	union
+	{
+		u8 *data;
+		u8 *pixels;
+	};
 
-    i32 width;
-    i32 height;
+	i32 width;
+	i32 height;
 } image;
 
 #define CHANNELS 4

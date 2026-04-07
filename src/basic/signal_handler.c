@@ -24,21 +24,21 @@ static const char *ERROR_LOG_FILENAME = "crash_log.txt";
  */
 static int signal_backtrace_callback(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
 {
-    FILE *f = (FILE *)data;
+	FILE *f = (FILE *)data;
 
-    if (filename == NULL)
-        filename = "???";
-    if (function == NULL)
-        function = "???";
+	if (filename == NULL)
+		filename = "???";
+	if (function == NULL)
+		function = "???";
 
-    if (f)
-    {
-        fprintf(f, "  [0x%lx] %s:%d in %s\n", (unsigned long)pc, filename, lineno, function);
-        printf("  [0x%lx] %s:%d in %s\n", (unsigned long)pc, filename, lineno, function);
-        fflush(f);
-    }
+	if (f)
+	{
+		fprintf(f, "  [0x%lx] %s:%d in %s\n", (unsigned long)pc, filename, lineno, function);
+		printf("  [0x%lx] %s:%d in %s\n", (unsigned long)pc, filename, lineno, function);
+		fflush(f);
+	}
 
-    return 0;
+	return 0;
 }
 
 /**
@@ -46,14 +46,14 @@ static int signal_backtrace_callback(void *data, uintptr_t pc, const char *filen
  */
 static void signal_backtrace_error_callback(void *data, const char *msg, int errnum)
 {
-    (void)errnum; // Unused
-    FILE *f = (FILE *)data;
+	(void)errnum; // Unused
+	FILE *f = (FILE *)data;
 
-    if (f)
-    {
-        fprintf(f, "  Backtrace error: %s\n", msg);
-        fflush(f);
-    }
+	if (f)
+	{
+		fprintf(f, "  Backtrace error: %s\n", msg);
+		fflush(f);
+	}
 }
 
 /**
@@ -61,46 +61,46 @@ static void signal_backtrace_error_callback(void *data, const char *msg, int err
  */
 static void log_to_error_file(const char *format, ...)
 {
-    va_list args;
+	va_list args;
 
-    // Print to main log file
-    if (log_enabled && log_file)
-    {
-        va_start(args, format);
-        vfprintf(log_file, format, args);
-        va_end(args);
-        fprintf(log_file, "\n");
-        fflush(log_file);
-    }
+	// Print to main log file
+	if (log_enabled && log_file)
+	{
+		va_start(args, format);
+		vfprintf(log_file, format, args);
+		va_end(args);
+		fprintf(log_file, "\n");
+		fflush(log_file);
+	}
 
-    // Print to error log file
-    if (error_log_file)
-    {
-        va_start(args, format);
-        vfprintf(error_log_file, format, args);
-        va_end(args);
-        fprintf(error_log_file, "\n");
-        fflush(error_log_file);
-    }
+	// Print to error log file
+	if (error_log_file)
+	{
+		va_start(args, format);
+		vfprintf(error_log_file, format, args);
+		va_end(args);
+		fprintf(error_log_file, "\n");
+		fflush(error_log_file);
+	}
 
-    // Always print to stderr
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fprintf(stderr, "\n");
+	// Always print to stderr
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+	fprintf(stderr, "\n");
 }
 
 void open_crash_file()
 {
-    error_log_file = fopen(ERROR_LOG_FILENAME, "a");
-    if (!error_log_file)
-    {
-        LOG_WARNING("Failed to open crash log file: %s", ERROR_LOG_FILENAME);
-    }
-    else
-    {
-        LOG_DEBUG("Crash log file opened: %s", ERROR_LOG_FILENAME);
-    }
+	error_log_file = fopen(ERROR_LOG_FILENAME, "a");
+	if (!error_log_file)
+	{
+		LOG_WARNING("Failed to open crash log file: %s", ERROR_LOG_FILENAME);
+	}
+	else
+	{
+		LOG_DEBUG("Crash log file opened: %s", ERROR_LOG_FILENAME);
+	}
 }
 
 /**
@@ -108,107 +108,107 @@ void open_crash_file()
  */
 static void critical_signal_handler(int sig)
 {
-    const char *sig_name = "UNKNOWN";
+	const char *sig_name = "UNKNOWN";
 
-    switch (sig)
-    {
-    case SIGSEGV:
-        sig_name = "SIGSEGV (Segmentation Fault)";
-        break;
-    case SIGABRT:
-        sig_name = "SIGABRT (Abort)";
-        break;
-    case SIGFPE:
-        sig_name = "SIGFPE (Floating Point Exception)";
-        break;
-    case SIGILL:
-        sig_name = "SIGILL (Illegal Instruction)";
-        break;
-        // case SIGBUS:
-        //     sig_name = "SIGBUS (Bus Error)";
-        //     break;
-    }
+	switch (sig)
+	{
+	case SIGSEGV:
+		sig_name = "SIGSEGV (Segmentation Fault)";
+		break;
+	case SIGABRT:
+		sig_name = "SIGABRT (Abort)";
+		break;
+	case SIGFPE:
+		sig_name = "SIGFPE (Floating Point Exception)";
+		break;
+	case SIGILL:
+		sig_name = "SIGILL (Illegal Instruction)";
+		break;
+		// case SIGBUS:
+		//     sig_name = "SIGBUS (Bus Error)";
+		//     break;
+	}
 
-    open_crash_file();
+	open_crash_file();
 
-    // Get current timestamp
-    time_t now = time(NULL);
-    char *timestr = ctime(&now);
-    timestr[strlen(timestr) - 1] = '\0';
+	// Get current timestamp
+	time_t now = time(NULL);
+	char *timestr = ctime(&now);
+	timestr[strlen(timestr) - 1] = '\0';
 
-    log_to_error_file("\n");
-    log_to_error_file("==============================================");
-    log_to_error_file("[%s] CRITICAL ERROR - Signal caught: %s", timestr, sig_name);
-    log_to_error_file("==============================================");
+	log_to_error_file("\n");
+	log_to_error_file("==============================================");
+	log_to_error_file("[%s] CRITICAL ERROR - Signal caught: %s", timestr, sig_name);
+	log_to_error_file("==============================================");
 
-    // Print backtrace
-    if (bt_state != NULL)
-    {
-        log_to_error_file("=== BACKTRACE START ===");
+	// Print backtrace
+	if (bt_state != NULL)
+	{
+		log_to_error_file("=== BACKTRACE START ===");
 
-        backtrace_full(bt_state, 1, signal_backtrace_callback, signal_backtrace_error_callback, error_log_file);
+		backtrace_full(bt_state, 1, signal_backtrace_callback, signal_backtrace_error_callback, error_log_file);
 
-        log_to_error_file("=== BACKTRACE END ===");
-    }
-    else
-    {
-        log_to_error_file("Backtrace not initialized!");
-    }
+		log_to_error_file("=== BACKTRACE END ===");
+	}
+	else
+	{
+		log_to_error_file("Backtrace not initialized!");
+	}
 
-    log_to_error_file("==============================================");
-    log_to_error_file("Crash log written to: %s", ERROR_LOG_FILENAME);
-    log_to_error_file("==============================================\n");
+	log_to_error_file("==============================================");
+	log_to_error_file("Crash log written to: %s", ERROR_LOG_FILENAME);
+	log_to_error_file("==============================================\n");
 
-    // Attempt to close files gracefully
-    if (error_log_file)
-    {
-        fclose(error_log_file);
-        error_log_file = NULL;
-    }
+	// Attempt to close files gracefully
+	if (error_log_file)
+	{
+		fclose(error_log_file);
+		error_log_file = NULL;
+	}
 
-    log_end();
+	log_end();
 
-    // Exit with error code
-    exit(128 + sig);
+	// Exit with error code
+	exit(128 + sig);
 }
 
 void init_signal_handlers(void)
 {
 #ifdef _WIN32
-    // Windows: Use signal() for basic exception handling
-    // Note: Windows signal handling is more limited than POSIX
-    signal(SIGABRT, critical_signal_handler);
-    signal(SIGFPE, critical_signal_handler);
-    signal(SIGILL, critical_signal_handler);
-    signal(SIGSEGV, critical_signal_handler);
-    LOG_DEBUG("Signal handlers initialized (Windows mode)");
+	// Windows: Use signal() for basic exception handling
+	// Note: Windows signal handling is more limited than POSIX
+	signal(SIGABRT, critical_signal_handler);
+	signal(SIGFPE, critical_signal_handler);
+	signal(SIGILL, critical_signal_handler);
+	signal(SIGSEGV, critical_signal_handler);
+	LOG_DEBUG("Signal handlers initialized (Windows mode)");
 #else
-    // Linux/Unix: Use sigaction for more robust handling
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = critical_signal_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
+	// Linux/Unix: Use sigaction for more robust handling
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = critical_signal_handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
 
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGILL, &sa, NULL);
+	sigaction(SIGSEGV, &sa, NULL);
+	sigaction(SIGABRT, &sa, NULL);
+	sigaction(SIGFPE, &sa, NULL);
+	sigaction(SIGILL, &sa, NULL);
 #ifdef SIGBUS
-    sigaction(SIGBUS, &sa, NULL);
+	sigaction(SIGBUS, &sa, NULL);
 #endif
 
-    LOG_DEBUG("Signal handlers initialized (POSIX mode)");
+	LOG_DEBUG("Signal handlers initialized (POSIX mode)");
 #endif
 }
 
 void deinit_signal_handlers(void)
 {
-    if (error_log_file)
-    {
-        fclose(error_log_file);
-        error_log_file = NULL;
-    }
+	if (error_log_file)
+	{
+		fclose(error_log_file);
+		error_log_file = NULL;
+	}
 
-    LOG_DEBUG("Signal handlers deinitialized");
+	LOG_DEBUG("Signal handlers deinitialized");
 }

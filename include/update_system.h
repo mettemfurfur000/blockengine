@@ -38,48 +38,48 @@
 
 typedef struct
 { // struct that is decoded from the update
-    u64 id;
-    u16 x;
-    u16 y;
+	u64 id;
+	u16 x;
+	u16 y;
 } update_block;
 
 typedef struct
 {
-    handle32 h;
-    u16 x;
-    u16 y;
+	handle32 h;
+	u16 x;
+	u16 y;
 } update_varhandle;
 
 typedef enum
 {
-    COMPONENT_UPDATE_NEW,    // new var created
-    COMPONENT_UPDATE_SET,    // singular component updated
-    COMPONENT_UPDATE_ADD,    // singular component appended
-    COMPONENT_UPDATE_DELETE, // component deleted
-    COMPONENT_UPDATE_RESIZE, // component resized
-    COMPONENT_UPDATE_RENAME, // component renamed
+	COMPONENT_UPDATE_NEW,	 // new var created
+	COMPONENT_UPDATE_SET,	 // singular component updated
+	COMPONENT_UPDATE_ADD,	 // singular component appended
+	COMPONENT_UPDATE_DELETE, // component deleted
+	COMPONENT_UPDATE_RESIZE, // component resized
+	COMPONENT_UPDATE_RENAME, // component renamed
 } update_component_type;
 
 typedef struct
 {
-    union
-    {
-        blob* blob;
-        u8 *raw;
-    };
-    handle32 h;
-    u16 x;
-    u16 y;
-    char letter;
-    char new_char;
-    u8 size;
-    update_component_type type;
+	union
+	{
+		blob *blob;
+		u8 *raw;
+	};
+	handle32 h;
+	u16 x;
+	u16 y;
+	char letter;
+	char new_char;
+	u8 size;
+	update_component_type type;
 } update_var_component;
 
 typedef struct
 {
-    stream_t update_stream;
-    u32 update_count; // amount of packets recorded
+	stream_t update_stream;
+	u32 update_count; // amount of packets recorded
 } update_accumulator;
 
 update_accumulator update_acc_new();
@@ -96,7 +96,7 @@ void update_component_new_push(update_accumulator *a, handle32 handle, blob b);
 void update_component_set_push(update_accumulator *a, handle32 handle, char c, u8 len, u8 *ptr);
 
 #define UPDATE_COMP_SET_GEN_NAME(T)                                                                                    \
-    void update_component_set_push_##T(update_accumulator *a, handle32 handle, char c, T value);
+	void update_component_set_push_##T(update_accumulator *a, handle32 handle, char c, T value);
 
 UPDATE_COMP_SET_GEN_NAME(u8)
 UPDATE_COMP_SET_GEN_NAME(u16)

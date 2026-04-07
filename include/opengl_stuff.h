@@ -3,6 +3,7 @@
 
 #include "general.h"
 #include <epoxy/gl.h>
+
 #include <SDL2/SDL_opengl.h>
 
 #include "image_editing.h"

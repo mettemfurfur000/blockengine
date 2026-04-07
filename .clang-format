@@ -2,7 +2,9 @@ BasedOnStyle: Microsoft
 PackConstructorInitializers: Never
 AlignArrayOfStructures: Right
 PointerAlignment: Right
-IndentWidth:     4
+UseTab: Always
+IndentWidth: 4
+TabWidth: 4
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterControlStatement: Always

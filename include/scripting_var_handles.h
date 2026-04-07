@@ -2,7 +2,6 @@
 #define SCRIPTING_VAR_HANDLES_H
 
 #include "level.h"
-#include "level.h"
 
 /* VarHandle helpers (defined in scripting_var_handles.c) */
 void lua_varhandle_register(lua_State *L);

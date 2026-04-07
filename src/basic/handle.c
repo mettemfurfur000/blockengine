@@ -10,115 +10,115 @@
 
 struct handle_table_slot
 {
-    void *ptr;
-    u16 generation; /* increments when slot is freed */
-    u8 active;
+	void *ptr;
+	u16 generation; /* increments when slot is freed */
+	u8 active;
 };
 
 static_assert(sizeof(struct handle_table_slot) == 16, "");
 
 struct handle_table
 {
-    u16 capacity;
-    u16 count;
-    u16 free_head; /* index of first free slot (0 == none). We store indices as 1-based to
-                       allow 0 to mean "no free" */
-    struct handle_table_slot *slots;
+	u16 capacity;
+	u16 count;
+	u16 free_head; /* index of first free slot (0 == none). We store indices as 1-based to
+					   allow 0 to mean "no free" */
+	struct handle_table_slot *slots;
 };
 
 handle_table *handle_table_create(u16 capacity)
 {
-    if (capacity == 0)
-        return NULL;
+	if (capacity == 0)
+		return NULL;
 
-    handle_table *t = (handle_table *)malloc(sizeof(handle_table));
-    if (!t)
-        return NULL;
+	handle_table *t = (handle_table *)malloc(sizeof(handle_table));
+	if (!t)
+		return NULL;
 
-    t->slots = (struct handle_table_slot *)calloc(capacity, sizeof(*t->slots));
-    if (!t->slots)
-    {
-        free(t);
-        return NULL;
-    }
+	t->slots = (struct handle_table_slot *)calloc(capacity, sizeof(*t->slots));
+	if (!t->slots)
+	{
+		free(t);
+		return NULL;
+	}
 
-    t->capacity = capacity;
-    t->count = 0;
-    t->free_head = 0; /* empty free list */
+	t->capacity = capacity;
+	t->count = 0;
+	t->free_head = 0; /* empty free list */
 
-    /* Initially all slots are free; we will not populate an explicit free-list
-       since we allocate from 0..capacity-1 until full, afterwards we use free list.
-    */
+	/* Initially all slots are free; we will not populate an explicit free-list
+	   since we allocate from 0..capacity-1 until full, afterwards we use free list.
+	*/
 
-    return t;
+	return t;
 }
 
 void handle_table_destroy(handle_table *table)
 {
-    if (!table)
-        return;
-    if (table->slots)
-        free(table->slots);
-    free(table);
+	if (!table)
+		return;
+	if (table->slots)
+		free(table->slots);
+	free(table);
 }
 
 u16 util_get_new_handle_index(handle_table *table)
 {
-    u16 slot_index = INVALID_HANDLE_INDEX;
+	u16 slot_index = INVALID_HANDLE_INDEX;
 
-    if (table->count == 0)
-    {
-        table->slots[0].active = 1;
-        table->count++;
-    }
+	if (table->count == 0)
+	{
+		table->slots[0].active = 1;
+		table->count++;
+	}
 
-    /* if capacity limit is not reached yet, return the last one in our list */
-    if (table->count < table->capacity)
-    {
-        slot_index = table->count;
-        table->count++;
-        return slot_index;
-    }
+	/* if capacity limit is not reached yet, return the last one in our list */
+	if (table->count < table->capacity)
+	{
+		slot_index = table->count;
+		table->count++;
+		return slot_index;
+	}
 
-    /* try to find a free one */
-    slot_index = handle_table_get_inactive(table);
-    if (slot_index != INVALID_HANDLE_INDEX)
-        return slot_index;
+	/* try to find a free one */
+	slot_index = handle_table_get_inactive(table);
+	if (slot_index != INVALID_HANDLE_INDEX)
+		return slot_index;
 
-    /* try expanding the table then */
+	/* try expanding the table then */
 
-    if (table->capacity == MAX_HANDLE_TABLE_CAPACITY)
-    {
-        // bad news!
-        // i probly should drop the handle type field to extend the index field to 24-ish bits
+	if (table->capacity == MAX_HANDLE_TABLE_CAPACITY)
+	{
+		// bad news!
+		// i probly should drop the handle type field to extend the index field to 24-ish bits
 
-        LOG_ERROR("Reached maximum handle table capacity of %d slots", table->capacity);
-        return INVALID_HANDLE_INDEX;
-    }
+		LOG_ERROR("Reached maximum handle table capacity of %d slots", table->capacity);
+		return INVALID_HANDLE_INDEX;
+	}
 
-    u32 new_capacity = table->capacity * 2;
-    new_capacity = (new_capacity > MAX_HANDLE_TABLE_CAPACITY) ? MAX_HANDLE_TABLE_CAPACITY : new_capacity;
+	u32 new_capacity = table->capacity * 2;
+	new_capacity = (new_capacity > MAX_HANDLE_TABLE_CAPACITY) ? MAX_HANDLE_TABLE_CAPACITY : new_capacity;
 
-    struct handle_table_slot *new_slots = (struct handle_table_slot *)calloc(new_capacity, sizeof(*new_slots));
-    if (!new_slots)
-    {
-        LOG_ERROR("Failed to expand handle table");
-        return INVALID_HANDLE_INDEX;
-    }
+	struct handle_table_slot *new_slots = (struct handle_table_slot *)calloc(new_capacity, sizeof(*new_slots));
+	if (!new_slots)
+	{
+		LOG_ERROR("Failed to expand handle table");
+		return INVALID_HANDLE_INDEX;
+	}
 
-    /* Copy old slots to new table */
-    for (u16 i = 0; i < table->capacity; ++i)
-        new_slots[i] = table->slots[i];
+	/* Copy old slots to new table */
+	for (u16 i = 0; i < table->capacity; ++i)
+		new_slots[i] = table->slots[i];
 
-    free(table->slots);
-    table->slots = new_slots;
-    table->capacity = new_capacity;
+	free(table->slots);
+	table->slots = new_slots;
+	table->capacity = new_capacity;
 
-    /* give last one*/
-    slot_index = table->count;
-    table->count++;
+	/* give last one*/
+	slot_index = table->count;
+	table->count++;
 
-    return slot_index;
+	return slot_index;
 }
 
 /* Acquire a slot: return handle with 1-based index? The header expects index be u16; we use 0..capacity-1.
@@ -126,169 +126,169 @@ u16 util_get_new_handle_index(handle_table *table)
 
 handle32 handle_table_put(handle_table *table, void *obj)
 {
-    if (!table)
-        return INVALID_HANDLE;
+	if (!table)
+		return INVALID_HANDLE;
 
-    /* Try to find an unused slot */
-    u16 slot_index = util_get_new_handle_index(table);
-    if (slot_index == INVALID_HANDLE_INDEX)
-        return INVALID_HANDLE;
+	/* Try to find an unused slot */
+	u16 slot_index = util_get_new_handle_index(table);
+	if (slot_index == INVALID_HANDLE_INDEX)
+		return INVALID_HANDLE;
 
-    struct handle_table_slot *s = &table->slots[slot_index];
-    s->ptr = obj;
-    s->active = 1;
-    /* generation is left as-is if reused; otherwise default 0 */
+	struct handle_table_slot *s = &table->slots[slot_index];
+	s->ptr = obj;
+	s->active = 1;
+	/* generation is left as-is if reused; otherwise default 0 */
 
-    handle32 h;
-    h.index = slot_index;
-    h.validation = (u16)(s->generation);
-    h.active = s->active;
+	handle32 h;
+	h.index = slot_index;
+	h.validation = (u16)(s->generation);
+	h.active = s->active;
 
-    return h;
+	return h;
 }
 
 /* sets an object at a said handle index */
 
 handle32 handle_table_set(handle_table *table, handle32 handle, void *obj)
 {
-    if (!table)
-        return INVALID_HANDLE;
+	if (!table)
+		return INVALID_HANDLE;
 
-    /* Try to find an unused slot */
-    u16 slot_index = handle.index;
-    if (slot_index == INVALID_HANDLE_INDEX)
-        return INVALID_HANDLE;
+	/* Try to find an unused slot */
+	u16 slot_index = handle.index;
+	if (slot_index == INVALID_HANDLE_INDEX)
+		return INVALID_HANDLE;
 
-    struct handle_table_slot *s = &table->slots[slot_index];
+	struct handle_table_slot *s = &table->slots[slot_index];
 
-    SAFE_FREE(s->ptr);
+	SAFE_FREE(s->ptr);
 
-    s->ptr = obj;
-    s->active = 1;
+	s->ptr = obj;
+	s->active = 1;
 
-    handle32 h;
-    h.index = slot_index;
-    h.validation = (u16)(s->generation);
-    h.active = s->active;
+	handle32 h;
+	h.index = slot_index;
+	h.validation = (u16)(s->generation);
+	h.active = s->active;
 
-    return h;
+	return h;
 }
 
 void handle_table_release(handle_table *table, handle32 h)
 {
-    if (!table)
-        return;
-    if (h.index >= table->capacity)
-        return;
+	if (!table)
+		return;
+	if (h.index >= table->capacity)
+		return;
 
-    struct handle_table_slot *s = &table->slots[h.index];
-    /* Only release if handle matches current generation and active */
-    if (!s->active)
-        return;
-    if ((u16)(s->generation) != (u16)(h.validation))
-        return;
+	struct handle_table_slot *s = &table->slots[h.index];
+	/* Only release if handle matches current generation and active */
+	if (!s->active)
+		return;
+	if ((u16)(s->generation) != (u16)(h.validation))
+		return;
 
-    s->active = 0;
-    s->ptr = NULL;
-    s->generation = (u16)((s->generation + 1)); /* increment generation */
+	s->active = 0;
+	s->ptr = NULL;
+	s->generation = (u16)((s->generation + 1)); /* increment generation */
 }
 
 void *handle_table_get(handle_table *table, handle32 h)
 {
-    if (!table)
-    {
-        // LOG_DEBUG("no table provided");
-        return NULL;
-    }
-    if (h.index == INVALID_HANDLE_INDEX)
-    {
-        // LOG_DEBUG("invalid index - %d", h.index);
-        return NULL;
-    }
-    if (h.index >= table->capacity)
-    {
-        // LOG_DEBUG("out of bounds - %d", h.index);
-        return NULL;
-    }
+	if (!table)
+	{
+		// LOG_DEBUG("no table provided");
+		return NULL;
+	}
+	if (h.index == INVALID_HANDLE_INDEX)
+	{
+		// LOG_DEBUG("invalid index - %d", h.index);
+		return NULL;
+	}
+	if (h.index >= table->capacity)
+	{
+		// LOG_DEBUG("out of bounds - %d", h.index);
+		return NULL;
+	}
 
-    struct handle_table_slot *s = &table->slots[h.index];
-    if (!s->active)
-    {
-        // LOG_DEBUG("is inactive - %d", h.index);
-        return NULL;
-    }
-    if ((u16)(s->generation) != (u16)(h.validation))
-    {
-        // LOG_DEBUG("validation %d != validation - %d", s->generation, h.validation);
-        return NULL;
-    }
+	struct handle_table_slot *s = &table->slots[h.index];
+	if (!s->active)
+	{
+		// LOG_DEBUG("is inactive - %d", h.index);
+		return NULL;
+	}
+	if ((u16)(s->generation) != (u16)(h.validation))
+	{
+		// LOG_DEBUG("validation %d != validation - %d", s->generation, h.validation);
+		return NULL;
+	}
 
-    return s->ptr;
+	return s->ptr;
 }
 
 bool handle_is_valid(handle_table *table, handle32 h)
 {
-    return handle_table_get(table, h) != NULL;
+	return handle_table_get(table, h) != NULL;
 }
 
 u16 handle_table_capacity(handle_table *table)
 {
-    if (!table)
-        return 0;
-    return table->capacity;
+	if (!table)
+		return 0;
+	return table->capacity;
 }
 
 void *handle_table_slot_ptr(handle_table *table, u16 index)
 {
-    if (!table)
-        return NULL;
-    if (index >= table->capacity)
-        return NULL;
-    return table->slots[index].ptr;
+	if (!table)
+		return NULL;
+	if (index >= table->capacity)
+		return NULL;
+	return table->slots[index].ptr;
 }
 
 u16 handle_table_slot_active(handle_table *table, u16 index)
 {
-    if (!table)
-        return 0;
-    if (index >= table->capacity)
-        return 0;
-    return (u16)table->slots[index].active;
+	if (!table)
+		return 0;
+	if (index >= table->capacity)
+		return 0;
+	return (u16)table->slots[index].active;
 }
 
 u16 handle_table_slot_generation(handle_table *table, u16 index)
 {
-    if (!table)
-        return 0;
-    if (index >= table->capacity)
-        return 0;
-    return table->slots[index].generation;
+	if (!table)
+		return 0;
+	if (index >= table->capacity)
+		return 0;
+	return table->slots[index].generation;
 }
 
 int handle_table_set_slot(handle_table *table, u16 index, void *ptr, u16 generation, u16 active)
 {
-    if (!table)
-        return -1;
-    if (index >= table->capacity)
-        return -1;
-    table->slots[index].ptr = ptr;
-    table->slots[index].generation = generation;
-    table->slots[index].active = (u16)(active ? 1 : 0);
+	if (!table)
+		return -1;
+	if (index >= table->capacity)
+		return -1;
+	table->slots[index].ptr = ptr;
+	table->slots[index].generation = generation;
+	table->slots[index].active = (u16)(active ? 1 : 0);
 
-    /* Ensure the count reflects the highest initialized slot so that future
-       allocations behave correctly (we treat `count` as number of slots
-       that have been 'touched' for simple reconstruction). */
-    if ((u16)(index + 1) > table->count)
-        table->count = (u16)(index + 1);
+	/* Ensure the count reflects the highest initialized slot so that future
+	   allocations behave correctly (we treat `count` as number of slots
+	   that have been 'touched' for simple reconstruction). */
+	if ((u16)(index + 1) > table->count)
+		table->count = (u16)(index + 1);
 
-    return 0;
+	return 0;
 }
 
 u16 handle_table_get_inactive(handle_table *table)
 {
-    /* walk slots to find an inactive one */
-    for (u16 i = 0; i < table->capacity; ++i)
-        if (!table->slots[i].active)
-            return i;
-    return INVALID_HANDLE_INDEX;
+	/* walk slots to find an inactive one */
+	for (u16 i = 0; i < table->capacity; ++i)
+		if (!table->slots[i].active)
+			return i;
+	return INVALID_HANDLE_INDEX;
 }

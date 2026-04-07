@@ -12,34 +12,34 @@ static ENetHost *server_host = NULL;
 
 int net_server_init(u16 port, u32 max_clients)
 {
-    if (server_host)
-        return 0;
+	if (server_host)
+		return 0;
 
-    if (enet_initialize() != 0)
-        return -1;
+	if (enet_initialize() != 0)
+		return -1;
 
-    ENetAddress address;
-    address.host = ENET_HOST_ANY;
-    address.port = port;
+	ENetAddress address;
+	address.host = ENET_HOST_ANY;
+	address.port = port;
 
-    server_host = enet_host_create(&address, 32, 2, 0, 0);
-    if (!server_host)
-    {
-        enet_deinitialize();
-        return -1;
-    }
+	server_host = enet_host_create(&address, 32, 2, 0, 0);
+	if (!server_host)
+	{
+		enet_deinitialize();
+		return -1;
+	}
 
-    return 0;
+	return 0;
 }
 
 void net_server_shutdown(void)
 {
-    if (server_host)
-    {
-        enet_host_destroy(server_host);
-        server_host = NULL;
-    }
-    enet_deinitialize();
+	if (server_host)
+	{
+		enet_host_destroy(server_host);
+		server_host = NULL;
+	}
+	enet_deinitialize();
 }
 
 // TODO: figure out network packet serialization later

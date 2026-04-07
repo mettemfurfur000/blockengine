@@ -8,14 +8,14 @@ extern "C"
 {
 #endif
 
-    struct backtrace_state;
+	struct backtrace_state;
 
-    // Exported for signal handlers
-    extern struct backtrace_state *bt_state;
+	// Exported for signal handlers
+	extern struct backtrace_state *bt_state;
 
-    void init_backtrace(void);
-    void deinit_backtrace(void);
-    void print_backtrace(void);
+	void init_backtrace(void);
+	void deinit_backtrace(void);
+	void print_backtrace(void);
 
 #ifdef __cplusplus
 }

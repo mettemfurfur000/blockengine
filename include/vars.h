@@ -14,22 +14,22 @@
 #define VAR_VALUE(blob, pos) (blob + pos + 2)
 
 #define VAR_FOREACH(blob, code)                                                                                        \
-    for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)                                                                 \
-        code
+	for (u32 i = 0; i < b.size; i += b.ptr[i + 1] + 2)                                                                 \
+	code
 
 #define VARS_MAX_INDEX_ENTRIES 32
 
 typedef struct
 {
-    u8 valid;
-    u8 letter;
-    u32 offset;
+	u8 valid;
+	u8 letter;
+	u32 offset;
 } var_index_entry;
 
 typedef struct
 {
-    var_index_entry entries[VARS_MAX_INDEX_ENTRIES];
-    u8 count;
+	var_index_entry entries[VARS_MAX_INDEX_ENTRIES];
+	u8 count;
 } var_index;
 
 void var_index_build(var_index *idx, const blob b);
@@ -57,27 +57,27 @@ i32 ensure_tag(blob *b, const int letter, const int needed_size);
 
 #define GETTER_DEF(type) u8 GETTER_NAME(type)(blob b, char letter, type *dest);
 #define GETTER_IMP(type)                                                                                               \
-    u8 GETTER_NAME(type)(blob b, char letter, type *dest)                                                              \
-    {                                                                                                                  \
-        assert(dest);                                                                                                  \
-        i32 pos = vars_pos(b, letter);                                                                                 \
-        if (pos < 0)                                                                                                   \
-            return FAIL;                                                                                               \
-        *dest = *(type *)VAR_VALUE(b.ptr, pos);                                                                        \
-        return SUCCESS;                                                                                                \
-    }
+	u8 GETTER_NAME(type)(blob b, char letter, type *dest)                                                              \
+	{                                                                                                                  \
+		assert(dest);                                                                                                  \
+		i32 pos = vars_pos(b, letter);                                                                                 \
+		if (pos < 0)                                                                                                   \
+			return FAIL;                                                                                               \
+		*dest = *(type *)VAR_VALUE(b.ptr, pos);                                                                        \
+		return SUCCESS;                                                                                                \
+	}
 
 #define SETTER_DEF(type) u8 SETTER_NAME(type)(blob * b, char letter, type value);
 #define SETTER_IMP(type)                                                                                               \
-    u8 SETTER_NAME(type)(blob * b, char letter, type value)                                                            \
-    {                                                                                                                  \
-        assert(b);                                                                                                     \
-        i32 pos = vars_pos(*b, letter);                                                                                \
-        if (pos < 0)                                                                                                   \
-            return FAIL;                                                                                               \
-        *(type *)VAR_VALUE(b->ptr, pos) = value;                                                                       \
-        return SUCCESS;                                                                                                \
-    }
+	u8 SETTER_NAME(type)(blob * b, char letter, type value)                                                            \
+	{                                                                                                                  \
+		assert(b);                                                                                                     \
+		i32 pos = vars_pos(*b, letter);                                                                                \
+		if (pos < 0)                                                                                                   \
+			return FAIL;                                                                                               \
+		*(type *)VAR_VALUE(b->ptr, pos) = value;                                                                       \
+		return SUCCESS;                                                                                                \
+	}
 
 u8 var_set_str(blob *b, char letter, const char *str);
 u8 var_set_raw(blob *b, char letter, blob raw);

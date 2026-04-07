@@ -15,61 +15,61 @@
 #define LAYER_FLAG_STATIC 0b00000100
 
 /* Each layer that supports vars keeps a pointer to a handle table that owns
-    blob pointers. The table is created at layer init and destroyed at free.
-    The table's `type` tag should be set to a dedicated value (e.g. 1). */
+	blob pointers. The table is created at layer init and destroyed at free.
+	The table's `type` tag should be set to a dedicated value (e.g. 1). */
 typedef struct
 {
-    handle_table *table; /* stores blob* */
+	handle_table *table; /* stores blob* */
 } var_handle_table;
 
 typedef struct layer
 {
-    u64 uuid;
-    void *parent_room;
+	u64 uuid;
+	void *parent_room;
 
-    var_handle_table var_pool;
-    block_registry *registry;
-    u8 *blocks; // array of blocks, each of size bytes_per_block
+	var_handle_table var_pool;
+	block_registry *registry;
+	u8 *blocks; // array of blocks, each of size bytes_per_block
 
-    u16 width;                //
-    u16 height;               //
-    u8 block_size;            // bytes per block id
-    u8 total_bytes_per_block; // block_size + 4 (handle32)
+	u16 width;				  //
+	u16 height;				  //
+	u8 block_size;			  // bytes per block id
+	u8 total_bytes_per_block; // block_size + 4 (handle32)
 
-    u8 flags; //
+	u8 flags; //
 
-    spatial_grid spatial; // spatial partitioning grid for rendering
+	spatial_grid spatial; // spatial partitioning grid for rendering
 
-    update_accumulator id_updates;  // accumulator for block updates on this layer
-    update_accumulator var_updates; // for var updates
-    update_accumulator var_component_updates; // for var components
+	update_accumulator id_updates;			  // accumulator for block updates on this layer
+	update_accumulator var_updates;			  // for var updates
+	update_accumulator var_component_updates; // for var components
 } layer;
 
 typedef struct level level;
 
 typedef struct room
 {
-    u64 uuid;
-    char *name;
-    level *parent_level;
+	u64 uuid;
+	char *name;
+	level *parent_level;
 
-    u16 width;
-    u16 height;
+	u16 width;
+	u16 height;
 
-    vec_void_t layers;
-    // physics_world_t physics_world; /* each room gets its own physics world */
+	vec_void_t layers;
+	// physics_world_t physics_world; /* each room gets its own physics world */
 
-    u8 flags;
+	u8 flags;
 } room;
 
 typedef struct level
 {
-    u64 uuid;
-    vec_void_t registries;
-    vec_void_t rooms;
+	u64 uuid;
+	vec_void_t registries;
+	vec_void_t rooms;
 
-    char *name;
-    u8 flags;
+	char *name;
+	u8 flags;
 } level;
 
 #define BLOCK_ID_PTR(l, x, y) (l->blocks + (((y) * l->width) + (x)) * l->total_bytes_per_block)
@@ -77,7 +77,7 @@ typedef struct level
 
 u8 block_set_id(layer *l, u16 x, u16 y, u64 id);
 u8 block_get_id(layer *l, u16 x, u16 y, u64 *id);
-u8 block_move(layer *l, u16 x, u16 y, u32 dx, u32 dy);
+u8 block_move(layer *l, u16 x, u16 y, i16 dx, i16 dy);
 
 u8 block_apply_updates(layer *l);
 

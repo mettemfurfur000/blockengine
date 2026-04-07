@@ -19,66 +19,66 @@
 
 typedef struct block_resources
 {
-    hash_node **all_fields;
-    void *parent_registry;
-    u64 id;
+	hash_node **all_fields;
+	void *parent_registry;
+	u64 id;
 
-    blob vars_sample; // sample vars blob for this block, ready to use
-    i32 vars_offsets[256]; // pre-computed offsets for each letter (-1 = not present)
+	blob vars_sample;	   // sample vars blob for this block, ready to use
+	i32 vars_offsets[256]; // pre-computed offsets for each letter (-1 = not present)
 
-    u64 repeat_times;
-    vec_int_t repeat_skip;
-    vec_str_t repeat_increment;
+	u64 repeat_times;
+	vec_int_t repeat_skip;
+	vec_str_t repeat_increment;
 
-    image *img;
-    atlas_info info;
+	image *img;
+	atlas_info info;
 
-    char *texture_filename;
-    char *lua_script_filename;
-    // compiled lua bytecode embedded in .brg (owned by this struct)
-    unsigned char *lua_script_blob;
-    u32 lua_script_blob_size;
+	char *texture_filename;
+	char *lua_script_filename;
+	// compiled lua bytecode embedded in .brg (owned by this struct)
+	unsigned char *lua_script_blob;
+	u32 lua_script_blob_size;
 
-    vec_sound_t sounds;
+	vec_sound_t sounds;
 
-    vec_int_t input_refs;
-    vec_str_t input_names;
+	vec_int_t input_refs;
+	vec_str_t input_names;
 
-    i32 input_tick_ref; // which input causes a tick update, as a lua ref
-    // 1 - 3x3 tileset, 4 neighbours, lines default to center tile
-    // 2 - 4x4, 4 neighbours, full coverage on all cases
-    // 3 - 47 autotile scheme, 8 neighbour scheme
-    u8 autotile_type;
-    // char autotile_update_key;
-    // char autotile_cache_key;
+	i32 input_tick_ref; // which input causes a tick update, as a lua ref
+	// 1 - 3x3 tileset, 4 neighbours, lines default to center tile
+	// 2 - 4x4, 4 neighbours, full coverage on all cases
+	// 3 - 47 autotile scheme, 8 neighbour scheme
+	u8 autotile_type;
+	// char autotile_update_key;
+	// char autotile_cache_key;
 
-    char anim_controller;
-    char type_controller;
-    char flip_controller;
-    char rotation_controller;
-    char offset_x_controller;
-    char offset_y_controller;
-    char interp_timestamp_controller;
+	char anim_controller;
+	char type_controller;
+	char flip_controller;
+	char rotation_controller;
+	char offset_x_controller;
+	char offset_y_controller;
+	char interp_timestamp_controller;
 
-    u32 interp_takes;
+	u32 interp_takes;
 
-    u8 override_frame;
+	u8 override_frame;
 
-    u8 frames_per_second;
-    u8 flags;
+	u8 frames_per_second;
+	u8 flags;
 } block_resources;
 
 typedef vec_t(block_resources) block_resources_t;
 
 typedef struct block_registry
 {
-    block_resources_t resources;
+	block_resources_t resources;
 
-    const char *name;
-    image *atlas;
+	const char *name;
+	image *atlas;
 
-    GLuint atlas_texture_uid;
-    u64 uuid;
+	GLuint atlas_texture_uid;
+	u64 uuid;
 } block_registry;
 
 typedef vec_t(block_registry) vec_registries_t;
@@ -88,15 +88,15 @@ typedef vec_t(block_registry) vec_registries_t;
 
 typedef struct
 {
-    void (*increment_fn)(block_resources *);
-    u8 (*function)(const char *, block_resources *);
-    char *name;
+	void (*increment_fn)(block_resources *);
+	u8 (*function)(const char *, block_resources *);
+	char *name;
 
-    u8 is_critical; // resource is not pushed if its absend, or if:
+	u8 is_critical; // resource is not pushed if its absend, or if:
 
-    char *deps[4];     // these entries are not present
-    char *incompat[4]; // these entries present
-    char *slots[4];    // other entries already got said slots
+	char *deps[4];	   // these entries are not present
+	char *incompat[4]; // these entries present
+	char *slots[4];	   // other entries already got said slots
 } resource_entry_handler;
 
 void free_block_resources(block_resources *b);

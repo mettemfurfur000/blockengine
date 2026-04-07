@@ -26,34 +26,34 @@ extern int g_block_width;
 
 typedef struct atlas_info
 {
-    u32 atlas_offset_x, atlas_offset_y;
+	u32 atlas_offset_x, atlas_offset_y;
 
-    i32 width;
-    i32 height;
+	i32 width;
+	i32 height;
 
-    u8 frames;       // frames in an animation, in height
-    u8 types;        // amount of animations, in width
-    u8 total_frames; // things above multiplied
+	u8 frames;		 // frames in an animation, in height
+	u8 types;		 // amount of animations, in width
+	u8 total_frames; // things above multiplied
 } atlas_info;
 
 typedef struct sound
 {
-    char *filename;
-    Mix_Chunk *obj;
+	char *filename;
+	Mix_Chunk *obj;
 
-    u32 length_ms;
+	u32 length_ms;
 } sound;
 
 typedef vec_t(sound) vec_sound_t;
 
 typedef struct music
 {
-    char *filename;
-    Mix_Music *mus;
-    u8 type;
+	char *filename;
+	Mix_Music *mus;
+	u8 type;
 
-    u32 length_ms;
-    u8 channels;
+	u32 length_ms;
+	u8 channels;
 } music;
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))

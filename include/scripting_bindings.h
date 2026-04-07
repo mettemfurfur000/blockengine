@@ -25,15 +25,15 @@
 // #define GET_U64() luaL_checkinteger(L, __stack_idx++)
 
 #define LUA_BOOLCALL_RET(func_call)                                                                                    \
-    lua_pushboolean(L, (func_call) == SUCCESS);                                                                        \
-    return 1;
+	lua_pushboolean(L, (func_call) == SUCCESS);                                                                        \
+	return 1;
 
 #define LUA_SWITCH_CALL(func_call, success_call, failure_call)                                                         \
-    if ((func_call) == SUCCESS)                                                                                        \
-        success_call;                                                                                                  \
-    else                                                                                                               \
-        failure_call;                                                                                                  \
-    return 1;
+	if ((func_call) == SUCCESS)                                                                                        \
+		success_call;                                                                                                  \
+	else                                                                                                               \
+		failure_call;                                                                                                  \
+	return 1;
 */
 
 void image_load_editing_library(lua_State *L);

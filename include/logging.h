@@ -13,8 +13,8 @@ extern "C"
 {
 #endif
 
-    extern int log_enabled;
-    extern FILE *log_file;
+	extern int log_enabled;
+	extern FILE *log_file;
 
 #define SEPARATOR '/'
 #define SEPARATOR_STR "/"
@@ -24,14 +24,14 @@ extern "C"
 #define LOG_LEVEL 5
 #define USE_FILENAMES 1
 
-    extern const int log_level;
+	extern const int log_level;
 
 #if (USE_FILENAMES == 1)
 #define __FILENAME__ (strrchr(__FILE__, SEPARATOR) ? strrchr(__FILE__, SEPARATOR) + 1 : __FILE__)
 #else
 #define __FILENAME__ ""
 #endif
-    // use these to log stuff
+	// use these to log stuff
 
 #if (LOG_LEVEL >= 1)
 #define LOG_MESSAGE(format, ...) log_msg(1, "%s:%d " format, __FILENAME__, __LINE__, ##__VA_ARGS__)
@@ -63,15 +63,15 @@ extern "C"
 #define LOG_DEBUG(format, ...) log_msg(0, "")
 #endif
 
-    void log_start_new(const char *fname);
-    void log_start(const char *fname);
-    void log_end();
-    void log_msg(unsigned char level, const char *format, ...);
+	void log_start_new(const char *fname);
+	void log_start(const char *fname);
+	void log_end();
+	void log_msg(unsigned char level, const char *format, ...);
 
-    char *to_bin(unsigned char n, char *buf);
-    // lua
+	char *to_bin(unsigned char n, char *buf);
+	// lua
 
-    void lua_logging_register(lua_State *L);
+	void lua_logging_register(lua_State *L);
 
 #ifdef __cplusplus
 }
