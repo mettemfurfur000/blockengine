@@ -721,40 +721,57 @@ u32 is_already_in_registry(block_resources_t *reg, block_resources *br)
 	return 0;
 }
 
-void call_increments(block_resources *br_ref)
+static void increment_call(block_resources *br_ref, u32 idx)
 {
-	for (u32 j = 0; j < TOTAL_HANDLERS; j++)
-		if (res_handlers[j].increment_fn) // if no increment function is
-										  // present, we skip it
-			for (u32 i = 0; i < br_ref->repeat_increment.length;
-				 i++) // for each entry we check if its a correct handler
-				if (strcmp(res_handlers[j].name, br_ref->repeat_increment.data[i]) == 0)
-					res_handlers[j].increment_fn(br_ref);
+	// compare the repeat increment parameter name
+	for (u32 i = 0; i < br_ref->repeat_increment.length; i++)
+		if (strcmp(res_handlers[idx].name, br_ref->repeat_increment.data[i]) == 0)
+			res_handlers[idx].increment_fn(br_ref);
 }
 
+void call_increments(block_resources *br_ref)
+{
+	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
+		if (res_handlers[i].increment_fn)
+			increment_call(br_ref, i);
+}
+
+static bool is_skip_index(block_resources *br_ref, u32 idx)
+{
+	for (u32 i = 0; i < br_ref->repeat_skip.length; i++)
+		if (br_ref->repeat_skip.data[i] == idx)
+			return true;
+	return false;
+}
+
+// TODO: check if this actually works correctly after the refactor
 void range_ids(block_resources_t *reg, block_resources *br_ref)
 {
+	// start from 1 because block 0 is void
 	for (u32 i = 1; i < br_ref->repeat_times; i++)
 	{
-		u8 skip_this_one = 0;
-
-		for (u32 j = 0; j < br_ref->repeat_skip.length; j++) // if an index appears on out repeat skip list, we skip it
-			if (br_ref->repeat_skip.data[j] == i)
-			{
-				skip_this_one = 1;
-				break;
-			}
-
-		if (skip_this_one)
-			call_increments(br_ref);
-
 		call_increments(br_ref);
+		if (is_skip_index(br_ref, i))
+			continue;
+
 		br_ref->id++;
 
-		FLAG_SET(br_ref->flags, RESOURCE_FLAG_RANGED,
-				 1); // mark as ranged and then fix the original resource
+		// mark as ranged and then fix the original resource
+		FLAG_SET(br_ref->flags, RESOURCE_FLAG_RANGED, 1);
 		(void)vec_push(reg, *br_ref);
 		FLAG_SET(br_ref->flags, RESOURCE_FLAG_RANGED, 0);
+	}
+}
+
+static void put_fillers_until(block_resources_t *reg, block_resources entry, u32 block_start, u32 block_end)
+{
+	for (u32 j = block_start; j < block_end; j++)
+	{
+		if (j == 0)
+			continue;
+		entry.id = j;
+		LOG_INFO("Adding a filler entry with an id %d", j);
+		(void)vec_push(reg, entry);
 	}
 }
 
@@ -762,6 +779,7 @@ void registry_fill_gaps(block_resources_t *reg, block_resources filler_entry)
 {
 	u32 orig_length = reg->length;
 
+	// start from 1 because block 0 is void
 	for (u32 i = 1; i < orig_length; i++)
 	{
 		u32 block_prev_id = reg->data[i - 1].id;
@@ -769,15 +787,10 @@ void registry_fill_gaps(block_resources_t *reg, block_resources filler_entry)
 
 		if (block_prev_id + 1 != block_cur_id)
 		{
-			for (u32 j = block_prev_id; j < block_cur_id; j++)
-			{
-				if (j == 0)
-					continue;
-				filler_entry.id = j;
-				LOG_INFO("Adding a filler entry with an id %d", j);
-				(void)vec_push(reg, filler_entry);
-			}
-			break;
+			put_fillers_until(reg, filler_entry, block_prev_id, block_cur_id);
+			// note: previous code stopped right here, exiting the loop early. This means that before
+			// this code only handled 1 id hole in the registry, leaving anything after this intact.
+			// that would mean that something might break when this time, we scan for every hole.
 		}
 	}
 }
@@ -937,13 +950,13 @@ void free_block_resources(block_resources *b)
 {
 	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
 		if (res_handlers[i].function(clean_token, b) != SUCCESS)
-			LOG_ERROR("block id \"%lld\": handler \"%s\" failed to free block "
-					  "resources",
-					  b->id, res_handlers[i].name);
+			LOG_ERROR("block id \"%lld\": handler \"%s\" failed to free block resources", b->id, res_handlers[i].name);
 
-	if (b->id != 0 && FLAG_GET(b->flags, RESOURCE_FLAG_IS_FILLER) == 0) // ignore filler blocks and an air block, they
-																		// are created by engine
+	// ignore filler blocks and an air block, they re created by the engine
+	if (b->id != 0 && FLAG_GET(b->flags, RESOURCE_FLAG_IS_FILLER) == 0)
 		free_table(b->all_fields);
+
+	// they could still have scripts attached though, which may sound weird...
 
 	if (b->lua_script_blob)
 	{
