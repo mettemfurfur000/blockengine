@@ -117,14 +117,38 @@ static void spatial_grid_cell_remove(spatial_cell *cell, u16 x, u16 y)
 {
 	for (u32 i = 0; i < cell->count; i++)
 	{
-		if (cell->positions[i].x == x && cell->positions[i].y == y)
+		if (cell->positions[i].x != x || cell->positions[i].y != y)
+			continue;
+
+		cell->count--;
+		if (i < cell->count)
+			memmove(&cell->positions[i], &cell->positions[i + 1], (cell->count - i) * sizeof(block_pos));
+
+		return;
+	}
+}
+
+static void invalidate_neighbor_cache_single(spatial_grid *grid, u16 dx, u16 dy, u16 x, u16 y)
+{
+	if (dx == 0 && dy == 0)
+		return;
+
+	i32 nx = (i32)x + dx;
+	i32 ny = (i32)y + dy;
+
+	if (nx < 0 || ny < 0 || nx >= (i32)(grid->grid_width * grid->cell_size) ||
+		ny >= (i32)(grid->grid_height * grid->cell_size))
+		return;
+
+	u32 cell_index = spatial_grid_get_cell_index(grid, (u16)nx, (u16)ny);
+	spatial_cell *cell = &grid->cells[cell_index];
+
+	for (u32 i = 0; i < cell->count; i++)
+	{
+		if (cell->positions[i].x == (u16)nx && cell->positions[i].y == (u16)ny)
 		{
-			cell->count--;
-			if (i < cell->count)
-			{
-				memmove(&cell->positions[i], &cell->positions[i + 1], (cell->count - i) * sizeof(block_pos));
-			}
-			return;
+			cell->positions[i].cached_autotile_frame = AUTOTILE_CACHE_INVALID;
+			break;
 		}
 	}
 }
@@ -135,32 +159,8 @@ static void invalidate_neighbor_cache(spatial_grid *grid, u16 x, u16 y)
 		return;
 
 	for (i32 dy = -1; dy <= 1; dy++)
-	{
 		for (i32 dx = -1; dx <= 1; dx++)
-		{
-			if (dx == 0 && dy == 0)
-				continue;
-
-			i32 nx = (i32)x + dx;
-			i32 ny = (i32)y + dy;
-
-			if (nx < 0 || ny < 0 || nx >= (i32)(grid->grid_width * grid->cell_size) ||
-				ny >= (i32)(grid->grid_height * grid->cell_size))
-				continue;
-
-			u32 cell_index = spatial_grid_get_cell_index(grid, (u16)nx, (u16)ny);
-			spatial_cell *cell = &grid->cells[cell_index];
-
-			for (u32 i = 0; i < cell->count; i++)
-			{
-				if (cell->positions[i].x == (u16)nx && cell->positions[i].y == (u16)ny)
-				{
-					cell->positions[i].cached_autotile_frame = AUTOTILE_CACHE_INVALID;
-					break;
-				}
-			}
-		}
-	}
+			invalidate_neighbor_cache_single(grid, dx, dy, x, y);
 }
 
 void spatial_grid_update(spatial_grid *grid, u16 x, u16 y, u64 old_id, u64 new_id)

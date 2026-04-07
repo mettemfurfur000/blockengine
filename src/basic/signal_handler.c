@@ -2,6 +2,7 @@
 #include "include/backtrace.h"
 #include "include/logging.h"
 
+#include <assert.h>
 #include <backtrace.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -103,6 +104,40 @@ void open_crash_file()
 	}
 }
 
+static void print_signal_info(const char *sig_name)
+{
+	open_crash_file();
+
+	// Get current timestamp
+	time_t now = time(NULL);
+	char *timestr = ctime(&now);
+	timestr[strlen(timestr) - 1] = '\0';
+
+	log_to_error_file("\n");
+	log_to_error_file("==============================================");
+	log_to_error_file("[%s] CRITICAL ERROR - Signal caught: %s", timestr, sig_name);
+	log_to_error_file("==============================================");
+
+	// Print backtrace
+	assert(bt_state);
+	log_to_error_file("=== BACKTRACE START ===");
+	backtrace_full(bt_state, 1, signal_backtrace_callback, signal_backtrace_error_callback, error_log_file);
+	log_to_error_file("=== BACKTRACE END ===");
+
+	log_to_error_file("==============================================");
+	log_to_error_file("Crash log written to: %s", ERROR_LOG_FILENAME);
+	log_to_error_file("==============================================\n");
+
+	// Attempt to close files gracefully
+	if (error_log_file)
+	{
+		fclose(error_log_file);
+		error_log_file = NULL;
+	}
+
+	log_end();
+}
+
 /**
  * Signal handler for critical errors
  */
@@ -129,44 +164,7 @@ static void critical_signal_handler(int sig)
 		//     break;
 	}
 
-	open_crash_file();
-
-	// Get current timestamp
-	time_t now = time(NULL);
-	char *timestr = ctime(&now);
-	timestr[strlen(timestr) - 1] = '\0';
-
-	log_to_error_file("\n");
-	log_to_error_file("==============================================");
-	log_to_error_file("[%s] CRITICAL ERROR - Signal caught: %s", timestr, sig_name);
-	log_to_error_file("==============================================");
-
-	// Print backtrace
-	if (bt_state != NULL)
-	{
-		log_to_error_file("=== BACKTRACE START ===");
-
-		backtrace_full(bt_state, 1, signal_backtrace_callback, signal_backtrace_error_callback, error_log_file);
-
-		log_to_error_file("=== BACKTRACE END ===");
-	}
-	else
-	{
-		log_to_error_file("Backtrace not initialized!");
-	}
-
-	log_to_error_file("==============================================");
-	log_to_error_file("Crash log written to: %s", ERROR_LOG_FILENAME);
-	log_to_error_file("==============================================\n");
-
-	// Attempt to close files gracefully
-	if (error_log_file)
-	{
-		fclose(error_log_file);
-		error_log_file = NULL;
-	}
-
-	log_end();
+	print_signal_info(sig_name);
 
 	// Exit with error code
 	exit(128 + sig);

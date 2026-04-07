@@ -135,8 +135,6 @@ void free_table(hash_node **table)
 void move_node(hash_node **table, blob key_from, blob key_to)
 {
 	assert(table);
-	;
-
 	unsigned long hash = hash_function(key_from);
 
 	// first we find the node
@@ -149,8 +147,7 @@ void move_node(hash_node **table, blob key_from, blob key_to)
 		node_to_move = node_to_move->next;
 	}
 
-	if (node_to_move == NULL) // even if we don't find it, we still move the
-							  // node (basicaly delete the destination)
+	if (node_to_move == NULL) // even if we don't find it, we still move it
 	{
 		remove_entry(table, key_to);
 		return;
@@ -165,8 +162,7 @@ void move_node(hash_node **table, blob key_from, blob key_to)
 		return;
 	}
 
-	while (node_dest != NULL) // if there is some nodes at the destination, we
-							  // first find the one with matching key
+	while (node_dest != NULL)
 	{
 		if (blob_cmp(node_dest->key, key_to) == 0) // if found
 		{
@@ -185,7 +181,6 @@ void move_node(hash_node **table, blob key_from, blob key_to)
 void put_entry(hash_node **table, blob key, blob value)
 {
 	assert(table);
-	;
 
 	unsigned long hash = hash_function(key);
 	hash_node *node = table[hash];

@@ -19,36 +19,37 @@ char *strtok_take_whole_line()
 	return token;
 }
 
-void write_properties(FILE *f, char *key, char *value)
+static void write_properties(FILE *f, char *key, char *value)
 {
 	fputs(key, f);
-	fputs(" ", f);
+	fputc(' ', f);
 	if (strlen(value))
 		fputs("= ", f);
 	fputs(value, f);
 	fputc('\n', f);
 }
 
-int read_properties(FILE *f, char *key, char *value)
+static bool read_properties(FILE *f, char *key, char *value)
 {
-	char buffer[512] = {0};
-	if (fgets(buffer, sizeof(buffer), f))
-	{
-		char *token = strtok(buffer, "= \t\n\r");
-		if (token)
-		{
-			strcpy(key, token);
-			token = strtok_take_whole_line();
-			if (token)
-			{
-				strcpy(value, token);
-			}
-		}
-	}
-	return !feof(f);
+	char buffer[256] = {0};
+
+	if (!fgets(buffer, sizeof(buffer), f))
+		return false;
+
+	char *token = strtok(buffer, "= \t\n\r");
+	if (!token)
+		return false;
+
+	strcpy(key, token);
+	token = strtok_take_whole_line();
+	if (token)
+		strcpy(value, token);
+
+	// stop if end of file
+	return feof(f) ? false : true;
 }
 
-int load_properties(const char *filename, hash_node **table)
+u32 load_properties(const char *filename, hash_node **table)
 {
 	FILE *f;
 	char key[256] = {0};
@@ -79,7 +80,7 @@ int load_properties(const char *filename, hash_node **table)
 	return SUCCESS;
 }
 
-int save_properties(const char *filename, hash_node **table)
+u32 save_properties(const char *filename, hash_node **table)
 {
 	FILE *f = fopen(filename, "wb");
 	hash_node *node;
