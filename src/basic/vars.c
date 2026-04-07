@@ -470,13 +470,45 @@ GETTER_FAST_IMP(i64)
 
 // utils
 
+#define DBG_BUF_LEN 256
+
+static bool dbg_print_var(char *ret, char *buf, u32 size, char letter, void *ptr, u32 *index)
+{
+	if (size == 1)
+		snprintf(buf, DBG_BUF_LEN, "\ti8 %c = %d;\n", letter, *(u8 *)ptr);
+	else if (size == 2)
+		snprintf(buf, DBG_BUF_LEN, "\ti16 %c = %d;\n", letter, *(u16 *)ptr);
+	else if (size == 4)
+		snprintf(buf, DBG_BUF_LEN, "\ti32 %c = %d;\n", letter, *(u32 *)ptr);
+	else if (size == 8)
+		snprintf(buf, DBG_BUF_LEN, "\ti64 %c = %lld;\n", letter, *(u64 *)ptr);
+	else
+	{
+		snprintf(buf, DBG_BUF_LEN, "\tchar %c[] = %.*s;\n\t// u8 %c[] = { ", letter, size, (char *)ptr, letter);
+		strcat(ret, buf);
+
+		for (u32 i = 0; i < size; i++)
+		{
+			snprintf(buf, DBG_BUF_LEN, "0x%02x%s", *(u8 *)((u8 *)ptr + i), i != size - 1 ? ", " : "");
+
+			strcat(ret, buf);
+		}
+		snprintf(buf, DBG_BUF_LEN, "};\n");
+		strcat(ret, buf);
+
+		*index += (u32)size + 2;
+		return true;
+	}
+	return false;
+}
+
 void dbg_data_layout(blob b, char *ret)
 {
 	u32 data_size = b.size;
 
 	char buf[256];
 
-	snprintf(buf, sizeof(buf), "data_size %u\n{\n", data_size);
+	snprintf(buf, DBG_BUF_LEN, "data_size %u\n{\n", data_size);
 	strcat(ret, buf);
 
 	u32 index = 0;
@@ -488,41 +520,13 @@ void dbg_data_layout(blob b, char *ret)
 		/* guard against malformed blobs */
 		if ((u32)index + 2 + (u32)size > data_size)
 		{
-			snprintf(buf, sizeof(buf), "\t<malformed entry at %u: size %u extends beyond blob>\n", index, size);
+			snprintf(buf, DBG_BUF_LEN, "\t<malformed entry at %u: size %u extends beyond blob>\n", index, size);
 			strcat(ret, buf);
 			break;
 		}
 
-		void *ptr = VAR_VALUE(b.ptr, index);
-
-		if (size == 1)
-			snprintf(buf, sizeof(buf), "\ti8 %c = %d;\n", letter, *(u8 *)ptr);
-		else if (size == 2)
-			snprintf(buf, sizeof(buf), "\ti16 %c = %d;\n", letter, *(u16 *)ptr);
-		else if (size == 4)
-			snprintf(buf, sizeof(buf), "\ti32 %c = %d;\n", letter, *(u32 *)ptr);
-		else if (size == 8)
-			snprintf(buf, sizeof(buf), "\ti64 %c = %lld;\n", letter, *(u64 *)ptr);
-		else
-		{
-			/* print as string and hex bytes */
-			snprintf(buf, sizeof(buf), "\tchar %c[] = %.*s;\n\t// u8 %c[] = { ", letter, size, (char *)ptr, letter);
-			strcat(ret, buf);
-
-			for (u32 i = 0; i < size; i++)
-			{
-				if (i != size - 1)
-					snprintf(buf, sizeof(buf), "0x%02x, ", *(u8 *)((u8 *)ptr + i));
-				else
-					snprintf(buf, sizeof(buf), "0x%02x", *(u8 *)((u8 *)ptr + i));
-				strcat(ret, buf);
-			}
-			snprintf(buf, sizeof(buf), "};\n");
-			strcat(ret, buf);
-
-			index += (u32)size + 2;
+		if (dbg_print_var(ret, buf, size, letter, VAR_VALUE(b.ptr, index), &index))
 			continue;
-		}
 
 		strcat(ret, buf);
 
