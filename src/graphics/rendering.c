@@ -252,13 +252,13 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 		u8 actual_type =
 			FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(frame / br.info.frames) : (type % br.info.types);
 		renderer_v2_add_instance(dest_x + offset_x, dest_y + offset_y, br.info.atlas_offset_x + actual_frame,
-								 br.info.atlas_offset_y + actual_type, flip, 1.0f, 1.0f,
-								 (float)rotation * (M_PI / 180.0f));
+								 br.info.atlas_offset_y + actual_type, flip, rc->slice.zoom * 1.0f,
+								 rc->slice.zoom * 1.0f, (float)rotation * (M_PI / 180.0f));
 	}
 	else
 	{
 		renderer_v2_add_instance(dest_x + offset_x, dest_y + offset_y, br.info.atlas_offset_x, br.info.atlas_offset_y,
-								 0, 1.0f, 1.0f, 0);
+								 0, rc->slice.zoom * 1.0f, rc->slice.zoom * 1.0f, 0);
 	}
 }
 
