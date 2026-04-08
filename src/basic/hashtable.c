@@ -113,7 +113,6 @@ hash_node **alloc_table()
 void free_table(hash_node **table)
 {
 	assert(table);
-	;
 
 	// LOG_DEBUG("Freeing table of size %d, ptr %p", TABLE_SIZE, table);
 
@@ -264,7 +263,6 @@ void print_table(hash_node **table)
 void remove_entry(hash_node **table, blob key)
 {
 	assert(table);
-	;
 
 	unsigned long hash = hash_function(key);
 	hash_node *prev = NULL;

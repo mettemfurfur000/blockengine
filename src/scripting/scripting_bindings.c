@@ -1267,7 +1267,7 @@ static int lua_bprintf(lua_State *L)
 static int lua_layer_tick_blocks(lua_State *L)
 {
 	LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
-	const u32 value = luaL_checkinteger(L, 2);
+	const u64 value = luaL_checkinteger(L, 2);
 
 	const u32 w = wrapper->l->width;
 	const u32 h = wrapper->l->height;

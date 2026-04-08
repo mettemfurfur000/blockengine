@@ -7,7 +7,7 @@ INDENT_LIMIT=3
 
 find "$1" -name "*.c" -print0 | xargs -0 awk -v ll="$LINE_LIMIT" -v il="$INDENT_LIMIT" '
 # Detect function start: assumes non-indented, starts with type, ends with ) {
-/^[a-zA-Z_]/ && /[a-zA-Z_][*]*[ )]+[a-zA-Z0-9_]+[ ]*\([^\)]*\)[ ]*$/ {
+/^[a-zA-Z_]/ && /[a-zA-Z_0-9][*]*[ )]+[a-zA-Z0-9_]+[ ]*\([^\)]*\)[ ]*$/ {
     if (func_name != "") {
         check_func()
     }

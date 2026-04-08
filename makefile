@@ -109,7 +109,7 @@ tex_gen: mains/tex_gen.c copy_instance vec $(OBJS)
 # use this when packaging to get all the dll-s used
 .PHONY: grab_client_dlls
 grab_client_dlls:
-	-./grab_dlls.sh build/client.exe /mingw64/bin 2
+	-./scripts/grab_dlls.sh build/client.exe /mingw64/bin 2
 
 clean:
 	rm -rf build/*
