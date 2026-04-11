@@ -64,6 +64,8 @@ int greatest_common_divisor(int a, int b);
 int init_graphics(bool set_fullscreen);
 int exit_graphics();
 
+int init_sound();
+
 int record_atlas_info(atlas_info *atlas_info, image *img);
 
 int sound_load(sound *dest, char *filename);

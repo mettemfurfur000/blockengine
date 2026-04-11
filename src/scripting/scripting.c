@@ -5,6 +5,7 @@
 // #include "include/file_system.h"
 #include "include/folder_structure.h"
 #include "include/logging.h"
+
 #include "include/scripting_bindings.h"
 
 #include <ctype.h>
@@ -270,11 +271,6 @@ void scripting_init()
 	scripting_register(g_L);
 
 	lua_register_engine_objects(g_L);
-
-	/* client render rules */
-	lua_logging_register(g_L);
-	lua_level_editing_lib_register(g_L);
-	lua_register_render_rules(g_L);
 
 	/* push an event enum */
 	// TODO: sync it wit de script

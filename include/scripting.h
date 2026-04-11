@@ -21,6 +21,7 @@ typedef struct LuaHolder
 		layer *l;
 		blob *b;
 		sound *s;
+		handle32 h;
 	};
 
 } LuaHolder;

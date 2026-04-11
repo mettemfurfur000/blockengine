@@ -72,9 +72,9 @@ local function mouse_action(x, y, button)
     wrappers.world_print(G_pallete_width, G_ui_offset_position_debug, G_ui_width,
         (block_highlight.x .. ", " .. block_highlight.y))
 
-    local success, vars = editor.layer_being_edited.layer:get_vars(block_highlight.x, block_highlight.y)
+    local vars = editor.layer_being_edited.layer:get_vars(block_highlight.x, block_highlight.y)
 
-    if success and vars:is_valid() then
+    if vars and vars:is_valid() then
         wrappers.world_print(G_pallete_width, G_ui_offset_var_handle_debug, G_ui_width,
             table.concat({ vars:get_raw() }, ","))
         wrappers.world_print(G_pallete_width, G_ui_offset_vars_debug, G_ui_width, vars:__tostring())

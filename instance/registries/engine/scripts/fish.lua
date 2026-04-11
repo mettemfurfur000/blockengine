@@ -1,7 +1,11 @@
+local wrappers = require("registries.engine.scripts.wrappers")
+
 local current_block = scripting_current_block_id
 
 local ticks = 0
 local wait_time = 50
+
+-- for debugging purposes
 
 -- local sounds = {}
 
@@ -15,9 +19,8 @@ local wait_time = 50
 --     end
 -- end)
 
--- blockengine.register_handler(events.ENGINE_INIT, function(code)
---     local block_info = find_block(g_engine_table, "fish")
+-- blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
+--     local block_info = wrappers.find_block(G_engine_table, "fish")
 --     sounds = block_info.sounds
---     g_menu.objects.layer:paste_block(7, 7, current_block) -- x, y, id
+--     G_view_menu.objects.layer:paste_block(7, 7, current_block) -- x, y, id
 -- end)
-

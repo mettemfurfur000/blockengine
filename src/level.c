@@ -1,8 +1,5 @@
 #include "include/level.h"
 
-#include "include/general.h"
-#include "include/handle.h"
-#include "include/hashtable.h"
 #include "include/logging.h"
 #include "include/update_system.h"
 #include "include/uuid.h"
@@ -127,7 +124,7 @@ u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
 
    Set parsed to true if blob originates from a parse function
    */
-static handle32 var_table_alloc_blob(var_handle_table *pool, blob vars, bool parsed)
+handle32 var_table_alloc_blob(var_handle_table *pool, blob vars, bool parsed)
 {
 	if (!pool || !pool->table)
 		return INVALID_HANDLE;
@@ -167,7 +164,7 @@ static handle32 var_table_alloc_blob(var_handle_table *pool, blob vars, bool par
 }
 
 /* Free a blob previously stored in the table (frees memory and releases handle). */
-static void var_table_free_handle(var_handle_table *pool, handle32 h)
+void var_table_free_handle(var_handle_table *pool, handle32 h)
 {
 	if (!pool || !pool->table)
 		return;
@@ -256,7 +253,30 @@ u8 block_delete_vars(layer *l, u16 x, u16 y)
 	return SUCCESS;
 }
 
-u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
+handle32 layer_copy_new_vars(layer *l, blob vars)
+{
+	assert(l);
+
+	if (l->var_pool.table == NULL)
+		return INVALID_HANDLE;
+
+	handle32 newh = var_table_alloc_blob(&l->var_pool, vars, false);
+	if (newh.index == INVALID_HANDLE_INDEX)
+	{
+		LOG_ERROR("Failed to create a new var");
+		return INVALID_HANDLE;
+	}
+
+	blob *blob_ptr = handle_table_get(l->var_pool.table, newh);
+	assert(blob_ptr);
+	memcpy(blob_ptr->ptr, vars.ptr, vars.size);
+
+	update_component_new_push(&l->var_updates, newh, vars);
+
+	return newh;
+}
+
+u8 layer_copy_vars(layer *l, u16 x, u16 y, blob vars)
 {
 	assert(l);
 	if (x >= l->width || y >= l->height)
@@ -298,18 +318,12 @@ u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars)
 
 	// have to create a new var handle for this
 
-	handle32 newh = var_table_alloc_blob(&l->var_pool, vars, false);
+	handle32 newh = layer_copy_new_vars(l, vars);
 	if (newh.index == INVALID_HANDLE_INDEX)
 	{
-		LOG_ERROR("Failed to create a new var");
+		LOG_ERROR("Failed to copy vars for %d:%d, layer %lld", x, y, l->uuid);
 		return FAIL;
 	}
-
-	blob_ptr = handle_table_get(l->var_pool.table, newh);
-	assert(blob_ptr);
-	memcpy(blob_ptr->ptr, vars.ptr, vars.size);
-
-	update_component_new_push(&l->var_updates, newh, vars);
 
 	block_set_var_handle(l, x, y, newh);
 
@@ -344,8 +358,12 @@ u8 init_layer(layer *l, room *parent_room)
 
 	if (FLAG_GET(l->flags, LAYER_FLAG_USE_VARS))
 	{
-		l->var_pool.table = handle_table_create(256); /* default capacity */
-		// l->var_pool.type_tag = 1;                     /* choose tag 1 for vars */
+		l->var_pool.table = handle_table_create(256);
+	}
+
+	if (FLAG_GET(l->flags, LAYER_FLAG_HAS_ENTITIES))
+	{
+		l->block_entity_pool = handle_table_create(256);
 	}
 
 	/* Initialize update accumulator for network broadcasting */
@@ -397,26 +415,30 @@ u8 free_layer(layer *l)
 
 	spatial_grid_destroy(&l->spatial);
 
-	if (FLAG_GET(l->flags, LAYER_FLAG_USE_VARS))
+	if (l->var_pool.table)
 	{
-		/* Free any blobs stored in the handle table and destroy it */
-		if (l->var_pool.table)
+		u16 cap = handle_table_capacity(l->var_pool.table);
+		for (u16 i = 0; i < cap; ++i)
 		{
-			u16 cap = handle_table_capacity(l->var_pool.table);
-			for (u16 i = 0; i < cap; ++i)
+			void *p = handle_table_slot_ptr(l->var_pool.table, i);
+			if (p)
 			{
-				void *p = handle_table_slot_ptr(l->var_pool.table, i);
-				if (p)
-				{
-					blob *b = (blob *)p;
-					SAFE_FREE(b->ptr);
-					SAFE_FREE(b);
-				}
+				blob *b = (blob *)p;
+				SAFE_FREE(b->ptr);
+				SAFE_FREE(b);
 			}
-			handle_table_destroy(l->var_pool.table);
-			l->var_pool.table = NULL;
 		}
+		handle_table_destroy(l->var_pool.table);
+		l->var_pool.table = NULL;
 	}
+
+	if (l->block_entity_pool)
+	{
+		handle_table_destroy(l->block_entity_pool);
+		l->block_entity_pool = NULL;
+	}
+
+	SAFE_FREE(l->blocks);
 
 	/* Cleanup update accumulator */
 	update_acc_free(&l->id_updates);
@@ -570,7 +592,7 @@ void bprintf(layer *l, const u64 letter_block_id, u32 orig_x, u32 orig_y, u32 le
 				LOG_WARNING("bprintf Failed to set a u8 var for char block at %d:%d", x, y);
 
 			if (write_new)
-				block_copy_vars(l, x, y, vars_scratch);
+				layer_copy_vars(l, x, y, vars_scratch);
 		}
 
 		switch (*ptr)
@@ -718,4 +740,38 @@ u8 block_apply_updates(layer *l)
 	block_apply_var_component_changes(l);
 
 	return SUCCESS;
+}
+
+bool layer_block_entity_is_valid(layer *l, handle32 h)
+{
+	if (!l || !l->block_entity_pool)
+		return false;
+	return handle_is_valid(l->block_entity_pool, h);
+}
+
+block_entity *layer_get_block_entity(layer *l, handle32 h)
+{
+	if (!l || !l->block_entity_pool)
+		return NULL;
+	return block_entity_get(l, h);
+}
+
+void block_entity_tick_each(handle32 h, void *ptr, void *user_data)
+{
+	(void)h;
+	(void)ptr;
+
+	block_entity *e = (block_entity *)ptr;
+	float dt = *(float *)user_data;
+
+	if (e)
+		block_entity_update(e, dt);
+}
+
+void layer_tick_entities(layer *l, float dt)
+{
+	if (!l)
+		return;
+
+	l->block_entity_count_estimate = handle_table_iterate(l->block_entity_pool, block_entity_tick_each, &dt);
 }

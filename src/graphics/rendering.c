@@ -1,4 +1,6 @@
 #include "include/rendering.h"
+#include "include/block_entity.h"
+#include "include/block_registry.h"
 #include "include/block_renderer_v2.h"
 #include "include/flags.h"
 #include "include/general.h"
@@ -262,6 +264,79 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 	}
 }
 
+static i32 block_x_offset;
+static i32 block_y_offset;
+static u32 ms_since_start;
+static f32 seconds_since_start;
+static f32 slice_clamp_pos;
+
+typedef struct
+{
+	block_registry *b_reg;
+	layer_slice slice;
+} render_user_data;
+
+void block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
+{
+	(void)h;
+	block_entity *e = (block_entity *)ptr;
+	if (!e || e->block_id == 0)
+		return;
+
+	render_user_data *udata = ((render_user_data *)user_data);
+
+	block_registry *b_reg = udata->b_reg;
+	layer_slice slice = udata->slice;
+
+	block_resources br = b_reg->resources.data[e->block_id];
+	if (br.info.total_frames == 0)
+		return;
+
+	float interp_x = lerp((float)e->old_x, (float)e->x, slice_clamp_pos);
+	float interp_y = lerp((float)e->old_y, (float)e->y, slice_clamp_pos);
+
+	i32 dest_x = -block_x_offset + (i32)interp_x;
+	i32 dest_y = -block_y_offset + (i32)interp_y;
+
+	u8 frame = 0;
+	u8 type = 0;
+	u8 flip = 0;
+	i16 rotation = (i16)e->rotation;
+
+	float scale_x = e->scale_x * slice.zoom * 1.0f;
+	float scale_y = e->scale_y * slice.zoom * 1.0f;
+
+	if (br.frames_per_second > 1)
+	{
+		int fps = br.frames_per_second;
+		frame = (u8)(seconds_since_start * fps);
+	}
+
+	renderer_v2_add_instance(dest_x, dest_y, br.info.atlas_offset_x + frame, br.info.atlas_offset_y + type, flip,
+							 scale_x, scale_y, (float)rotation * (M_PI / 180.0f));
+}
+
+static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, int local_block_width)
+{
+	if (!l || !b_reg || l->block_entity_count_estimate == 0)
+		return;
+
+	block_x_offset = slice.x % local_block_width;
+	block_y_offset = slice.y % local_block_width;
+
+	ms_since_start = SDL_GetTicks();
+	seconds_since_start = ms_since_start / 1000.0f;
+
+	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - slice.timestamp_old) / (1000.0f / TPS)));
+
+	render_user_data udata = {
+		.b_reg = b_reg,
+		.slice = slice,
+	};
+
+	handle_table_iterate(l->block_entity_pool, block_entity_iterate_fn_render, &udata);
+}
+
 u8 render_layer(layer_slice slice)
 {
 	assert(slice.zoom > 0);
@@ -326,51 +401,13 @@ u8 render_layer(layer_slice slice)
 	spatial_grid_get_visible((spatial_grid *)&l->spatial, start_block_x, start_block_y, end_block_x, end_block_y, &rc,
 							 render_block_callback);
 
+	if (l->block_entity_pool)
+		render_entities(l, slice, b_reg, local_block_width);
+
 	renderer_v2_end_batch();
 
 	return SUCCESS;
 }
-
-// u8 render_layer_to_framebuffer(layer_slice *slice)
-// {
-//     layer *l = slice->ref;
-
-//     u32 width = l->width * g_block_width;
-//     u32 height = l->height * g_block_width;
-
-//     framebuffer fb = slice->framebuffer == 0 || slice->framebuffer_texture == 0
-//                          ? create_framebuffer_object(width, height)
-//                          : (framebuffer){
-//                                .fbo = slice->framebuffer,
-//                                .texture = slice->framebuffer_texture,
-//                            };
-
-//     if (fb.fbo == 0 || fb.texture == 0)
-//     {
-//         LOG_ERROR("Failed to create framebuffer");
-//         return FAIL;
-//     }
-
-//     glBindFramebuffer(GL_FRAMEBUFFER, fb.fbo);
-
-//     // Create a fresh slice for the full layer render
-//     layer_slice full_slice = *slice;
-//     full_slice.x = 0;
-//     full_slice.y = 0;
-//     full_slice.w = width;
-//     full_slice.h = height;
-//     full_slice.zoom = 1;
-//     full_slice.flags = 0;
-
-//     render_layer(full_slice);
-
-//     (*slice).framebuffer = fb.fbo;
-//     (*slice).framebuffer_texture = fb.texture;
-
-//     FLAG_SET((*slice).flags, LAYER_SLICE_FLAG_RENDER_COMPLETE, 1);
-
-//     return SUCCESS;
-// }
 
 u8 client_render(const client_render_rules rules)
 {

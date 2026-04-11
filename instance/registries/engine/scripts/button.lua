@@ -3,9 +3,10 @@ local current_block = scripting_current_block_id
 print("registering an input")
 
 ---@param layer Layer
-scripting_light_block_input_register(scripting_current_light_registry, current_block, "click", function(layer, x, y, input_value)
-        local status, vars = layer:get_vars(x, y)
-        if status == false then
+scripting_light_block_input_register(scripting_current_light_registry, current_block, "click",
+    function(layer, x, y, input_value)
+        local vars = layer:get_vars(x, y)
+        if not vars then
             error("error getting vars for de button (really weird!!)")
             return
         end
@@ -22,4 +23,3 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 --     g_menu.objects.layer:paste_block(1, 1, current_block) -- x, y, id
 --     log_message("placed a button")
 -- end)
-

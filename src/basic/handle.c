@@ -292,3 +292,25 @@ u16 handle_table_get_inactive(handle_table *table)
 			return i;
 	return INVALID_HANDLE_INDEX;
 }
+
+u32 handle_table_iterate(handle_table *table, handle_table_iterator_fn fn, void *user_data)
+{
+	if (!table || !fn)
+		return 0;
+
+	u32 count = 0;
+	for (u16 i = 0; i < table->count; i++)
+	{
+		struct handle_table_slot *s = &table->slots[i];
+		if (s->active)
+		{
+			handle32 h;
+			h.index = i;
+			h.validation = (u16)(s->generation);
+			h.active = s->active;
+			fn(h, s->ptr, user_data);
+			count++;
+		}
+	}
+	return count;
+}

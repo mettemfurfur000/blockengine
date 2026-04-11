@@ -34,6 +34,10 @@
 ---@field rename fun(self:VarsHandle, key_old:char, key_new:char):boolean
 ---@field ensure fun(self:VarsHandle, key:char, needed:integer):nil|integer
 
+---@class BlockEntity
+---@field block_id integer
+---@field pos number, number
+
 ---@class Layer
 ---@field get_size fun(self:Layer):integer, integer, integer, integer
 ---@field for_each fun(self:Layer, filter_id:integer, callback:function): nil
@@ -43,11 +47,12 @@
 ---@field paste_block fun(self:Layer, x:integer, y:integer, id:integer):boolean
 ---@field get_input_handler fun(self:Layer, x:integer, y:integer, name:string):function|nil
 ---@field set_static fun(self:Layer, val:integer):nil
----@field get_vars fun(self:Layer, x:integer, y:integer):boolean, VarsHandle
+---@field get_vars fun(self:Layer, x:integer, y:integer):VarsHandle
 ---@field set_vars fun(self:Layer, x:integer, y:integer, vars:VarsHandle):boolean
 ---@field bprint fun(self:Layer, char_id:integer, orig_x:integer, orig_y:integer, limit:integer, format:string):nil
 ---@field tick fun(self:Layer, value:integer):nil
 ---@field uuid fun(self:Layer):integer
+---@field new_entity fun(self:Layer, block_id:integer, x:number, y:number):BlockEntity|nil
 
 ---@class Room
 ---@field get_name fun(self:Room):string

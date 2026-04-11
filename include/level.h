@@ -2,24 +2,28 @@
 #define LEVEL_H 1
 
 #include "block_registry.h"
+
 #include "general.h"
 #include "handle.h"
 #include "hashtable.h"
 #include "spatial_grid.h"
-#include "vec/src/vec.h"
 
+#include "block_entity.h"
 #include "update_system.h"
 
-#define LAYER_FLAG_USE_VARS 0b00000001
-#define LAYER_FLAG_HAS_REGISTRY 0b00000010
-#define LAYER_FLAG_STATIC 0b00000100
+#include "vec/src/vec.h"
+
+#define LAYER_FLAG_USE_VARS (1 << 0)
+#define LAYER_FLAG_HAS_REGISTRY (1 << 1)
+#define LAYER_FLAG_STATIC (1 << 2)
+#define LAYER_FLAG_HAS_ENTITIES (1 << 3)
 
 /* Each layer that supports vars keeps a pointer to a handle table that owns
 	blob pointers. The table is created at layer init and destroyed at free.
 	The table's `type` tag should be set to a dedicated value (e.g. 1). */
 typedef struct
 {
-	handle_table *table; /* stores blob* */
+	handle_table *table;
 } var_handle_table;
 
 typedef struct layer
@@ -29,20 +33,23 @@ typedef struct layer
 
 	var_handle_table var_pool;
 	block_registry *registry;
-	u8 *blocks; // array of blocks, each of size bytes_per_block
+	u8 *blocks;
 
-	u16 width;				  //
-	u16 height;				  //
-	u8 block_size;			  // bytes per block id
-	u8 total_bytes_per_block; // block_size + 4 (handle32)
+	u16 width;
+	u16 height;
+	u8 block_size;
+	u8 total_bytes_per_block;
 
-	u8 flags; //
+	u8 flags;
 
-	spatial_grid spatial; // spatial partitioning grid for rendering
+	spatial_grid spatial;
 
-	update_accumulator id_updates;			  // accumulator for block updates on this layer
-	update_accumulator var_updates;			  // for var updates
-	update_accumulator var_component_updates; // for var components
+	handle_table *block_entity_pool;
+	u32 block_entity_count_estimate;
+
+	update_accumulator id_updates;
+	update_accumulator var_updates;
+	update_accumulator var_component_updates;
 } layer;
 
 typedef struct level level;
@@ -86,8 +93,12 @@ u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out);
 void block_set_var_handle(layer *l, u16 x, u16 y, handle32 handle);
 handle32 block_get_var_handle(layer *l, u16 x, u16 y);
 
+handle32 var_table_alloc_blob(var_handle_table *pool, blob vars, bool parsed);
+void var_table_free_handle(var_handle_table *pool, handle32 h);
+handle32 layer_copy_new_vars(layer *l, blob vars);
+
 u8 block_delete_vars(layer *l, u16 x, u16 y);
-u8 block_copy_vars(layer *l, u16 x, u16 y, blob vars);
+u8 layer_copy_vars(layer *l, u16 x, u16 y, blob vars);
 
 // call after setting their resolutions, not recommended to use
 u8 init_layer(layer *l, room *parent_room);
@@ -111,5 +122,12 @@ layer *layer_create(room *parent, block_registry *registry_ref, u8 bytes_per_blo
 void bprintf(layer *l, const u64 character_block_id, u32 orig_x, u32 orig_y, u32 length_limit, const char *format, ...);
 
 void layer_build_spatial_grid(layer *l);
+
+handle32 layer_add_block_entity(layer *l, u64 block_id, float x, float y);
+void layer_remove_block_entity(layer *l, handle32 h);
+block_entity *layer_get_block_entity(layer *l, handle32 h);
+void layer_tick_entities(layer *l, float dt);
+
+bool layer_block_entity_is_valid(layer *l, handle32 h);
 
 #endif

@@ -4,10 +4,10 @@ local sdl = require("registries.engine.scripts.definitions.sdl")
 local wrappers = require("registries.engine.scripts.wrappers")
 
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
----@param layer Layer
+    ---@param layer Layer
     function(layer, x, y, value)
-        local status, vars = layer:get_vars(x, y)
-        if status == false then
+        local vars = layer:get_vars(x, y)
+        if not vars then
             error("error getting vars for the jumper")
             return
         end

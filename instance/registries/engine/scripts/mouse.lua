@@ -39,8 +39,8 @@ blockengine.register_handler(events.ENGINE_INIT, function()
         error("failed to paste a mouse block")
     end
 
-    local status, vars = G_mouse.home_layer:get_vars(G_mouse.pos.x, G_mouse.pos.y)
-    if status == false then
+    local vars = G_mouse.home_layer:get_vars(G_mouse.pos.x, G_mouse.pos.y)
+    if not vars then
         error("error getting vars for the mouse")
         return
     end

@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
 	init_backtrace();
 	init_signal_handlers();
 
-	// if (init_graphics(false) != SUCCESS)
-	//     return 1;
+	if (init_sound() != SUCCESS)
+	    return 1;
 
 	// glEnable(GL_DEBUG_OUTPUT);
 	// glDebugMessageCallback(MessageCallback, 0);
