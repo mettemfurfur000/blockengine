@@ -292,11 +292,13 @@ void block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 	if (br.info.total_frames == 0)
 		return;
 
+	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - e->timestamp_old) / (1000.0f / TPS)));
+
 	float interp_x = lerp((float)e->old_x, (float)e->x, slice_clamp_pos);
 	float interp_y = lerp((float)e->old_y, (float)e->y, slice_clamp_pos);
 
-	i32 dest_x = -block_x_offset + (i32)interp_x;
-	i32 dest_y = -block_y_offset + (i32)interp_y;
+	f32 dest_x = -block_x_offset + interp_x;
+	f32 dest_y = -block_y_offset + interp_y;
 
 	u8 frame = 0;
 	u8 type = 0;
@@ -327,8 +329,6 @@ static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, 
 	ms_since_start = SDL_GetTicks();
 	seconds_since_start = ms_since_start / 1000.0f;
 
-	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - slice.timestamp_old) / (1000.0f / TPS)));
-
 	render_user_data udata = {
 		.b_reg = b_reg,
 		.slice = slice,
@@ -353,9 +353,9 @@ u8 render_layer(layer_slice slice)
 
 	block_registry *b_reg = slice.ref->registry;
 
-	const u32 ms_since_start = SDL_GetTicks();
+	ms_since_start = SDL_GetTicks();
 	// const u32 ms_since_start = clock();
-	const float seconds_since_start = ms_since_start / 1000.0f;
+	seconds_since_start = ms_since_start / 1000.0f;
 
 	u32 ms_started_moving = slice.timestamp_old;
 

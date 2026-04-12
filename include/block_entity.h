@@ -23,11 +23,11 @@ extern "C"
 		u64 uuid;
 		u64 block_id;
 
-		float x, y;
-		float vx, vy;
-		float rotation;
-		float scale_x, scale_y;
-		float old_x, old_y;
+		f32 x, y;
+		f32 vx, vy;
+		f32 rotation;
+		f32 scale_x, scale_y;
+		f32 old_x, old_y;
 		u32 timestamp_old;
 
 		u8 flags;
@@ -37,12 +37,6 @@ extern "C"
 	void block_entity_destroy(block_entity *e);
 	block_entity *block_entity_get(struct layer *parent, handle32 h);
 	bool block_entity_is_valid(handle_table *table, handle32 h);
-
-	void block_entity_set_block(block_entity *e, u64 block_id);
-	void block_entity_set_pos(block_entity *e, float x, float y);
-	void block_entity_set_vel(block_entity *e, float vx, float vy);
-	void block_entity_set_rotation(block_entity *e, float rotation);
-	void block_entity_set_scale(block_entity *e, float scale_x, float scale_y);
 
 	u8 block_entity_get_vars(const block_entity *e, blob **vars_out);
 	void block_entity_set_var_handle(block_entity *e, handle32 handle);

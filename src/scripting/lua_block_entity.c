@@ -17,42 +17,26 @@ static int lua_entity_new_index(lua_State *L)
 	if (!e)
 		return 0;
 
-	else if (strcmp(property, "pos") == 0 || strcmp(property, "position") == 0)
-	{
-		float x = (float)luaL_checknumber(L, 3);
-		float y = (float)luaL_checknumber(L, 4);
-		block_entity_set_pos(e, x, y);
-	}
-	else if (strcmp(property, "vel") == 0 || strcmp(property, "velocity") == 0)
-	{
-		float vx = (float)luaL_checknumber(L, 3);
-		float vy = (float)luaL_checknumber(L, 4);
-		block_entity_set_vel(e, vx, vy);
-	}
+	else if (strcmp(property, "position_x") == 0)
+		e->x = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "position_y") == 0)
+		e->y = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "velocity_x") == 0)
+		e->vx = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "velocity_y") == 0)
+		e->vy = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "rotation") == 0)
-	{
-		float rotation = (float)luaL_checknumber(L, 3);
-		block_entity_set_rotation(e, rotation);
-	}
-	else if (strcmp(property, "scale") == 0)
-	{
-		float scale_x = (float)luaL_checknumber(L, 3);
-		float scale_y = (float)luaL_checknumber(L, 4);
-		block_entity_set_scale(e, scale_x, scale_y);
-	}
+		e->rotation = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "scale_x") == 0)
+		e->scale_x = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "scale_y") == 0)
+		e->scale_y = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "block_id") == 0)
-	{
-		u64 block_id = (u64)luaL_checkinteger(L, 3);
-		block_entity_set_block(e, block_id);
-	}
+		e->block_id = (u64)luaL_checkinteger(L, 3);
 	else if (strcmp(property, "var_handle") == 0)
 	{
-		handle32 handle = {
-			.index = (u16)luaL_checkinteger(L, 3),
-			.validation = (u16)luaL_checkinteger(L, 4),
-			.active = 1,
-		};
-		block_entity_set_var_handle(e, handle);
+		handle32 h = get_handle_from_varhandle(L, 3);
+		block_entity_set_var_handle(e, h);
 	}
 	else if (strcmp(property, "vars") == 0)
 	{
@@ -102,17 +86,25 @@ static int lua_entity_index(lua_State *L)
 		lua_pushnil(L);
 		return 1;
 	}
-	else if (strcmp(key, "pos") == 0 || strcmp(key, "position") == 0)
+	else if (strcmp(key, "position_x") == 0)
 	{
 		lua_pushnumber(L, e->x);
-		lua_pushnumber(L, e->y);
-		return 2;
+		return 1;
 	}
-	else if (strcmp(key, "vel") == 0 || strcmp(key, "velocity") == 0)
+	else if (strcmp(key, "position_y") == 0)
+	{
+		lua_pushnumber(L, e->y);
+		return 1;
+	}
+	else if (strcmp(key, "velocity_x") == 0)
 	{
 		lua_pushnumber(L, e->vx);
+		return 1;
+	}
+	else if (strcmp(key, "velocity_y") == 0)
+	{
 		lua_pushnumber(L, e->vy);
-		return 2;
+		return 1;
 	}
 	else if (strcmp(key, "uuid") == 0)
 	{
@@ -124,11 +116,15 @@ static int lua_entity_index(lua_State *L)
 		lua_pushnumber(L, e->rotation);
 		return 1;
 	}
-	else if (strcmp(key, "scale") == 0)
+	else if (strcmp(key, "scale_x") == 0)
 	{
 		lua_pushnumber(L, e->scale_x);
+		return 1;
+	}
+	else if (strcmp(key, "scale_y") == 0)
+	{
 		lua_pushnumber(L, e->scale_y);
-		return 2;
+		return 1;
 	}
 	else if (strcmp(key, "block_id") == 0)
 	{
@@ -140,13 +136,7 @@ static int lua_entity_index(lua_State *L)
 		lua_pushcfunction(L, entity_remove_function);
 		return 1;
 	}
-	else if (strcmp(key, "var_handle") == 0)
-	{
-		lua_pushinteger(L, e->var_handle.index);
-		lua_pushinteger(L, e->var_handle.validation);
-		return 2;
-	}
-	else if (strcmp(key, "vars") == 0)
+	else if (strcmp(key, "vars") == 0 || strcmp(key, "var_handle") == 0)
 	{
 		if (handle_is_valid(e->parent_layer->var_pool.table, e->var_handle))
 		{

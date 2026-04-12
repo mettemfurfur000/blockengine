@@ -21,8 +21,9 @@ typedef struct LuaHolder
 		layer *l;
 		blob *b;
 		sound *s;
-		handle32 h;
 	};
+
+	handle32 h;
 
 } LuaHolder;
 
@@ -33,9 +34,15 @@ typedef struct LuaHolder
 #define LUA_CHECK_USER_OBJECT(L, type, name, index) LuaHolder *name = (LuaHolder *)luaL_checkudata(L, index, #type);
 
 // Macro to create a new user object and set its metatable
-// Usage: NEW_USER_OBJECT(L, TypeName, pointer_to_object);
 #define NEW_USER_OBJECT(L, type, pointer)                                                                              \
-	((LuaHolder *)lua_newuserdata(L, sizeof(void *)))->ptr = (pointer);                                                \
+	((LuaHolder *)lua_newuserdata(L, sizeof(LuaHolder)))->ptr = (pointer);                                             \
+	luaL_getmetatable(L, #type);                                                                                       \
+	lua_setmetatable(L, -2);
+
+#define NEW_USER_OBJECT_HANDLE32(L, type, pointer, handle)                                                             \
+	LuaHolder *type##_holder = ((LuaHolder *)lua_newuserdata(L, sizeof(LuaHolder)));                                   \
+	type##_holder->ptr = (pointer);                                                                                   \
+	type##_holder->h = (handle);                                                                                      \
 	luaL_getmetatable(L, #type);                                                                                       \
 	lua_setmetatable(L, -2);
 

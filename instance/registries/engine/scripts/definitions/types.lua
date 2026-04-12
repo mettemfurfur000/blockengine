@@ -36,7 +36,17 @@
 
 ---@class BlockEntity
 ---@field block_id integer
----@field pos number, number
+---@field position_x integer
+---@field position_y integer
+---@field scale_x number
+---@field scale_y number
+---@field velocity_x number
+---@field velocity_y number
+---@field uuid integer
+---@field rotation number
+---@field remove fun(self:BlockEntity)
+---@field var_handle VarsHandle|nil
+---@field vars VarsHandle|nil
 
 ---@class Layer
 ---@field get_size fun(self:Layer):integer, integer, integer, integer
@@ -53,6 +63,7 @@
 ---@field tick fun(self:Layer, value:integer):nil
 ---@field uuid fun(self:Layer):integer
 ---@field new_entity fun(self:Layer, block_id:integer, x:number, y:number):BlockEntity|nil
+---@field get_entities fun(self:Layer):BlockEntity[]
 
 ---@class Room
 ---@field get_name fun(self:Room):string

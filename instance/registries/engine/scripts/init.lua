@@ -113,20 +113,14 @@ local function build_view(def, registry_name, loaded)
                     G_menu_room,
                     registry_name,
                     def_entry.bytes or 1,
-                    def_entry.use_vars or false
+                    def_entry.use_vars or false,
+                    def_entry.use_entities or false
                 ),
                 def_entry.is_ui)
         end
     end
 
     return view
-end
-
-local function define_layer(name, bytes, use_vars, is_ui)
-    if name == nil then
-        error("layer has to have a name")
-    end
-    return { name = name, bytes = bytes or 1, use_vars = use_vars or false, is_ui = is_ui or false }
 end
 
 local function create_menu()
@@ -143,11 +137,11 @@ local function create_menu()
 end
 
 G_menu_definition = {
-    [1] = define_layer("floor", 1),
-    [2] = define_layer("objects", 1, true),
-    [3] = define_layer("pallete", 1, true, true),
-    [4] = define_layer("text", 1, true, true),
-    [5] = define_layer("mouse", 1, true, true),
+    [1] = { name = "floor", bytes = 1, use_vars = false, is_ui = false, use_entities = false },
+    [2] = { name = "objects", bytes = 1, use_vars = true, is_ui = false, use_entities = true },
+    [3] = { name = "pallete", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
+    [4] = { name = "text", bytes = 1, use_vars = true, is_ui = true , use_entities = false},
+    [5] = { name = "mouse", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
 }
 
 local function init_menu()

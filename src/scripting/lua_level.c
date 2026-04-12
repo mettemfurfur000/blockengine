@@ -591,20 +591,23 @@ static int lua_layer_new_entity(lua_State *L)
 		return 1;
 	}
 
-	NEW_USER_OBJECT(L, BlockEntity, wrapper->l);
+	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, wrapper->l, h);
 	return 1;
 }
 
 void iter_entities_get(handle32 h, void *ptr, void *user_data)
 {
-	lua_State *L = (lua_State *)user_data;
+	void** inputs = (void**)user_data;
+	lua_State *L = (lua_State *)inputs[0];
+	layer *l = (layer *)inputs[1];
 	block_entity *e = (block_entity *)ptr;
 
 	if (!e)
 		return;
 
-	lua_pushinteger(L, h.index);
-	NEW_USER_OBJECT(L, BlockEntity, e);
+	handle32convertor c = {.h = h};
+	lua_pushinteger(L, c.i);
+	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, h);
 	lua_settable(L, -3);
 }
 
@@ -620,7 +623,9 @@ static int lua_layer_get_entities(lua_State *L)
 
 	lua_newtable(L);
 
-	handle_table_iterate(wrapper->l->block_entity_pool, iter_entities_get, L);
+	void *pointers[] = {(void *)L, (void *)wrapper->l};
+
+	handle_table_iterate(wrapper->l->block_entity_pool, iter_entities_get, pointers);
 
 	return 1;
 }

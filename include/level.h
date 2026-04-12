@@ -15,8 +15,8 @@
 
 #define LAYER_FLAG_USE_VARS (1 << 0)
 #define LAYER_FLAG_HAS_REGISTRY (1 << 1)
-#define LAYER_FLAG_STATIC (1 << 2)
-#define LAYER_FLAG_HAS_ENTITIES (1 << 3)
+#define LAYER_FLAG_HAS_ENTITIES (1 << 2)
+#define LAYER_FLAG_STATIC (1 << 3)
 
 /* Each layer that supports vars keeps a pointer to a handle table that owns
 	blob pointers. The table is created at layer init and destroyed at free.

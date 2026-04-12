@@ -1,6 +1,6 @@
 local vec = require("registries.engine.scripts.vector_additions")
 local sdl = require("registries.engine.scripts.definitions.sdl")
-local wrapeprs = require("registries.engine.scripts.wrappers")
+local wrappers = require("registries.engine.scripts.wrappers")
 local blockengine = require("registries.engine.scripts.definitions.blockengine")
 local camera_utils = require("registries.engine.scripts.camera_utils")
 
@@ -27,7 +27,7 @@ end
 blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
     if rep ~= nil and rep <= 1 and state ~= 0 then
         -- keystate[string.char(keysym)] = state
-        wrapeprs.try(function()
+        wrappers.try(function()
             keystate[string.char(keysym)] = state
         end, function(e)
         end)
@@ -36,7 +36,7 @@ end)
 
 blockengine.register_handler(events.SDL_KEYUP, function(keysym, mod, state, rep)
     if rep ~= nil and rep <= 0 and state ~= 1 then
-        wrapeprs.try(function()
+        wrappers.try(function()
             keystate[string.char(keysym)] = state
         end, function(e)
         end)
@@ -67,6 +67,22 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
         local delta = input_delta()
         if delta.x == 0 and delta.y == 0 then
+            if keystate['f'] == 1 then
+                local fish_id = wrappers.find_block(G_engine_table, "fish").id
+
+                print("fish id " .. fish_id)
+
+                local ent = layer:new_entity(fish_id, 32, 32)
+
+                if not ent then
+                    print("no fish found")
+                else
+                    print("fish at " .. ent.position_x .. ", " .. ent.position_y)
+
+                    ent.velocity_x = 1600
+                    ent.velocity_y = 0
+                end
+            end
             if keystate[' '] == 1 then
                 vars:set_u8("v", 3) -- bonk
                 local dir = vars:get_u8("t")

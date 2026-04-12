@@ -85,6 +85,30 @@ blob *get_blob_from_varhandle(lua_State *L, int idx)
 	return (blob *)handle_table_get(vh->l->var_pool.table, h);
 }
 
+handle32 get_handle_from_varhandle(lua_State *L, int idx)
+{
+	if (!luaL_testudata(L, idx, "VarHandle"))
+		return INVALID_HANDLE;
+
+	VarHandleUser *vh = (VarHandleUser *)luaL_checkudata(L, idx, "VarHandle");
+	if (!vh || !vh->l || !vh->l->var_pool.table)
+		return INVALID_HANDLE;
+
+	return vh->h;
+}
+
+layer *get_layer_from_varhandle(lua_State *L, int idx)
+{
+	if (!luaL_testudata(L, idx, "VarHandle"))
+		return NULL;
+
+	VarHandleUser *vh = (VarHandleUser *)luaL_checkudata(L, idx, "VarHandle");
+	if (!vh || !vh->l || !vh->l->var_pool.table)
+		return NULL;
+
+	return vh->l;
+}
+
 /* File-scope macro to fetch the blob pointer protected by the VarHandle. */
 #define VH_GET_BLOB_FROM_L(L, _b_out)                                                                                  \
 	VarHandleUser *_vh = (VarHandleUser *)luaL_checkudata(L, 1, "VarHandle");                                          \

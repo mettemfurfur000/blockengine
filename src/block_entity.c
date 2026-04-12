@@ -107,42 +107,6 @@ void layer_remove_block_entity(layer *l, handle32 h)
 	block_entity_destroy(e);
 }
 
-void block_entity_set_block(block_entity *e, u64 block_id)
-{
-	assert(e);
-	e->block_id = block_id;
-}
-
-void block_entity_set_pos(block_entity *e, float x, float y)
-{
-	assert(e);
-
-	e->x = x;
-	e->y = y;
-}
-
-void block_entity_set_vel(block_entity *e, float vx, float vy)
-{
-	assert(e);
-
-	e->vx = vx;
-	e->vy = vy;
-}
-
-void block_entity_set_rotation(block_entity *e, float rotation)
-{
-	assert(e);
-	e->rotation = rotation;
-}
-
-void block_entity_set_scale(block_entity *e, float scale_x, float scale_y)
-{
-	assert(e);
-
-	e->scale_x = scale_x;
-	e->scale_y = scale_y;
-}
-
 u8 block_entity_get_vars(const block_entity *e, blob **vars_out)
 {
 	assert(e);
@@ -199,7 +163,7 @@ void block_entity_apply_physics(block_entity *e, layer *collider_layer, float dt
 
 	float new_x = e->x + e->vx * dt;
 	float new_y = e->y + e->vy * dt;
-
+	
 	i32 block_width = 16;
 
 	i32 tile_x = (i32)(new_x / block_width);
