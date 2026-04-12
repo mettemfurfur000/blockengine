@@ -79,7 +79,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 else
                     print("fish at " .. ent.position_x .. ", " .. ent.position_y)
 
-                    ent.velocity_x = 1600
+                    ent.velocity_x = 1 * 10 * 16 -- 1 block per second
                     ent.velocity_y = 0
                 end
             end
