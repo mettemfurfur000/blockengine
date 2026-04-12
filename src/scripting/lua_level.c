@@ -520,6 +520,63 @@ static int lua_bprintf(lua_State *L)
 	return 0;
 }
 
+typedef struct
+{
+	layer *l;
+	f32 dt;
+	lua_State *L;
+	u64 value;
+} tick_iter_data;
+
+u32 block_entity_tick_script(lua_State *L, layer *l, block_entity *e, u64 value)
+{
+	u64 id = e->block_id;
+
+	if (id == 0 || id >= l->registry->resources.length)
+		return SUCCESS; // air and invalid blocks dont need anything
+
+	i32 ref = l->registry->resources.data[id].entity_tick_ref;
+	if (ref == 0)
+		return SUCCESS; // no ref means block has no tick logic
+
+	assert(lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION); // ref doesnt point to a function...
+
+	lua_pushvalue(L, 1);// still pushes that layer value to the ticker function
+	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, e->handle);
+	lua_pushinteger(L, value);
+
+	if (lua_pcall(L, 3, 0, 0) != 0)
+	{
+		LOG_ERROR("Error calling an entity tick callback: %s", lua_tostring(L, -1));
+		lua_pop(L, 1);
+		lua_pushnil(L);
+		return FAIL;
+	}
+
+	return SUCCESS;
+}
+
+u32 block_entity_tick_each(handle32 h, void *ptr, void *user_data)
+{
+	block_entity *e = (block_entity *)ptr;
+	tick_iter_data *info = user_data;
+	assert(e);
+
+	if (block_entity_tick_script(info->L, info->l, e, info->value) != SUCCESS)
+		return FAIL;
+
+	block_entity_update(e, info->dt);
+
+	return SUCCESS;
+}
+
+void layer_tick_entities(lua_State *L, layer *l, float dt, u64 value)
+{
+	tick_iter_data info = {.dt = dt, .l = l, .L = L, .value = value};
+
+	l->block_entity_count_estimate = handle_table_iterate(l->block_entity_pool, block_entity_tick_each, &info);
+}
+
 static int lua_layer_tick_blocks(lua_State *L)
 {
 	LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
@@ -569,7 +626,7 @@ static int lua_layer_tick_blocks(lua_State *L)
 		}
 
 	if (wrapper->l->block_entity_pool)
-		layer_tick_entities(wrapper->l, 1.0f / TPS);
+		layer_tick_entities(L, wrapper->l, 1.0f / TPS, value);
 
 	lua_pushboolean(L, 1);
 	return 1;
@@ -595,20 +652,20 @@ static int lua_layer_new_entity(lua_State *L)
 	return 1;
 }
 
-void iter_entities_get(handle32 h, void *ptr, void *user_data)
+u32 iter_entities_get(handle32 h, void *ptr, void *user_data)
 {
-	void** inputs = (void**)user_data;
+	void **inputs = (void **)user_data;
 	lua_State *L = (lua_State *)inputs[0];
 	layer *l = (layer *)inputs[1];
 	block_entity *e = (block_entity *)ptr;
 
-	if (!e)
-		return;
+	assert(e);
 
 	handle32convertor c = {.h = h};
 	lua_pushinteger(L, c.i);
 	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, h);
 	lua_settable(L, -3);
+	return SUCCESS;
 }
 
 static int lua_layer_get_entities(lua_State *L)

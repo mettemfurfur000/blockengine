@@ -14,6 +14,14 @@ function M.add(a, b)
     }
 end
 
+function M.sub(a, b)
+    return {
+        x = a.x - b.x,
+        y = a.y - b.y
+    }
+end
+
+
 function M.mult(a, numbuh)
     return {
         x = a.x * numbuh,

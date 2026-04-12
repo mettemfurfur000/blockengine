@@ -755,23 +755,3 @@ block_entity *layer_get_block_entity(layer *l, handle32 h)
 		return NULL;
 	return block_entity_get(l, h);
 }
-
-void block_entity_tick_each(handle32 h, void *ptr, void *user_data)
-{
-	(void)h;
-	(void)ptr;
-
-	block_entity *e = (block_entity *)ptr;
-	float dt = *(float *)user_data;
-
-	if (e)
-		block_entity_update(e, dt);
-}
-
-void layer_tick_entities(layer *l, float dt)
-{
-	if (!l)
-		return;
-
-	l->block_entity_count_estimate = handle_table_iterate(l->block_entity_pool, block_entity_tick_each, &dt);
-}

@@ -302,13 +302,16 @@ u32 handle_table_iterate(handle_table *table, handle_table_iterator_fn fn, void 
 	for (u16 i = 0; i < table->count; i++)
 	{
 		struct handle_table_slot *s = &table->slots[i];
-		if (s->active)
+		if (s->active && s->ptr)
 		{
 			handle32 h;
 			h.index = i;
 			h.validation = (u16)(s->generation);
 			h.active = s->active;
-			fn(h, s->ptr, user_data);
+			u32 result = fn(h, s->ptr, user_data);
+
+			if (result != SUCCESS)
+				return count;
 			count++;
 		}
 	}

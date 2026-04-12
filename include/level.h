@@ -126,7 +126,6 @@ void layer_build_spatial_grid(layer *l);
 handle32 layer_add_block_entity(layer *l, u64 block_id, float x, float y);
 void layer_remove_block_entity(layer *l, handle32 h);
 block_entity *layer_get_block_entity(layer *l, handle32 h);
-void layer_tick_entities(layer *l, float dt);
 
 bool layer_block_entity_is_valid(layer *l, handle32 h);
 

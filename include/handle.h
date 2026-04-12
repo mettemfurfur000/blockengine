@@ -34,7 +34,7 @@ static_assert(sizeof(handle32) == sizeof(u32), "");
 extern "C"
 {
 #endif
-	typedef void (*handle_table_iterator_fn)(handle32 h, void *ptr, void *user_data);
+	typedef u32 (*handle_table_iterator_fn)(handle32 h, void *ptr, void *user_data);
 
 	typedef struct handle_table handle_table;
 
@@ -83,7 +83,7 @@ extern "C"
 	/* Returns first unused slot, or invalid handle if all are taken */
 	u16 handle_table_get_inactive(handle_table *table);
 
-	/* Iterate over all active slots in the table, calling `fn` for each. Returns the number of active slots. */
+	/* Iterate over all active slots in the table, calling `fn` for each. Returns the number of slots, before encountering an error. */
 	u32 handle_table_iterate(handle_table *table, handle_table_iterator_fn fn, void *user_data);
 
 #ifdef __cplusplus

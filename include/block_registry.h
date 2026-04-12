@@ -45,6 +45,7 @@ typedef struct block_resources
 	vec_str_t input_names;
 
 	i32 input_tick_ref; // which input causes a tick update, as a lua ref
+	u32 entity_tick_ref; // same but when the block is a part of an entity
 	// 1 - 3x3 tileset, 4 neighbours, lines default to center tile
 	// 2 - 4x4, 4 neighbours, full coverage on all cases
 	// 3 - 47 autotile scheme, 8 neighbour scheme

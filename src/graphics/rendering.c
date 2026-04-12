@@ -276,12 +276,11 @@ typedef struct
 	layer_slice slice;
 } render_user_data;
 
-void block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
+u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 {
 	(void)h;
 	block_entity *e = (block_entity *)ptr;
-	if (!e || e->block_id == 0)
-		return;
+	assert(e && e->block_id);
 
 	render_user_data *udata = ((render_user_data *)user_data);
 
@@ -289,8 +288,6 @@ void block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 	layer_slice slice = udata->slice;
 
 	block_resources br = b_reg->resources.data[e->block_id];
-	if (br.info.total_frames == 0)
-		return;
 
 	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - e->timestamp_old) / (1000.0f / TPS)));
 
@@ -316,6 +313,7 @@ void block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 
 	renderer_v2_add_instance(dest_x, dest_y, br.info.atlas_offset_x + frame, br.info.atlas_offset_y + type, flip,
 							 scale_x, scale_y, (float)rotation * (M_PI / 180.0f));
+	return SUCCESS;
 }
 
 static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, int local_block_width)
@@ -323,8 +321,8 @@ static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, 
 	if (!l || !b_reg || l->block_entity_count_estimate == 0)
 		return;
 
-	block_x_offset = slice.x % local_block_width;
-	block_y_offset = slice.y % local_block_width;
+	block_x_offset = slice.x;
+	block_y_offset = slice.y;
 
 	ms_since_start = SDL_GetTicks();
 	seconds_since_start = ms_since_start / 1000.0f;

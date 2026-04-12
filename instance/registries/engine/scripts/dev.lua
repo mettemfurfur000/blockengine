@@ -67,27 +67,33 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
         local delta = input_delta()
         if delta.x == 0 and delta.y == 0 then
+            local dir = vars:get_u8("t")
+            local move_delta = vec.delta(dir)
+
             if keystate['f'] == 1 then
                 local fish_id = wrappers.find_block(G_engine_table, "fish").id
 
-                print("fish id " .. fish_id)
+                -- spawn the real maximum amount of fish
+                for i = 1, 65535, 1 do
+                    local ent = layer:new_entity(fish_id,
+                        math.random(0, G_screen_width),
+                        math.random(0, G_screen_height - 1
+                        )
+                    )
 
-                local ent = layer:new_entity(fish_id, 32, 32)
+                    if not ent then
+                        print("no fish found")
+                    else
+                        local fish_launch_velocity = vec.mult(move_delta, 160);
 
-                if not ent then
-                    print("no fish found")
-                else
-                    print("fish at " .. ent.position_x .. ", " .. ent.position_y)
-
-                    ent.velocity_x = 1 * 10 * 16 -- 1 block per second
-                    ent.velocity_y = 0
+                        ent.velocity_x = fish_launch_velocity.x + math.random() * 20
+                        ent.velocity_y = fish_launch_velocity.y + math.random() * 20
+                    end
                 end
             end
             if keystate[' '] == 1 then
                 vars:set_u8("v", 3) -- bonk
-                local dir = vars:get_u8("t")
-                delta = vec.delta(dir)
-                local next_pos = vec.add(pos, delta)
+                local next_pos = vec.add(pos, move_delta)
                 layer:paste_block(next_pos.x, next_pos.y, 0)
             else
                 vars:set_u8("v", 0)

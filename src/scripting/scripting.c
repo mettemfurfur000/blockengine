@@ -612,6 +612,12 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
 		res->input_tick_ref = ref;
 	}
 
+	if (strcmp("entity_tick", name) == 0)
+	{
+		LOG_DEBUG("registered the entity tick input for block %lld", id);
+		res->entity_tick_ref = ref;
+	}
+
 	for (u32 i = 0; i < res->input_names.length; i++)
 		if (strcmp(res->input_names.data[i], name) == 0)
 		{
