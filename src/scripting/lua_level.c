@@ -541,7 +541,7 @@ u32 block_entity_tick_script(lua_State *L, layer *l, block_entity *e, u64 value)
 
 	assert(lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION); // ref doesnt point to a function...
 
-	lua_pushvalue(L, 1);// still pushes that layer value to the ticker function
+	lua_pushvalue(L, 1); // still pushes that layer value to the ticker function
 	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, e->handle);
 	lua_pushinteger(L, value);
 
@@ -564,6 +564,11 @@ u32 block_entity_tick_each(handle32 h, void *ptr, void *user_data)
 
 	if (block_entity_tick_script(info->L, info->l, e, info->value) != SUCCESS)
 		return FAIL;
+
+	// check if its still valid
+
+	if (!handle_is_valid(info->l->block_entity_pool, h)) // the entity has destroyed itself...
+		return SUCCESS;
 
 	block_entity_update(e, info->dt);
 

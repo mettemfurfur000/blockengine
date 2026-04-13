@@ -74,7 +74,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 local fish_id = wrappers.find_block(G_engine_table, "fish").id
 
                 -- spawn the real maximum amount of fish
-                for i = 1, 65535, 1 do
+                for i = 1, 1000, 1 do
                     local ent = layer:new_entity(fish_id,
                         math.random(0, G_screen_width),
                         math.random(0, G_screen_height - 1
@@ -86,8 +86,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                     else
                         local fish_launch_velocity = vec.mult(move_delta, 160);
 
-                        ent.velocity_x = fish_launch_velocity.x + math.random() * 20
-                        ent.velocity_y = fish_launch_velocity.y + math.random() * 20
+                        ent.velocity_x = math.random() * 1000 - 500
+                        ent.velocity_y = math.random() * 1000 - 500
                     end
                 end
             end

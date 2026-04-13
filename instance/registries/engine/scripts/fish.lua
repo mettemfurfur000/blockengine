@@ -31,13 +31,14 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
     ---@param layer Layer
     ---@param entity BlockEntity
     function(layer, entity, value)
-        local pos = { x = entity.position_x, y = entity.position_y }
-        local target = { x = G_screen_width / 2, y = G_screen_height / 2 }
-        local diff = vec.sub(target, pos)
+        local vel = { x = entity.velocity_x, y = entity.velocity_y }
 
-        local add_vel = vec.mult(diff, 0.5)
+        if math.abs(vel.x) < 1 and math.abs(vel.y) < 1 then
+            entity:remove()
+            return
+        end
 
-        entity.velocity_x = add_vel.x + 0.99 * entity.velocity_x + math.random() * 80
-        entity.velocity_y = add_vel.y + 0.99 * entity.velocity_y + math.random() * 80
+        entity.velocity_x = 0.5 * vel.x
+        entity.velocity_y = 0.5 * vel.y
     end
 )

@@ -297,6 +297,11 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 	f32 dest_x = -block_x_offset + interp_x;
 	f32 dest_y = -block_y_offset + interp_y;
 
+	if (dest_x < -g_block_width || dest_y < -g_block_width)
+		return SUCCESS;
+	if (dest_x > slice.w + g_block_width || dest_y > slice.h + g_block_width)
+		return SUCCESS;
+
 	u8 frame = 0;
 	u8 type = 0;
 	u8 flip = 0;
