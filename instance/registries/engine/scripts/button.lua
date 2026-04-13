@@ -2,8 +2,8 @@ local current_block = scripting_current_block_id
 
 print("registering an input")
 
----@param layer Layer
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "click",
+---@param layer Layer
     function(layer, x, y, input_value)
         local vars = layer:get_vars(x, y)
         if not vars then

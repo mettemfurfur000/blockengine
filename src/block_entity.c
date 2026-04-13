@@ -6,6 +6,8 @@
 #include "include/logging.h"
 #include "include/uuid.h"
 
+#include "include/vec_math.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -154,36 +156,6 @@ void block_entity_update(block_entity *e, float dt)
 
 	e->x += e->vx * dt;
 	e->y += e->vy * dt;
-}
-
-void block_entity_apply_physics(block_entity *e, layer *collider_layer, float dt)
-{
-	assert(e);
-	assert(collider_layer);
-
-	float new_x = e->x + e->vx * dt;
-	float new_y = e->y + e->vy * dt;
-	
-	i32 block_width = 16;
-
-	i32 tile_x = (i32)(new_x / block_width);
-	i32 tile_y = (i32)(new_y / block_width);
-
-	u64 block_id = 0;
-	if (tile_x >= 0 && tile_x < (i32)collider_layer->width && tile_y >= 0 && tile_y < (i32)collider_layer->height)
-	{
-		block_get_id(collider_layer, (u16)tile_x, (u16)tile_y, &block_id);
-	}
-
-	if (block_id != 0)
-	{
-		e->vx = -e->vx * 0.5f;
-		e->vy = -e->vy * 0.5f;
-		return;
-	}
-
-	e->x = new_x;
-	e->y = new_y;
 }
 
 bool block_entity_check_collision(block_entity *e, layer *collider_layer)
