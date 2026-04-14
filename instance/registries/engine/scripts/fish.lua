@@ -8,23 +8,22 @@ local wait_time = 50
 
 -- for debugging purposes
 
--- local sounds = {}
+local G_fish_sounds = {}
 
 -- blockengine.register_handler(events.ENGINE_TICK, function(code)
 --     ticks = ticks + 1
 --     if ticks % wait_time == 0 then
 --         local sel = math.random(1, 4)
---         local sel_sound = sounds[sel]
+--         local sel_sound = G_fish_sounds[sel]
 --         sel_sound.sound:play()
 --         wait_time = math.random(45, 65);
 --     end
 -- end)
 
--- blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
---     local block_info = wrappers.find_block(G_engine_table, "fish")
---     sounds = block_info.sounds
---     G_view_menu.objects.layer:paste_block(7, 7, current_block) -- x, y, id
--- end)
+blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
+    local block_info = wrappers.find_block(G_engine_table, "fish")
+    G_fish_sounds = block_info.sounds
+end)
 
 
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "entity_tick",
@@ -38,7 +37,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
         if math.abs(vel.x) < 1 and math.abs(vel.y) < 1 then
             -- entity:remove()
-            entity.rotation = G_tick * 36
+            entity.rotation = entity.rotation + 45
             return
         end
     end
@@ -79,5 +78,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         entity.position_y = new_y
         entity.velocity_x = 0
         entity.velocity_y = 0
+        ---@type Sound
+        local sel_sound = G_fish_sounds[math.random(1, #G_fish_sounds)].sound
+        sel_sound:play()
     end
 )
