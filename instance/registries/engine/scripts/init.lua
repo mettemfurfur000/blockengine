@@ -227,6 +227,7 @@ blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
 
     G_total_blocks = wrappers.tablelength(G_engine_table)
     G_character_id = wrappers.find_block(G_engine_table, "character").id
+    G_dev_id = wrappers.find_block(G_engine_table, "dev").id
 
     -- print("attempting to clear all leftover text with id " .. G_character_id)
 

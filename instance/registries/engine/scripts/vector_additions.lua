@@ -1,6 +1,11 @@
 local M = {}
 
-function M.new(x,y)
+M.up = 0
+M.right = 1
+M.down = 2
+M.left = 3
+
+function M.new(x, y)
     return {
         x = x,
         y = y
@@ -21,7 +26,6 @@ function M.sub(a, b)
     }
 end
 
-
 function M.mult(a, numbuh)
     return {
         x = a.x * numbuh,
@@ -30,32 +34,21 @@ function M.mult(a, numbuh)
 end
 
 function M.delta(dir)
-    return {
-        x = dir == 1 and 1 or (dir == 3 and -1 or 0),
-        y = dir == 2 and 1 or (dir == 0 and -1 or 0)
-    }
+    if dir == M.up then return { x = 0, y = -1 } end
+    if dir == M.down then return { x = 0, y = 1 } end
+    if dir == M.right then return { x = 1, y = 0 } end
+    if dir == M.left then return { x = -1, y = 0 } end
 end
 
 function M.direction(dx, dy)
-    local magnitude = math.sqrt(dx * dx + dy * dy)
-    dx = dx / magnitude
-    dy = dy / magnitude
+    local absX = math.abs(dx);
+    local absY = math.abs(dy);
 
-    if dx < 0 then
-        return 3 -- West
-    elseif dx > 0 then
-        return 1 -- East
-    elseif dy < 0 then
-        return 0 -- North
-    elseif dy > 0 then
-        return 2 -- South
+    if absX > absY then
+        return dx > 0 and M.right or M.left;
+    else
+        return dy > 0 and M.down or M.up;
     end
-
-    error("invalid direction " .. dx .. ", " .. dy)
-end
-
-function M.advance(pos, dir)
-    return M.vec2d_add(pos, M.delta_direction(pos, dir))
 end
 
 function M.rotate(dir, times)

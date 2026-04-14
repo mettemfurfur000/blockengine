@@ -11,6 +11,8 @@
 #include "block_entity.h"
 #include "update_system.h"
 
+#include "sdl2_basics.h"
+
 #include "vec/src/vec.h"
 
 #define LAYER_FLAG_USE_VARS (1 << 0)

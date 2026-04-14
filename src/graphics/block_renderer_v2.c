@@ -5,6 +5,8 @@
 #include "include/opengl_stuff.h"
 #include "include/sdl2_basics.h"
 
+#include "include/config.h"
+
 #include <epoxy/gl_generated.h>
 
 #include <stdlib.h>
@@ -62,6 +64,8 @@ static int init_shader_program(shader_program *prog, const char *name)
 	prog->resize_ratio_loc = glGetUniformLocation(prog->shader, "uResizeRatio");
 	prog->block_width_loc = glGetUniformLocation(prog->shader, "uBlockWidth");
 	prog->texture_loc = glGetUniformLocation(prog->shader, "uTexture");
+	prog->color_loc = glGetUniformLocation(prog->shader, "uColor");
+	prog->use_color_loc = glGetUniformLocation(prog->shader, "uUseColor");
 
 	return SUCCESS;
 }
@@ -349,9 +353,9 @@ void renderer_v2_end_batch(void)
 
 void renderer_v2_begin_frame(void)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, renderer_v2.post_fbo);
-	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	glClear(GL_COLOR_BUFFER_BIT);
+	// glBindFramebuffer(GL_FRAMEBUFFER, renderer_v2.post_fbo);
+	// glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	// glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void renderer_v2_end_frame(void)
@@ -365,6 +369,10 @@ void renderer_v2_end_frame(void)
 
 	glBindVertexArray(renderer_v2.post.vao);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, renderer_v2.post_fbo);
+	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void renderer_v2_resize(u16 width, u16 height)

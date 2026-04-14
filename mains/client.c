@@ -11,6 +11,8 @@
 #include "include/sdl2_extras.h"
 #include "include/signal_handler.h"
 
+#include "include/config.h"
+
 #include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>

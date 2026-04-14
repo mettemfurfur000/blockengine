@@ -11,9 +11,9 @@ print("loading a controller block id " .. current_block)
 local keystate = {}
 
 local player_states = {
-    dead = 0,
-    idle = 1,
-    walk = 2,
+    idle = 0,
+    walk1 = 1,
+    walk2 = 2,
     attack = 3
 }
 
@@ -68,16 +68,17 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         local delta = input_delta()
         if delta.x == 0 and delta.y == 0 then
             local dir = vars:get_u8("t")
-            local move_delta = vec.delta(dir)
+            local facing_vec = vec.delta(dir)
 
             if keystate['f'] == 1 then
                 local fish_id = wrappers.find_block(G_engine_table, "fish").id
 
                 local ent = layer:new_entity(fish_id,
-                    x * G_block_size,
-                    y * G_block_size
+                    (x + 0.5 + facing_vec.x) * G_block_size,
+                    (y + 0.5 + facing_vec.y) * G_block_size
                 )
-                local fish_launch_velocity = vec.mult(move_delta, G_block_size * 20 * 5);
+
+                local fish_launch_velocity = vec.mult(facing_vec, G_block_size * 20);
 
                 ent.velocity_x = fish_launch_velocity.x + math.random(-25, 25)
                 ent.velocity_y = fish_launch_velocity.y + math.random(-25, 25)
@@ -100,16 +101,16 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 -- end
             end
             if keystate[' '] == 1 then
-                vars:set_u8("v", 3) -- bonk
-                local next_pos = vec.add(pos, move_delta)
+                vars:set_u8("v", player_states.attack)
+                local next_pos = vec.add(pos, facing_vec)
                 layer:paste_block(next_pos.x, next_pos.y, 0)
             else
-                vars:set_u8("v", 0)
+                vars:set_u8("v", player_states.idle)
             end
             return
         end
 
-        vars:set_u8("v", 1 + G_tick % 2)
+        vars:set_u8("v", 1 + G_tick % 2) -- between walk1 and walk2
 
         local dir = vec.direction(delta.x, delta.y)
 

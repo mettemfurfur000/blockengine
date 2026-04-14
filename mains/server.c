@@ -4,6 +4,7 @@
 #include "include/network.h"
 #include "include/scripting.h"
 #include "include/signal_handler.h"
+#include "include/config.h"
 // #include "include/level.h"
 // #include "include/update_system.h"
 

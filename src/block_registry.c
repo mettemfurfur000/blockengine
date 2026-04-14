@@ -8,6 +8,8 @@
 #include "include/vars.h"
 #include "include/vars_utils.h"
 
+#include "include/config.h"
+
 #ifdef _WIN64
 #include "dirent/include/dirent.h"
 #else

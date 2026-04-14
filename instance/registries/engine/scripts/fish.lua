@@ -33,12 +33,51 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
     function(layer, entity, value)
         local vel = { x = entity.velocity_x, y = entity.velocity_y }
 
+        -- entity.velocity_x = 0.95 * vel.x
+        -- entity.velocity_y = 0.95 * vel.y
+
         if math.abs(vel.x) < 1 and math.abs(vel.y) < 1 then
-            entity:remove()
+            -- entity:remove()
+            entity.rotation = G_tick * 36
+            return
+        end
+    end
+)
+
+scripting_light_block_input_register(scripting_current_light_registry, current_block, "entity_collision",
+    ---@param layer Layer
+    ---@param entity BlockEntity
+    function(layer, entity, hit_x, hit_y, hit_id, hit_pos_x, hit_pos_y)
+        local vel = { x = entity.velocity_x, y = entity.velocity_y }
+        local pos = { x = entity.position_x, y = entity.position_y }
+
+        if hit_pos_x == 0 and hit_pos_y == 0 then
             return
         end
 
-        entity.velocity_x = 0.5 * vel.x
-        entity.velocity_y = 0.5 * vel.y
+        local block_size = G_block_size
+        local half_size = block_size * 0.5
+
+        local new_x = pos.x
+        local new_y = pos.y
+
+        if math.abs(vel.x) > math.abs(vel.y) then
+            if vel.x > 0 then
+                new_x = hit_x * block_size - half_size - 0.01
+            else
+                new_x = hit_x * block_size + block_size + half_size + 0.01
+            end
+        else
+            if vel.y > 0 then
+                new_y = hit_y * block_size - half_size - 0.01
+            else
+                new_y = hit_y * block_size + block_size + half_size + 0.01
+            end
+        end
+
+        entity.position_x = new_x
+        entity.position_y = new_y
+        entity.velocity_x = 0
+        entity.velocity_y = 0
     end
 )

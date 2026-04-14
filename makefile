@@ -6,10 +6,13 @@ LDFLAGS += -lstdc++
 CFLAGS += -g
 LDFLAGS += -g
 
-# uncomment to do sum profilin
 ifeq ($(PERF),1)
     CFLAGS += -pg -no-pie
     LDFLAGS += -pg
+endif
+
+ifeq ($(DEBUG),1)
+    CFLAGS += -DRENDER_ENTITY_COLLISION_DEBUG
 endif
 
 ifeq ($(OS),Windows_NT)

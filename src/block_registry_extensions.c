@@ -6,6 +6,8 @@
 #include "include/scripting.h"
 #include "include/sdl2_basics.h"
 
+#include "include/config.h"
+
 #include <stdlib.h>
 #include <sys/stat.h>
 

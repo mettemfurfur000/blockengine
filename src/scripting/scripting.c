@@ -8,6 +8,8 @@
 
 #include "include/scripting_bindings.h"
 
+#include "include/config.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -616,6 +618,12 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
 	{
 		LOG_DEBUG("registered the entity tick input for block %lld", id);
 		res->entity_tick_ref = ref;
+}
+
+	if (strcmp("entity_collision", name) == 0)
+	{
+		LOG_DEBUG("registered the entity collision input for block %lld", id);
+		res->entity_collision_ref = ref;
 	}
 
 	for (u32 i = 0; i < res->input_names.length; i++)

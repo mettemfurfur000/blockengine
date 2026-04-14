@@ -2,6 +2,7 @@
 #include "include/block_entity.h"
 #include "include/block_registry.h"
 #include "include/block_renderer_v2.h"
+#include "include/config.h"
 #include "include/flags.h"
 #include "include/general.h"
 #include "include/level.h"
@@ -11,19 +12,18 @@
 
 #define BLOCKS_EXTRA 1
 
-const unsigned int funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313,
-									 6307353, 1532671, 6233633, 873473,	 685613};
+const u32 funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313, 6307353, 1532671, 6233633, 873473, 685613};
 const u8 funny_shifts[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 10};
 
-static unsigned short tile_rand(const int x, const int y)
+static unsigned short tile_rand(const i32 x, const i32 y)
 {
-	int prime = x % 10;
-	int antiprime = 9 - (y % 10);
-	int midprime = (prime + antiprime) / 2;
+	i32 prime = x % 10;
+	i32 antiprime = 9 - (y % 10);
+	i32 midprime = (prime + antiprime) / 2;
 	return ((funny_primes[prime] + funny_shifts[antiprime] * funny_primes[midprime]) >> funny_shifts[prime]) & 0x7fff;
 }
 
-const float lerp(float a, float b, float f)
+const f32 lerp(f32 a, f32 b, f32 f)
 {
 	return a + f * (b - a);
 }
@@ -129,13 +129,13 @@ typedef struct
 	layer_slice slice;
 	block_registry *b_reg;
 	layer *l;
-	int local_block_width;
+	i32 local_block_width;
 	i32 block_x_offset;
 	i32 block_y_offset;
 	i32 start_block_x;
 	i32 start_block_y;
 	u32 ms_since_start;
-	float seconds_since_start;
+	f32 seconds_since_start;
 } render_context;
 
 static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
@@ -147,7 +147,7 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 
 	layer *l = rc->l;
 	const u8 bytes_per_block = l->total_bytes_per_block;
-	const int local_block_width = rc->local_block_width;
+	const i32 local_block_width = rc->local_block_width;
 
 	i32 dest_x =
 		-rc->block_x_offset - local_block_width * (BLOCKS_EXTRA + 1) + (i - rc->start_block_x + 1) * local_block_width;
@@ -195,11 +195,11 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 		{
 			var_get_u32_fast(*var, br.interp_timestamp_controller, br.vars_offsets, &ms_started_moving);
 
-			const float pos = (rc->ms_since_start - ms_started_moving) / (float)br.interp_takes;
-			const float clamp_pos = fmax(0.0f, fmin(1.0, pos));
+			const f32 pos = (rc->ms_since_start - ms_started_moving) / (f32)br.interp_takes;
+			const f32 clamp_pos = fmax(0.0f, fmin(1.0, pos));
 
-			offset_x = (i16)lerp((float)offset_x, 0, clamp_pos);
-			offset_y = (i16)lerp((float)offset_y, 0, clamp_pos);
+			offset_x = (i16)lerp((f32)offset_x, 0, clamp_pos);
+			offset_y = (i16)lerp((f32)offset_y, 0, clamp_pos);
 		}
 	}
 
@@ -236,7 +236,7 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 
 	if (br.frames_per_second > 1)
 	{
-		int fps = br.frames_per_second;
+		i32 fps = br.frames_per_second;
 		frame = (u8)(rc->seconds_since_start * fps);
 	}
 
@@ -255,7 +255,7 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 			FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(frame / br.info.frames) : (type % br.info.types);
 		renderer_v2_add_instance(dest_x + offset_x, dest_y + offset_y, br.info.atlas_offset_x + actual_frame,
 								 br.info.atlas_offset_y + actual_type, flip, rc->slice.zoom * 1.0f,
-								 rc->slice.zoom * 1.0f, (float)rotation * (M_PI / 180.0f));
+								 rc->slice.zoom * 1.0f, (f32)rotation * (M_PI / 180.0f));
 	}
 	else
 	{
@@ -274,6 +274,7 @@ typedef struct
 {
 	block_registry *b_reg;
 	layer_slice slice;
+	i32 local_block_width;
 } render_user_data;
 
 u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
@@ -291,11 +292,11 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 
 	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - e->timestamp_old) / (1000.0f / TPS)));
 
-	float interp_x = lerp((float)e->old_x, (float)e->x, slice_clamp_pos);
-	float interp_y = lerp((float)e->old_y, (float)e->y, slice_clamp_pos);
+	f32 interp_x = lerp((f32)e->old_x, (f32)e->x, slice_clamp_pos);
+	f32 interp_y = lerp((f32)e->old_y, (f32)e->y, slice_clamp_pos);
 
-	f32 dest_x = -block_x_offset + interp_x;
-	f32 dest_y = -block_y_offset + interp_y;
+	f32 dest_x = -block_x_offset + interp_x - (udata->local_block_width / 2.0f);
+	f32 dest_y = -block_y_offset + interp_y - (udata->local_block_width / 2.0f);
 
 	if (dest_x < -g_block_width || dest_y < -g_block_width)
 		return SUCCESS;
@@ -307,21 +308,21 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 	u8 flip = 0;
 	i16 rotation = (i16)e->rotation;
 
-	float scale_x = e->scale_x * slice.zoom * 1.0f;
-	float scale_y = e->scale_y * slice.zoom * 1.0f;
+	f32 scale_x = e->scale_x * slice.zoom * 1.0f;
+	f32 scale_y = e->scale_y * slice.zoom * 1.0f;
 
 	if (br.frames_per_second > 1)
 	{
-		int fps = br.frames_per_second;
+		i32 fps = br.frames_per_second;
 		frame = (u8)(seconds_since_start * fps);
 	}
 
 	renderer_v2_add_instance(dest_x, dest_y, br.info.atlas_offset_x + frame, br.info.atlas_offset_y + type, flip,
-							 scale_x, scale_y, (float)rotation * (M_PI / 180.0f));
+							 scale_x, scale_y, (f32)rotation * (M_PI / 180.0f));
 	return SUCCESS;
 }
 
-static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, int local_block_width)
+static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, i32 local_block_width)
 {
 	if (!l || !b_reg || l->block_entity_count_estimate == 0)
 		return;
@@ -335,6 +336,7 @@ static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, 
 	render_user_data udata = {
 		.b_reg = b_reg,
 		.slice = slice,
+		.local_block_width = local_block_width,
 	};
 
 	handle_table_iterate(l->block_entity_pool, block_entity_iterate_fn_render, &udata);
@@ -343,10 +345,10 @@ static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, 
 u8 render_layer(layer_slice slice)
 {
 	assert(slice.zoom > 0);
-	const int local_block_width = (g_block_width * slice.zoom);
+	const i32 local_block_width = (g_block_width * slice.zoom);
 
-	const int width = slice.w / local_block_width;
-	const int height = slice.h / local_block_width;
+	const i32 width = slice.w / local_block_width;
+	const i32 height = slice.h / local_block_width;
 
 	if (!slice.ref)
 		return SUCCESS;
@@ -362,7 +364,7 @@ u8 render_layer(layer_slice slice)
 
 	u32 ms_started_moving = slice.timestamp_old;
 
-	const float slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - ms_started_moving) / (1000.0f / TPS)));
+	const f32 slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - ms_started_moving) / (1000.0f / TPS)));
 
 	slice.x = lerp(slice.old_x, slice.x, slice_clamp_pos);
 	slice.y = lerp(slice.old_y, slice.y, slice_clamp_pos);
@@ -418,7 +420,7 @@ u8 client_render(const client_render_rules rules)
 
 	for (u32 i = 0; i < rules.draw_order.length; i++)
 	{
-		int layer_id = rules.draw_order.data[i];
+		i32 layer_id = rules.draw_order.data[i];
 		layer_slice slice = rules.slices.data[layer_id];
 
 		render_layer(slice);

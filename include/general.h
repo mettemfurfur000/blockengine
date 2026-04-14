@@ -39,8 +39,6 @@ static_assert(sizeof(f64) == 8, "");
 #define SUCCESS 0
 #define FAIL -1
 
-#define MAX_PATH_LENGTH 512
-
 inline static i64 MAX(i64 a, i64 b)
 {
 	return ((a) > (b) ? a : b);
@@ -49,11 +47,6 @@ inline static i64 MIN(i64 a, i64 b)
 {
 	return ((a) < (b) ? a : b);
 }
-
-#define FPS 60
-#define TPS 10
-
-#define MAX_PATH_LENGTH 512
 
 #define SAFE_FREE(ptr)                                                                                                 \
 	if (ptr)                                                                                                           \

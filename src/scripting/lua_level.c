@@ -11,8 +11,13 @@
 #include "include/logging.h"
 #include "include/scripting.h"
 #include "include/scripting_var_handles.h"
+
+#include "include/config.h"
+
 #include <lauxlib.h>
 #include <lua.h>
+
+#include "include/block_entity.h"
 
 static int lua_level_create(lua_State *L)
 {
@@ -528,6 +533,41 @@ typedef struct
 	u64 value;
 } tick_iter_data;
 
+u32 block_entity_collision_script(lua_State *L, block_entity *e, collision_result col_res)
+{
+	u64 id = e->block_id;
+	layer *l = e->parent_layer;
+
+	assert(l);
+
+	if (id == 0 || id >= l->registry->resources.length)
+		return SUCCESS;
+
+	i32 ref = l->registry->resources.data[id].entity_collision_ref;
+	if (ref == 0)
+		return SUCCESS;
+
+	assert(lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION);
+
+	lua_pushvalue(L, 1);
+	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, e->handle);
+	lua_pushinteger(L, col_res.block_pos.x);
+	lua_pushinteger(L, col_res.block_pos.y);
+	lua_pushinteger(L, col_res.block_id);
+	lua_pushnumber(L, col_res.hit_pos.x);
+	lua_pushnumber(L, col_res.hit_pos.y);
+
+	if (lua_pcall(L, 7, 0, 0) != 0)
+	{
+		LOG_ERROR("Error calling an entity collision callback : %s", lua_tostring(L, -1));
+		lua_pop(L, 1);
+		lua_pushnil(L);
+		return FAIL;
+	}
+
+	return SUCCESS;
+}
+
 u32 block_entity_tick_script(lua_State *L, layer *l, block_entity *e, u64 value)
 {
 	u64 id = e->block_id;
@@ -556,6 +596,36 @@ u32 block_entity_tick_script(lua_State *L, layer *l, block_entity *e, u64 value)
 	return SUCCESS;
 }
 
+u32 block_entity_foreach(handle32 h, void *ptr, void *user_data)
+{
+	block_entity *e = (block_entity *)ptr;
+	tick_iter_data *info = user_data;
+	assert(e);
+
+	layer *l = e->parent_layer;
+	assert(l);
+
+	block_entity_update(e, info->dt);
+
+	if (!handle_is_valid(info->l->block_entity_pool, h))
+		return SUCCESS;
+
+	collision_result res = {};
+
+	if (l->registry->resources.data[e->block_id].entity_collision_ref)
+		if (block_entity_check_collision_swept(e, l, info->dt, &res))
+			if (block_entity_collision_script(info->L, e, res) != SUCCESS)
+				return FAIL;
+
+	if (block_entity_tick_script(info->L, info->l, e, info->value) != SUCCESS)
+		return FAIL;
+
+	if (!handle_is_valid(info->l->block_entity_pool, h))
+		return SUCCESS;
+
+	return SUCCESS;
+}
+
 u32 block_entity_tick_each(handle32 h, void *ptr, void *user_data)
 {
 	block_entity *e = (block_entity *)ptr;
@@ -579,7 +649,7 @@ void layer_tick_entities(lua_State *L, layer *l, float dt, u64 value)
 {
 	tick_iter_data info = {.dt = dt, .l = l, .L = L, .value = value};
 
-	l->block_entity_count_estimate = handle_table_iterate(l->block_entity_pool, block_entity_tick_each, &info);
+	l->block_entity_count_estimate = handle_table_iterate(l->block_entity_pool, block_entity_foreach, &info);
 }
 
 static int lua_layer_tick_blocks(lua_State *L)

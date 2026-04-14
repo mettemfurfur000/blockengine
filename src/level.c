@@ -366,7 +366,6 @@ u8 init_layer(layer *l, room *parent_room)
 		l->block_entity_pool = handle_table_create(256);
 	}
 
-	/* Initialize update accumulator for network broadcasting */
 	l->id_updates = update_acc_new();
 	l->var_updates = update_acc_new();
 	l->var_component_updates = update_acc_new();

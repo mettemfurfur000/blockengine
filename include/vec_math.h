@@ -137,8 +137,8 @@ typedef struct
 
 // misc
 
-#define MIN(a, b) (a > b ? b : a)
-#define MAX(a, b) (a < b ? b : a)
+// #define MIN(a, b) (a > b ? b : a)
+// #define MAX(a, b) (a < b ? b : a)
 
 #define DEG_TO_RAD(degrees) (degrees * (M_PI / 180.0f))
 #define RAD_TO_DEG(radians) (radians * (180.0f / M_PI))

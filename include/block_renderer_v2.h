@@ -28,6 +28,8 @@ typedef struct
 	GLint resize_ratio_loc;
 	GLint block_width_loc;
 	GLint texture_loc;
+	GLint color_loc;
+	GLint use_color_loc;
 } shader_program;
 
 typedef struct
