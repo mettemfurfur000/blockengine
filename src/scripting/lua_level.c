@@ -294,8 +294,16 @@ static int lua_layer_paste_block(lua_State *L)
 
 	u64 old_id = 0;
 
-	if (layer_copy_vars(wrapper->l, x, y, id == 0 ? (blob){} : res->vars_sample) != SUCCESS)
-		luaL_error(L, "Failed to copy vars at: %d, %d", x, y);
+	if (id == 0)
+	{
+		if (block_delete_vars(wrapper->l, x, y) != SUCCESS)
+			luaL_error(L, "Failed to delete vars at: %d, %d", x, y);
+	}
+	else
+	{
+		if (layer_copy_vars(wrapper->l, x, y, id == 0 ? (blob){} : res->vars_sample) != SUCCESS)
+			luaL_error(L, "Failed to copy vars at: %d, %d", x, y);
+	}
 
 	if (block_get_id(wrapper->l, x, y, &old_id) != SUCCESS)
 		luaL_error(L, "Failed to get id at: %d, %d", x, y);
@@ -762,25 +770,36 @@ static int lua_layer_get_entities(lua_State *L)
 	return 1;
 }
 
+static int lua_layer_cleanup_unused_vars(lua_State *L)
+{
+	LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+	u8 result = layer_cleanup_unused_vars(wrapper->l);
+
+	lua_pushboolean(L, result == SUCCESS);
+	return 1;
+}
+
 void lua_layer_register(lua_State *L)
 {
 	const static luaL_Reg layer_methods[] = {
-		{		 "get_size",			 lua_layer_get_size},
-		{		 "for_each",			 lua_layer_for_each},
-		{		   "set_id",			   lua_layer_set_id},
-		{		   "get_id",			   lua_block_get_id},
+		{		   "get_size",			 lua_layer_get_size},
+		{		   "for_each",			 lua_layer_for_each},
+		{			 "set_id",			   lua_layer_set_id},
+		{			 "get_id",			   lua_block_get_id},
 		{		 "move_block",		   lua_layer_move_block},
-		{		 "paste_block",		lua_layer_paste_block},
-		{"get_input_handler", lua_get_block_input_handler},
+		{		 "paste_block",			lua_layer_paste_block},
+		{	 "get_input_handler",	  lua_get_block_input_handler},
 		{		 "set_static",		   lua_layer_set_static},
-		{		 "get_vars",			 lua_block_get_vars},
-		{		 "set_vars",		 lua_block_copy_vars},
-		{		   "bprint",				   lua_bprintf},
-		{			 "tick",		 lua_layer_tick_blocks},
-		{			 "uuid",			 lua_uuid_shared},
+		{		   "get_vars",			 lua_block_get_vars},
+		{		   "set_vars",			 lua_block_copy_vars},
+		{			 "bprint",				   lua_bprintf},
+		{			   "tick",		 lua_layer_tick_blocks},
+		{			   "uuid",				 lua_uuid_shared},
 		{		 "new_entity",		   lua_layer_new_entity},
-		{	 "get_entities",		 lua_layer_get_entities},
-		{			   NULL,						NULL},
+		{		 "get_entities",		 lua_layer_get_entities},
+		{"cleanup_unused_vars", lua_layer_cleanup_unused_vars},
+		{				 NULL,						  NULL},
 	};
 
 	luaL_newmetatable(L, "Layer");

@@ -70,6 +70,14 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             local dir = vars:get_u8("t")
             local facing_vec = vec.delta(dir)
 
+            if keystate['x'] == 1 then
+                print("checking layers")
+                for i, v in pairs(G_view_menu) do
+                    print("Result cleaning up layer " .. i .. " is " .. (v.layer:cleanup_unused_vars() and "true" or
+                        "false"));
+                end
+            end
+
             if keystate['f'] == 1 then
                 local fish_id = wrappers.find_block(G_engine_table, "fish").id
 

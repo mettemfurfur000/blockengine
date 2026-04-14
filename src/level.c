@@ -754,3 +754,76 @@ block_entity *layer_get_block_entity(layer *l, handle32 h)
 		return NULL;
 	return block_entity_get(l, h);
 }
+
+static u32 cleanup_iter_entity(handle32 h, void *ptr, void *user_data)
+{
+	struct
+	{
+		u16 *used_handles;
+		u16 capacity;
+	} *ctx = user_data;
+
+	block_entity *e = (block_entity *)ptr;
+	if (e->var_handle.index != INVALID_HANDLE_INDEX && e->var_handle.index < ctx->capacity)
+	{
+		ctx->used_handles[e->var_handle.index] = 1;
+	}
+	return SUCCESS;
+}
+
+u8 layer_cleanup_unused_vars(layer *l)
+{
+	if (!l || !l->var_pool.table)
+		return FAIL;
+
+	u16 capacity = handle_table_capacity(l->var_pool.table);
+	u16 *used_handles = calloc(capacity, sizeof(u16));
+	if (!used_handles)
+		return FAIL;
+
+	for (u16 y = 0; y < l->height; y++)
+	{
+		for (u16 x = 0; x < l->width; x++)
+		{
+			handle32 h = block_get_var_handle(l, x, y);
+			if (h.index != INVALID_HANDLE_INDEX && h.index < capacity)
+			{
+				used_handles[h.index] = 1;
+			}
+		}
+	}
+
+	if (l->block_entity_pool)
+	{
+		struct
+		{
+			u16 *used_handles;
+			u16 capacity;
+		} ctx = {.used_handles = used_handles, .capacity = capacity};
+
+		handle_table_iterate(l->block_entity_pool, cleanup_iter_entity, &ctx);
+	}
+
+	LOG_INFO("Checking var pool for unused handles (capacity: %u)", capacity);
+	u32 cleaned = 0;
+	for (u16 i = 1; i < capacity; i++)
+	{
+		if (!used_handles[i] && handle_table_slot_active(l->var_pool.table, i))
+		{
+			handle32 h = {.index = i, .active = 1};
+			blob *b = (blob *)handle_table_get(l->var_pool.table, h);
+			if (b && b->ptr)
+			{
+				char buffer[256] = {0};
+				dbg_data_layout(*b, buffer);
+				LOG_INFO("Cleaning unused var handle at index %u: %s", i, buffer);
+				var_table_free_handle(&l->var_pool, h);
+				cleaned++;
+			}
+		}
+	}
+
+	LOG_INFO("Cleaned up %u unused var handles", cleaned);
+	free(used_handles);
+	return SUCCESS;
+}

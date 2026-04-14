@@ -25,18 +25,26 @@ blockengine.register_handler(events.ENGINE_INIT, function()
         y = 0
     }
 
+    local found = false
+    G_view_menu.mouse.layer:for_each(current_block, function(x, y)
+        if found then return end
+        print("found an existing mouse, will use it")
+
+        found = true
+
+        pos.x = x
+        pos.y = y
+    end)
+
     ---@class Layer
     G_mouse.home_layer = G_view_menu.mouse.layer
     G_mouse.home_layer_index = G_view_menu.mouse.index
     G_mouse.pos = pos
 
-    G_mouse.home_layer:for_each(current_block, function(x, y)
-        print("found an existing mouse, OBLITERATE")
-        G_mouse.home_layer:paste_block(x, y, 0)
-    end)
-
-    if G_mouse.home_layer:paste_block(G_mouse.pos.x, G_mouse.pos.y, current_block) == false then
-        error("failed to paste a mouse block")
+    if not found then
+        if G_mouse.home_layer:paste_block(G_mouse.pos.x, G_mouse.pos.y, current_block) == false then
+            error("failed to paste a mouse block")
+        end
     end
 
     local vars = G_mouse.home_layer:get_vars(G_mouse.pos.x, G_mouse.pos.y)

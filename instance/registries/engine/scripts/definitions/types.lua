@@ -64,6 +64,7 @@
 ---@field uuid fun(self:Layer):integer
 ---@field new_entity fun(self:Layer, block_id:integer, x:number, y:number):BlockEntity|nil
 ---@field get_entities fun(self:Layer):BlockEntity[]
+---@field cleanup_unused_vars fun(self:Layer):boolean
 
 ---@class Room
 ---@field get_name fun(self:Room):string
