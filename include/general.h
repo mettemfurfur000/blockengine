@@ -71,4 +71,6 @@ inline static i64 MIN(i64 a, i64 b)
 	} while (0)
 #endif
 
+void *memmem(const void *haystack, size_t haystack_len, const void *const needle, const size_t needle_len);
+
 #endif

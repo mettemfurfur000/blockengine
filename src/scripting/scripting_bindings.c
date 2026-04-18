@@ -84,7 +84,7 @@ void lua_register_engine_objects(lua_State *L)
 {
 	lua_sdl_functions_register(L);
 
-	lua_level_register(L); /* level editing */
+	lua_level_register(L);
 	lua_room_register(L);
 	lua_layer_register(L);
 
@@ -94,10 +94,8 @@ void lua_register_engine_objects(lua_State *L)
 	lua_varhandle_register(L);
 
 	image_load_editing_library(L);
-	
-	/* client render rules */
+
 	lua_logging_register(g_L);
 	lua_level_editing_lib_register(g_L);
 	lua_register_render_rules(g_L);
-
 }

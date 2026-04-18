@@ -109,8 +109,6 @@ u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
 	// TODO: handle the block update and send
 
 	spatial_grid_update(&l->spatial, x, y, old_id, id);
-	update_block_push(&l->id_updates, x, y, id, l->block_size);
-
 	return SUCCESS;
 }
 
@@ -202,8 +200,6 @@ void block_set_var_handle(layer *l, u16 x, u16 y, handle32 handle)
 		return;
 
 	memcpy(BLOCK_ID_PTR(l, x, y) + l->block_size, (u8 *)&handle, sizeof(handle32));
-
-	update_var_push(&l->var_updates, x, y, handle);
 }
 
 u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out)
@@ -271,8 +267,6 @@ handle32 layer_copy_new_vars(layer *l, blob vars)
 	assert(blob_ptr);
 	memcpy(blob_ptr->ptr, vars.ptr, vars.size);
 
-	update_component_new_push(&l->var_updates, newh, vars);
-
 	return newh;
 }
 
@@ -308,7 +302,6 @@ u8 layer_copy_vars(layer *l, u16 x, u16 y, blob vars)
 			blob_ptr->size = vars.size;
 			memcpy(blob_ptr->ptr, vars.ptr, vars.size);
 
-			update_component_new_push(&l->var_updates, existing, vars);
 			return SUCCESS;
 		}
 
@@ -365,10 +358,6 @@ u8 init_layer(layer *l, room *parent_room)
 	{
 		l->block_entity_pool = handle_table_create(256);
 	}
-
-	l->id_updates = update_acc_new();
-	l->var_updates = update_acc_new();
-	l->var_component_updates = update_acc_new();
 
 	return SUCCESS;
 }
@@ -438,11 +427,6 @@ u8 free_layer(layer *l)
 	}
 
 	SAFE_FREE(l->blocks);
-
-	/* Cleanup update accumulator */
-	update_acc_free(&l->id_updates);
-	update_acc_free(&l->var_updates);
-	update_acc_free(&l->var_component_updates);
 
 	l->uuid = 0;
 
@@ -625,120 +609,6 @@ void layer_build_spatial_grid(layer *l)
 	if (!l || !l->blocks)
 		return;
 	spatial_grid_build_from_layer(&l->spatial, l->width, l->height, l->block_size, l->blocks, l->total_bytes_per_block);
-}
-
-// updates
-
-void block_apply_id_changes(layer *l)
-{
-	for (u32 i = 0; i < l->id_updates.update_count; i++)
-	{
-		// TODO: Updates dont actually do anything because there is no real netcode at the moment and updates are not
-		// being sent around the network
-
-		// update_block u = update_block_read(l->id_updates, l->block_size);
-		// block_set_id_now(l, u.x, u.y, u.id);
-	}
-
-	vec_clear(&l->id_updates.update_stream.handle.raw.bytes);
-	l->id_updates.update_count = 0;
-}
-
-void block_apply_varhandle_changes(layer *l)
-{
-	for (u32 i = 0; i < l->var_updates.update_count; i++)
-	{
-		// TODO: Updates dont actually do anything because there is no real netcode at the moment and updates are not
-		// being sent around the network
-		// update_varhandle u = update_var_read(l->var_updates);
-		// block_set_var_handle_now(l, u.x, u.y, u.h);
-	}
-
-	vec_clear(&l->var_updates.update_stream.handle.raw.bytes);
-	l->var_updates.update_count = 0;
-}
-
-void block_apply_var_component_changes(layer *l)
-{
-	if (!l->var_pool.table)
-		return;
-
-	// TODO: Updates dont actually do anything because there is no real netcode at the moment and updates are not
-	// being sent around the network
-	goto skip;
-
-	for (u32 i = 0; i < l->var_component_updates.update_count; i++)
-	{
-		update_var_component u = update_component_read(l->var_component_updates);
-
-		switch (u.type)
-		{
-		case COMPONENT_UPDATE_NEW:;
-			LOG_DEBUG("COMPONENT_UPDATE_NEW %d", u.size);
-			handle32 ret = handle_table_set(l->var_pool.table, u.h, u.blob);
-			assert(ret.index != INVALID_HANDLE_INDEX);
-			assert(ret.index == u.h.index);
-			break;
-		case COMPONENT_UPDATE_SET:;
-			LOG_DEBUG("COMPONENT_UPDATE_SET");
-			blob *b = (blob *)handle_table_get(l->var_pool.table, u.h);
-			assert(b);
-			assert(u.size);
-			switch (u.size)
-			{
-			case 1:
-				assert(var_set_u8(b, u.letter, *u.raw) == SUCCESS);
-				break;
-			case 2:
-				assert(var_set_u16(b, u.letter, *(u16 *)u.raw) == SUCCESS);
-				break;
-			case 4:
-				assert(var_set_u32(b, u.letter, *(u32 *)u.raw) == SUCCESS);
-				break;
-			case 8:
-				assert(var_set_u64(b, u.letter, *(u64 *)u.raw) == SUCCESS);
-				break;
-			default:
-				assert(var_set_raw(b, u.letter, (blob){.ptr = u.raw, .length = u.size}) == SUCCESS);
-				break;
-			}
-			break;
-		case COMPONENT_UPDATE_ADD:
-			LOG_DEBUG("COMPONENT_UPDATE_ADD");
-			blob *b2 = (blob *)handle_table_get(l->var_pool.table, u.h);
-			assert(b2);
-			assert(var_add(b2, u.letter, u.size) == SUCCESS);
-			break;
-		case COMPONENT_UPDATE_DELETE:
-			LOG_DEBUG("COMPONENT_UPDATE_DELETE");
-			blob *b3 = (blob *)handle_table_get(l->var_pool.table, u.h);
-			assert(b3);
-			assert(var_delete(b3, u.letter) == SUCCESS);
-			break;
-		case COMPONENT_UPDATE_RESIZE:
-			LOG_DEBUG("COMPONENT_UPDATE_RESIZE");
-			blob *b4 = (blob *)handle_table_get(l->var_pool.table, u.h);
-			assert(b4);
-			assert(var_resize(b4, u.letter, u.size) == SUCCESS);
-			break;
-		case COMPONENT_UPDATE_RENAME:
-			// TODO
-			break;
-		}
-	}
-skip:
-
-	vec_clear(&l->var_component_updates.update_stream.handle.raw.bytes);
-	l->var_component_updates.update_count = 0;
-}
-
-u8 block_apply_updates(layer *l)
-{
-	block_apply_id_changes(l);
-	block_apply_varhandle_changes(l);
-	block_apply_var_component_changes(l);
-
-	return SUCCESS;
 }
 
 bool layer_block_entity_is_valid(layer *l, handle32 h)

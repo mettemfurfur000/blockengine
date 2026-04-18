@@ -11,8 +11,6 @@
 #include "block_entity.h"
 #include "update_system.h"
 
-#include "sdl2_basics.h"
-
 #include "vec/src/vec.h"
 
 #define LAYER_FLAG_USE_VARS (1 << 0)
@@ -48,10 +46,6 @@ typedef struct layer
 
 	handle_table *block_entity_pool;
 	u32 block_entity_count_estimate;
-
-	update_accumulator id_updates;
-	update_accumulator var_updates;
-	update_accumulator var_component_updates;
 } layer;
 
 typedef struct level level;
@@ -87,8 +81,6 @@ typedef struct level
 u8 block_set_id(layer *l, u16 x, u16 y, u64 id);
 u8 block_get_id(layer *l, u16 x, u16 y, u64 *id);
 u8 block_move(layer *l, u16 x, u16 y, i16 dx, i16 dy);
-
-u8 block_apply_updates(layer *l);
 
 u8 block_get_vars(const layer *l, u16 x, u16 y, blob **vars_out);
 

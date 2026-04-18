@@ -72,7 +72,7 @@ DEPS_CPP := $(patsubst %.cpp,obj/%.d,$(SRCS_CPP))
 DEPS := $(DEPS_C) $(DEPS_CPP) $(DEPS_MAIN)
 # DEPS := $(shell echo $(DEPS) | sed 's#/./#/#')
 
-all: client_app builder
+all: blockengine builder
 
 -include $(DEPS)
 
@@ -94,10 +94,10 @@ obj/%.o : src/%.c
 obj/%.o : src/%.cpp
 	g++ -std=c++17 $(CFLAGS) -c $< -o $@
 
-.PHONY: client_app
-client_app: mains/client.c copy_instance vec $(OBJS)
-	gcc -o obj/client.o -c mains/client.c ${CFLAGS}
-	g++ ${CFLAGS} -o build/client obj/client.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
+.PHONY: blockengine
+blockengine: mains/blockengine_base.c copy_instance vec $(OBJS)
+	gcc -o obj/blockengine_base.o -c mains/blockengine_base.c ${CFLAGS}
+	g++ ${CFLAGS} -o build/blockengine_base obj/blockengine_base.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
 .PHONY: builder
 builder: mains/builder.c copy_instance vec $(OBJS)
@@ -110,9 +110,9 @@ tex_gen: mains/tex_gen.c copy_instance vec $(OBJS)
 	g++ ${CFLAGS} -o build/tex_gen obj/tex_gen.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
 # use this when packaging to get all the dll-s used
-.PHONY: grab_client_dlls
-grab_client_dlls:
-	-./scripts/grab_dlls.sh build/client.exe /mingw64/bin 2
+.PHONY: grab_dlls
+grab_dlls:
+	-./scripts/grab_dlls.sh build/blockengine_base.exe /mingw64/bin 2
 
 clean:
 	rm -rf build/*

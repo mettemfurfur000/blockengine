@@ -66,6 +66,7 @@ extern "C"
 	void log_start_new(const char *fname);
 	void log_start(const char *fname);
 	void log_end();
+	int log_msg_s(const char *format, ...);
 	void log_msg(unsigned char level, const char *format, ...);
 
 	char *to_bin(unsigned char n, char *buf);

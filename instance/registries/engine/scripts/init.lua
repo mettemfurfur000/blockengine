@@ -183,7 +183,7 @@ blockengine.register_handler(events.ENGINE_TICK, function(code) -- tick over all
 end)
 
 blockengine.register_handler(events.ENGINE_FRAME_PRE, function(code) -- tick over all existing jumpers
-    G_level:apply_updates()
+    -- G_level:apply_updates()
 end)
 
 blockengine.register_handler(events.SDL_QUIT, function(code) -- tick over all existing jumpers

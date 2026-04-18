@@ -50,23 +50,6 @@ static int lua_save_level(lua_State *L)
 	return 1;
 }
 
-static int lua_level_apply_updates(lua_State *L)
-{
-	LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
-
-	for (u32 ri = 0; ri < wrapper->lvl->rooms.length; ri++)
-	{
-		room *r = wrapper->lvl->rooms.data[ri];
-
-		for (u32 i = 0; i < r->layers.length; i++)
-		{
-			block_apply_updates(r->layers.data[i]);
-		}
-	}
-
-	return 0;
-}
-
 static int lua_level_registry_serialize(lua_State *L)
 {
 	LUA_CHECK_USER_OBJECT(L, Level, wrapper, 1);
@@ -814,7 +797,6 @@ void lua_level_register(lua_State *L)
 		{		 "load_registry",		  lua_level_load_registry},
 		{	 "serialize_registry",   lua_level_registry_serialize},
 		{"deserialize_registry", lua_level_registry_deserialize},
-		{		 "apply_updates",		  lua_level_apply_updates},
 		{		 "get_registries",	   lua_level_get_registries},
 		{		 "add_existing",		 lua_level_add_existing},
 		{		 "get_room_count",	   lua_level_get_room_count},

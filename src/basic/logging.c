@@ -68,28 +68,56 @@ char *log_level_to_str(unsigned char level)
 	}
 }
 
+int log_msg_s(const char *format, ...)
+{
+	if (!log_enabled)
+		return -1;
+
+	va_list args;
+	va_start(args, format);
+	int ret = vfprintf(log_file, format, args);
+	if (ret < 0)
+	{
+		perror("logging error occured");
+		printf("logging disabled\n");
+		log_enabled = false;
+
+		return -1;
+	}
+	va_end(args);
+
+	fprintf(log_file, "\n");
+	fflush(log_file);
+
+	return ret;
+}
+
 void log_msg(unsigned char level, const char *format, ...)
 {
-	if (!log_enabled || level == 0)
+	if (!log_enabled)
 		return;
 
 	static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_lock(&log_mutex);
 
-	time_t now = time(NULL);
-	char *timestr = ctime(&now);
-	timestr[strlen(timestr) - 1] = '\0';
-	fprintf(log_file, "[%s] [%s] ", timestr, log_level_to_str(level));
+	if (level)
+	{
+		time_t now = time(NULL);
+		char *timestr = ctime(&now);
+		timestr[strlen(timestr) - 1] = '\0';
+		fprintf(log_file, "[%s] [%s] ", timestr, log_level_to_str(level));
+	}
 
 	va_list args;
 	va_start(args, format);
 	int ret = vfprintf(log_file, format, args);
-	va_end(args);
-
 	if (ret < 0)
 	{
-		// Handle error
+		perror("logging error occured");
+		printf("logging disabled\n");
+		log_enabled = false;
 	}
+	va_end(args);
 
 	fprintf(log_file, "\n");
 	fflush(log_file);

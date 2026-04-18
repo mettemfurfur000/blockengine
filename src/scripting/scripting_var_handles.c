@@ -153,8 +153,6 @@ static int lua_varhandle_set_string(lua_State *L)
 	lua_pushboolean(L, var_set_str(_b, key[0], value) == SUCCESS);
 	lua_pushboolean(L, true);
 
-	update_component_set_push(&_vh->l->var_component_updates, _vh->h, key[0], strlen(value), (void *)value);
-
 	return 1;
 }
 
@@ -170,8 +168,6 @@ static int lua_varhandle_add_variable(lua_State *L)
 	lua_pushboolean(L, var_add(_b, key[0], length) == SUCCESS);
 	lua_pushboolean(L, true);
 
-	update_component_add_push(&_vh->l->var_component_updates, _vh->h, key[0], length);
-
 	return 1;
 }
 static int lua_varhandle_remove(lua_State *L)
@@ -184,8 +180,6 @@ static int lua_varhandle_remove(lua_State *L)
 
 	lua_pushboolean(L, var_delete(_b, key[0]) == SUCCESS);
 	lua_pushboolean(L, true);
-
-	update_component_delete_push(&_vh->l->var_component_updates, _vh->h, key[0]);
 
 	return 1;
 }
@@ -202,8 +196,6 @@ static int lua_varhandle_resize(lua_State *L)
 	lua_pushboolean(L, var_resize(_b, key[0], (u8)new_size) == SUCCESS);
 	lua_pushboolean(L, true);
 
-	update_component_resize_push(&_vh->l->var_component_updates, _vh->h, key[0], new_size);
-
 	return 1;
 }
 
@@ -218,8 +210,6 @@ static int lua_varhandle_rename(lua_State *L)
 
 	lua_pushboolean(L, var_rename(_b, old_key[0], new_key[0]) == SUCCESS);
 	lua_pushboolean(L, true);
-
-	update_component_rename_push(&_vh->l->var_component_updates, _vh->h, old_key[0], new_key[0]);
 
 	return 1;
 }
@@ -275,7 +265,6 @@ static int lua_varhandle_tostring(lua_State *L)
 		lua_Number number = luaL_checknumber(L, 3);                                                                    \
 		if (strlen(key) > 1)                                                                                           \
 			return luaL_error(L, "Key must be a single character");                                                    \
-		update_component_set_push_##type(&_vh->l->var_component_updates, _vh->h, key[0], (type)number);                \
 		lua_pushboolean(L, var_set_##type(_b, key[0], (type)number) == SUCCESS);                                       \
 		return 1;                                                                                                      \
 	}
