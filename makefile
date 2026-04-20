@@ -50,7 +50,7 @@ endif
 
 # general libraries 
 
-LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer
+LDFLAGS += -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -lbox2d
 
 SRCS_C := $(shell cd src;find . -name '*.c')
 SRCS_CPP := $(shell cd src;find . -name '*.cpp')

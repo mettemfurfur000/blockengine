@@ -1,8 +1,10 @@
 #include "include/file_system.h"
+
 #include "include/folder_structure.h"
 #include "include/handle.h"
 #include "include/level.h"
 #include "include/logging.h"
+#include <lua.h>
 // #include "include/vars.h"
 
 // TODO: this serialization code is stinky, mayb remake in a more modular way?/
@@ -195,6 +197,8 @@ void read_room(room *r, stream_t *f)
 		read_layer(l, r, f);
 		r->layers.data[i] = l;
 	}
+
+	room_create_world(r, NULL);
 }
 
 u8 save_level(level lvl)

@@ -1,10 +1,12 @@
-#include "vec_math.h"
 #ifndef BLOCK_ENTITY_H
 #define BLOCK_ENTITY_H 1
 
 #include "general.h"
 #include "handle.h"
 #include "hashtable.h"
+
+#include "vec_math.h"
+#include <box2d/id.h>
 
 struct layer;
 
@@ -24,12 +26,9 @@ extern "C"
 		u64 uuid;
 		u64 block_id;
 
-		vec2 pos;
-		vec2 velocity;
-		vec2 force;
-		f32 mass;
+		// box2d-getted values, does not actualy do anything if changed.
+		b2BodyId b2_body_id;
 
-		f32 rotation;
 		f32 scale_x, scale_y;
 
 		vec2 pos_old;
@@ -45,19 +44,6 @@ extern "C"
 
 	u8 block_entity_get_vars(const block_entity *e, blob **vars_out);
 	void block_entity_set_var_handle(block_entity *e, handle32 handle);
-
-	void block_entity_physics_step(block_entity *e, float dt);
-
-	typedef struct
-	{
-		vec2 block_pos;
-		u64 block_id;
-		vec2 hit_pos;
-	} collision_result;
-
-	bool block_entity_check_collision(block_entity *e, struct layer *collider_layer);
-	bool block_entity_get_collision_info(block_entity *e, struct layer *collider_layer, collision_result* ret);
-	bool block_entity_check_collision_swept(block_entity *e, struct layer *collider_layer, f32 dt, collision_result* ret);
 
 #ifdef __cplusplus
 }

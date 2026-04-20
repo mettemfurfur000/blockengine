@@ -86,10 +86,17 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                     (y + 0.5 + facing_vec.y) * G_block_size
                 )
 
-                local fish_launch_velocity = vec.mult(facing_vec, G_block_size * 20);
+                if ent == nil then
+                    wrappers.log_error("failed to create an entity")
+                else
+                    wrappers.log_message("spawned an entity! " .. ent.block_id)
+                end
 
-                ent.velocity_x = fish_launch_velocity.x + math.random(-25, 25)
-                ent.velocity_y = fish_launch_velocity.y + math.random(-25, 25)
+
+                -- local fish_launch_velocity = vec.mult(facing_vec, G_block_size * 20);
+
+                -- ent.velocity_x = fish_launch_velocity.x + math.random(-25, 25)
+                -- ent.velocity_y = fish_launch_velocity.y + math.random(-25, 25)
 
                 -- spawn the real maximum amount of fish
                 -- for i = 1, 1000, 1 do

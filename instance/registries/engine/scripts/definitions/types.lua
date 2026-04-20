@@ -65,8 +65,10 @@
 ---@field new_entity fun(self:Layer, block_id:integer, x:number, y:number):BlockEntity|nil
 ---@field get_entities fun(self:Layer):BlockEntity[]
 ---@field cleanup_unused_vars fun(self:Layer):boolean
+---@field build_ground_physics fun(self:Layer)
 
 ---@class Room
+---@field box2d_tick fun(self:Room)
 ---@field get_name fun(self:Room):string
 ---@field get_size fun(self:Room):integer, integer
 ---@field get_layer fun(self:Room, index:integer):Layer

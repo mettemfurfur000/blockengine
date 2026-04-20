@@ -6,6 +6,9 @@
 
 #include "include/level.h"
 #include "include/scripting_var_handles.h"
+#include "include/vec_math.h"
+#include <box2d/box2d.h>
+#include <box2d/math_functions.h>
 #include <lua.h>
 
 static int lua_entity_new_index(lua_State *L)
@@ -17,22 +20,20 @@ static int lua_entity_new_index(lua_State *L)
 	if (!e)
 		return 0;
 
-	else if (strcmp(property, "position_x") == 0)
-		e->pos.x = (float)luaL_checknumber(L, 3);
-	else if (strcmp(property, "position_y") == 0)
-		e->pos.y = (float)luaL_checknumber(L, 3);
-	else if (strcmp(property, "velocity_x") == 0)
-		e->velocity.x = (float)luaL_checknumber(L, 3);
-	else if (strcmp(property, "velocity_y") == 0)
-		e->velocity.y = (float)luaL_checknumber(L, 3);
-	else if (strcmp(property, "force_x") == 0)
-		e->force.x = (float)luaL_checknumber(L, 3);
-	else if (strcmp(property, "force_y") == 0)
-		e->force.y = (float)luaL_checknumber(L, 3);
-	else if (strcmp(property, "rotation") == 0)
-		e->rotation = (float)luaL_checknumber(L, 3);
-	else if (strcmp(property, "mass") == 0)
-		e->mass = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "transform") == 0)
+	{
+		f32 x = lua_getfield(L, 3, "x");
+		f32 y = lua_getfield(L, 3, "y");
+		f32 c = lua_getfield(L, 3, "c");
+		f32 s = lua_getfield(L, 3, "s");
+
+		b2Transform t = {
+			{x, y},
+			{c, s}
+		  };
+
+		b2Body_SetTransform(e->b2_body_id, t.p, t.q);
+	}
 	else if (strcmp(property, "scale_x") == 0)
 		e->scale_x = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "scale_y") == 0)
@@ -69,17 +70,25 @@ static int lua_entity_new_index(lua_State *L)
 	return 0;
 }
 
+#define LUA_ENT_PRE_CALL_CHECKS(L)                                                                                     \
+	LUA_CHECK_USER_OBJECT(L, BlockEntity, wrapper, 1);                                                                 \
+	assert(wrapper->l);                                                                                                \
+	if (!handle_is_valid(wrapper->l->block_entity_pool, wrapper->h))                                                   \
+		return luaL_error(L, "Entity handle is invalid");
+
 static int entity_remove_function(lua_State *L)
 {
-	LUA_CHECK_USER_OBJECT(L, BlockEntity, wrapper, 1);
+	LUA_ENT_PRE_CALL_CHECKS(L)
 
-	if (wrapper->l && handle_is_valid(wrapper->l->block_entity_pool, wrapper->h))
-	{
-		layer_remove_block_entity(wrapper->l, wrapper->h);
-	}
-
-	return 0;
+	return layer_remove_block_entity(wrapper->l, wrapper->h), 0;
 }
+
+// static int entity_apply_force_function(lua_State *L)
+// {
+// 	LUA_ENT_PRE_CALL_CHECKS(L)
+
+// 	return layer_remove_block_entity(wrapper->l, wrapper->h), 0;
+// }
 
 static int lua_entity_index(lua_State *L)
 {
@@ -92,44 +101,35 @@ static int lua_entity_index(lua_State *L)
 		lua_pushnil(L);
 		return 1;
 	}
-	else if (strcmp(key, "position_x") == 0)
+	else if (strcmp(key, "transform") == 0)
 	{
-		lua_pushnumber(L, e->pos.x);
-		return 1;
-	}
-	else if (strcmp(key, "position_y") == 0)
-	{
-		lua_pushnumber(L, e->pos.y);
-		return 1;
-	}
-	else if (strcmp(key, "velocity_x") == 0)
-	{
-		lua_pushnumber(L, e->velocity.x);
-		return 1;
-	}
-	else if (strcmp(key, "velocity_y") == 0)
-	{
-		lua_pushnumber(L, e->velocity.y);
-		return 1;
-	}
-	else if (strcmp(key, "force_x") == 0)
-	{
-		lua_pushnumber(L, e->force.x);
-		return 1;
-	}
-	else if (strcmp(key, "force_y") == 0)
-	{
-		lua_pushnumber(L, e->force.y);
+		if (!b2Body_IsValid(e->b2_body_id))
+		{
+			lua_pushnil(L);
+			return 1;
+		}
+
+		b2Transform t = b2Body_GetTransform(e->b2_body_id);
+		lua_newtable(L); // index 3
+
+		lua_pushnumber(L, t.p.x);
+		lua_setfield(L, 3, "x");
+		lua_pushnumber(L, t.p.y);
+		lua_setfield(L, 3, "y");
+
+		// lua_pushnumber(L, t.q.c);
+		// lua_setfield(L, 3, "c");
+		// lua_pushnumber(L, t.q.s);
+		// lua_setfield(L, 3, "s");
+
+		lua_pushnumber(L, RAD_TO_DEG(b2Rot_GetAngle(t.q)));
+		lua_setfield(L, 3, "r");
+
 		return 1;
 	}
 	else if (strcmp(key, "uuid") == 0)
 	{
 		lua_pushinteger(L, (lua_Integer)e->uuid);
-		return 1;
-	}
-	else if (strcmp(key, "rotation") == 0)
-	{
-		lua_pushnumber(L, e->rotation);
 		return 1;
 	}
 	else if (strcmp(key, "scale_x") == 0)
@@ -145,11 +145,6 @@ static int lua_entity_index(lua_State *L)
 	else if (strcmp(key, "block_id") == 0)
 	{
 		lua_pushinteger(L, e->block_id);
-		return 1;
-	}
-	else if (strcmp(key, "mass") == 0)
-	{
-		lua_pushnumber(L, e->mass);
 		return 1;
 	}
 	else if (strcmp(key, "remove") == 0)

@@ -6,9 +6,13 @@
 #include "include/flags.h"
 #include "include/general.h"
 #include "include/level.h"
+#include "include/logging.h"
 #include "include/sdl2_basics.h"
 #include "include/spatial_grid.h"
 #include "include/vars.h"
+#include "include/vec_math.h"
+#include <box2d/box2d.h>
+#include <box2d/math_functions.h>
 
 #define BLOCKS_EXTRA 1
 
@@ -302,8 +306,16 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 
 	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - e->timestamp_old) / (1000.0f / TPS)));
 
-	f32 interp_x = lerp((f32)e->pos_old.x, (f32)e->pos.x, slice_clamp_pos);
-	f32 interp_y = lerp((f32)e->pos_old.y, (f32)e->pos.y, slice_clamp_pos);
+	if (!b2Body_IsValid(e->b2_body_id))
+		return SUCCESS;
+
+	b2Vec2 e_pos = b2Body_GetPosition(e->b2_body_id);
+	f32 rotation = RAD_TO_DEG(b2Rot_GetAngle(b2Body_GetRotation(e->b2_body_id)));
+
+	f32 interp_x = lerp((f32)e->pos_old.x, (f32)e_pos.x, slice_clamp_pos);
+	f32 interp_y = lerp((f32)e->pos_old.y, (f32)e_pos.y, slice_clamp_pos);
+
+	LOG_DEBUG("interping between %f and %f, result %f", e->pos_old.y, e_pos.y, interp_y);
 
 	f32 dest_x = -block_x_offset + interp_x - (udata->local_block_width / 2.0f);
 	f32 dest_y = -block_y_offset + interp_y - (udata->local_block_width / 2.0f);
@@ -317,7 +329,7 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 	block_entity_get_vars(e, &var);
 
 	computed_render_props props;
-	compute_render_props(&br, var, ms_since_start, e->timestamp_old, (i16)e->rotation, &props);
+	compute_render_props(&br, var, ms_since_start, e->timestamp_old, (i16)roundf(rotation), &props);
 
 	f32 scale_x = e->scale_x * slice.zoom * 1.0f;
 	f32 scale_y = e->scale_y * slice.zoom * 1.0f;

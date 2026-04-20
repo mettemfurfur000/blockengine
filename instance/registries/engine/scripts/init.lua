@@ -140,7 +140,7 @@ G_menu_definition = {
     [1] = { name = "floor", bytes = 1, use_vars = false, is_ui = false, use_entities = false },
     [2] = { name = "objects", bytes = 1, use_vars = true, is_ui = false, use_entities = true },
     [3] = { name = "pallete", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
-    [4] = { name = "text", bytes = 1, use_vars = true, is_ui = true , use_entities = false},
+    [4] = { name = "text", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
     [5] = { name = "mouse", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
 }
 
@@ -177,9 +177,11 @@ G_sdl_tick = 0
 blockengine.register_handler(events.ENGINE_TICK, function(code) -- tick over all existing jumpers
     G_tick = G_tick + 1
     G_sdl_tick = sdl.get_ticks()
+
     G_view_menu.objects.layer:tick(0) -- default tick - resets all values in a preparation for an actual pass
     -- G_view_menu.objects.layer:tick(1)
     -- G_level:apply_updates()
+    G_menu_room:box2d_tick()
 end)
 
 blockengine.register_handler(events.ENGINE_FRAME_PRE, function(code) -- tick over all existing jumpers
@@ -235,6 +237,8 @@ blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
         -- print("found some text at " .. x .. ", " .. y)
         G_view_menu.text.layer:paste_block(x, y, 0)
     end)
+
+    G_view_menu.objects.layer:build_ground_physics()
 
     wrappers.try(function()
         set_render_rule_order(G_view_menu)

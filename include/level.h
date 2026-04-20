@@ -1,3 +1,4 @@
+#include <box2d/id.h>
 #ifndef LEVEL_H
 #define LEVEL_H 1
 
@@ -12,6 +13,8 @@
 #include "update_system.h"
 
 #include "vec/src/vec.h"
+
+#include <box2d/box2d.h>
 
 #define LAYER_FLAG_USE_VARS (1 << 0)
 #define LAYER_FLAG_HAS_REGISTRY (1 << 1)
@@ -60,7 +63,7 @@ typedef struct room
 	u16 height;
 
 	vec_void_t layers;
-	// physics_world_t physics_world; /* each room gets its own physics world */
+	b2WorldId b2_world_id; // world that this room and all layers will use.
 
 	u8 flags;
 } room;
@@ -103,6 +106,8 @@ u8 free_layer(layer *l);
 u8 free_room(room *r);
 u8 free_level(level *l);
 
+void room_create_world(room *r_target, room *shared);
+
 // more usable functions to create levels, rooms, layers
 
 level *level_create(const char *name);
@@ -123,5 +128,7 @@ block_entity *layer_get_block_entity(layer *l, handle32 h);
 
 bool layer_block_entity_is_valid(layer *l, handle32 h);
 u8 layer_cleanup_unused_vars(layer *l);
+
+void layer_build_ground_physics(layer *l);
 
 #endif

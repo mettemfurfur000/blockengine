@@ -1,3 +1,4 @@
+#include "include/general.h"
 #include "include/scripting/level.h"
 
 #include "include/scripting_bindings.h"
@@ -14,6 +15,8 @@
 
 #include "include/config.h"
 
+#include <box2d/box2d.h>
+#include <box2d/math_functions.h>
 #include <lauxlib.h>
 #include <lua.h>
 
@@ -211,6 +214,20 @@ static int lua_room_get_size(lua_State *L)
 	lua_pushinteger(L, wrapper->r->width);
 	lua_pushinteger(L, wrapper->r->height);
 	return 2;
+}
+
+static int lua_room_box2d_tick(lua_State *L)
+{
+	LUA_CHECK_USER_OBJECT(L, Room, wrapper, 1);
+
+	room *r = wrapper->r;
+
+	const f32 timeStep = 1.0f / TPS;
+	const u32 subStepCount = 5;
+
+	b2World_Step(r->b2_world_id, timeStep, subStepCount);
+
+	return 0;
 }
 
 static int lua_room_new_layer(lua_State *L)
@@ -524,40 +541,40 @@ typedef struct
 	u64 value;
 } tick_iter_data;
 
-u32 block_entity_collision_script(lua_State *L, block_entity *e, collision_result col_res)
-{
-	u64 id = e->block_id;
-	layer *l = e->parent_layer;
+// u32 block_entity_collision_script(lua_State *L, block_entity *e, collision_result col_res)
+// {
+// 	u64 id = e->block_id;
+// 	layer *l = e->parent_layer;
 
-	assert(l);
+// 	assert(l);
 
-	if (id == 0 || id >= l->registry->resources.length)
-		return SUCCESS;
+// 	if (id == 0 || id >= l->registry->resources.length)
+// 		return SUCCESS;
 
-	i32 ref = l->registry->resources.data[id].entity_collision_ref;
-	if (ref == 0)
-		return SUCCESS;
+// 	i32 ref = l->registry->resources.data[id].entity_collision_ref;
+// 	if (ref == 0)
+// 		return SUCCESS;
 
-	assert(lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION);
+// 	assert(lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION);
 
-	lua_pushvalue(L, 1);
-	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, e->handle);
-	lua_pushinteger(L, col_res.block_pos.x);
-	lua_pushinteger(L, col_res.block_pos.y);
-	lua_pushinteger(L, col_res.block_id);
-	lua_pushnumber(L, col_res.hit_pos.x);
-	lua_pushnumber(L, col_res.hit_pos.y);
+// 	lua_pushvalue(L, 1);
+// 	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, e->handle);
+// 	lua_pushinteger(L, col_res.block_pos.x);
+// 	lua_pushinteger(L, col_res.block_pos.y);
+// 	lua_pushinteger(L, col_res.block_id);
+// 	lua_pushnumber(L, col_res.hit_pos.x);
+// 	lua_pushnumber(L, col_res.hit_pos.y);
 
-	if (lua_pcall(L, 7, 0, 0) != 0)
-	{
-		LOG_ERROR("Error calling an entity collision callback : %s", lua_tostring(L, -1));
-		lua_pop(L, 1);
-		lua_pushnil(L);
-		return FAIL;
-	}
+// 	if (lua_pcall(L, 7, 0, 0) != 0)
+// 	{
+// 		LOG_ERROR("Error calling an entity collision callback : %s", lua_tostring(L, -1));
+// 		lua_pop(L, 1);
+// 		lua_pushnil(L);
+// 		return FAIL;
+// 	}
 
-	return SUCCESS;
-}
+// 	return SUCCESS;
+// }
 
 u32 block_entity_tick_script(lua_State *L, layer *l, block_entity *e, u64 value)
 {
@@ -587,7 +604,7 @@ u32 block_entity_tick_script(lua_State *L, layer *l, block_entity *e, u64 value)
 	return SUCCESS;
 }
 
-u32 block_entity_foreach(handle32 h, void *ptr, void *user_data)
+u32 block_entity_tick_each(handle32 h, void *ptr, void *user_data)
 {
 	block_entity *e = (block_entity *)ptr;
 	tick_iter_data *info = user_data;
@@ -596,17 +613,29 @@ u32 block_entity_foreach(handle32 h, void *ptr, void *user_data)
 	layer *l = e->parent_layer;
 	assert(l);
 
-	block_entity_physics_step(e, info->dt);
+	if (!b2Body_IsValid(e->b2_body_id))
+		return SUCCESS;
+
+	b2Transform t = b2Body_GetTransform(e->b2_body_id);
+
+	f32 rotation = b2Rot_GetAngle(t.q);
+
+	LOG_DEBUG("entity %x, pos(%.2f,%.2f), rot %f", h, t.p.x, t.p.y, rotation);
+
+	e->pos_old.x = t.p.x;
+	e->pos_old.y = t.p.y;
+
+	e->timestamp_old = SDL_GetTicks();
+
+	// block_entity_physics_step(e, info->dt);
 
 	if (!handle_is_valid(info->l->block_entity_pool, h))
 		return SUCCESS;
 
-	collision_result res = {};
-
-	if (l->registry->resources.data[e->block_id].entity_collision_ref)
-		if (block_entity_check_collision_swept(e, l, info->dt, &res))
-			if (block_entity_collision_script(info->L, e, res) != SUCCESS)
-				return FAIL;
+	// if (l->registry->resources.data[e->block_id].entity_collision_ref)
+	// 	if (block_entity_check_collision_swept(e, l, info->dt, &res))
+	// 		if (block_entity_collision_script(info->L, e, res) != SUCCESS)
+	// 			return FAIL;
 
 	if (block_entity_tick_script(info->L, info->l, e, info->value) != SUCCESS)
 		return FAIL;
@@ -621,7 +650,7 @@ void layer_tick_entities(lua_State *L, layer *l, float dt, u64 value)
 {
 	tick_iter_data info = {.dt = dt, .l = l, .L = L, .value = value};
 
-	l->block_entity_count_estimate = handle_table_iterate(l->block_entity_pool, block_entity_foreach, &info);
+	l->block_entity_count_estimate = handle_table_iterate(l->block_entity_pool, block_entity_tick_each, &info);
 }
 
 static int lua_layer_tick_blocks(lua_State *L)
@@ -744,26 +773,36 @@ static int lua_layer_cleanup_unused_vars(lua_State *L)
 	return 1;
 }
 
+static int lua_layer_build_ground_physics(lua_State *L)
+{
+	LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+	layer_build_ground_physics(wrapper->l);
+
+	return 0;
+}
+
 void lua_layer_register(lua_State *L)
 {
 	const static luaL_Reg layer_methods[] = {
-		{		   "get_size",			 lua_layer_get_size},
-		{		   "for_each",			 lua_layer_for_each},
-		{			 "set_id",			   lua_layer_set_id},
-		{			 "get_id",			   lua_block_get_id},
-		{		 "move_block",		   lua_layer_move_block},
+		{			"get_size",			 lua_layer_get_size},
+		{			"for_each",			 lua_layer_for_each},
+		{			  "set_id",			   lua_layer_set_id},
+		{			  "get_id",			   lua_block_get_id},
+		{		  "move_block",		   lua_layer_move_block},
 		{		 "paste_block",			lua_layer_paste_block},
 		{	 "get_input_handler",	  lua_get_block_input_handler},
-		{		 "set_static",		   lua_layer_set_static},
-		{		   "get_vars",			 lua_block_get_vars},
-		{		   "set_vars",			 lua_block_copy_vars},
-		{			 "bprint",				   lua_bprintf},
-		{			   "tick",		 lua_layer_tick_blocks},
-		{			   "uuid",				 lua_uuid_shared},
-		{		 "new_entity",		   lua_layer_new_entity},
+		{		  "set_static",		   lua_layer_set_static},
+		{			"get_vars",			 lua_block_get_vars},
+		{			"set_vars",			 lua_block_copy_vars},
+		{			  "bprint",					lua_bprintf},
+		{				"tick",			 lua_layer_tick_blocks},
+		{				"uuid",				 lua_uuid_shared},
+		{		  "new_entity",		   lua_layer_new_entity},
 		{		 "get_entities",		 lua_layer_get_entities},
-		{"cleanup_unused_vars", lua_layer_cleanup_unused_vars},
-		{				 NULL,						  NULL},
+		{ "cleanup_unused_vars",	lua_layer_cleanup_unused_vars},
+		{"build_ground_physics", lua_layer_build_ground_physics},
+		{				  NULL,						   NULL},
 	};
 
 	luaL_newmetatable(L, "Layer");
@@ -800,12 +839,13 @@ void lua_room_register(lua_State *L)
 {
 	const static luaL_Reg room_methods[] = {
 		{		 "get_name",		 lua_room_get_name},
-		{		 "get_size",		 lua_room_get_size},
+		   {		"get_size",		lua_room_get_size},
 		{		 "get_layer",		  lua_room_get_layer},
-		{"get_layer_count", lua_room_get_layer_count},
+		   {"get_layer_count", lua_room_get_layer_count},
 		{		 "new_layer",		  lua_room_new_layer},
+		   {		"box2d_tick",	  lua_room_box2d_tick},
 		{		   "uuid",			 lua_uuid_shared},
-		{			 NULL,					 NULL},
+		   {				NULL,					  NULL},
 	};
 
 	luaL_newmetatable(L, "Room");
