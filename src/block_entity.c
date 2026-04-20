@@ -67,7 +67,7 @@ bool block_entity_check_collision(block_entity *e, layer *collider_layer)
 
 	for (i32 i = 0; i < 4; i++)
 	{
-		vec2 rotated = rotate_point(corners[i], pos, e->rotation * 0.01745329252f);
+		vec2 rotated = rotate_point(corners[i], pos, DEG_TO_RAD(e->rotation));
 		collision_result res = check_collision_at(collider_layer, rotated);
 		if (res.block_id != 0)
 			return true;
@@ -94,7 +94,7 @@ bool block_entity_get_collision_info(block_entity *e, layer *collider_layer, col
 
 	for (i32 i = 0; i < 4; i++)
 	{
-		vec2 rotated = rotate_point(corners[i], pos, e->rotation * 0.01745329252f);
+		vec2 rotated = rotate_point(corners[i], pos, DEG_TO_RAD(e->rotation));
 		collision_result res = check_collision_at(collider_layer, rotated);
 		if (res.block_id != 0)
 		{
@@ -153,7 +153,7 @@ bool block_entity_check_collision_swept(block_entity *e, layer *collider_layer, 
 
 		for (i32 i = 0; i < 4; i++)
 		{
-			vec2 rotated = rotate_point(corners[i], pos, e->rotation * 0.01745329252f);
+			vec2 rotated = rotate_point(corners[i], pos, DEG_TO_RAD(e->rotation));
 			collision_result res = check_collision_at(collider_layer, rotated);
 			if (res.block_id != 0)
 			{
