@@ -26,7 +26,7 @@
  * Ensure we never read past b.size and detect malformed entries.
  */
 
-#define VARS_CACHE_SIZE 4
+#define VARS_CACHE_SIZE 128
 
 typedef struct
 {

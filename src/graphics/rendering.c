@@ -138,6 +138,71 @@ typedef struct
 	f32 seconds_since_start;
 } render_context;
 
+typedef struct
+{
+	u8 frame;
+	u8 type;
+	u8 flip;
+	i16 rotation;
+	i16 offset_x;
+	i16 offset_y;
+} computed_render_props;
+
+static void compute_render_props(const block_resources *br, blob *var, u32 ms_since_start, u32 default_timestamp,
+								 i16 base_rotation, computed_render_props *out)
+{
+	out->frame = 0;
+	out->type = 0;
+	out->flip = 0;
+	out->rotation = base_rotation;
+	out->offset_x = 0;
+	out->offset_y = 0;
+
+	u32 ms_started_moving = default_timestamp;
+	f32 seconds_since_start = ms_since_start / 1000.0f;
+
+	if (var)
+	{
+		if (br->type_controller != 0)
+			var_get_u8_fast(*var, br->type_controller, br->vars_offsets, &out->type);
+
+		if (br->flip_controller != 0)
+			var_get_u8_fast(*var, br->flip_controller, br->vars_offsets, &out->flip);
+
+		if (br->rotation_controller != 0)
+			var_get_i16_fast(*var, br->rotation_controller, br->vars_offsets, &out->rotation);
+
+		if (br->anim_controller != 0)
+			var_get_u8_fast(*var, br->anim_controller, br->vars_offsets, &out->frame);
+
+		if (br->offset_x_controller != 0)
+			var_get_i16_fast(*var, br->offset_x_controller, br->vars_offsets, &out->offset_x);
+
+		if (br->offset_y_controller != 0)
+			var_get_i16_fast(*var, br->offset_y_controller, br->vars_offsets, &out->offset_y);
+
+		if (br->interp_takes != 0 && br->interp_timestamp_controller != 0)
+		{
+			var_get_u32_fast(*var, br->interp_timestamp_controller, br->vars_offsets, &ms_started_moving);
+
+			const f32 pos = (ms_since_start - ms_started_moving) / (f32)br->interp_takes;
+			const f32 clamp_pos = fmax(0.0f, fmin(1.0, pos));
+
+			out->offset_x = (i16)lerp((f32)out->offset_x, 0, clamp_pos);
+			out->offset_y = (i16)lerp((f32)out->offset_y, 0, clamp_pos);
+		}
+	}
+
+	if (br->frames_per_second > 1)
+	{
+		i32 fps = br->frames_per_second;
+		out->frame = (u8)(seconds_since_start * fps);
+	}
+
+	if (br->override_frame != 0)
+		out->frame = br->override_frame;
+}
+
 static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 {
 	render_context *rc = (render_context *)ctx;
@@ -161,106 +226,51 @@ static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
 
 	block_resources br = rc->b_reg->resources.data[id];
 
-	u8 frame = 0;
-	u8 type = 0;
-	u8 flip = 0;
-	i16 rotation = 0;
-	i16 offset_x = 0;
-	i16 offset_y = 0;
-
 	blob *var = NULL;
-	u32 ms_started_moving = rc->slice.timestamp_old;
+	block_get_vars(l, i, j, &var);
 
-	if (block_get_vars(l, i, j, &var) == SUCCESS)
-	{
-		if (br.type_controller != 0)
-			var_get_u8_fast(*var, br.type_controller, br.vars_offsets, &type);
+	computed_render_props props;
+	compute_render_props(&br, var, rc->ms_since_start, rc->slice.timestamp_old, 0, &props);
 
-		if (br.flip_controller != 0)
-			var_get_u8_fast(*var, br.flip_controller, br.vars_offsets, &flip);
-
-		if (br.rotation_controller != 0)
-			var_get_i16_fast(*var, br.rotation_controller, br.vars_offsets, &rotation);
-
-		if (br.anim_controller != 0)
-			var_get_u8_fast(*var, br.anim_controller, br.vars_offsets, &frame);
-
-		if (br.offset_x_controller != 0)
-			var_get_i16_fast(*var, br.offset_x_controller, br.vars_offsets, &offset_x);
-
-		if (br.offset_y_controller != 0)
-			var_get_i16_fast(*var, br.offset_y_controller, br.vars_offsets, &offset_y);
-
-		if (br.interp_takes != 0 && br.interp_timestamp_controller != 0)
-		{
-			var_get_u32_fast(*var, br.interp_timestamp_controller, br.vars_offsets, &ms_started_moving);
-
-			const f32 pos = (rc->ms_since_start - ms_started_moving) / (f32)br.interp_takes;
-			const f32 clamp_pos = fmax(0.0f, fmin(1.0, pos));
-
-			offset_x = (i16)lerp((f32)offset_x, 0, clamp_pos);
-			offset_y = (i16)lerp((f32)offset_y, 0, clamp_pos);
-		}
-	}
-
-	if (br.autotile_type == 1)
+	if (br.autotile_type)
 	{
 		if (*cached_frame != AUTOTILE_CACHE_INVALID)
-			frame = *cached_frame;
+			props.frame = *cached_frame;
 		else
-		{
-			frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
-			*cached_frame = frame;
-		}
-	}
-	else if (br.autotile_type == 2)
-	{
-		if (*cached_frame != AUTOTILE_CACHE_INVALID)
-			frame = *cached_frame;
-		else
-		{
-			frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
-			*cached_frame = frame;
-		}
-	}
-	else if (br.autotile_type == 3)
-	{
-		if (*cached_frame != AUTOTILE_CACHE_INVALID)
-			frame = *cached_frame;
-		else
-		{
-			frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
-			*cached_frame = frame;
-		}
-	}
-
-	if (br.frames_per_second > 1)
-	{
-		i32 fps = br.frames_per_second;
-		frame = (u8)(rc->seconds_since_start * fps);
+			switch (br.autotile_type)
+			{
+			case 1:
+				props.frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
+				break;
+			case 2:
+				props.frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
+				break;
+			case 3:
+				props.frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
+				break;
+			}
+		*cached_frame = props.frame;
 	}
 
 	if (FLAG_GET(br.flags, RESOURCE_FLAG_RANDOM_POS))
 	{
-		frame = tile_rand(i, j) % br.info.total_frames;
+		props.frame = tile_rand(i, j) % br.info.total_frames;
 	}
 
-	if (br.override_frame != 0)
-		frame = br.override_frame;
-
-	if (frame || type || flip || rotation)
+	if (props.frame || props.type || props.flip || props.rotation)
 	{
-		u8 actual_frame = frame % br.info.frames;
-		u8 actual_type =
-			FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(frame / br.info.frames) : (type % br.info.types);
-		renderer_v2_add_instance(dest_x + offset_x, dest_y + offset_y, br.info.atlas_offset_x + actual_frame,
-								 br.info.atlas_offset_y + actual_type, flip, rc->slice.zoom * 1.0f,
-								 rc->slice.zoom * 1.0f, (f32)rotation * (M_PI / 180.0f));
+		u8 actual_frame = props.frame % br.info.frames;
+		u8 actual_type = FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(props.frame / br.info.frames)
+																	   : (props.type % br.info.types);
+		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y,
+								 br.info.atlas_offset_x + actual_frame, br.info.atlas_offset_y + actual_type,
+								 props.flip, rc->slice.zoom * 1.0f, rc->slice.zoom * 1.0f,
+								 (f32)props.rotation * (M_PI / 180.0f));
 	}
 	else
 	{
-		renderer_v2_add_instance(dest_x + offset_x, dest_y + offset_y, br.info.atlas_offset_x, br.info.atlas_offset_y,
-								 0, rc->slice.zoom * 1.0f, rc->slice.zoom * 1.0f, 0);
+		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y, br.info.atlas_offset_x,
+								 br.info.atlas_offset_y, 0, rc->slice.zoom * 1.0f, rc->slice.zoom * 1.0f, 0);
 	}
 }
 
@@ -303,22 +313,30 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 	if (dest_x > slice.w + g_block_width || dest_y > slice.h + g_block_width)
 		return SUCCESS;
 
-	u8 frame = 0;
-	u8 type = 0;
-	u8 flip = 0;
-	i16 rotation = (i16)e->rotation;
+	blob *var = NULL;
+	block_entity_get_vars(e, &var);
+
+	computed_render_props props;
+	compute_render_props(&br, var, ms_since_start, e->timestamp_old, (i16)e->rotation, &props);
 
 	f32 scale_x = e->scale_x * slice.zoom * 1.0f;
 	f32 scale_y = e->scale_y * slice.zoom * 1.0f;
 
-	if (br.frames_per_second > 1)
+	if (props.frame || props.type || props.flip || props.rotation)
 	{
-		i32 fps = br.frames_per_second;
-		frame = (u8)(seconds_since_start * fps);
+		u8 actual_frame = props.frame % br.info.frames;
+		u8 actual_type = FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(props.frame / br.info.frames)
+																	   : (props.type % br.info.types);
+		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y,
+								 br.info.atlas_offset_x + actual_frame, br.info.atlas_offset_y + actual_type,
+								 props.flip, scale_x, scale_y, (f32)props.rotation * (M_PI / 180.0f));
 	}
-
-	renderer_v2_add_instance(dest_x, dest_y, br.info.atlas_offset_x + frame, br.info.atlas_offset_y + type, flip,
-							 scale_x, scale_y, (f32)rotation * (M_PI / 180.0f));
+	else
+	{
+		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y, br.info.atlas_offset_x,
+								 br.info.atlas_offset_y, props.flip, scale_x, scale_y,
+								 (f32)props.rotation * (M_PI / 180.0f));
+	}
 	return SUCCESS;
 }
 
