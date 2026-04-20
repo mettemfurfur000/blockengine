@@ -302,8 +302,8 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 
 	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - e->timestamp_old) / (1000.0f / TPS)));
 
-	f32 interp_x = lerp((f32)e->old_x, (f32)e->x, slice_clamp_pos);
-	f32 interp_y = lerp((f32)e->old_y, (f32)e->y, slice_clamp_pos);
+	f32 interp_x = lerp((f32)e->pos_old.x, (f32)e->pos.x, slice_clamp_pos);
+	f32 interp_y = lerp((f32)e->pos_old.y, (f32)e->pos.y, slice_clamp_pos);
 
 	f32 dest_x = -block_x_offset + interp_x - (udata->local_block_width / 2.0f);
 	f32 dest_y = -block_y_offset + interp_y - (udata->local_block_width / 2.0f);

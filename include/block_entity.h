@@ -24,11 +24,15 @@ extern "C"
 		u64 uuid;
 		u64 block_id;
 
-		f32 x, y;
-		f32 vx, vy;
+		vec2 pos;
+		vec2 velocity;
+		vec2 force;
+		f32 mass;
+
 		f32 rotation;
 		f32 scale_x, scale_y;
-		f32 old_x, old_y;
+
+		vec2 pos_old;
 		u32 timestamp_old;
 
 		u8 flags;
@@ -42,7 +46,7 @@ extern "C"
 	u8 block_entity_get_vars(const block_entity *e, blob **vars_out);
 	void block_entity_set_var_handle(block_entity *e, handle32 handle);
 
-	void block_entity_update(block_entity *e, float dt);
+	void block_entity_physics_step(block_entity *e, float dt);
 
 	typedef struct
 	{

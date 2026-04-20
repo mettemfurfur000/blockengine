@@ -54,7 +54,7 @@ bool block_entity_check_collision(block_entity *e, layer *collider_layer)
 	assert(e);
 	assert(collider_layer);
 
-	vec2 pos = {e->x, e->y};
+	vec2 pos = e->pos;
 	f32 half_w = (g_block_width * e->scale_x) * 0.5f;
 	f32 half_h = (g_block_width * e->scale_y) * 0.5f;
 
@@ -81,7 +81,7 @@ bool block_entity_get_collision_info(block_entity *e, layer *collider_layer, col
 	assert(e);
 	assert(collider_layer);
 
-	vec2 pos = {e->x, e->y};
+	vec2 pos = e->pos;
 	f32 half_w = (g_block_width * e->scale_x) * 0.5f;
 	f32 half_h = (g_block_width * e->scale_y) * 0.5f;
 
@@ -114,8 +114,8 @@ bool block_entity_check_collision_swept(block_entity *e, layer *collider_layer, 
 	f32 half_w = (g_block_width * e->scale_x) * 0.5f;
 	f32 half_h = (g_block_width * e->scale_y) * 0.5f;
 
-	vec2 start_pos = {e->old_x, e->old_y};
-	vec2 end_pos = {e->x, e->y};
+	vec2 start_pos = e->pos_old;
+	vec2 end_pos = e->pos;
 
 	f32 dx = end_pos.x - start_pos.x;
 	f32 dy = end_pos.y - start_pos.y;
@@ -205,13 +205,15 @@ handle32 layer_add_block_entity(layer *l, u64 block_id, float x, float y)
 
 	} while (0);
 
-	e->x = x;
-	e->y = y;
-	e->old_x = x;
-	e->old_y = y;
+	e->pos.x = x;
+	e->pos.y = y;
+	e->pos_old.x = x;
+	e->pos_old.y = y;
 	e->timestamp_old = 0;
 	e->scale_x = 1.0f;
 	e->scale_y = 1.0f;
+
+	e->mass = 1;
 
 	handle32 h = handle_table_put(l->block_entity_pool, e);
 	if (!handle_is_valid(l->block_entity_pool, h))
@@ -300,14 +302,26 @@ void block_entity_set_var_handle(block_entity *e, handle32 handle)
 	e->var_handle = handle;
 }
 
-void block_entity_update(block_entity *e, float dt)
+vec2 gravity = {0, 9.81f};
+
+void block_entity_physics_step(block_entity *e, float dt)
 {
 	assert(e);
 
-	e->old_x = e->x;
-	e->old_y = e->y;
 	e->timestamp_old = SDL_GetTicks();
 
-	e->x += e->vx * dt;
-	e->y += e->vy * dt;
+	e->pos_old.x = e->pos.x; // save old pos
+	e->pos_old.y = e->pos.y;
+
+	e->force.x += gravity.x * e->mass; // add gravity
+	e->force.y += gravity.y * e->mass;
+
+	e->velocity.x += (e->force.x / e->mass) * dt; // apply forces
+	e->velocity.y += (e->force.y / e->mass) * dt;
+
+	e->pos.x += e->velocity.x * dt; // apply velocity
+	e->pos.y += e->velocity.y * dt;
+
+	e->force.x = 0; // remove forces
+	e->force.y = 0;
 }

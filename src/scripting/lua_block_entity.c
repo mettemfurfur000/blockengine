@@ -18,15 +18,21 @@ static int lua_entity_new_index(lua_State *L)
 		return 0;
 
 	else if (strcmp(property, "position_x") == 0)
-		e->x = (float)luaL_checknumber(L, 3);
+		e->pos.x = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "position_y") == 0)
-		e->y = (float)luaL_checknumber(L, 3);
+		e->pos.y = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "velocity_x") == 0)
-		e->vx = (float)luaL_checknumber(L, 3);
+		e->velocity.x = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "velocity_y") == 0)
-		e->vy = (float)luaL_checknumber(L, 3);
+		e->velocity.y = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "force_x") == 0)
+		e->force.x = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "force_y") == 0)
+		e->force.y = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "rotation") == 0)
 		e->rotation = (float)luaL_checknumber(L, 3);
+	else if (strcmp(property, "mass") == 0)
+		e->mass = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "scale_x") == 0)
 		e->scale_x = (float)luaL_checknumber(L, 3);
 	else if (strcmp(property, "scale_y") == 0)
@@ -88,22 +94,32 @@ static int lua_entity_index(lua_State *L)
 	}
 	else if (strcmp(key, "position_x") == 0)
 	{
-		lua_pushnumber(L, e->x);
+		lua_pushnumber(L, e->pos.x);
 		return 1;
 	}
 	else if (strcmp(key, "position_y") == 0)
 	{
-		lua_pushnumber(L, e->y);
+		lua_pushnumber(L, e->pos.y);
 		return 1;
 	}
 	else if (strcmp(key, "velocity_x") == 0)
 	{
-		lua_pushnumber(L, e->vx);
+		lua_pushnumber(L, e->velocity.x);
 		return 1;
 	}
 	else if (strcmp(key, "velocity_y") == 0)
 	{
-		lua_pushnumber(L, e->vy);
+		lua_pushnumber(L, e->velocity.y);
+		return 1;
+	}
+	else if (strcmp(key, "force_x") == 0)
+	{
+		lua_pushnumber(L, e->force.x);
+		return 1;
+	}
+	else if (strcmp(key, "force_y") == 0)
+	{
+		lua_pushnumber(L, e->force.y);
 		return 1;
 	}
 	else if (strcmp(key, "uuid") == 0)
@@ -129,6 +145,11 @@ static int lua_entity_index(lua_State *L)
 	else if (strcmp(key, "block_id") == 0)
 	{
 		lua_pushinteger(L, e->block_id);
+		return 1;
+	}
+	else if (strcmp(key, "mass") == 0)
+	{
+		lua_pushnumber(L, e->mass);
 		return 1;
 	}
 	else if (strcmp(key, "remove") == 0)

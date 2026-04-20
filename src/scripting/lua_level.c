@@ -596,7 +596,7 @@ u32 block_entity_foreach(handle32 h, void *ptr, void *user_data)
 	layer *l = e->parent_layer;
 	assert(l);
 
-	block_entity_update(e, info->dt);
+	block_entity_physics_step(e, info->dt);
 
 	if (!handle_is_valid(info->l->block_entity_pool, h))
 		return SUCCESS;
@@ -613,25 +613,6 @@ u32 block_entity_foreach(handle32 h, void *ptr, void *user_data)
 
 	if (!handle_is_valid(info->l->block_entity_pool, h))
 		return SUCCESS;
-
-	return SUCCESS;
-}
-
-u32 block_entity_tick_each(handle32 h, void *ptr, void *user_data)
-{
-	block_entity *e = (block_entity *)ptr;
-	tick_iter_data *info = user_data;
-	assert(e);
-
-	if (block_entity_tick_script(info->L, info->l, e, info->value) != SUCCESS)
-		return FAIL;
-
-	// check if its still valid
-
-	if (!handle_is_valid(info->l->block_entity_pool, h)) // the entity has destroyed itself...
-		return SUCCESS;
-
-	block_entity_update(e, info->dt);
 
 	return SUCCESS;
 }
