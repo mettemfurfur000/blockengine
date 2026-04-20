@@ -302,7 +302,7 @@ void block_entity_set_var_handle(block_entity *e, handle32 handle)
 	e->var_handle = handle;
 }
 
-vec2 gravity = {0, 9.81f};
+// vec2 gravity = {0, 9.81f};
 
 void block_entity_physics_step(block_entity *e, float dt)
 {
@@ -313,8 +313,8 @@ void block_entity_physics_step(block_entity *e, float dt)
 	e->pos_old.x = e->pos.x; // save old pos
 	e->pos_old.y = e->pos.y;
 
-	e->force.x += gravity.x * e->mass; // add gravity
-	e->force.y += gravity.y * e->mass;
+	// e->force.x += gravity.x * e->mass; // add gravity
+	// e->force.y += gravity.y * e->mass;
 
 	e->velocity.x += (e->force.x / e->mass) * dt; // apply forces
 	e->velocity.y += (e->force.y / e->mass) * dt;
@@ -322,6 +322,6 @@ void block_entity_physics_step(block_entity *e, float dt)
 	e->pos.x += e->velocity.x * dt; // apply velocity
 	e->pos.y += e->velocity.y * dt;
 
-	e->force.x = 0; // remove forces
-	e->force.y = 0;
+	// e->force.x = 0; // remove forces
+	// e->force.y = 0;
 }
