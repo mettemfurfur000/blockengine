@@ -9,7 +9,6 @@
 
 #include "include/vec_math.h"
 
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -60,8 +59,9 @@ handle32 layer_add_block_entity(layer *l, u64 block_id, float x, float y)
 	b2Polygon dynamicBox = b2MakeBox(g_block_width * 0.5f, g_block_width * 0.5f);
 
 	b2ShapeDef shapeDef = b2DefaultShapeDef();
-	shapeDef.density = 1.0f;
+	shapeDef.density = 5.0f;
 	shapeDef.material.friction = 0.3f;
+	shapeDef.material.restitution = 0.25f;
 
 	e->b2_body_id = bodyId;
 

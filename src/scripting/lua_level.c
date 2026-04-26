@@ -223,7 +223,7 @@ static int lua_room_box2d_tick(lua_State *L)
 	room *r = wrapper->r;
 
 	const f32 timeStep = 1.0f / TPS;
-	const u32 subStepCount = 5;
+	const u32 subStepCount = 12;
 
 	b2World_Step(r->b2_world_id, timeStep, subStepCount);
 
