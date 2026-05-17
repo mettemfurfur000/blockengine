@@ -106,7 +106,7 @@ u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
 		*(u64 *)ptr = id;
 		break;
 	default:
-		assert(0 || "unreachable");
+		assert(0 && "unreachable");
 		return FAIL;
 	}
 

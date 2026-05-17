@@ -4,6 +4,7 @@
 // #include "include/rendering.h"
 // #include "include/vars.h"
 
+#include "include/scripting/image.h"
 #include "include/scripting_bindings.h"
 #include <lua.h>
 

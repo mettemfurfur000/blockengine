@@ -1,0 +1,12 @@
+[Sat May 16 01:25:54 2026] [DEBUG] signal_handler.c:103 Crash log file opened: crash_log.txt
+
+
+==============================================
+[Sat May 16 01:25:54 2026] CRITICAL ERROR - Signal caught: SIGSEGV (Segmentation Fault)
+==============================================
+=== BACKTRACE START ===
+=== BACKTRACE END ===
+==============================================
+Crash log written to: crash_log.txt
+==============================================
+

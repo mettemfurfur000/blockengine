@@ -109,6 +109,12 @@ tex_gen: mains/tex_gen.c copy_instance vec $(OBJS)
 	gcc -o obj/tex_gen.o -c mains/tex_gen.c ${CFLAGS}
 	g++ ${CFLAGS} -o build/tex_gen obj/tex_gen.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
+.PHONY: tkv_test
+tkv_test: mains/tkv_test.c copy_instance vec $(OBJS)
+	gcc -o obj/tkv_test.o -c mains/tkv_test.c ${CFLAGS}
+	g++ ${CFLAGS} -o build/tkv_test obj/tkv_test.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
+
+
 # use this when packaging to get all the dll-s used
 .PHONY: grab_dlls
 grab_dlls:
