@@ -842,6 +842,9 @@ static u32 tkv_serialize_recursive(tkv_object object, u8 *buffer, u32 buffer_siz
 			}
 		}
 
+		snprintf((char *)(buffer + written), buffer_size - written, ";");
+		written += 1;
+
 		// Newline
 		if (written < buffer_size)
 			written += snprintf((char *)(buffer + written), buffer_size - written, "\n");
