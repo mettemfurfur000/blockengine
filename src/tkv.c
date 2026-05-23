@@ -455,41 +455,23 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 
 			break;
 		case TKV_VALUE_F64:;
-			f64 value_f8b = 1.0f;
+			f64 val_f64 = 1.0f;
 
 			if (tok_current.type == TOK_MINUS)
 			{
-				value_f8b = -1.f;
+				val_f64 = -1.0f;
 				tok_current = token_next(&s, &line);
 			}
 
-			if (tok_current.type != TOK_NUMBER)
+			if (tok_current.type != TOK_FLOAT)
 			{
-				printf("Expected an integer value at %d, got \'%s\'\n", line, tok_current.text);
+				printf("Expected a float value at %d, got \'%s\'\n", line, tok_current.text);
 				return NULL;
 			}
 
-			value_f8b *= tok_current.value;
+			val_f64 = strtod(tok_current.text, NULL);
 
-			tok_current = token_next(&s, &line);
-
-			if (tok_current.type != TOK_DOT)
-			{
-				printf("Expected a dot at %d for the floating point number, got \'%s\'\n", line, tok_current.text);
-				return NULL;
-			}
-
-			tok_current = token_next(&s, &line);
-
-			if (tok_current.type != TOK_NUMBER)
-			{
-				printf("Expected an integer value at %d, got \'%s\'\n", line, tok_current.text);
-				return NULL;
-			}
-
-			value_f8b += (f64)tok_current.value / q10pow[tok_current.text_length];
-
-			SCRATCH_ADD(f64, value_f8b);
+			SCRATCH_ADD(f64, val_f64);
 			values_size_bytes += sizeof(f64);
 
 			break;

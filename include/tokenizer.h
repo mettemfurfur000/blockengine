@@ -15,6 +15,7 @@ typedef enum
     TOK_EXT_OPCODE,
     TOK_TARGET,
     TOK_NUMBER,
+    TOK_FLOAT,
     TOK_COMMA,
     TOK_DOT,
     TOK_COLON,

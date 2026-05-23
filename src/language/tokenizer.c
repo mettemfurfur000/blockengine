@@ -20,6 +20,7 @@ const char *token_str(token_type t)
 		CASE(TOK_EXT_OPCODE)
 		CASE(TOK_TARGET)
 		CASE(TOK_NUMBER)
+		CASE(TOK_FLOAT)
 		CASE(TOK_COMMA)
 		CASE(TOK_DOT)
 		CASE(TOK_COLON)
@@ -179,21 +180,84 @@ token token_next(const char **src, i32 *lines_ret)
 
 	// Handle numbers (decimal or hex)
 
+#define HEX_DIGIT_TO_I64_OP(s)                                                                                         \
+	((*s >= '0' && *s <= '9') ? *s - '0' : ((*s >= 'a' && *s <= 'f') ? *s - 'a' + 10 : *s - 'A' + 10))
+
 	if (*s >= '0' && *s <= '9')
 	{
 		const char *start = s;
+		
+		// Check if this is a floating point number by scanning ahead
+		const char *scan = s;
+		bool is_float = false;
+		
+		// Skip initial digits
+		while (*scan >= '0' && *scan <= '9')
+			scan++;
+		
+		// Check for dot followed by digits
+		if (*scan == '.' && (*(scan + 1) >= '0' && *(scan + 1) <= '9'))
+		{
+			is_float = true;
+			scan++; // skip dot
+			while (*scan >= '0' && *scan <= '9')
+				scan++;
+		}
+		
+		// Parse as float if it contains a decimal point
+		if (is_float)
+		{
+			u64 len = scan - start;
+			if (len >= sizeof(tok.text))
+			{
+				token errtok = {0};
+				errtok.type = TOK_ERROR;
+				snprintf(errtok.text, sizeof(errtok.text), "Float literal too long at position %d\n",
+						 (i32)(start - *src));
+				return errtok;
+			}
+			strncpy(tok.text, start, len);
+			tok.text[len] = '\0';
+			tok.text_length = len;
+			tok.type = TOK_FLOAT;
+			*src = scan;
+			return tok;
+		}
+		
+		// Parse as integer
 		if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
 		{
 			s += 2; // consume '0x'
 			while ((*s >= '0' && *s <= '9') || (*s >= 'a' && *s <= 'f') || (*s >= 'A' && *s <= 'F'))
+			{
+				if (HEX_DIGIT_TO_I64_OP(s) > 0 && tok.value > (INT64_MAX - HEX_DIGIT_TO_I64_OP(s)) / 16)
+				{
+					token errtok = {0};
+					errtok.type = TOK_ERROR;
+					snprintf(errtok.text, sizeof(errtok.text), "Integer literal overflow at position %d\n",
+							 (i32)(s - *src));
+					return errtok;
+				}
+				tok.value = tok.value * 16 + HEX_DIGIT_TO_I64_OP(s);
 				s++;
-			tok.value = strtoll(start, NULL, 16);
+			}
 		}
 		else
 		{
 			while (*s >= '0' && *s <= '9')
+			{
+				if (tok.value > (INT64_MAX - (*s - '0')) / 10)
+				{
+					token errtok = {0};
+					errtok.type = TOK_ERROR;
+					snprintf(errtok.text, sizeof(errtok.text), "Integer literal overflow at position %d\n",
+							 (i32)(s - *src));
+					return errtok;
+				}
+
+				tok.value = tok.value * 10 + (*s - '0');
 				s++;
-			tok.value = strtoll(start, NULL, 10);
+			}
 		}
 		u64 len = s - start;
 		strncpy(tok.text, start, len);
@@ -377,6 +441,12 @@ void token_debug_all(const char *src)
 	while (true)
 	{
 		token tok = token_next(&s, &line);
+		if (tok.type == TOK_ERROR)
+		{
+			printf("Error token at line %d: %s\n", line, tok.text);
+			break;
+		}
+
 		if (tok.type == TOK_EOF)
 			break;
 

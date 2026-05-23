@@ -11,15 +11,15 @@
 imagined format:
 
 {
-	bool thing_1 = true
-	i64 Funny = 60065
-	f64 Pi_4 = 0.78539816339744830962
-	str TestStringValue = "test string value" 					<--- error - too long variable name
-	str T_Str = "test string value"
-	arr array_1 = [ 0xf3 0x81 0xa8 0xcc 0x10 0x01 0x0c ]
+	bool thing_1 = true;
+	i64 Funny = 60065;
+	f64 Pi_4 = 0.78539816339744830962;
+	str TestStringValue = "test string value"; 					<--- error - too long variable name
+	str T_Str = "test string value";
+	arr array_1 = [ 0xf3 0x81 0xa8 0xcc 0x10 0x01 0x0c ];
 	tkv Subtree = {
-		i64 somethin = 1300
-	}
+		i64 somethin = 1300;
+	};
 }
 
 */
