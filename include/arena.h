@@ -16,7 +16,12 @@ typedef struct
 arena *arena_create(u32 size);
 void arena_destroy(arena *a);
 
+// Allocate with automatic growth if needed
 void *arena_alloc(arena *a, u32 size);
+
+// Explicitly grow arena to new capacity (must be >= current capacity)
+bool arena_grow(arena *a, u32 new_capacity);
+
 void *arena_get_free_spot(arena *a);
 void arena_free(arena *a);
 

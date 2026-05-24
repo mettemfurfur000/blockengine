@@ -150,7 +150,7 @@ tkv_value tkv_get_value(tkv_object object, const char *key_str)
 	u16 keys_total = tkv_object_get_length(object);
 
 	tkv_value_meta meta = {};
-	u16 meta_index = 0;
+	i32 meta_index = -1;
 
 	for (u16 i = 0; i < keys_total; i++)
 	{
@@ -166,12 +166,49 @@ tkv_value tkv_get_value(tkv_object object, const char *key_str)
 		break;
 	}
 
+	if (meta_index == -1)
+		return (tkv_value){.meta.whole = UINT_MAX}; // Key not found
+
 	tkv_value_meta *metas = (tkv_value_meta *)(object + sizeof(u16) + sizeof(u32) + sizeof(tkv_key) * keys_total);
 	meta = metas[meta_index];
 
 	result.meta = meta;
 	result.tkv_meta_index = meta_index;
 	result.ptr = (object + meta.tkv_value_offset);
+
+	return result;
+}
+
+tkv_value tkv_traverse_get_value(tkv_object object, const char *path)
+{
+	// This is a helper for getting nested values with a single function call, without manually traversing each level.
+	// It will be useful for the network sync system, where we want to get a value from a nested TKV with a single path
+	// string.
+
+	tkv_value result = {};
+
+	char path_copy[256];
+
+	assert(strlen(path) < sizeof(path_copy)); // just to be safe, we can remove this later if needed
+
+	strncpy(path_copy, path, sizeof(path_copy));
+	path_copy[sizeof(path_copy) - 1] = '\0';
+
+	char *token = strtok(path_copy, ".");
+	tkv_object current_object = object;
+
+	while (token)
+	{
+		result = tkv_get_value(current_object, token);
+		if (result.meta.whole == UINT_MAX)
+			return (tkv_value){.meta.whole = UINT_MAX}; // Key not found
+
+		if (result.meta.tkv_value_type != TKV_VALUE_TKV)
+			return result; // Found the value
+
+		current_object = tkv_value_to_tkv(result);
+		token = strtok(NULL, ".");
+	}
 
 	return result;
 }
@@ -740,9 +777,109 @@ static const char *tkv_type_name(u8 type)
 	}
 }
 
+// Calculate the size needed to serialize a single value (for size planning)
+static u32 tkv_calculate_value_size(tkv_value value)
+{
+	u8 type = value.meta.tkv_value_type;
+
+	char temp[64];
+
+	switch (type)
+	{
+	case TKV_VALUE_BOOL:
+		// "true" or "false"
+		return 5;
+
+	case TKV_VALUE_I64:;
+		i64 i = *(i64 *)value.ptr;
+		// Max i64: -9223372036854775808 = 20 chars
+		// Min estimate with hex: 0x + up to 16 hex digits = 18
+		return snprintf(temp, sizeof(temp), "%lld", i);
+
+	case TKV_VALUE_F64:;
+		f64 f = *(f64 *)value.ptr;
+		// With %.17g format, max ~25 chars
+		return snprintf(temp, sizeof(temp), "%.17g", f);
+
+	case TKV_VALUE_STR:;
+		char *str = (char *)value.ptr;
+		// String with quotes: 2 + length
+		return 2 + strlen(str);
+
+	case TKV_VALUE_ARR:;
+		tkv_array arr = tkv_value_to_arr(value);
+		// Array format: "[ " + bytes + "]"
+		// Each byte varies: hex "0xXX " (~5), decimal (1-3 digits + space), char literal "'X' " (4)
+		// Worst case: assume 5 chars per byte (hex format) + opening/closing
+		// This is a conservative estimate
+		return 3 + (arr.array_length * 5); // 3 for "[ ]", 5 per byte
+
+	case TKV_VALUE_TKV:
+		// Placeholder for nested TKV (will be recursively calculated)
+		return 5; // "{...}"
+
+	default:
+		return 3; // "???"
+	}
+}
+
+// Forward declaration for recursive size calculation
+static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level);
+
+// Calculate the size needed to serialize a complete TKV object
+static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level)
+{
+	u32 total_size = 0;
+	u32 indent_spaces = indent_level * 4;
+
+	// Open brace + newline
+	total_size += 2;
+
+	u16 num_keys = tkv_object_get_length(object);
+
+	for (u16 i = 0; i < num_keys; i++)
+	{
+		// Indentation
+		total_size += indent_spaces;
+
+		tkv_key key = tkv_object_get_key(object, i);
+		char key_name[TKV_KEY_LEN_MAX + 1];
+		tkv_unmangle_key(key, key_name);
+		key_name[key.size] = '\0';
+
+		tkv_value val = tkv_get_value(object, key_name);
+		const char *type_str = tkv_type_name(val.meta.tkv_value_type);
+
+		// "type key = "
+		total_size += strlen(type_str) + 1 + strlen(key_name) + 3; // +3 for " = "
+
+		// Handle nested tkv specially
+		if (val.meta.tkv_value_type == TKV_VALUE_TKV)
+		{
+			tkv_object child = tkv_value_to_tkv(val);
+			total_size += tkv_calculate_size_recursive(child, indent_level + 1);
+		}
+		else
+		{
+			total_size += tkv_calculate_value_size(val);
+		}
+
+		// ";\n"
+		total_size += 2;
+	}
+
+	// Indentation for closing brace
+	total_size += indent_spaces;
+
+	// Closing brace
+	total_size += 1;
+
+	return total_size;
+}
+
 // Helper to serialize a single value to a buffer
 // Returns number of bytes written (not including null terminator)
-static u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
+u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
 {
 	u32 written = 0;
 	u8 type = value.meta.tkv_value_type;
@@ -771,18 +908,21 @@ static u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
 
 	case TKV_VALUE_ARR:;
 		tkv_array arr = tkv_value_to_arr(value);
-		written += snprintf((char *)(buffer + written), buffer_size - written, "[ ");
+		u32 bytes_left = (buffer_size > written) ? (buffer_size - written) : 0;
+		written += snprintf((char *)(buffer + written), bytes_left, "[ ");
 
 		for (u16 i = 0; i < arr.array_length; i++)
 		{
 			u8 byte_val = arr.bytes[i];
-			u32 bytes_left = buffer_size - written;
+			bytes_left = (buffer_size > written) ? (buffer_size - written) : 0;
 			u32 this_write = snprintf((char *)(buffer + written), bytes_left, "0x%02x ", byte_val);
 			written += this_write;
 		}
 
-		if (written < buffer_size)
-			written += snprintf((char *)(buffer + written), buffer_size - written, "]");
+		// Always write closing bracket, even if buffer overflowed
+		bytes_left = (buffer_size > written) ? (buffer_size - written) : 0;
+		u32 closing_write = snprintf((char *)(buffer + written), bytes_left, "]");
+		written += closing_write;
 		break;
 
 	case TKV_VALUE_TKV:;
@@ -843,14 +983,15 @@ static u32 tkv_serialize_recursive(tkv_object object, u8 *buffer, u32 buffer_siz
 		else
 		{
 			// Serialize the value
-			u8 temp_buffer[512];
+			u8 temp_buffer[8 * 1024];
 			u32 value_size = tkv_serialize_value(temp_buffer, sizeof(temp_buffer), val);
 
 			if (written + value_size < buffer_size)
 			{
 				memcpy(buffer + written, temp_buffer, value_size);
-				written += value_size;
 			}
+			// Always increment written to track total size needed
+			written += value_size;
 		}
 
 		snprintf((char *)(buffer + written), buffer_size - written, ";");
@@ -880,21 +1021,28 @@ char *tkv_serialize_object(tkv_object object, arena *output_arena)
 	if (!object)
 		return NULL;
 
-	// Estimate maximum size needed (generous estimate)
-	u16 num_keys = tkv_object_get_length(object);
-	u32 estimated_size = 1024 + (num_keys * 256);
+	// Calculate exact size needed for serialization
+	u32 needed_size = tkv_calculate_size_recursive(object, 0);
 
-	u8 *buffer = arena_alloc(output_arena, estimated_size);
+	// Add padding for array/string size variability
+	// Use 5x the calculated size + 32KB base as a good balance
+	u32 alloc_size = needed_size * 5 + 32768;
+
+	// Cap to prevent excessive allocations that exceed Windows command-line limits
+	if (alloc_size > 32000) // Stay under ~32KB command-line limit
+		alloc_size = 32000;
+
+	u8 *buffer = arena_alloc(output_arena, alloc_size);
 	if (!buffer)
 		return NULL;
 
-	u32 written = tkv_serialize_recursive(object, buffer, estimated_size, 0);
+	u32 written = tkv_serialize_recursive(object, buffer, alloc_size, 0);
 
 	// Null terminate
-	if (written < estimated_size)
+	if (written < alloc_size)
 		buffer[written] = '\0';
 	else
-		buffer[estimated_size - 1] = '\0';
+		buffer[alloc_size - 1] = '\0';
 
 	return (char *)buffer;
 }

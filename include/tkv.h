@@ -137,6 +137,7 @@ typedef struct
 } tkv_array;
 
 tkv_value tkv_get_value(tkv_object object, const char *key_str);
+tkv_value tkv_traverse_get_value(tkv_object object, const char *path);
 tkv_object tkv_value_get_root(tkv_value value);
 
 bool tkv_value_to_bool(tkv_value value);
@@ -151,6 +152,7 @@ void tkv_value_set_i64(tkv_value value, i64 new_val);
 void tkv_value_set_f64(tkv_value value, f64 new_val);
 
 tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, arena *tkv_arena);
+u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value);
 char *tkv_serialize_object(tkv_object object, arena *output_arena);
 
 #endif

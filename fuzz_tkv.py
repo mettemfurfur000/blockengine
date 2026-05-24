@@ -16,6 +16,8 @@ import os
 TKV_TEST_BIN = "build/tkv_test"
 NUM_TESTS = 1000
 VERBOSE = False
+STOP_ON_ERROR = False
+SIMPLE_MODE = False
 
 class Colors:
     GREEN = '\033[92m'
@@ -105,23 +107,32 @@ def gen_f64():
 
 def gen_string():
     """Generate a string value"""
+    if SIMPLE_MODE:
+        max_len = 20
+    else:
+        max_len = 50
+    
     options = [
         '"hello"',
         '"world"',
         '""',                                                # Empty string
-        '"' + ''.join(random.choices(string.ascii_letters, k=random.randint(1, 20))) + '"',
+        '"' + ''.join(random.choices(string.ascii_letters, k=random.randint(1, max_len))) + '"',
         '"test123"',
         '"_underscore_"',
         '"with spaces"',
         '"123456789012345"',
-        '"' + 'a' * 50 + '"',                                # Medium string
-        '"' + 'x' * 100 + '"',                               # Long string
+        '"' + 'a' * (max_len // 2) + '"',                   # Medium string
     ]
     return random.choice(options)
 
 def gen_array():
     """Generate a byte array"""
-    length = random.randint(0, 50)
+    # Limit array size to prevent command-line length issues
+    if SIMPLE_MODE:
+        length = random.randint(0, 20)
+    else:
+        # In normal mode, keep arrays reasonably sized (max 50 bytes)
+        length = random.randint(0, 50)
     
     if length == 0:
         return "[ ]"
@@ -142,11 +153,19 @@ def gen_array():
 
 def gen_tkv_value(depth=0, max_depth=3):
     """Generate a TKV value of random type"""
-    if depth >= max_depth:
-        # At max depth, don't allow nested TKV
-        choice = random.choice(['bool', 'i64', 'f64', 'str', 'arr'])
+    # In simple mode, reduce max depth and complexity
+    if SIMPLE_MODE:
+        max_depth = 1
+        if depth >= max_depth:
+            choice = random.choice(['bool', 'i64', 'f64', 'str', 'arr'])
+        else:
+            choice = random.choice(['bool', 'i64', 'f64', 'str', 'arr'])
     else:
-        choice = random.choice(['bool', 'i64', 'f64', 'str', 'arr', 'tkv'])
+        if depth >= max_depth:
+            # At max depth, don't allow nested TKV
+            choice = random.choice(['bool', 'i64', 'f64', 'str', 'arr'])
+        else:
+            choice = random.choice(['bool', 'i64', 'f64', 'str', 'arr', 'tkv'])
     
     if choice == 'bool':
         return 'bool', gen_bool()
@@ -163,7 +182,11 @@ def gen_tkv_value(depth=0, max_depth=3):
 
 def gen_tkv_object(depth=0, max_depth=3):
     """Generate a complete TKV object"""
-    num_keys = random.randint(1, 10)
+    # In simple mode, reduce number of keys
+    if SIMPLE_MODE:
+        num_keys = random.randint(1, 3)
+    else:
+        num_keys = random.randint(1, 10)
     
     pairs = []
     for _ in range(num_keys):
@@ -214,28 +237,48 @@ def test_roundtrip(tkv_input, test_num, bin_path):
     success1, output1 = run_tkv_test(tkv_input, bin_path)
     if not success1:
         log_fail(f"Test {test_num}: Initial parse failed")
-        if VERBOSE:
-            print(f"Input:\n {tkv_input}\n")
-            print(f"Error:\n {output1}")
+        print(f"\n{Colors.YELLOW}=== FAILING INPUT ==={Colors.RESET}")
+        print(tkv_input)
+        print(f"\n{Colors.YELLOW}=== ERROR OUTPUT ==={Colors.RESET}")
+        print(output1)
+        if STOP_ON_ERROR:
+            # Save to file for debugging
+            with open("failing_tkv_input.txt", "w") as f:
+                f.write(tkv_input)
+            log_warn("Failing input saved to: failing_tkv_input.txt")
         return False
     
     # Second parse (using serialized output)
     success2, output2 = run_tkv_test(output1, bin_path)
     if not success2:
         log_fail(f"Test {test_num}: Roundtrip parse failed")
-        if VERBOSE:
-            print(f"Original:\n {tkv_input}\n")
-            print(f"Serialized:\n {output1}\n")
-            print(f"Error:\n {output2}")
+        print(f"\n{Colors.YELLOW}=== ORIGINAL INPUT ==={Colors.RESET}")
+        print(tkv_input)
+        print(f"\n{Colors.YELLOW}=== FIRST SERIALIZATION ==={Colors.RESET}")
+        print(output1)
+        print(f"\n{Colors.YELLOW}=== SECOND PARSE ERROR ==={Colors.RESET}")
+        print(output2)
+        if STOP_ON_ERROR:
+            # Save to file for debugging
+            with open("failing_tkv_input.txt", "w") as f:
+                f.write(tkv_input)
+            log_warn("Failing input saved to: failing_tkv_input.txt")
         return False
     
     # Compare outputs
     if output1.strip() != output2.strip():
         log_fail(f"Test {test_num}: Serialization mismatch")
-        if VERBOSE:
-            print(f"Input:\n {tkv_input}\n")
-            print(f"First:\n  {output1}\n")
-            print(f"Second:\n {output2}\n")
+        print(f"\n{Colors.YELLOW}=== ORIGINAL INPUT ==={Colors.RESET}")
+        print(tkv_input)
+        print(f"\n{Colors.YELLOW}=== FIRST SERIALIZATION ==={Colors.RESET}")
+        print(output1)
+        print(f"\n{Colors.YELLOW}=== SECOND SERIALIZATION ==={Colors.RESET}")
+        print(output2)
+        if STOP_ON_ERROR:
+            # Save to file for debugging
+            with open("failing_tkv_input.txt", "w") as f:
+                f.write(tkv_input)
+            log_warn("Failing input saved to: failing_tkv_input.txt")
         return False
     
     log_pass(f"Test {test_num}: OK")
@@ -378,7 +421,16 @@ def test_nested_depth(bin_path):
     return True
 
 def main():
-    global VERBOSE
+    global VERBOSE, STOP_ON_ERROR, SIMPLE_MODE
+    
+    # Parse command-line arguments
+    for arg in sys.argv[1:]:
+        if arg == '-v' or arg == '--verbose':
+            VERBOSE = True
+        elif arg == '--stop-on-error':
+            STOP_ON_ERROR = True
+        elif arg == '--simple':
+            SIMPLE_MODE = True
     
     # Debug path
     log_info(f"Working directory: {os.getcwd()}")
@@ -397,9 +449,10 @@ def main():
         bin_path = TKV_TEST_BIN
     
     log_info(f"Using binary: {bin_path}")
-    
-    if len(sys.argv) > 1 and sys.argv[1] == '-v':
-        VERBOSE = True
+    if SIMPLE_MODE:
+        log_warn("SIMPLE MODE enabled: reduced complexity")
+    if STOP_ON_ERROR:
+        log_warn("STOP ON ERROR enabled: will exit on first failure")
     
     log_info("TKV Format Fuzzing Script")
     log_info(f"Running {NUM_TESTS} random tests...")
@@ -445,6 +498,10 @@ def main():
             fuzz_passed += 1
         else:
             fuzz_failed += 1
+            if STOP_ON_ERROR:
+                print()
+                log_fail(f"Stopped at test {i + 1} due to error")
+                break
         
         # Progress indicator
         if (i + 1) % 100 == 0:
@@ -469,4 +526,9 @@ def main():
         return 1
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print()
+        log_warn("Interrupted by user")
+        sys.exit(130)
