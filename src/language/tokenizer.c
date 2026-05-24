@@ -203,7 +203,35 @@ token token_next(const char **src, i32 *lines_ret)
 				scan++;
 		}
 		
-		// Parse as float if it contains a decimal point
+		// Check for exponential notation (e or E, optionally followed by +/-, then digits)
+		if ((*scan == 'e' || *scan == 'E'))
+		{
+			const char *exp_start = scan;
+			scan++; // skip 'e' or 'E'
+			
+			// Optional sign
+			if (*scan == '+' || *scan == '-')
+				scan++;
+			
+			// Must have at least one digit after 'e' or 'E' (and optional sign)
+			if (*scan >= '0' && *scan <= '9')
+			{
+				is_float = true;
+				while (*scan >= '0' && *scan <= '9')
+					scan++;
+			}
+			else
+			{
+				// Invalid exponential notation - no digits after 'e'
+				token errtok = {0};
+				errtok.type = TOK_ERROR;
+				snprintf(errtok.text, sizeof(errtok.text), "Invalid exponential notation at position %d\n",
+						 (i32)(exp_start - *src));
+				return errtok;
+			}
+		}
+		
+		// Parse as float if it contains a decimal point or exponential notation
 		if (is_float)
 		{
 			u64 len = scan - start;

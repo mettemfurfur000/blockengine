@@ -463,13 +463,21 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 				tok_current = token_next(&s, &line);
 			}
 
-			if (tok_current.type != TOK_FLOAT)
+			if (tok_current.type != TOK_FLOAT && tok_current.type != TOK_NUMBER)
 			{
 				printf("Expected a float value at %d, got \'%s\'\n", line, tok_current.text);
 				return NULL;
 			}
 
-			val_f64 = strtod(tok_current.text, NULL);
+			if (tok_current.type == TOK_FLOAT)
+			{
+				val_f64 = strtod(tok_current.text, NULL);
+			}
+			else if (tok_current.type == TOK_NUMBER)
+			{
+				// For integers serialized from floats (e.g., 1e10 becomes 10000000000)
+				val_f64 = (f64)tok_current.value;
+			}
 
 			SCRATCH_ADD(f64, val_f64);
 			values_size_bytes += sizeof(f64);
@@ -571,6 +579,9 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 		if (tok_current.type != TOK_SEMICOLON)
 		{
 			printf("Expected an semicolon at line %d, got \'%s\'\n", line, tok_current.text);
+			// printf("Token type was %s\n", token_str(tok_current.type));
+			// print some more info about the current parsed line
+			printf("Current line content around error: ...%.*s...\n", 50, s);
 			return NULL;
 		}
 

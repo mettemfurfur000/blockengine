@@ -1,4 +1,5 @@
 #include "include/logging.h"
+
 #include "include/general.h"
 
 #include <lauxlib.h>
@@ -34,8 +35,6 @@ void log_start(const char *fname)
 
 	if (!log_file)
 		printf("Failed to open log file: %s\n", fname);
-	else
-		printf("Logging enabled.\n");
 	log_enabled = !!log_file;
 }
 

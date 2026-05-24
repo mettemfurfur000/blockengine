@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
 	const char *src = str_in;
 	tkv_object parsed = tkv_parse_object(&src, scratchpad_arena, tkv_arena);
 
-	printf("Taken arena space: scratchpad = %u bytes, tkv = %u bytes\n", scratchpad_arena->length, tkv_arena->length);
-	fflush(stdout);
+	// printf("Taken arena space: scratchpad = %u bytes, tkv = %u bytes\n", scratchpad_arena->length, tkv_arena->length);
+	// fflush(stdout);
 
 	if (parsed)
 	{
@@ -39,8 +39,8 @@ int main(int argc, char *argv[])
 	else
 	{
 		printf("Failed to parse TKV\n");
-		printf("All tokens:\n");
-		token_debug_all(str_in);
+		// printf("All tokens:\n");
+		// token_debug_all(str_in);
 	}
 
 	deinit_signal_handlers();
