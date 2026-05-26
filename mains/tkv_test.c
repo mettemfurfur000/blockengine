@@ -58,11 +58,13 @@ int main(int argc, char *argv[])
 				break;
 
 			tkv_value val = tkv_traverse_get_value(parsed, input);
+
 			if (val.meta.whole == UINT_MAX || val.ptr == NULL)
 			{
 				printf("Key '%s' not found\n", input);
 				continue;
 			}
+
 			char serialized[256];
 			tkv_serialize_value((u8 *)serialized, sizeof(serialized), val);
 			printf("'%s' = %s\n", input, serialized);
