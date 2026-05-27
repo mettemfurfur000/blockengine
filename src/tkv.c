@@ -1046,3 +1046,18 @@ char *tkv_serialize_object(tkv_object object, arena *output_arena)
 
 	return (char *)buffer;
 }
+
+u8 *tkv_serialize_for_network(tkv_object object, arena *output_arena, u32 *out_len)
+{
+	if (!object)
+		return NULL;
+
+	char *s = tkv_serialize_object(object, output_arena);
+	if (!s)
+		return NULL;
+
+	if (out_len)
+		*out_len = (u32)strlen(s);
+
+	return (u8 *)s;
+}

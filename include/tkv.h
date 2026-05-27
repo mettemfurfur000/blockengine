@@ -155,4 +155,9 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value);
 char *tkv_serialize_object(tkv_object object, arena *output_arena);
 
+// Convenience helper: serialize an object for sending over the network.
+// Returns a buffer allocated from `output_arena` and writes its length to `out_len` if non-NULL.
+// The returned buffer is a nul-terminated text representation (same as `tkv_serialize_object`).
+u8 *tkv_serialize_for_network(tkv_object object, arena *output_arena, u32 *out_len);
+
 #endif
