@@ -219,3 +219,161 @@ int net_recv_message(net_socket_t sock, u8 **out_buf, u32 *out_len)
 
     return 0;
 }
+
+net_socket_t net_create_udp_socket(void)
+{
+    struct addrinfo hints = {0}, *res = NULL;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    int gai = getaddrinfo(NULL, "0", &hints, &res);
+    if (gai != 0)
+    {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(gai));
+        return (net_socket_t)-1;
+    }
+
+    net_socket_t sock = (net_socket_t)-1;
+    for (struct addrinfo *rp = res; rp != NULL; rp = rp->ai_next)
+    {
+        net_socket_t s = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (s == (net_socket_t)-1)
+            continue;
+
+        if (bind(s, rp->ai_addr, rp->ai_addrlen) == 0)
+        {
+            sock = s;
+            break;
+        }
+
+#ifdef _WIN32
+        closesocket(s);
+#else
+        close(s);
+#endif
+    }
+
+    freeaddrinfo(res);
+    return sock;
+}
+
+int net_bind_udp(net_socket_t sock, const char *port)
+{
+    struct addrinfo hints = {0}, *res = NULL;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    int gai = getaddrinfo(NULL, port, &hints, &res);
+    if (gai != 0)
+    {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(gai));
+        return -1;
+    }
+
+    int ret = -1;
+    for (struct addrinfo *rp = res; rp != NULL; rp = rp->ai_next)
+    {
+        if (bind(sock, rp->ai_addr, rp->ai_addrlen) == 0)
+        {
+            ret = 0;
+            break;
+        }
+    }
+
+    freeaddrinfo(res);
+    return ret;
+}
+
+int net_get_udp_port(net_socket_t sock)
+{
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof(addr);
+
+    if (getsockname(sock, (struct sockaddr *)&addr, &addrlen) != 0)
+        return -1;
+
+    if (addr.ss_family == AF_INET)
+    {
+        struct sockaddr_in *in = (struct sockaddr_in *)&addr;
+        return ntohs(in->sin_port);
+    }
+    else if (addr.ss_family == AF_INET6)
+    {
+        struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)&addr;
+        return ntohs(in6->sin6_port);
+    }
+
+    return -1;
+}
+
+int net_send_udp(net_socket_t sock, const char *host, const char *port, const u8 *data, u32 len)
+{
+    if (!data && len > 0)
+        return -1;
+
+    struct addrinfo hints = {0}, *res = NULL;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    int gai = getaddrinfo(host, port, &hints, &res);
+    if (gai != 0)
+    {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(gai));
+        return -1;
+    }
+
+    int ret = -1;
+    for (struct addrinfo *rp = res; rp != NULL; rp = rp->ai_next)
+    {
+#ifdef _WIN32
+        int sent = sendto(sock, (const char *)data, (int)len, 0, rp->ai_addr, (int)rp->ai_addrlen);
+#else
+        ssize_t sent = sendto(sock, data, len, 0, rp->ai_addr, rp->ai_addrlen);
+#endif
+        if (sent == (int)len || (sent > 0 && (u32)sent == len))
+        {
+            ret = 0;
+            break;
+        }
+    }
+
+    freeaddrinfo(res);
+    return ret;
+}
+
+int net_recv_udp(net_socket_t sock, u8 **out_buf, u32 *out_len, struct sockaddr_storage *addr_out)
+{
+    if (!out_buf)
+        return -1;
+
+    u8 buf[4096];
+    struct sockaddr_storage addr;
+    socklen_t addrlen = sizeof(addr);
+
+#ifdef _WIN32
+    int recvd = recvfrom(sock, (char *)buf, sizeof(buf), 0, (struct sockaddr *)&addr, &addrlen);
+#else
+    ssize_t recvd = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&addr, &addrlen);
+#endif
+
+    if (recvd < 0)
+        return -1;
+
+    u8 *outbuf = malloc(recvd + 1);
+    if (!outbuf)
+        return -1;
+
+    memcpy(outbuf, buf, recvd);
+    outbuf[recvd] = '\0';
+
+    *out_buf = outbuf;
+    if (out_len)
+        *out_len = (u32)recvd;
+    if (addr_out)
+        memcpy(addr_out, &addr, addrlen);
+
+    return 0;
+}
+

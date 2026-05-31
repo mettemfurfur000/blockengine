@@ -179,12 +179,11 @@ tkv_value tkv_get_value(tkv_object object, const char *key_str)
 	return result;
 }
 
+// This is a helper for getting nested values with a single function call, without manually traversing each level.
+// It will be useful for the network sync system, where we want to get a value from a nested TKV with a single path
+// string.
 tkv_value tkv_traverse_get_value(tkv_object object, const char *path)
 {
-	// This is a helper for getting nested values with a single function call, without manually traversing each level.
-	// It will be useful for the network sync system, where we want to get a value from a nested TKV with a single path
-	// string.
-
 	tkv_value result = {};
 
 	char path_copy[256];
@@ -224,10 +223,10 @@ bool tkv_value_to_bool(tkv_value value)
 	return *(bool *)value.ptr;
 }
 
-u64 tkv_value_to_u64(tkv_value value)
+i64 tkv_value_to_i64(tkv_value value)
 {
 	assert(value.meta.tkv_value_type == TKV_VALUE_I64);
-	return *(u64 *)value.ptr;
+	return *(i64 *)value.ptr;
 }
 
 f64 tkv_value_to_f64(tkv_value value)
@@ -265,11 +264,11 @@ void tkv_value_set_bool(tkv_value value, bool new_val)
 	*(bool *)value.ptr = new_val;
 }
 
-void tkv_value_set_u64(tkv_value value, u64 new_val)
+void tkv_value_set_i64(tkv_value value, i64 new_val)
 {
 	assert(value.meta.tkv_value_type == TKV_VALUE_I64);
 	assert(value.meta.tkv_value_state != TKV_STATE_CONST);
-	*(u64 *)value.ptr = new_val;
+	*(i64 *)value.ptr = new_val;
 }
 
 void tkv_value_set_f64(tkv_value value, f64 new_val)

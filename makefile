@@ -114,11 +114,6 @@ tkv_test: mains/tkv_test.c copy_instance vec $(OBJS)
 	gcc -o obj/tkv_test.o -c mains/tkv_test.c ${CFLAGS}
 	g++ ${CFLAGS} -o build/tkv_test obj/tkv_test.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
-.PHONY: p2p_chat
-p2p_chat: mains/p2p_chat.c copy_instance vec $(OBJS)
-	gcc -o obj/p2p_chat.o -c mains/p2p_chat.c ${CFLAGS}
-	g++ ${CFLAGS} -o build/p2p_chat obj/p2p_chat.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
-
 # use this when packaging to get all the dll-s used
 .PHONY: grab_dlls
 grab_dlls:
