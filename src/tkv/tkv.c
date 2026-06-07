@@ -6,78 +6,91 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-// i32 tkv_offset()
-
+// Check if character is allowed in a TKV key (alphanumeric, underscore, or null terminator)
 bool util_is_valid_char(char val)
 {
-	return (val >= 'a' && val <= 'z') || //
-		   (val >= 'A' && val <= 'Z') || //
-		   (val >= '0' && val <= '9') || //
-		   (val == '_') ||				 //
-		   (val == 0);
+	return (val >= 'a' && val <= 'z') ||  // lowercase letter
+		   (val >= 'A' && val <= 'Z') ||  // uppercase letter
+		   (val >= '0' && val <= '9') ||  // digit
+		   (val == '_') ||                // underscore
+		   (val == 0);                    // null terminator
 }
 
+/*==============================================================================
+  CHARACTER COMPRESSION
+  
+  Compresses a single ASCII character to 6-bit value for key storage.
+  Maps characters as follows:
+    0      -> '\0' (end-of-string marker)
+    1-26   -> 'a'-'z' (lowercase letters)
+    27-52  -> 'A'-'Z' (uppercase letters)
+    53-62  -> '0'-'9' (digits)
+    63     -> '_' (underscore)
+    -1     -> unknown character (error)
+===============================================================================*/
 i8 util_compress_char(char val)
 {
-	// alphabet size is unlikely to change in the near future. Though may change some day.
-	const u8 al_chars = ('z' - 'a') + 1;
+	const u8 alpha_count = ('z' - 'a') + 1;  // 26 letters
 
-	// 0 taken for \0
 	if (val == 0)
-		return 0;
+		return 0;  // null terminator
 
-	// [1..26] for lowercase
 	if (val >= 'a' && val <= 'z')
-		return 1 + val - 'a';
+		return 1 + val - 'a';  // 1-26 for lowercase
 
-	// [27..52] for uppercase
 	if (val >= 'A' && val <= 'Z')
-		return 1 + al_chars + val - 'A';
+		return 1 + alpha_count + val - 'A';  // 27-52 for uppercase
 
-	// [53..62] for numbers
 	if (val >= '0' && val <= '9')
-		return 1 + 2 * al_chars + val - '0';
+		return 1 + 2 * alpha_count + val - '0';  // 53-62 for digits
 
-	// 63 for underscore
 	if (val == '_')
-		return 63;
+		return 63;  // 63 for underscore
 
-	return -1; // unknown character
+	return -1;  // unknown character
 }
 
-char util_decompress_char(i8 c_val)
+/*==============================================================================
+  CHARACTER DECOMPRESSION
+  
+  Reverses util_compress_char - converts 6-bit value back to ASCII character.
+  Inverse mapping of the compression function above.
+===============================================================================*/
+char util_decompress_char(i8 compressed_val)
 {
-	// 0 taken for \0
-	if (c_val == 0)
-		return '\0';
+	if (compressed_val == 0)
+		return '\0';  // null terminator
 
-	// [1..26] for lowercase
-	if (c_val >= 1 && c_val <= 26)
-		return 'a' + c_val - 1;
+	// 1-26 map to 'a'-'z'
+	if (compressed_val >= 1 && compressed_val <= 26)
+		return 'a' + compressed_val - 1;
 
-	// [27..52] for uppercase
-	if (c_val >= 27 && c_val <= 52)
-		return 'A' + c_val - 27;
+	// 27-52 map to 'A'-'Z'
+	if (compressed_val >= 27 && compressed_val <= 52)
+		return 'A' + compressed_val - 27;
 
-	// [53..62] for numbers
-	if (c_val >= 53 && c_val <= 62)
-		return '0' + c_val - 53;
+	// 53-62 map to '0'-'9'
+	if (compressed_val >= 53 && compressed_val <= 62)
+		return '0' + compressed_val - 53;
 
-	// 63 for underscore
-	if (c_val == 63)
+	// 63 maps to '_'
+	if (compressed_val == 63)
 		return '_';
 
-	assert(0 && "Unreachable - 6-bit tkv character out of bounds");
+	assert(0 && "Invalid compressed character value (0-63 expected)");
 	return -1;
 }
 
+// Validate that a string is a valid TKV variable name
 bool tkv_is_valid_key(const char *input)
 {
 	u64 len = strlen(input);
 
+	// Key must be 1-10 characters
 	if (len > TKV_KEY_LEN_MAX || len == 0)
 		return false;
 
+	// All characters must be valid
 	for (u32 i = 0; i < len; i++)
 		if (!util_is_valid_char(input[i]))
 			return false;
@@ -85,6 +98,16 @@ bool tkv_is_valid_key(const char *input)
 	return true;
 }
 
+/*==============================================================================
+  KEY ENCODING
+  
+  Encodes a string into a compressed tkv_key structure using 6-bit encoding.
+  Each character is compressed to 6 bits, and up to 10 characters fit in 60 bits.
+  The 4-bit size field stores the actual string length.
+  
+  Returns TKV_INVALID_KEY if the string is invalid (empty, too long, or
+  contains invalid characters).
+===============================================================================*/
 tkv_key tkv_make_key(const char *input)
 {
 	assert(input);
@@ -94,33 +117,56 @@ tkv_key tkv_make_key(const char *input)
 	if (len > TKV_KEY_LEN_MAX || len == 0)
 		return TKV_INVALID_KEY;
 
-	u64 result = 0;
+	u64 compressed_payload = 0;
 
+	// Compress each character and pack into 6-bit fields
 	for (u64 i = 0; i < len; i++)
 	{
-		i8 cc = util_compress_char(input[i]);
-		if (cc < 0)
+		i8 compressed_char = util_compress_char(input[i]);
+		if (compressed_char < 0)
 			return TKV_INVALID_KEY;
-		result = (result << 6) | cc;
+		compressed_payload = (compressed_payload << 6) | compressed_char;
 	}
 
-	return (tkv_key){.payload = result, .size = len};
+	return (tkv_key){.payload = compressed_payload, .size = len};
 }
 
-void tkv_unmangle_key(const tkv_key key, char *out)
+/*==============================================================================
+  KEY DECODING
+  
+  Reverses tkv_make_key - converts a compressed tkv_key back to a string.
+  Extracts the size from the key's size field, then decompresses each 6-bit
+  character and writes them in reverse order (since the payload was left-shifted
+  during compression).
+  
+  NOTE: The caller must ensure 'out' has at least TKV_KEY_LEN_MAX + 1 bytes.
+===============================================================================*/
+void tkv_key_to_str(const tkv_key key, char *out)
 {
-	u64 c_key = key.payload;
+	u64 compressed_payload = key.payload;
+	const u8 key_length = key.size;
+	const u8 last_index = key_length - 1;
 
-	const u8 len = key.size;
-	const u8 rev_idx = len - 1;
-
-	for (u64 i = 0; i < len; i++)
+	// Characters were left-shifted during encoding, so extract in reverse
+	for (u64 i = 0; i < key_length; i++)
 	{
-		u8 cc = c_key & 0x3f;
-		out[rev_idx - i] = util_decompress_char(cc);
-		c_key >>= 6;
+		u8 compressed_char = compressed_payload & 0x3f;  // Extract lowest 6 bits
+		out[last_index - i] = util_decompress_char(compressed_char);
+		compressed_payload >>= 6;  // Shift to next character
 	}
 }
+
+/*==============================================================================
+  TKV OBJECT ACCESSORS
+  
+  These functions extract header information and elements from a serialized
+  TKV object in binary format. The layout is:
+  
+  [Header: u16 length, u32 size]
+  [Keys: tkv_key[length]]
+  [Metadata: tkv_value_meta[length]]
+  [Values: u8[...]]
+===============================================================================*/
 
 u16 tkv_object_get_length(tkv_object object)
 {
@@ -135,7 +181,6 @@ u32 tkv_object_get_size(tkv_object object)
 tkv_key tkv_object_get_key(tkv_object object, u16 index)
 {
 	tkv_key *keys = (tkv_key *)(object + sizeof(u16) + sizeof(u32));
-
 	return keys[index];
 }
 
@@ -296,6 +341,19 @@ void tkv_value_set_changed(tkv_value value)
 	// TODO: have an arena for tkv value updates instead of a changed state of the value...
 }
 
+/*==============================================================================
+  TYPE STRING MAPPING
+  
+  Maps string type names from text format to TKV_VALUE_TYPE enum values.
+  This is called during parsing to determine the data type.
+  
+  EXTENSION POINT: When adding a new type (e.g., i32):
+  1. Add new enum value to TKV_VALUE_TYPE (or use TKV_VALUE_UNUSED1)
+  2. Add mapping here: if (strcmp(type, "i32") == 0) return TKV_VALUE_I32;
+  3. Update parsing switch in tkv_parse_object()
+  4. Update serialization in tkv_serialize_recursive()
+  5. Add conversion functions (tkv_value_to_i32, tkv_value_set_i32)
+===============================================================================*/
 i8 tkv_string_to_tkv_type(char *type)
 {
 	if (strcmp(type, "bool") == 0)
@@ -310,9 +368,16 @@ i8 tkv_string_to_tkv_type(char *type)
 		return TKV_VALUE_ARR;
 	if (strcmp(type, "tkv") == 0)
 		return TKV_VALUE_TKV;
-	return -1;
+	return -1;  // Unknown type
 }
 
+/*==============================================================================
+  TEMPORARY LINKED LIST NODE
+  
+  Used during parsing to accumulate key-value pairs before writing the final
+  binary format. We build a linked list during parsing, then write all keys
+  and metadata in order to the final binary structure.
+===============================================================================*/
 typedef struct temp_tkv_ll_node tkv_ll_node;
 
 typedef struct temp_tkv_ll_node
@@ -321,28 +386,65 @@ typedef struct temp_tkv_ll_node
 	tkv_key key;
 } tkv_ll_node;
 
+/*==============================================================================
+  POWER-OF-10 LOOKUP TABLE
+  
+  Used for converting integer values to floating-point numbers during parsing.
+  Allows handling of floating-point notation like "1e10" without full parsing.
+  Index represents the exponent (10^0, 10^1, ..., 10^18).
+===============================================================================*/
 u64 q10pow[] = {
-	// silly little table nothing to see here
-	10U,
-	100U,
-	1000U,
-	10000U,
-	100000U,
-	1000000U,
-	10000000U,
-	100000000U,
-	1000000000U,
-	10000000000U,
-	100000000000U,
-	1000000000000U,
-	10000000000000U,
-	100000000000000U,
-	1000000000000000U,
-	10000000000000000U,
-	100000000000000000U,
-	1000000000000000000U,
-	10000000000000000000U,
+	10UL,
+	100UL,
+	1000UL,
+	10000UL,
+	100000UL,
+	1000000UL,
+	10000000UL,
+	100000000UL,
+	1000000000UL,
+	10000000000UL,
+	100000000000UL,
+	1000000000000UL,
+	10000000000000UL,
+	100000000000000UL,
+	1000000000000000UL,
+	10000000000000000UL,
+	100000000000000000UL,
+	1000000000000000000UL,
+	10000000000000000000UL,
 };
+
+/*==============================================================================
+  PARSE TKV OBJECT FROM TEXT
+  
+  Parses a TKV object from text format into binary memory representation.
+  
+  PARSING PROCESS:
+  1. Verify opening '{'
+  2. For each key-value pair:
+     a. Read type name (bool, i64, f64, str, arr, tkv)
+     b. Read variable name and validate (1-10 chars, alphanumeric + underscore)
+     c. Read '=' and parse value based on type
+     d. Store compressed key in linked list, value in scratchpad
+  3. After all pairs, serialize to binary format:
+     - Header (node count, total size)
+     - Keys section (compressed tkv_key structures)
+     - Metadata section (type, state, offset for each value)
+     - Values section (actual value data)
+  
+  MEMORY LAYOUT:
+  - scratchpad_arena: Holds temporary type bytes and values during parsing
+  - heap: Temporary linked list nodes for key ordering
+  - tkv_arena: Final binary TKV object
+  
+  TO ADD A NEW TYPE (e.g., i32):
+  1. Add case in value parsing switch (line ~470)
+  2. Allocate storage on scratchpad and update values_size_bytes
+  3. Add corresponding case in serialization switch (line ~700)
+  4. Update tkv_string_to_tkv_type() to map the string
+  5. Add conversion functions in header
+===============================================================================*/
 
 tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, arena *tkv_arena)
 {
@@ -754,7 +856,14 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 	return (tkv_object)tkv_start;
 }
 
-// Helper to get the type name as a string
+/*==============================================================================
+  TYPE NAME LOOKUP
+  
+  Returns the string name for a TKV_VALUE_TYPE enum value.
+  Used during serialization to write type names in text output.
+  
+  EXTENSION POINT: When adding a new type, add a corresponding case here.
+===============================================================================*/
 static const char *tkv_type_name(u8 type)
 {
 	switch (type)
@@ -776,11 +885,18 @@ static const char *tkv_type_name(u8 type)
 	}
 }
 
-// Calculate the size needed to serialize a single value (for size planning)
+/*==============================================================================
+  CALCULATE SERIALIZED VALUE SIZE
+  
+  Estimates the byte count needed to serialize a single value to text format.
+  This is used for pre-allocating the output buffer.
+  
+  Note: This is an estimate that may vary based on the actual value content.
+  For example, floating-point values may have different precision when serialized.
+===============================================================================*/
 static u32 tkv_calculate_value_size(tkv_value value)
 {
 	u8 type = value.meta.tkv_value_type;
-
 	char temp[64];
 
 	switch (type)
@@ -792,7 +908,6 @@ static u32 tkv_calculate_value_size(tkv_value value)
 	case TKV_VALUE_I64:;
 		i64 i = *(i64 *)value.ptr;
 		// Max i64: -9223372036854775808 = 20 chars
-		// Min estimate with hex: 0x + up to 16 hex digits = 18
 		return snprintf(temp, sizeof(temp), "%lld", i);
 
 	case TKV_VALUE_F64:;
@@ -808,17 +923,15 @@ static u32 tkv_calculate_value_size(tkv_value value)
 	case TKV_VALUE_ARR:;
 		tkv_array arr = tkv_value_to_arr(value);
 		// Array format: "[ " + bytes + "]"
-		// Each byte varies: hex "0xXX " (~5), decimal (1-3 digits + space), char literal "'X' " (4)
-		// Worst case: assume 5 chars per byte (hex format) + opening/closing
-		// This is a conservative estimate
-		return 3 + (arr.array_length * 5); // 3 for "[ ]", 5 per byte
+		// Each byte: "0xXX " (~5 chars), conservative estimate
+		return 3 + (arr.array_length * 5);
 
 	case TKV_VALUE_TKV:
 		// Placeholder for nested TKV (will be recursively calculated)
-		return 5; // "{...}"
+		return 5;  // "{...}"
 
 	default:
-		return 3; // "???"
+		return 3;  // "???"
 	}
 }
 
@@ -843,7 +956,7 @@ static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level)
 
 		tkv_key key = tkv_object_get_key(object, i);
 		char key_name[TKV_KEY_LEN_MAX + 1];
-		tkv_unmangle_key(key, key_name);
+		tkv_key_to_str(key, key_name);
 		key_name[key.size] = '\0';
 
 		tkv_value val = tkv_get_value(object, key_name);
@@ -876,8 +989,19 @@ static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level)
 	return total_size;
 }
 
-// Helper to serialize a single value to a buffer
-// Returns number of bytes written (not including null terminator)
+/*==============================================================================
+  SERIALIZE SINGLE VALUE TO TEXT
+  
+  Converts a TKV value to its text representation in a buffer.
+  Returns the number of bytes written (not including null terminator).
+  
+  NOTE: Buffer may overflow. Caller is responsible for pre-allocation.
+  
+  EXTENSION POINT: When adding a new type (e.g., i32):
+  1. Add a case here to format the value appropriately
+  2. Use snprintf with appropriate format string
+  3. Update tkv_calculate_value_size() to estimate size for your type
+===============================================================================*/
 u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
 {
 	u32 written = 0;
@@ -961,7 +1085,7 @@ static u32 tkv_serialize_recursive(tkv_object object, u8 *buffer, u32 buffer_siz
 
 		tkv_key key = tkv_object_get_key(object, i);
 		char key_name[TKV_KEY_LEN_MAX + 1];
-		tkv_unmangle_key(key, key_name);
+		tkv_key_to_str(key, key_name);
 		key_name[key.size] = '\0';
 
 		tkv_value val = tkv_get_value(object, key_name);
