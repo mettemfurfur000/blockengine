@@ -262,3 +262,38 @@ Based on profiling:
 - `spatial_grid_get_visible()` - Spatial grid iteration
 - `vars_pos()` / `vars_pos_fast()` - Variable lookups
 - `autotile_select_shared_47()` - Autotile calculation (now cached)
+
+## Agent guidance for automated contributors
+
+This project is maintained with a mixed Windows (MSYS2) and Linux workflow. Agents working here (human or automated) should follow these practical rules to avoid mistakes and move fast:
+
+- Environment facts:
+  - Repository root (working): C:\\msys64\\home\\tem\\blockengine
+  - OS: Windows_NT (primary), Linux is supported for CI/builds
+  - Available CLI tools in this environment: powershell (for commands), git, curl; in-repo tools: make
+
+- Path conventions:
+  - Always use Windows-style paths with backslashes (\\) when running commands or editing file paths in this environment.
+
+- Tooling & search preferences:
+  - Prefer glob then grep for file discovery; use view to read files and edit to change files.
+  - When multiple independent reads/edits are needed, batch them in parallel (use the provided parallel tool wrapper).
+  - Disable pagers for long outputs (e.g., use --no-pager or pipe to head) when running shell/git commands.
+
+- Interaction rules (STRICT):
+  - On the first tool-using turn after a user message, call report_intent (intent must be concise, gerund form, <=4 words) in parallel with other tools.
+  - Before invoking tools, include a short preToolPreamble statement describing the next action and why (one sentence).
+  - When changing phases (analysis → implementation → verification), call report_intent again in parallel with the tools used for that phase.
+  - Use the ask_user tool for any clarification questions (do not ask them in free text).
+  - For capability questions about this CLI, call fetch_copilot_cli_documentation first and use its output.
+
+- Code change rules:
+  - Make surgical changes only; do not modify unrelated files.
+  - Include the required commit trailer when creating commits: `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`
+  - Run existing build commands (make) to validate changes when code is modified; do not add new global tooling.
+
+- Best practices summary:
+  - Parallelize independent tool calls, be concise, and verify builds after edits.
+  - If unsure about a significant design decision, ask via ask_user (single question at a time).
+
+These guidelines help automated agents conform to repository expectations and avoid common pitfalls when modifying code or documentation.
