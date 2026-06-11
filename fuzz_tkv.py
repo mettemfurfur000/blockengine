@@ -290,6 +290,7 @@ def test_bool_values(bin_path):
         tkv = f"{{ bool x = {val}; }}"
         _, output = run_tkv_test(tkv, bin_path)
         if "bool x = " + val not in output:
+            log_fail(f"Input which caused failure: \'{tkv}\'")
             return False
     return True
 
@@ -320,6 +321,7 @@ def test_i64_boundaries(bin_path):
         success, _ = run_tkv_test(tkv, bin_path)
         if not success:
             log_fail(f"i64 boundary test failed: {val}")
+            log_fail(f"Input which caused failure: \'{tkv}\'")
             return False
     
     return True
@@ -350,6 +352,7 @@ def test_float_precision(bin_path):
         success, _ = run_tkv_test(tkv, bin_path)
         if not success:
             log_fail(f"Float precision test failed: {val}")
+            log_fail(f"Input which caused failure: \'{tkv}\'")
             return False
     
     return True
@@ -371,6 +374,7 @@ def test_string_edge_cases(bin_path):
         success, _ = run_tkv_test(tkv, bin_path)
         if not success:
             log_fail(f"String edge case test failed: {val[:50]}...")
+            log_fail(f"Input which caused failure: \'{tkv}\'")
             return False
     
     return True
@@ -390,6 +394,7 @@ def test_array_edge_cases(bin_path):
         success, _ = run_tkv_test(tkv, bin_path)
         if not success:
             log_fail(f"Array edge case test failed: {arr[:50]}...")
+            log_fail(f"Input which caused failure: \'{tkv}\'")
             return False
     
     return True
@@ -403,6 +408,7 @@ def test_key_length_limits(bin_path):
         success, _ = run_tkv_test(tkv, bin_path)
         if not success:
             log_fail(f"Key length {length} test failed")
+            log_fail(f"Input which caused failure: \'{tkv}\'")
             return False
     
     return True
@@ -416,6 +422,7 @@ def test_nested_depth(bin_path):
     success, _ = run_tkv_test(tkv, bin_path)
     if not success:
         log_fail("Deep nesting test failed")
+        log_fail(f"Input which caused failure: \'{tkv}\'")
         return False
     
     return True

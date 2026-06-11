@@ -4,6 +4,7 @@
 #include "include/handle.h"
 #include "include/level.h"
 #include "include/logging.h"
+#include "include/multiblock_entity.h"
 #include "include/sdl2_basics.h"
 #include "include/uuid.h"
 
@@ -73,6 +74,10 @@ handle32 layer_add_block_entity(layer *l, u64 block_id, float x, float y)
 	e->scale_x = 1.0f;
 	e->scale_y = 1.0f;
 
+	e->multiblock = NULL;
+	e->mb_shape_ids = NULL;
+	e->mb_shape_count = 0;
+
 	handle32 h = handle_table_put(l->block_entity_pool, e);
 	if (!handle_is_valid(l->block_entity_pool, h))
 	{
@@ -90,6 +95,16 @@ handle32 layer_add_block_entity(layer *l, u64 block_id, float x, float y)
 void block_entity_destroy(block_entity *e)
 {
 	assert(e);
+
+	if (e->multiblock)
+	{
+		// Cleanup multiblock shape and Box2D shapes (shapes are auto-destroyed with body)
+		// Only free our tracking array
+		multiblock_shape_destroy(e->multiblock);
+		e->multiblock = NULL;
+		SAFE_FREE(e->mb_shape_ids);
+		e->mb_shape_count = 0;
+	}
 
 	layer *l = e->parent_layer;
 	if (l && l->block_entity_pool)

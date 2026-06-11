@@ -9,57 +9,57 @@
 // Check if character is allowed in a TKV key (alphanumeric, underscore, or null terminator)
 bool util_is_valid_char(char val)
 {
-	return (val >= 'a' && val <= 'z') ||  // lowercase letter
-		   (val >= 'A' && val <= 'Z') ||  // uppercase letter
-		   (val >= '0' && val <= '9') ||  // digit
-		   (val == '_') ||                // underscore
-		   (val == 0);                    // null terminator
+	return (val >= 'a' && val <= 'z') || // lowercase letter
+		   (val >= 'A' && val <= 'Z') || // uppercase letter
+		   (val >= '0' && val <= '9') || // digit
+		   (val == '_') ||				 // underscore
+		   (val == 0);					 // null terminator
 }
 
 /*==============================================================================
   CHARACTER COMPRESSION
-  
+
   Compresses a single ASCII character to 6-bit value for key storage.
   Maps characters as follows:
-    0      -> '\0' (end-of-string marker)
-    1-26   -> 'a'-'z' (lowercase letters)
-    27-52  -> 'A'-'Z' (uppercase letters)
-    53-62  -> '0'-'9' (digits)
-    63     -> '_' (underscore)
-    -1     -> unknown character (error)
+	0      -> '\0' (end-of-string marker)
+	1-26   -> 'a'-'z' (lowercase letters)
+	27-52  -> 'A'-'Z' (uppercase letters)
+	53-62  -> '0'-'9' (digits)
+	63     -> '_' (underscore)
+	-1     -> unknown character (error)
 ===============================================================================*/
 i8 util_compress_char(char val)
 {
-	const u8 alpha_count = ('z' - 'a') + 1;  // 26 letters
+	const u8 alpha_count = ('z' - 'a') + 1; // 26 letters
 
 	if (val == 0)
-		return 0;  // null terminator
+		return 0; // null terminator
 
 	if (val >= 'a' && val <= 'z')
-		return 1 + val - 'a';  // 1-26 for lowercase
+		return 1 + val - 'a'; // 1-26 for lowercase
 
 	if (val >= 'A' && val <= 'Z')
-		return 1 + alpha_count + val - 'A';  // 27-52 for uppercase
+		return 1 + alpha_count + val - 'A'; // 27-52 for uppercase
 
 	if (val >= '0' && val <= '9')
-		return 1 + 2 * alpha_count + val - '0';  // 53-62 for digits
+		return 1 + 2 * alpha_count + val - '0'; // 53-62 for digits
 
 	if (val == '_')
-		return 63;  // 63 for underscore
+		return 63; // 63 for underscore
 
-	return -1;  // unknown character
+	return -1; // unknown character
 }
 
 /*==============================================================================
   CHARACTER DECOMPRESSION
-  
+
   Reverses util_compress_char - converts 6-bit value back to ASCII character.
   Inverse mapping of the compression function above.
 ===============================================================================*/
 char util_decompress_char(i8 compressed_val)
 {
 	if (compressed_val == 0)
-		return '\0';  // null terminator
+		return '\0'; // null terminator
 
 	// 1-26 map to 'a'-'z'
 	if (compressed_val >= 1 && compressed_val <= 26)
@@ -100,11 +100,11 @@ bool tkv_is_valid_key(const char *input)
 
 /*==============================================================================
   KEY ENCODING
-  
+
   Encodes a string into a compressed tkv_key structure using 6-bit encoding.
   Each character is compressed to 6 bits, and up to 10 characters fit in 60 bits.
   The 4-bit size field stores the actual string length.
-  
+
   Returns TKV_INVALID_KEY if the string is invalid (empty, too long, or
   contains invalid characters).
 ===============================================================================*/
@@ -133,12 +133,12 @@ tkv_key tkv_make_key(const char *input)
 
 /*==============================================================================
   KEY DECODING
-  
+
   Reverses tkv_make_key - converts a compressed tkv_key back to a string.
   Extracts the size from the key's size field, then decompresses each 6-bit
   character and writes them in reverse order (since the payload was left-shifted
   during compression).
-  
+
   NOTE: The caller must ensure 'out' has at least TKV_KEY_LEN_MAX + 1 bytes.
 ===============================================================================*/
 void tkv_key_to_str(const tkv_key key, char *out)
@@ -150,18 +150,18 @@ void tkv_key_to_str(const tkv_key key, char *out)
 	// Characters were left-shifted during encoding, so extract in reverse
 	for (u64 i = 0; i < key_length; i++)
 	{
-		u8 compressed_char = compressed_payload & 0x3f;  // Extract lowest 6 bits
+		u8 compressed_char = compressed_payload & 0x3f; // Extract lowest 6 bits
 		out[last_index - i] = util_decompress_char(compressed_char);
-		compressed_payload >>= 6;  // Shift to next character
+		compressed_payload >>= 6; // Shift to next character
 	}
 }
 
 /*==============================================================================
   TKV OBJECT ACCESSORS
-  
+
   These functions extract header information and elements from a serialized
   TKV object in binary format. The layout is:
-  
+
   [Header: u16 length, u32 size]
   [Keys: tkv_key[length]]
   [Metadata: tkv_value_meta[length]]
@@ -262,23 +262,27 @@ tkv_object tkv_value_get_root(tkv_value value)
 	return value.ptr - value.meta.tkv_value_offset;
 }
 
-bool tkv_value_to_bool(tkv_value value)
-{
-	assert(value.meta.tkv_value_type == TKV_VALUE_BOOL);
-	return *(bool *)value.ptr;
-}
+#define IMPL_TKV_TO_TYPE(type, enum_type)                                                                              \
+	type tkv_value_to_##type(tkv_value value)                                                                          \
+	{                                                                                                                  \
+		assert(value.meta.tkv_value_type == TKV_VALUE_##enum_type);                                                    \
+		return *(type *)value.ptr;                                                                                     \
+	}
 
-i64 tkv_value_to_i64(tkv_value value)
-{
-	assert(value.meta.tkv_value_type == TKV_VALUE_I64);
-	return *(i64 *)value.ptr;
-}
+IMPL_TKV_TO_TYPE(bool, BOOL)
 
-f64 tkv_value_to_f64(tkv_value value)
-{
-	assert(value.meta.tkv_value_type == TKV_VALUE_F64);
-	return *(f64 *)value.ptr;
-}
+IMPL_TKV_TO_TYPE(i8, I8)
+IMPL_TKV_TO_TYPE(i16, I16)
+IMPL_TKV_TO_TYPE(i32, I32)
+IMPL_TKV_TO_TYPE(i64, I64)
+
+IMPL_TKV_TO_TYPE(u8, U8)
+IMPL_TKV_TO_TYPE(u16, U16)
+IMPL_TKV_TO_TYPE(u32, U32)
+IMPL_TKV_TO_TYPE(u64, U64)
+
+IMPL_TKV_TO_TYPE(f32, F32)
+IMPL_TKV_TO_TYPE(f64, F64)
 
 char *tkv_value_to_str(tkv_value value)
 {
@@ -296,31 +300,59 @@ tkv_array tkv_value_to_arr(tkv_value value)
 	};
 }
 
+vec3 tkv_value_to_vec3(tkv_value value)
+{
+	assert(value.meta.tkv_value_type == TKV_VALUE_VEC3);
+	return *(vec3 *)value.ptr;
+}
+
+quaternion tkv_value_to_quat(tkv_value value)
+{
+	assert(value.meta.tkv_value_type == TKV_VALUE_QUAT);
+	return *(quaternion *)value.ptr;
+}
+
 tkv_object tkv_value_to_tkv(tkv_value value)
 {
 	assert(value.meta.tkv_value_type == TKV_VALUE_TKV);
 	return *(tkv_object *)value.ptr;
 }
 
-void tkv_value_set_bool(tkv_value value, bool new_val)
+// setters for mutable types
+
+#define IMPL_TKV_SETTER(type, enum_type)                                                                               \
+	void tkv_value_set_##type(tkv_value value, type new_val)                                                           \
+	{                                                                                                                  \
+		assert(value.meta.tkv_value_type == TKV_VALUE_##enum_type);                                                    \
+		assert(value.meta.tkv_value_state != TKV_STATE_CONST);                                                         \
+		*(type *)value.ptr = new_val;                                                                                  \
+	}
+
+IMPL_TKV_SETTER(i8, I8)
+IMPL_TKV_SETTER(i16, I16)
+IMPL_TKV_SETTER(i32, I32)
+IMPL_TKV_SETTER(i64, I64)
+
+IMPL_TKV_SETTER(u8, U8)
+IMPL_TKV_SETTER(u16, U16)
+IMPL_TKV_SETTER(u32, U32)
+IMPL_TKV_SETTER(u64, U64)
+
+IMPL_TKV_SETTER(f32, F32)
+IMPL_TKV_SETTER(f64, F64)
+
+void tkv_value_set_vec3(tkv_value value, vec3 new_val)
 {
-	assert(value.meta.tkv_value_type == TKV_VALUE_BOOL);
+	assert(value.meta.tkv_value_type == TKV_VALUE_VEC3);
 	assert(value.meta.tkv_value_state != TKV_STATE_CONST);
-	*(bool *)value.ptr = new_val;
+	*(vec3 *)value.ptr = new_val;
 }
 
-void tkv_value_set_i64(tkv_value value, i64 new_val)
+void tkv_value_set_quat(tkv_value value, quaternion new_val)
 {
-	assert(value.meta.tkv_value_type == TKV_VALUE_I64);
+	assert(value.meta.tkv_value_type == TKV_VALUE_QUAT);
 	assert(value.meta.tkv_value_state != TKV_STATE_CONST);
-	*(i64 *)value.ptr = new_val;
-}
-
-void tkv_value_set_f64(tkv_value value, f64 new_val)
-{
-	assert(value.meta.tkv_value_type == TKV_VALUE_F64);
-	assert(value.meta.tkv_value_state != TKV_STATE_CONST);
-	*(f64 *)value.ptr = new_val;
+	*(quaternion *)value.ptr = new_val;
 }
 
 void tkv_value_set_changed(tkv_value value)
@@ -343,10 +375,10 @@ void tkv_value_set_changed(tkv_value value)
 
 /*==============================================================================
   TYPE STRING MAPPING
-  
+
   Maps string type names from text format to TKV_VALUE_TYPE enum values.
   This is called during parsing to determine the data type.
-  
+
   EXTENSION POINT: When adding a new type (e.g., i32):
   1. Add new enum value to TKV_VALUE_TYPE (or use TKV_VALUE_UNUSED1)
   2. Add mapping here: if (strcmp(type, "i32") == 0) return TKV_VALUE_I32;
@@ -356,24 +388,71 @@ void tkv_value_set_changed(tkv_value value)
 ===============================================================================*/
 i8 tkv_string_to_tkv_type(char *type)
 {
-	if (strcmp(type, "bool") == 0)
-		return TKV_VALUE_BOOL;
-	if (strcmp(type, "i64") == 0)
-		return TKV_VALUE_I64;
-	if (strcmp(type, "f64") == 0)
-		return TKV_VALUE_F64;
-	if (strcmp(type, "str") == 0)
-		return TKV_VALUE_STR;
-	if (strcmp(type, "arr") == 0)
-		return TKV_VALUE_ARR;
-	if (strcmp(type, "tkv") == 0)
-		return TKV_VALUE_TKV;
-	return -1;  // Unknown type
+#define STRCMP_AND_RETURN(str, enum_val)                                                                               \
+	if (strcmp(type, str) == 0)                                                                                        \
+		return TKV_VALUE_##enum_val;
+
+	STRCMP_AND_RETURN("bool", BOOL)
+
+	STRCMP_AND_RETURN("i8", I8)
+	STRCMP_AND_RETURN("i16", I16)
+	STRCMP_AND_RETURN("i32", I32)
+	STRCMP_AND_RETURN("i64", I64)
+
+	STRCMP_AND_RETURN("u8", U8)
+	STRCMP_AND_RETURN("u16", U16)
+	STRCMP_AND_RETURN("u32", U32)
+	STRCMP_AND_RETURN("u64", U64)
+
+	STRCMP_AND_RETURN("f32", F32)
+	STRCMP_AND_RETURN("f64", F64)
+
+	STRCMP_AND_RETURN("str", STR)
+	STRCMP_AND_RETURN("arr", ARR)
+	STRCMP_AND_RETURN("vec3", VEC3)
+	STRCMP_AND_RETURN("quat", QUAT)
+
+	STRCMP_AND_RETURN("tkv", TKV)
+#undef STRCMP_AND_RETURN
+
+	return -1; // Unknown type
+}
+
+static u8 tkv_type_length_flat(i8 type)
+{
+	switch (type)
+	{
+	case TKV_VALUE_BOOL:
+		return sizeof(bool);
+	case TKV_VALUE_I8:
+	case TKV_VALUE_U8:
+		return sizeof(i8);
+	case TKV_VALUE_I16:
+	case TKV_VALUE_U16:
+		return sizeof(i16);
+	case TKV_VALUE_I32:
+	case TKV_VALUE_U32:
+		return sizeof(i32);
+	case TKV_VALUE_I64:
+	case TKV_VALUE_U64:
+		return sizeof(i64);
+	case TKV_VALUE_F32:
+		return sizeof(f32);
+	case TKV_VALUE_F64:
+		return sizeof(f64);
+	case TKV_VALUE_VEC3:
+		return sizeof(vec3);
+	case TKV_VALUE_QUAT:
+		return sizeof(quaternion);
+	default:
+		assert(0 && "Type does not have a fixed flat size");
+		return 0;
+	}
 }
 
 /*==============================================================================
   TEMPORARY LINKED LIST NODE
-  
+
   Used during parsing to accumulate key-value pairs before writing the final
   binary format. We build a linked list during parsing, then write all keys
   and metadata in order to the final binary structure.
@@ -388,7 +467,7 @@ typedef struct temp_tkv_ll_node
 
 /*==============================================================================
   POWER-OF-10 LOOKUP TABLE
-  
+
   Used for converting integer values to floating-point numbers during parsing.
   Allows handling of floating-point notation like "1e10" without full parsing.
   Index represents the exponent (10^0, 10^1, ..., 10^18).
@@ -417,27 +496,27 @@ u64 q10pow[] = {
 
 /*==============================================================================
   PARSE TKV OBJECT FROM TEXT
-  
+
   Parses a TKV object from text format into binary memory representation.
-  
+
   PARSING PROCESS:
   1. Verify opening '{'
   2. For each key-value pair:
-     a. Read type name (bool, i64, f64, str, arr, tkv)
-     b. Read variable name and validate (1-10 chars, alphanumeric + underscore)
-     c. Read '=' and parse value based on type
-     d. Store compressed key in linked list, value in scratchpad
+	 a. Read type name (bool, i64, f64, str, arr, tkv)
+	 b. Read variable name and validate (1-10 chars, alphanumeric + underscore)
+	 c. Read '=' and parse value based on type
+	 d. Store compressed key in linked list, value in scratchpad
   3. After all pairs, serialize to binary format:
-     - Header (node count, total size)
-     - Keys section (compressed tkv_key structures)
-     - Metadata section (type, state, offset for each value)
-     - Values section (actual value data)
-  
+	 - Header (node count, total size)
+	 - Keys section (compressed tkv_key structures)
+	 - Metadata section (type, state, offset for each value)
+	 - Values section (actual value data)
+
   MEMORY LAYOUT:
   - scratchpad_arena: Holds temporary type bytes and values during parsing
   - heap: Temporary linked list nodes for key ordering
   - tkv_arena: Final binary TKV object
-  
+
   TO ADD A NEW TYPE (e.g., i32):
   1. Add case in value parsing switch (line ~470)
   2. Allocate storage on scratchpad and update values_size_bytes
@@ -568,15 +647,28 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 			}
 
 			SCRATCH_ADD(bool, value_b);
-			values_size_bytes += 1;
+			values_size_bytes += tkv_type_length_flat(tkv_type);
 
 			break;
+		case TKV_VALUE_I8:;
+		case TKV_VALUE_I16:;
+		case TKV_VALUE_I32:;
 		case TKV_VALUE_I64:;
-			i64 value_8b = 1;
+		case TKV_VALUE_U8:;
+		case TKV_VALUE_U16:;
+		case TKV_VALUE_U32:;
+		case TKV_VALUE_U64:;
+			bool is_negative = false;
 
 			if (tok_current.type == TOK_MINUS) // hmmm
 			{
-				value_8b = -1;
+				if (tkv_type == TKV_VALUE_U8 || tkv_type == TKV_VALUE_U16 || tkv_type == TKV_VALUE_U32 ||
+					tkv_type == TKV_VALUE_U64)
+				{
+					printf("Unsigned types cannot have negative values at %d, got \'%s\'\n", line, tok_current.text);
+					return NULL;
+				}
+				is_negative = true;
 				tok_current = token_next(&s, &line);
 			}
 
@@ -586,12 +678,29 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 				return NULL;
 			}
 
-			value_8b *= tok_current.value;
-
-			SCRATCH_ADD(i64, value_8b);
-			values_size_bytes += sizeof(i64);
+			switch (tkv_type)
+			{
+			case TKV_VALUE_I8:
+			case TKV_VALUE_U8:
+				SCRATCH_ADD(i8, (i8)(is_negative ? -tok_current.value : tok_current.value));
+				break;
+			case TKV_VALUE_I16:
+			case TKV_VALUE_U16:
+				SCRATCH_ADD(i16, (i16)(is_negative ? -tok_current.value : tok_current.value));
+				break;
+			case TKV_VALUE_I32:
+			case TKV_VALUE_U32:
+				SCRATCH_ADD(i32, (i32)(is_negative ? -tok_current.value : tok_current.value));
+				break;
+			case TKV_VALUE_I64:
+			case TKV_VALUE_U64:
+				SCRATCH_ADD(i64, (i64)(is_negative ? -tok_current.value : tok_current.value));
+				break;
+			}
+			values_size_bytes += tkv_type_length_flat(tkv_type);
 
 			break;
+		case TKV_VALUE_F32:;
 		case TKV_VALUE_F64:;
 			f64 val_f64 = 1.0f;
 
@@ -617,8 +726,16 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 				val_f64 = (f64)tok_current.value;
 			}
 
-			SCRATCH_ADD(f64, val_f64);
-			values_size_bytes += sizeof(f64);
+			switch (tkv_type)
+			{
+			case TKV_VALUE_F32:
+				SCRATCH_ADD(f32, (f32)val_f64);
+				break;
+			case TKV_VALUE_F64:
+				SCRATCH_ADD(f64, val_f64);
+				break;
+			}
+			values_size_bytes += tkv_type_length_flat(tkv_type);
 
 			break;
 
@@ -664,7 +781,7 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 
 				if (tok_current.type == TOK_NUMBER)
 				{
-					if (tok_current.value > 0xff || tok.value < 0)
+					if (tok_current.value > 0xff || tok_current.value < 0)
 					{
 						printf("Number is out of the byte's range at %d, got \'%lld\' as an input\n", line,
 							   tok_current.value);
@@ -678,7 +795,7 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 				}
 
 				array_length++;
-				values_size_bytes += 1;
+				values_size_bytes += tkv_type_length_flat(TKV_VALUE_U8);
 
 				tok_current = token_next(&s, &line);
 			}
@@ -688,6 +805,129 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 
 			values_size_bytes += 2 * sizeof(u16); // Account for metadata size
 
+			break;
+		case TKV_VALUE_VEC3:;
+			if (tok_current.type != TOK_BRACKET_LEFT)
+			{
+				printf("Expected a \'(\' at %d, got \'%s\'\n", line, tok_current.text);
+				return NULL;
+			}
+
+			f32 vec3_components[3] = {0};
+
+			for (i32 i = 0; i < 3; i++)
+			{
+				tok_current = token_next(&s, &line);
+
+				bool is_negative = false;
+
+				if (tok_current.type == TOK_MINUS)
+				{
+					is_negative = true;
+					tok_current = token_next(&s, &line);
+				}
+
+				if (tok_current.type != TOK_FLOAT && tok_current.type != TOK_NUMBER)
+				{
+					printf("Expected a float value at %d, got \'%s\'\n", line, tok_current.text);
+					return NULL;
+				}
+
+				if (tok_current.type == TOK_FLOAT)
+				{
+					vec3_components[i] = (f32)strtod(tok_current.text, NULL);
+				}
+				else if (tok_current.type == TOK_NUMBER)
+				{
+					vec3_components[i] = (f32)tok_current.value;
+				}
+
+				if (is_negative)
+					vec3_components[i] = -vec3_components[i];
+
+				if (i < 2)
+				{
+					tok_current = token_next(&s, &line);
+					if (tok_current.type != TOK_COMMA)
+					{
+						printf("Expected a comma at %d, got \'%s\'\n", line, tok_current.text);
+						return NULL;
+					}
+				}
+			}
+
+			tok_current = token_next(&s, &line);
+
+			if (tok_current.type != TOK_BRACKET_RIGHT)
+			{
+				printf("Expected a \')\' at %d, got \'%s\'\n", line, tok_current.text);
+				return NULL;
+			}
+
+			SCRATCH_ADD(vec3, *(vec3 *)vec3_components);
+			values_size_bytes += tkv_type_length_flat(TKV_VALUE_VEC3);
+			break;
+
+		case TKV_VALUE_QUAT:;
+			if (tok_current.type != TOK_BRACKET_LEFT)
+			{
+				printf("Expected a \'(\' at %d, got \'%s\'\n", line, tok_current.text);
+				return NULL;
+			}
+
+			f32 quat_components[4] = {0};
+
+			for (i32 i = 0; i < 4; i++)
+			{
+				tok_current = token_next(&s, &line);
+
+				bool is_negative = false;
+
+				if (tok_current.type == TOK_MINUS)
+				{
+					is_negative = true;
+					tok_current = token_next(&s, &line);
+				}
+
+				if (tok_current.type != TOK_FLOAT && tok_current.type != TOK_NUMBER)
+				{
+					printf("Expected a float value at %d, got \'%s\'\n", line, tok_current.text);
+					return NULL;
+				}
+
+				if (tok_current.type == TOK_FLOAT)
+				{
+					quat_components[i] = (f32)strtod(tok_current.text, NULL);
+				}
+				else if (tok_current.type == TOK_NUMBER)
+				{
+					quat_components[i] = (f32)tok_current.value;
+				}
+
+				if (is_negative)
+					quat_components[i] = -quat_components[i];
+
+				if (i < 3)
+				{
+					tok_current = token_next(&s, &line);
+					if (tok_current.type != TOK_COMMA)
+					{
+						printf("Expected a comma at %d, got \'%s\'\n", line, tok_current.text);
+						return NULL;
+					}
+				}
+			}
+
+			tok_current = token_next(&s, &line);
+
+			if (tok_current.type != TOK_BRACKET_RIGHT)
+			{
+				printf("Expected a \')\' at %d, got \'%s\'\n", line, tok_current.text);
+				return NULL;
+			}
+
+			SCRATCH_ADD(quaternion, *(quaternion *)quat_components);
+			values_size_bytes += tkv_type_length_flat(TKV_VALUE_QUAT);
 			break;
 
 		case TKV_VALUE_TKV:;
@@ -769,28 +1009,30 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 		u32 value_size = 0;
 		u32 value_offset = (u32)(values_write_ptr - tkv_start);
 
+#define TKV_SWITCH_WRITE(type_enum, type)                                                                              \
+	case TKV_VALUE_##type_enum:                                                                                        \
+		value_size = sizeof(type);                                                                                     \
+		memcpy(values_write_ptr, scratch_ptr, value_size);                                                             \
+		scratch_ptr += value_size;                                                                                     \
+		values_write_ptr += value_size;                                                                                \
+		break;
+
 		switch (type)
 		{
-		case TKV_VALUE_BOOL:
-			value_size = sizeof(bool);
-			memcpy(values_write_ptr, scratch_ptr, value_size);
-			scratch_ptr += value_size;
-			values_write_ptr += value_size;
-			break;
+			TKV_SWITCH_WRITE(BOOL, bool)
 
-		case TKV_VALUE_I64:
-			value_size = sizeof(i64);
-			memcpy(values_write_ptr, scratch_ptr, value_size);
-			scratch_ptr += value_size;
-			values_write_ptr += value_size;
-			break;
+			TKV_SWITCH_WRITE(I8, i8)
+			TKV_SWITCH_WRITE(I16, i16)
+			TKV_SWITCH_WRITE(I32, i32)
+			TKV_SWITCH_WRITE(I64, i64)
 
-		case TKV_VALUE_F64:
-			value_size = sizeof(f64);
-			memcpy(values_write_ptr, scratch_ptr, value_size);
-			scratch_ptr += value_size;
-			values_write_ptr += value_size;
-			break;
+			TKV_SWITCH_WRITE(U8, u8)
+			TKV_SWITCH_WRITE(U16, u16)
+			TKV_SWITCH_WRITE(U32, u32)
+			TKV_SWITCH_WRITE(U64, u64)
+
+			TKV_SWITCH_WRITE(F32, f32)
+			TKV_SWITCH_WRITE(F64, f64)
 
 		case TKV_VALUE_STR:;
 			u32 str_len = strlen((char *)scratch_ptr) + 1;
@@ -808,6 +1050,9 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 			scratch_ptr += value_size;
 			values_write_ptr += value_size;
 			break;
+
+			TKV_SWITCH_WRITE(VEC3, vec3)
+			TKV_SWITCH_WRITE(QUAT, quaternion)
 
 		case TKV_VALUE_TKV:;
 			// Read the pointer to the child TKV object that was stored on the scratchpad
@@ -858,81 +1103,44 @@ tkv_object tkv_parse_object(const char **tkv_source, arena *scratchpad_arena, ar
 
 /*==============================================================================
   TYPE NAME LOOKUP
-  
+
   Returns the string name for a TKV_VALUE_TYPE enum value.
   Used during serialization to write type names in text output.
-  
+
   EXTENSION POINT: When adding a new type, add a corresponding case here.
 ===============================================================================*/
 static const char *tkv_type_name(u8 type)
 {
+#define CASE_RETURN_STR(enum_val, ret)                                                                                 \
+	case TKV_VALUE_##enum_val:                                                                                         \
+		return ret;
 	switch (type)
 	{
-	case TKV_VALUE_BOOL:
-		return "bool";
-	case TKV_VALUE_I64:
-		return "i64";
-	case TKV_VALUE_F64:
-		return "f64";
-	case TKV_VALUE_STR:
-		return "str";
-	case TKV_VALUE_ARR:
-		return "arr";
-	case TKV_VALUE_TKV:
-		return "tkv";
+		CASE_RETURN_STR(BOOL, "bool")
+
+		CASE_RETURN_STR(I8, "i8")
+		CASE_RETURN_STR(I16, "i16")
+		CASE_RETURN_STR(I32, "i32")
+		CASE_RETURN_STR(I64, "i64")
+
+		CASE_RETURN_STR(U8, "u8")
+		CASE_RETURN_STR(U16, "u16")
+		CASE_RETURN_STR(U32, "u32")
+		CASE_RETURN_STR(U64, "u64")
+
+		CASE_RETURN_STR(F32, "f32")
+		CASE_RETURN_STR(F64, "f64")
+
+		CASE_RETURN_STR(STR, "str")
+		CASE_RETURN_STR(ARR, "arr")
+		CASE_RETURN_STR(VEC3, "vec3")
+		CASE_RETURN_STR(QUAT, "quat")
+
+		CASE_RETURN_STR(TKV, "tkv")
 	default:
 		return "unknown";
 	}
-}
-
-/*==============================================================================
-  CALCULATE SERIALIZED VALUE SIZE
-  
-  Estimates the byte count needed to serialize a single value to text format.
-  This is used for pre-allocating the output buffer.
-  
-  Note: This is an estimate that may vary based on the actual value content.
-  For example, floating-point values may have different precision when serialized.
-===============================================================================*/
-static u32 tkv_calculate_value_size(tkv_value value)
-{
-	u8 type = value.meta.tkv_value_type;
-	char temp[64];
-
-	switch (type)
-	{
-	case TKV_VALUE_BOOL:
-		// "true" or "false"
-		return 5;
-
-	case TKV_VALUE_I64:;
-		i64 i = *(i64 *)value.ptr;
-		// Max i64: -9223372036854775808 = 20 chars
-		return snprintf(temp, sizeof(temp), "%lld", i);
-
-	case TKV_VALUE_F64:;
-		f64 f = *(f64 *)value.ptr;
-		// With %.17g format, max ~25 chars
-		return snprintf(temp, sizeof(temp), "%.17g", f);
-
-	case TKV_VALUE_STR:;
-		char *str = (char *)value.ptr;
-		// String with quotes: 2 + length
-		return 2 + strlen(str);
-
-	case TKV_VALUE_ARR:;
-		tkv_array arr = tkv_value_to_arr(value);
-		// Array format: "[ " + bytes + "]"
-		// Each byte: "0xXX " (~5 chars), conservative estimate
-		return 3 + (arr.array_length * 5);
-
-	case TKV_VALUE_TKV:
-		// Placeholder for nested TKV (will be recursively calculated)
-		return 5;  // "{...}"
-
-	default:
-		return 3;  // "???"
-	}
+#undef CASE_RETURN_STR
 }
 
 // Forward declaration for recursive size calculation
@@ -941,6 +1149,8 @@ static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level);
 // Calculate the size needed to serialize a complete TKV object
 static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level)
 {
+	char temp_buffer[2048] = {};
+
 	u32 total_size = 0;
 	u32 indent_spaces = indent_level * 4;
 
@@ -973,7 +1183,11 @@ static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level)
 		}
 		else
 		{
-			total_size += tkv_calculate_value_size(val);
+			// total_size += tkv_calculate_value_size(val);
+			// instead of doing that we can serialize the value to a temp buffer and measure the written size, which
+			// will be more accurate for things like floats and strings
+			u32 written = tkv_serialize_value((u8 *)temp_buffer, sizeof(temp_buffer), val);
+			total_size += written;
 		}
 
 		// ";\n"
@@ -991,12 +1205,12 @@ static u32 tkv_calculate_size_recursive(tkv_object object, u32 indent_level)
 
 /*==============================================================================
   SERIALIZE SINGLE VALUE TO TEXT
-  
+
   Converts a TKV value to its text representation in a buffer.
   Returns the number of bytes written (not including null terminator).
-  
+
   NOTE: Buffer may overflow. Caller is responsible for pre-allocation.
-  
+
   EXTENSION POINT: When adding a new type (e.g., i32):
   1. Add a case here to format the value appropriately
   2. Use snprintf with appropriate format string
@@ -1007,6 +1221,15 @@ u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
 	u32 written = 0;
 	u8 type = value.meta.tkv_value_type;
 
+	i64 temp_i64;
+	u64 temp_u64;
+
+#define TKV_SWITCH_SERIALIZE(type_enum, type, temp_var)                                                                \
+	case TKV_VALUE_##type_enum:                                                                                        \
+		temp_var = *(type *)value.ptr;                                                                                 \
+		written = snprintf((char *)buffer, buffer_size, "%lld", temp_var);                                             \
+		break;
+
 	switch (type)
 	{
 	case TKV_VALUE_BOOL:;
@@ -1014,14 +1237,26 @@ u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
 		written = snprintf((char *)buffer, buffer_size, "%s", b ? "true" : "false");
 		break;
 
-	case TKV_VALUE_I64:;
-		i64 i = *(i64 *)value.ptr;
-		written = snprintf((char *)buffer, buffer_size, "%lld", i);
+		TKV_SWITCH_SERIALIZE(I8, i8, temp_i64)
+		TKV_SWITCH_SERIALIZE(U8, u8, temp_u64)
+
+		TKV_SWITCH_SERIALIZE(I16, i16, temp_i64)
+		TKV_SWITCH_SERIALIZE(U16, u16, temp_u64)
+
+		TKV_SWITCH_SERIALIZE(I32, i32, temp_i64)
+		TKV_SWITCH_SERIALIZE(U32, u32, temp_u64)
+
+		TKV_SWITCH_SERIALIZE(I64, i64, temp_i64)
+		TKV_SWITCH_SERIALIZE(U64, u64, temp_u64)
+
+	case TKV_VALUE_F32:;
+		f32 f1 = *(f32 *)value.ptr;
+		written = snprintf((char *)buffer, buffer_size, "%.9g", f1);
 		break;
 
 	case TKV_VALUE_F64:;
-		f64 f = *(f64 *)value.ptr;
-		written = snprintf((char *)buffer, buffer_size, "%.17g", f);
+		f64 f2 = *(f64 *)value.ptr;
+		written = snprintf((char *)buffer, buffer_size, "%.17g", f2);
 		break;
 
 	case TKV_VALUE_STR:;
@@ -1048,6 +1283,17 @@ u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
 		written += closing_write;
 		break;
 
+	case TKV_VALUE_VEC3:;
+		vec3 v = *(vec3 *)value.ptr;
+		written = snprintf((char *)buffer, buffer_size, "(%.9g, %.9g, %.9g)", v.x, v.y, v.z);
+		break;
+
+	case TKV_VALUE_QUAT:;
+		quaternion q = *(quaternion *)value.ptr;
+
+		written = snprintf((char *)buffer, buffer_size, "(%.9g, %.9g, %.9g, %.9g)", q.x, q.y, q.z, q.w);
+		break;
+
 	case TKV_VALUE_TKV:;
 		// For nested objects, we'll handle this differently
 		// Just write a placeholder here
@@ -1059,7 +1305,11 @@ u32 tkv_serialize_value(u8 *buffer, u32 buffer_size, tkv_value value)
 		break;
 	}
 
+	assert(written < buffer_size && "Buffer overflow in tkv_serialize_value, increase buffer size");
+
 	return written;
+
+#undef TKV_SWITCH_SERIALIZE
 }
 
 // Recursive helper to serialize with proper indentation

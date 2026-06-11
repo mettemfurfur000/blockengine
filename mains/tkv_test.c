@@ -1,6 +1,5 @@
 #include "include/signal_handler.h"
 #include "include/tkv.h"
-#include "include/tokenizer.h"
 
 #include <lua.h>
 
@@ -10,6 +9,7 @@ int main(int argc, char *argv[])
 	init_signal_handlers();
 
 	log_start("tkv.log");
+
 
 	assert(argc >= 2);
 
@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
 		interactive = true;
 	}
 
-	arena *scratchpad_arena = arena_create(1024 * 1024);
-	arena *tkv_arena = arena_create(1024 * 1024);
+	arena *scratchpad_arena = arena_create(256);
+	arena *tkv_arena = arena_create(256);
 
 	fflush(stdout);
 
@@ -62,6 +62,14 @@ int main(int argc, char *argv[])
 			if (val.meta.whole == UINT_MAX || val.ptr == NULL)
 			{
 				printf("Key '%s' not found\n", input);
+				continue;
+			}
+
+			if(val.meta.tkv_value_type == TKV_VALUE_TKV)
+			{
+				tkv_object child = tkv_value_to_tkv(val);
+				char *serialized = tkv_serialize_object(child, scratchpad_arena);
+				printf("'%s' = {\n%s}\n", input, serialized);
 				continue;
 			}
 

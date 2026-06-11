@@ -9,6 +9,7 @@
 #include <box2d/id.h>
 
 struct layer;
+struct multiblock_shape;
 
 #ifdef __cplusplus
 extern "C"
@@ -35,6 +36,12 @@ extern "C"
 		u32 timestamp_old;
 
 		u8 flags;
+
+		// Multiblock shape (NULL for single-block entities)
+		struct multiblock_shape *multiblock;
+		// Array of Box2D shape IDs for each non-zero block in multiblock shape
+		b2ShapeId *mb_shape_ids;
+		u32 mb_shape_count;
 	};
 
 	block_entity *block_entity_create(struct layer *parent, u64 block_id, float x, float y);
