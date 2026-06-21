@@ -275,4 +275,86 @@ char *tkv_serialize_object(tkv_object object, arena *output_arena);
 // The returned buffer is a nul-terminated text representation (same as `tkv_serialize_object`).
 u8 *tkv_serialize_for_network(tkv_object object, arena *output_arena, u32 *out_len);
 
+/*==============================================================================
+  PORTABLE BINARY VALUE SERIALIZERS
+
+  These functions write a typed value into a buffer in TKV binary format (the
+  same format used in the values section of a serialized TKV object). They
+  return the number of bytes written.
+
+  Use these standalone when you need to serialize individual values without
+  the full TKV object overhead - e.g., for network sync, file I/O, or
+  preparing data for tkv_object_add_field().
+===============================================================================*/
+
+u32 tkv_write_value_bool(u8 *buffer, bool value);
+u32 tkv_write_value_i8(u8 *buffer, i8 value);
+u32 tkv_write_value_i16(u8 *buffer, i16 value);
+u32 tkv_write_value_i32(u8 *buffer, i32 value);
+u32 tkv_write_value_i64(u8 *buffer, i64 value);
+u32 tkv_write_value_u8(u8 *buffer, u8 value);
+u32 tkv_write_value_u16(u8 *buffer, u16 value);
+u32 tkv_write_value_u32(u8 *buffer, u32 value);
+u32 tkv_write_value_u64(u8 *buffer, u64 value);
+u32 tkv_write_value_f32(u8 *buffer, f32 value);
+u32 tkv_write_value_f64(u8 *buffer, f64 value);
+u32 tkv_write_value_str(u8 *buffer, const char *str);
+u32 tkv_write_value_arr(u8 *buffer, u16 element_size, u16 array_length, const u8 *bytes);
+u32 tkv_write_value_vec3(u8 *buffer, vec3 value);
+u32 tkv_write_value_quat(u8 *buffer, quaternion value);
+u32 tkv_write_value_tkv(u8 *buffer, tkv_object value);
+
+/*==============================================================================
+  ADD FIELD TO EXISTING TKV OBJECT
+
+  Creates a new TKV object with an additional field appended. The original
+  object is not modified. The result is allocated from the provided arena.
+
+  Parameters:
+    object  - Existing binary TKV object to extend
+    key     - Variable name (1-10 chars, alphanumeric + underscore)
+    type    - TKV_VALUE_TYPE enum for the new field
+    state   - TKV_VALUE_STATE for the new field (CONST, VOLATILE, etc.)
+    value   - Pointer to the value data (interpreted based on type):
+              Scalar types (bool, i8-u64, f32-f64, vec3, quat):
+                pointer to a variable of that type
+              STR: the string itself (const char*)
+              ARR: pointer to a tkv_array struct
+              TKV: the tkv_object (void*) itself
+    arena   - Arena to allocate the resulting TKV object from
+
+  Returns the new TKV object, or NULL if the key is invalid or already exists.
+===============================================================================*/
+tkv_object tkv_object_add_field(tkv_object object, const char *key, u8 type, u8 state, const void *value, arena *arena);
+
+/*==============================================================================
+  STREAM I/O — TKV ↔ file_system bridge
+
+  These functions serialize/deserialize a TKV object tree through `stream_t`,
+  handling endianness and nested TKV_VALUE_TKV children transparently.
+
+  The stream format is a self-describing tagged binary:
+    [u16 node_count]
+    for each node:
+      [u64 compressed_key] [u8 type] [u8 state]
+      [value_data: depends on type, uses stream_write for endian-aware I/O]
+      TKV_VALUE_TKV: recurses with its own [u16 node_count + children]
+
+  Callers must #include "data_io.h" for the stream_t definition.
+===============================================================================*/
+
+// Create an empty TKV object with 0 fields (header only).
+// Useful as the starting point for building metadata programmatically.
+tkv_object tkv_object_create_empty(arena *arena);
+
+// Serialize a TKV object tree to a stream (endian-aware, handles nesting).
+// s is a stream_t* (from data_io.h). Declared as void* to avoid header dependency.
+u8 tkv_write_to_stream(tkv_object object, void *s);
+
+// Read a TKV object tree from a stream.
+// s is a stream_t* (from data_io.h). Declared as void* to avoid header dependency.
+// scratchpad_arena: temporary storage during parsing (can be reset after).
+// tkv_arena: holds the resulting TKV object tree.
+tkv_object tkv_read_from_stream(void *s, arena *scratchpad_arena, arena *tkv_arena);
+
 #endif
