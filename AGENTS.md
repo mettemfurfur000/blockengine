@@ -1,299 +1,82 @@
-# AGENTS.md - Blockengine Developer Guide
+# AGENTS.md — Blockengine Developer Guide
 
-This file provides guidelines for agents working on the blockengine codebase.
+Project: lightweight 2D block game engine. C + C++, SDL2, OpenGL, Lua.
 
-## Project Overview
-
-Blockengine is a lightweight 2D block-based game engine written in C with some C++. It uses SDL2 for windowing/input, OpenGL for rendering, and Lua for scripting. The project builds on Windows (MSYS2/MinGW) and Linux.
-
-## Build Commands
-
-### Building the Project
+## Build
 
 ```bash
-make              # Build all targets (client_app, builder)
-make client_app   # Build the game client
-make builder      # Build the level editor
-make tex_gen      # Build the texture atlas generator
-make clean        # Clean build artifacts
+make                    # All targets
+make blockengine_base   # Game client
+make builder            # Registry compiler
+make tex_gen            # Texture atlas generator
+make tkv_test           # TKV format test
+make clean
+make PERF=1             # Profiling build
 ```
 
-### Building with clangd Support
-
-```bash
-# Option 1: Using get_compile_commands.sh (rebuilds everything)
-./get_compile_commands.sh
-
-# Option 2: Manual setup with compiledb
-python3 -m venv .compiledbenv
-source .compiledbenv/bin/activate
-pip install compiledb
-make VERBOSE=1 -j 8 -B > ./build_log.txt
-compiledb < build_log.txt
-```
-
-### Testing
-
-- There is **no formal test framework** - testing is done manually by running the client or builder
-- Run `make test` on Linux to build and test
-
-### Dependencies
-
-**Windows (MSYS2):**
-```bash
-pacman -S mingw-w64-x86_64-toolchain make mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_image mingw-w64-x86_64-SDL2_ttf mingw-w64-x86_64-lua
-```
-
-**Linux:**
-```bash
-sudo apt install build-essential libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev liblua5.3-dev
-```
-
-## Code Style Guidelines
-
-### Formatting
-
-- **Follow `.clang-format`** - Uses Microsoft style with these settings:
-  - Indent width: 4 spaces
-  - Pointer alignment: Right
-  - Braces wrap after control statements, functions, classes, structs, enums
-  - Pack constructor initializers: Never
-
-- Run `clang-format -i <file>` to format code
-
-### Naming Conventions
-
-- **Variables**: lowercase with underscores (snake_case) - e.g., `block_count`, `handle_table`
-- **Structs/Enums**: lowercase with underscores - e.g., `struct handle_table_slot`
-- **Functions**: lowercase with underscores - e.g., `handle_table_create()`
-- **Macros/Constants**: UPPERCASE - e.g., `MAX_PATH_LENGTH`, `SAFE_FREE`
-- **Types**: Use prefixed types (see below)
-
-### Type Definitions
-
-Use fixed-width integer types from `include/general.h`:
-
-```c
-typedef uint8_t  u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-
-typedef int8_t   i8;
-typedef int16_t  i16;
-typedef int32_t  i32;
-typedef int64_t  i64;
-```
-
-Also use `bool` from `<stdbool.h>`.
-
-### Include Guidelines
-
-- Project headers: `#include "include/xxx.h"` (quotes, not angle brackets)
-- External headers: `#include <xxx.h>` (angle brackets)
-- Order: Project headers first, then standard library, then external libraries
-- Example:
-```c
-#include "include/logging.h"
-#include "include/general.h"
-#include <stdlib.h>
-#include <string.h>
-#include <lua.h>
-```
-
-### Logging
-
-Use the logging macros defined in `include/logging.h`:
-
-```c
-LOG_MESSAGE(format, ...)  // Level 1
-LOG_ERROR(format, ...)     // Level 2
-LOG_WARNING(format, ...)   // Level 3
-LOG_INFO(format, ...)      // Level 4
-LOG_DEBUG(format, ...)     // Level 5
-```
-
-Set `LOG_LEVEL` in the header (2-3 for release, 5 for debug).
-
-### Error Handling
-
-- Return `SUCCESS` (0) or `FAIL` (-1) for functions
-- Use `assert()` for internal invariants (has custom backtrace in debug builds)
-- Check allocations: `if (!ptr) return FAIL;` or `if (!ptr) return NULL;`
-- Use the `SAFE_FREE(ptr)` macro to safely free memory
-
-### Memory Management
-
-```c
-// Allocations
-void *ptr = malloc(size);
-if (!ptr) return FAIL;
-
-// Or with calloc
-void *ptr = calloc(count, size);
-if (!ptr) { free(original); return FAIL; }
-
-// Freeing
-SAFE_FREE(ptr);
-```
-
-### C/C++ Interop
-
-- Headers must use `extern "C"` guards for C++ compatibility:
-```c
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// declarations
-
-#ifdef __cplusplus
-}
-#endif
-```
-
-### Comments
-
-- **DO NOT add comments** unless explaining complex non-obvious logic
-- Keep code self-documenting with clear naming
-
-### Best Practices
-
-1. Always check function return values for error conditions
-2. Validate input parameters at function entry
-3. Use handle tables (`include/handle.h`) for opaque references to objects
-4. Put related functions in the same source file with matching header
-5. Keep functions focused and under ~100 lines when possible
-6. Use static for internal linkage functions/variables
-
-## Project Structure
-
-```
-blockengine/
-├── include/          # Public headers (.h)
-├── src/              # Implementation (.c, .cpp)
-│   ├── basic/        # Core utilities (logging, handles, vars, etc.)
-│   ├── graphics/     # Rendering, OpenGL, SDL2 utilities
-│   ├── scripting/    # Lua bindings
-│   └── network/      # Networking (ENet)
-├── libs/             # External libraries (dirent, enet, stb, vec)
-├── mains/            # Entry points (client.c, builder.c, tex_gen.c)
-├── instance/         # Game assets (textures, scripts, levels)
-├── build/            # Output binaries
-├── obj/              # Object files
-└── makefile          # Build system
-```
-
-## Common Development Tasks
-
-### Adding a New Source File
-
-1. Create `src/<module>/filename.c`
-2. Add corresponding `include/filename.h` with declarations
-3. Include guards: `#ifndef FILENAME_H` / `#define FILENAME_H 1`
-4. Add to makefile if needed (auto-detected via glob)
-
-### Adding a New Lua Binding
-
-1. Create static binding functions in `src/scripting/scripting_bindings.c`
-2. Register in appropriate `lua_xxx_register()` function
-3. Add function declarations to `include/scripting_bindings.h`
-
-### Debugging
-
-- Enable debug logging: Set `#define LOG_LEVEL 5` in `include/logging.h`
-- Use `LOG_DEBUG()` for verbose output
-- Backtraces are printed on assert failures (debug builds)
-
-## Rendering Performance Optimization
-
-The rendering pipeline has been optimized with several key improvements:
-
-### 1. Spatial Partitioning (`include/spatial_grid.h`, `src/basic/spatial_grid.c`)
-
-The layer uses a spatial grid (16x16 cell size) to partition blocks. Instead of iterating all blocks in the viewport, only non-empty blocks in visible cells are processed.
-
-- `spatial_grid_create()` - Initialize grid for a layer
-- `spatial_grid_update()` - Update grid when blocks change (automatically called by `block_set_id()`)
-- `spatial_grid_get_visible()` - Iterate only visible non-empty blocks via callback
-
-### 2. O(1) Block Vars Lookup
-
-Block variables are accessed frequently during rendering. The lookup was optimized using a pre-computed offset table:
-
-- `block_resources.vars_offsets[256]` - Array of byte offsets for each variable letter
-- Built when registry loads in `block_resource_read()`
-- Fast getters: `var_get_u8_fast()`, `var_get_i16_fast()`, etc. (`include/vars.h`)
-
-These functions take the offsets array as a parameter and do O(1) lookup instead of O(n) linear search.
-
-### 3. Autotile Caching
-
-Autotile frame calculation (checking 8 neighbors) is expensive. The spatial grid now caches computed frames:
-
-- `block_pos.cached_autotile_frame` - Stores computed frame per block
-- Cache invalidated when:
-  - Block ID changes at that position
-  - Any of the 8 neighbors change (via `invalidate_neighbor_cache()`)
-- First render computes the frame and caches it; subsequent frames use cache
-
-### 4. Instance Buffer
-
-The block renderer instance buffer was increased from 1000 to 10000 to reduce runtime reallocations during large viewport renders.
-
-### Profiling
-
-To profile the client:
-```bash
-# Build with profiling flags
-make PERF=1
-
-# Run with profiling
-./build/client_app
-
-# Analyze
-gprof build/client_app gmon.out > analysis.txt
-```
-
-### Key Hotspots to Watch
-
-Based on profiling:
-- `render_block_callback()` - Main render loop (should be minimal now)
-- `spatial_grid_get_visible()` - Spatial grid iteration
-- `vars_pos()` / `vars_pos_fast()` - Variable lookups
-- `autotile_select_shared_47()` - Autotile calculation (now cached)
-
-## Agent guidance for automated contributors
-
-This project is maintained with a mixed Windows (MSYS2) and Linux workflow. Agents working here (human or automated) should follow these practical rules to avoid mistakes and move fast:
-
-- Environment facts:
-  - Repository root (working): C:\\msys64\\home\\tem\\blockengine
-  - OS: Windows_NT (primary), Linux is supported for CI/builds
-  - Available CLI tools in this environment: powershell (for commands), git, curl; in-repo tools: make
-
-- Path conventions:
-  - Always use Windows-style paths with backslashes (\\) when running commands or editing file paths in this environment.
-
-- Tooling & search preferences:
-  - Prefer glob then grep for file discovery; use view to read files and edit to change files.
-  - When multiple independent reads/edits are needed, batch them in parallel (use the provided parallel tool wrapper).
-  - Disable pagers for long outputs (e.g., use --no-pager or pipe to head) when running shell/git commands.
-
-- Interaction rules (STRICT):
-  - On the first tool-using turn after a user message, call report_intent (intent must be concise, gerund form, <=4 words) in parallel with other tools.
-  - Before invoking tools, include a short preToolPreamble statement describing the next action and why (one sentence).
-  - When changing phases (analysis → implementation → verification), call report_intent again in parallel with the tools used for that phase.
-  - Use the ask_user tool for any clarification questions (do not ask them in free text).
-  - For capability questions about this CLI, call fetch_copilot_cli_documentation first and use its output.
-
-- Code change rules:
-  - Make surgical changes only; do not modify unrelated files.
-  - Include the required commit trailer when creating commits: `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`
-  - Run existing build commands (make) to validate changes when code is modified; do not add new global tooling.
-
-- Best practices summary:
-  - Parallelize independent tool calls, be concise, and verify builds after edits.
-  - If unsure about a significant design decision, ask via ask_user (single question at a time).
-
-These guidelines help automated agents conform to repository expectations and avoid common pitfalls when modifying code or documentation.
+Deps (MSYS2): `mingw-w64-x86_64-toolchain make mingw-w64-x86_64-SDL2{,_image,_ttf,_mixer} mingw-w64-x86_64-lua libbacktrace`
+Deps (Linux): `build-essential libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev liblua5.4-dev libbox2d-dev libepoxy-dev`
+
+Windows-only flags: `-lws2_32 -lWinmm -lbacktrace -lopengl32 -lepoxy.dll`
+Linux-only flags: `-llua5.4 -lepoxy`
+
+## Code Style
+
+- `.clang-format`: Microsoft style, 4-space indent, pointer right, braces wrap.
+- `snake_case` for everything. `UPPER_CASE` for macros/constants.
+- Types from `include/general.h`: `u8/u16/u32/u64`, `i8/i16/i32/i64`, `f32/f64`.
+- Return `SUCCESS` (0) or `FAIL` (-1). Use `assert()` for invariants (custom backtrace on fail).
+- Logging: `LOG_MESSAGE/ERROR/WARNING/INFO/DEBUG(level 1-5)`. Set `LOG_LEVEL` in `include/logging.h`.
+- `SAFE_FREE(ptr)` macro frees + nullifies.
+- `extern "C"` guards for C++ interop.
+- No comments unless complex non-obvious logic.
+
+## Key Files
+
+| File | Role |
+|------|------|
+| `include/level.h` | Level/room/layer structs, block ops |
+| `include/block_registry.h` | Block resource loading, storage |
+| `include/block_renderer_v2.h` | Instanced OpenGL renderer |
+| `include/rendering.h` | layer_slice, client_render |
+| `include/events.h` | Engine event system |
+| `include/spatial_grid.h` | Spatial partitioning + autotile cache |
+| `include/vars.h` | Block variable blob system |
+| `include/handle.h` | Opaque handle table |
+| `include/tkv.h` | TKV serialization format |
+| `include/scripting.h` | Lua state management |
+| `include/data_io.h` | Endian-aware stream I/O (plain/gzip/buffer) |
+| `mains/blockengine_base.c` | Client entry + main loop |
+
+## Adding New Source Files
+
+Create `.c` in `src/<module>/`, `.h` in `include/`. Makefile auto-discovers via `find` glob.
+
+## Adding Lua Bindings
+
+1. Declare functions in `include/scripting/<type>.h`
+2. Implement in `src/scripting/lua_<type>.c`
+3. Register in `lua_register_engine_objects()` in `scripting_bindings.c`
+
+## Dependencies Map
+
+- **SDL2**: window, input, events
+- **epoxy (OpenGL loader)**: GL functions
+- **Box2D**: physics
+- **Lua 5.4**: scripting
+- **SDL2_mixer**: audio
+- **zlib**: gzip I/O streams
+- **libbacktrace**: crash backtraces
+- **libs/vec**: dynamic arrays
+- **libs/stb**: image I/O
+- **libs/dirent**: directory iteration (Windows)
+
+## Common Pitfalls
+
+- Block ID 0 = void. Registry auto-fills gaps with filler entries.
+- `total_bytes_per_block` = `block_size + sizeof(handle32)` (4 bytes for handle).
+- Layer var_pool uses handle_table for blob storage.
+- Spatial grid invalidates on `block_set_id()`. Autotile cache also invalidated on neighbor change.
+- Builder is headless (no graphics). Client connects to display.
+- Post-processing currently disabled (FBO logic has issues).
+- `sizeof(handlers)` in `scripting.c:586` is wrong (byte count vs element count) — but bounds never reached in practice.

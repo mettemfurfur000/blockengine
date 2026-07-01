@@ -201,7 +201,8 @@ int main(int argc, char *argv[])
 	if (reg == NULL)
 	{
 		LOG_ERROR("No registry found");
-		return -1;
+
+		goto logic_exit;
 	}
 
 	LUA_SET_GLOBAL_USER_OBJECT("G_block_registry", BlockRegistry, reg);

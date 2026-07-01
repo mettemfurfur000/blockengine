@@ -1,4 +1,3 @@
-#include <box2d/id.h>
 #ifndef LEVEL_H
 #define LEVEL_H 1
 

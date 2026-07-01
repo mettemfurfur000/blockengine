@@ -39,7 +39,10 @@ static int lua_load_level(lua_State *L)
 		NEW_USER_OBJECT(L, Level, out);
 	}
 	else
+	{
+		free(out);
 		lua_pushnil(L);
+	}
 
 	return 1;
 }

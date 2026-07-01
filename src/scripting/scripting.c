@@ -11,6 +11,7 @@
 #include "include/config.h"
 
 #include <ctype.h>
+#include <lua.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -237,6 +238,13 @@ static int lua_register_handler(lua_State *L)
 	luaL_checkany(L, 2);
 	int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
+	if (event_id < 0 || event_id >= 128)
+	{
+		LOG_ERROR("Invalid event id %d", event_id);
+		luaL_unref(L, LUA_REGISTRYINDEX, ref);
+		luaL_error(L, "Invalid event id %d", event_id);
+	}
+
 	scripting_register_event_handler(ref, event_id);
 	return 0;
 }
@@ -264,6 +272,85 @@ void *check_light_userdata(lua_State *L, int index)
 	return NULL;
 }
 
+#define ENUM_ENTRY(name) {#name, name}
+
+static enum_entry event_enum[] = {
+	ENUM_ENTRY(SDL_FIRSTEVENT),
+	ENUM_ENTRY(SDL_QUIT),
+	ENUM_ENTRY(SDL_APP_TERMINATING),
+	ENUM_ENTRY(SDL_APP_LOWMEMORY),
+	ENUM_ENTRY(SDL_APP_WILLENTERBACKGROUND),
+	ENUM_ENTRY(SDL_APP_DIDENTERBACKGROUND),
+	ENUM_ENTRY(SDL_APP_WILLENTERFOREGROUND),
+	ENUM_ENTRY(SDL_APP_DIDENTERFOREGROUND),
+	ENUM_ENTRY(SDL_LOCALECHANGED),
+	ENUM_ENTRY(SDL_DISPLAYEVENT),
+	ENUM_ENTRY(SDL_WINDOWEVENT),
+	ENUM_ENTRY(SDL_SYSWMEVENT),
+	ENUM_ENTRY(SDL_KEYDOWN),
+	ENUM_ENTRY(SDL_KEYUP),
+	ENUM_ENTRY(SDL_TEXTEDITING),
+	ENUM_ENTRY(SDL_TEXTINPUT),
+	ENUM_ENTRY(SDL_KEYMAPCHANGED),
+	ENUM_ENTRY(SDL_TEXTEDITING_EXT),
+	ENUM_ENTRY(SDL_MOUSEMOTION),
+	ENUM_ENTRY(SDL_MOUSEBUTTONDOWN),
+	ENUM_ENTRY(SDL_MOUSEBUTTONUP),
+	ENUM_ENTRY(SDL_MOUSEWHEEL),
+	ENUM_ENTRY(SDL_JOYAXISMOTION),
+	ENUM_ENTRY(SDL_JOYBALLMOTION),
+	ENUM_ENTRY(SDL_JOYHATMOTION),
+	ENUM_ENTRY(SDL_JOYBUTTONDOWN),
+	ENUM_ENTRY(SDL_JOYBUTTONUP),
+	ENUM_ENTRY(SDL_JOYDEVICEADDED),
+	ENUM_ENTRY(SDL_JOYDEVICEREMOVED),
+	ENUM_ENTRY(SDL_JOYBATTERYUPDATED),
+	ENUM_ENTRY(SDL_CONTROLLERAXISMOTION),
+	ENUM_ENTRY(SDL_CONTROLLERBUTTONDOWN),
+	ENUM_ENTRY(SDL_CONTROLLERBUTTONUP),
+	ENUM_ENTRY(SDL_CONTROLLERDEVICEADDED),
+	ENUM_ENTRY(SDL_CONTROLLERDEVICEREMOVED),
+	ENUM_ENTRY(SDL_CONTROLLERDEVICEREMAPPED),
+	ENUM_ENTRY(SDL_CONTROLLERTOUCHPADDOWN),
+	ENUM_ENTRY(SDL_CONTROLLERTOUCHPADMOTION),
+	ENUM_ENTRY(SDL_CONTROLLERTOUCHPADUP),
+	ENUM_ENTRY(SDL_CONTROLLERSENSORUPDATE),
+	ENUM_ENTRY(SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3),
+	ENUM_ENTRY(SDL_CONTROLLERSTEAMHANDLEUPDATED),
+	ENUM_ENTRY(SDL_FINGERDOWN),
+	ENUM_ENTRY(SDL_FINGERUP),
+	ENUM_ENTRY(SDL_FINGERMOTION),
+	ENUM_ENTRY(SDL_DOLLARGESTURE),
+	ENUM_ENTRY(SDL_DOLLARRECORD),
+	ENUM_ENTRY(SDL_MULTIGESTURE),
+	ENUM_ENTRY(SDL_CLIPBOARDUPDATE),
+	ENUM_ENTRY(SDL_DROPFILE),
+	ENUM_ENTRY(SDL_DROPTEXT),
+	ENUM_ENTRY(SDL_DROPBEGIN),
+	ENUM_ENTRY(SDL_DROPCOMPLETE),
+	ENUM_ENTRY(SDL_AUDIODEVICEADDED),
+	ENUM_ENTRY(SDL_AUDIODEVICEREMOVED),
+	ENUM_ENTRY(SDL_SENSORUPDATE),
+	ENUM_ENTRY(SDL_RENDER_TARGETS_RESET),
+	ENUM_ENTRY(SDL_RENDER_DEVICE_RESET),
+	ENUM_ENTRY(SDL_POLLSENTINEL),
+	ENUM_ENTRY(SDL_USEREVENT),
+	ENUM_ENTRY(SDL_LASTEVENT),
+	ENUM_ENTRY(ENGINE_BLOCK_UPDATE),
+	ENUM_ENTRY(ENGINE_BLOCK_ERASED),
+	ENUM_ENTRY(ENGINE_BLOCK_CREATE),
+	ENUM_ENTRY(ENGINE_BLOB_UPDATE),
+	ENUM_ENTRY(ENGINE_BLOB_ERASED),
+	ENUM_ENTRY(ENGINE_BLOB_CREATE),
+	ENUM_ENTRY(ENGINE_SPECIAL_SIGNAL),
+	ENUM_ENTRY(ENGINE_TICK),
+	ENUM_ENTRY(ENGINE_INIT),
+	ENUM_ENTRY(ENGINE_INIT_GLOBALS),
+	ENUM_ENTRY(ENGINE_FRAME_PRE),
+	ENUM_ENTRY(ENGINE_FRAME_POST),
+	ENUM_ENTRY(NULL),
+};
+
 void scripting_init()
 {
 	/* opens Lua */
@@ -277,88 +364,7 @@ void scripting_init()
 	/* push an event enum */
 	// TODO: sync it wit de script
 
-	enum_entry entries[] = {
-		{								"SDL_FIRSTEVENT",								 SDL_FIRSTEVENT},
-		{									  "SDL_QUIT",									   SDL_QUIT},
-		{						   "SDL_APP_TERMINATING",							SDL_APP_TERMINATING},
-		{							 "SDL_APP_LOWMEMORY",							  SDL_APP_LOWMEMORY},
-		{				   "SDL_APP_WILLENTERBACKGROUND",					SDL_APP_WILLENTERBACKGROUND},
-		{					"SDL_APP_DIDENTERBACKGROUND",					   SDL_APP_DIDENTERBACKGROUND},
-		{				   "SDL_APP_WILLENTERFOREGROUND",					SDL_APP_WILLENTERFOREGROUND},
-		{					"SDL_APP_DIDENTERFOREGROUND",					   SDL_APP_DIDENTERFOREGROUND},
-		{							 "SDL_LOCALECHANGED",							  SDL_LOCALECHANGED},
-		{							  "SDL_DISPLAYEVENT",							   SDL_DISPLAYEVENT},
-		{							   "SDL_WINDOWEVENT",								SDL_WINDOWEVENT},
-		{								"SDL_SYSWMEVENT",								 SDL_SYSWMEVENT},
-		{								   "SDL_KEYDOWN",									SDL_KEYDOWN},
-		{									 "SDL_KEYUP",									  SDL_KEYUP},
-		{							   "SDL_TEXTEDITING",								SDL_TEXTEDITING},
-		{								 "SDL_TEXTINPUT",								  SDL_TEXTINPUT},
-		{							 "SDL_KEYMAPCHANGED",							  SDL_KEYMAPCHANGED},
-		{						   "SDL_TEXTEDITING_EXT",							SDL_TEXTEDITING_EXT},
-		{							   "SDL_MOUSEMOTION",								SDL_MOUSEMOTION},
-		{						   "SDL_MOUSEBUTTONDOWN",							SDL_MOUSEBUTTONDOWN},
-		{							 "SDL_MOUSEBUTTONUP",							  SDL_MOUSEBUTTONUP},
-		{								"SDL_MOUSEWHEEL",								 SDL_MOUSEWHEEL},
-		{							 "SDL_JOYAXISMOTION",							  SDL_JOYAXISMOTION},
-		{							 "SDL_JOYBALLMOTION",							  SDL_JOYBALLMOTION},
-		{							  "SDL_JOYHATMOTION",							   SDL_JOYHATMOTION},
-		{							 "SDL_JOYBUTTONDOWN",							  SDL_JOYBUTTONDOWN},
-		{							   "SDL_JOYBUTTONUP",								SDL_JOYBUTTONUP},
-		{							"SDL_JOYDEVICEADDED",							   SDL_JOYDEVICEADDED},
-		{						  "SDL_JOYDEVICEREMOVED",							 SDL_JOYDEVICEREMOVED},
-		{						 "SDL_JOYBATTERYUPDATED",						  SDL_JOYBATTERYUPDATED},
-		{					  "SDL_CONTROLLERAXISMOTION",						 SDL_CONTROLLERAXISMOTION},
-		{					  "SDL_CONTROLLERBUTTONDOWN",						 SDL_CONTROLLERBUTTONDOWN},
-		{						"SDL_CONTROLLERBUTTONUP",						   SDL_CONTROLLERBUTTONUP},
-		{					 "SDL_CONTROLLERDEVICEADDED",					  SDL_CONTROLLERDEVICEADDED},
-		{				   "SDL_CONTROLLERDEVICEREMOVED",					SDL_CONTROLLERDEVICEREMOVED},
-		{				  "SDL_CONTROLLERDEVICEREMAPPED",					 SDL_CONTROLLERDEVICEREMAPPED},
-		{					"SDL_CONTROLLERTOUCHPADDOWN",					   SDL_CONTROLLERTOUCHPADDOWN},
-		{				  "SDL_CONTROLLERTOUCHPADMOTION",					 SDL_CONTROLLERTOUCHPADMOTION},
-		{					  "SDL_CONTROLLERTOUCHPADUP",						 SDL_CONTROLLERTOUCHPADUP},
-		{					"SDL_CONTROLLERSENSORUPDATE",					   SDL_CONTROLLERSENSORUPDATE},
-		{"SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3", SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3},
-		{			  "SDL_CONTROLLERSTEAMHANDLEUPDATED",				 SDL_CONTROLLERSTEAMHANDLEUPDATED},
-		{								"SDL_FINGERDOWN",								 SDL_FINGERDOWN},
-		{								  "SDL_FINGERUP",								   SDL_FINGERUP},
-		{							  "SDL_FINGERMOTION",							   SDL_FINGERMOTION},
-		{							 "SDL_DOLLARGESTURE",							  SDL_DOLLARGESTURE},
-		{							  "SDL_DOLLARRECORD",							   SDL_DOLLARRECORD},
-		{							  "SDL_MULTIGESTURE",							   SDL_MULTIGESTURE},
-		{						   "SDL_CLIPBOARDUPDATE",							SDL_CLIPBOARDUPDATE},
-		{								  "SDL_DROPFILE",								   SDL_DROPFILE},
-		{								  "SDL_DROPTEXT",								   SDL_DROPTEXT},
-		{								 "SDL_DROPBEGIN",								  SDL_DROPBEGIN},
-		{							  "SDL_DROPCOMPLETE",							   SDL_DROPCOMPLETE},
-		{						  "SDL_AUDIODEVICEADDED",							 SDL_AUDIODEVICEADDED},
-		{						"SDL_AUDIODEVICEREMOVED",						   SDL_AUDIODEVICEREMOVED},
-		{							  "SDL_SENSORUPDATE",							   SDL_SENSORUPDATE},
-		{					  "SDL_RENDER_TARGETS_RESET",						 SDL_RENDER_TARGETS_RESET},
-		{					   "SDL_RENDER_DEVICE_RESET",						SDL_RENDER_DEVICE_RESET},
-		{							  "SDL_POLLSENTINEL",							   SDL_POLLSENTINEL},
-		{								 "SDL_USEREVENT",								  SDL_USEREVENT},
-		{								 "SDL_LASTEVENT",								  SDL_LASTEVENT},
-		{						   "ENGINE_BLOCK_UDPATE",							ENGINE_BLOCK_UDPATE},
-		{						   "ENGINE_BLOCK_ERASED",							ENGINE_BLOCK_ERASED},
-		{						   "ENGINE_BLOCK_CREATE",							ENGINE_BLOCK_CREATE},
-
-		{							"ENGINE_BLOB_UPDATE",							   ENGINE_BLOB_UPDATE},
-		{							"ENGINE_BLOB_ERASED",							   ENGINE_BLOB_ERASED},
-		{							"ENGINE_BLOB_CREATE",							   ENGINE_BLOB_CREATE},
-
-		{						 "ENGINE_SPECIAL_SIGNAL",						  ENGINE_SPECIAL_SIGNAL},
-
-		{								   "ENGINE_TICK",									ENGINE_TICK},
-		{								   "ENGINE_INIT",									ENGINE_INIT},
-		{						   "ENGINE_INIT_GLOBALS",							ENGINE_INIT_GLOBALS},
-
-		{							  "ENGINE_FRAME_PRE",							   ENGINE_FRAME_PRE},
-		{							 "ENGINE_FRAME_POST",							  ENGINE_FRAME_POST},
-		{											NULL,											  0},
-	};
-
-	scripting_set_global_enum(g_L, entries, "events");
+	scripting_set_global_enum(g_L, event_enum, "events");
 }
 
 void scripting_close()
@@ -368,83 +374,8 @@ void scripting_close()
 
 i32 get_lookup_id(u32 type)
 {
-	const u32 lookup_table[] = {
-		SDL_FIRSTEVENT,
-		SDL_QUIT,
-		SDL_APP_TERMINATING,
-		SDL_APP_LOWMEMORY,
-		SDL_APP_WILLENTERBACKGROUND,
-		SDL_APP_DIDENTERBACKGROUND,
-		SDL_APP_WILLENTERFOREGROUND,
-		SDL_APP_DIDENTERFOREGROUND,
-		SDL_LOCALECHANGED,
-		SDL_DISPLAYEVENT,
-		SDL_WINDOWEVENT,
-		SDL_SYSWMEVENT,
-		SDL_KEYDOWN,
-		SDL_KEYUP,
-		SDL_TEXTEDITING,
-		SDL_TEXTINPUT,
-		SDL_KEYMAPCHANGED,
-		SDL_TEXTEDITING_EXT,
-		SDL_MOUSEMOTION,
-		SDL_MOUSEBUTTONDOWN,
-		SDL_MOUSEBUTTONUP,
-		SDL_MOUSEWHEEL,
-		SDL_JOYAXISMOTION,
-		SDL_JOYBALLMOTION,
-		SDL_JOYHATMOTION,
-		SDL_JOYBUTTONDOWN,
-		SDL_JOYBUTTONUP,
-		SDL_JOYDEVICEADDED,
-		SDL_JOYDEVICEREMOVED,
-		SDL_JOYBATTERYUPDATED,
-		SDL_CONTROLLERAXISMOTION,
-		SDL_CONTROLLERBUTTONDOWN,
-		SDL_CONTROLLERBUTTONUP,
-		SDL_CONTROLLERDEVICEADDED,
-		SDL_CONTROLLERDEVICEREMOVED,
-		SDL_CONTROLLERDEVICEREMAPPED,
-		SDL_CONTROLLERTOUCHPADDOWN,
-		SDL_CONTROLLERTOUCHPADMOTION,
-		SDL_CONTROLLERTOUCHPADUP,
-		SDL_CONTROLLERSENSORUPDATE,
-		SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3,
-		SDL_CONTROLLERSTEAMHANDLEUPDATED,
-		SDL_FINGERDOWN,
-		SDL_FINGERUP,
-		SDL_FINGERMOTION,
-		SDL_DOLLARGESTURE,
-		SDL_DOLLARRECORD,
-		SDL_MULTIGESTURE,
-		SDL_CLIPBOARDUPDATE,
-		SDL_DROPFILE,
-		SDL_DROPTEXT,
-		SDL_DROPBEGIN,
-		SDL_DROPCOMPLETE,
-		SDL_AUDIODEVICEADDED,
-		SDL_AUDIODEVICEREMOVED,
-		SDL_SENSORUPDATE,
-		SDL_RENDER_TARGETS_RESET,
-		SDL_RENDER_DEVICE_RESET,
-		SDL_POLLSENTINEL,
-		SDL_USEREVENT,
-		SDL_LASTEVENT,
-		ENGINE_BLOCK_UDPATE,
-		ENGINE_BLOCK_ERASED,
-		ENGINE_BLOCK_CREATE,
-		ENGINE_BLOB_UPDATE,
-		ENGINE_BLOB_ERASED,
-		ENGINE_BLOB_CREATE,
-		ENGINE_TICK,
-		ENGINE_INIT,
-		ENGINE_INIT_GLOBALS,
-		ENGINE_FRAME_PRE,
-		ENGINE_FRAME_POST,
-	};
-
-	for (u32 i = 0; i < sizeof(lookup_table) / sizeof(u32); i++)
-		if (type == lookup_table[i])
+	for (u32 i = 0; i < sizeof(event_enum) / sizeof(enum_entry); i++)
+		if (type == event_enum[i].entry)
 			return i;
 
 	return -1;
@@ -495,7 +426,7 @@ int push_event_args(SDL_Event *e)
 		return 4;
 	// case ENGINE_SPECIAL_SIGNAL:
 	//     return 4;
-	case ENGINE_BLOCK_UDPATE:
+	case ENGINE_BLOCK_UPDATE:
 	case ENGINE_BLOCK_ERASED:
 	case ENGINE_BLOCK_CREATE:
 		block_event = (block_update_event *)e;
@@ -583,7 +514,7 @@ void scripting_register_event_handler(int ref, int event_type)
 
 	LOG_DEBUG("registering %d handler, event id %d", lookup_id, event_type);
 
-	if (lookup_id == sizeof(handlers))
+	if (lookup_id == -1)
 	{
 		LOG_ERROR("Unknown event type %d", event_type);
 		return;
@@ -618,7 +549,7 @@ u8 scripting_register_block_input(block_registry *reg, u64 id, int ref, const ch
 	{
 		LOG_DEBUG("registered the entity tick input for block %lld", id);
 		res->entity_tick_ref = ref;
-}
+	}
 
 	if (strcmp("entity_collision", name) == 0)
 	{
@@ -662,6 +593,8 @@ u8 scripting_load_scripts(block_registry *registry)
 	block_resources_t *reg = &registry->resources;
 	const char *reg_name = registry->name;
 
+	i8 status = SUCCESS;
+
 	for (u32 i = 0; i < reg->length; i++)
 	{
 		block_resources *res = &reg->data[i];
@@ -684,7 +617,8 @@ u8 scripting_load_scripts(block_registry *registry)
 											 res->lua_script_blob, res->lua_script_blob_size) != SUCCESS)
 			{
 				LOG_ERROR("Failed to load embedded script for block %d", res->id);
-				return FAIL;
+				status = FAIL;
+				goto scripting_cleanup;
 			}
 
 			/* free blob after successful load to avoid holding extra memory */
@@ -710,7 +644,8 @@ u8 scripting_load_scripts(block_registry *registry)
 		{
 			LOG_ERROR("Block %d has %d inputs but %d handlers", res->id, res->input_names.length,
 					  res->input_refs.length);
-			return FAIL;
+			status = FAIL;
+			goto scripting_cleanup;
 		}
 
 		bool failed = false;
@@ -728,8 +663,13 @@ u8 scripting_load_scripts(block_registry *registry)
 		}
 
 		if (failed)
-			return FAIL;
+		{
+			status = FAIL;
+			goto scripting_cleanup;
+		}
 	}
+
+scripting_cleanup:
 
 	// cleaning up
 	lua_pushnil(g_L);
@@ -739,11 +679,11 @@ u8 scripting_load_scripts(block_registry *registry)
 	lua_pushnil(g_L);
 	lua_setglobal(g_L, "scripting_current_light_registry");
 
-	return SUCCESS;
+	return status;
 }
 
 // creates a lua table out of your array of poitners to enum_entries
-void scripting_set_global_enum(lua_State *L, enum_entry entries[], const char *name)
+void scripting_set_global_enum(lua_State *L, enum_entry *entries, const char *name)
 {
 	lua_newtable(L);
 

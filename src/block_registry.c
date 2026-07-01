@@ -689,7 +689,7 @@ u32 parse_block_resources_from_file(const char *file_path, block_resources *dest
 		}
 
 		// check for slots
-		const char *slot = check_slot(&h, &seen_entries, &seen_entries);
+		const char *slot = check_slot(&h, &seen_entries, &filled_slots);
 		if (slot != NULL)
 		{
 			LOG_ERROR("\"%s\": \"%s\" cant be an \"%s\", slot is already taken", file_path, h.name, slot);

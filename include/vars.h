@@ -1,12 +1,6 @@
 #ifndef VARS_H
 #define VARS_H 1
 
-#ifdef _WIN64
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
-
 #include "hashtable.h"
 
 #define VAR_LETTER(blob, pos) *(char *)(blob + pos)
