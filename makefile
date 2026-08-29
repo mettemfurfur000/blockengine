@@ -114,6 +114,16 @@ tkv_test: mains/tkv_test.c copy_instance vec $(OBJS)
 	gcc -o obj/tkv_test.o -c mains/tkv_test.c ${CFLAGS}
 	g++ ${CFLAGS} -o build/tkv_test obj/tkv_test.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
+GEN_ANNOT_CFLAGS = $(filter-out -Dmain=SDL_main -IC:/msys64/mingw64/include/SDL2,$(CFLAGS))
+GEN_ANNOT_OBJS = obj/gen_annotations_main.o obj/gen_annotations.o obj/tokenizer.o
+
+.PHONY: gen_annotations
+gen_annotations: mains/gen_annotations.c src/language/gen_annotations.c src/language/tokenizer.c
+	gcc $(GEN_ANNOT_CFLAGS) -c mains/gen_annotations.c -o obj/gen_annotations_main.o
+	gcc $(GEN_ANNOT_CFLAGS) -c src/language/gen_annotations.c -o obj/gen_annotations.o
+	gcc $(GEN_ANNOT_CFLAGS) -c src/language/tokenizer.c -o obj/tokenizer.o
+	gcc $(GEN_ANNOT_CFLAGS) -o build/gen_annotations $(GEN_ANNOT_OBJS) -lm
+
 # use this when packaging to get all the dll-s used
 .PHONY: grab_dlls
 grab_dlls:

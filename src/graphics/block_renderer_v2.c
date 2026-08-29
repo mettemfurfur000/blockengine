@@ -14,6 +14,8 @@
 
 block_renderer_v2 renderer_v2 = {0};
 
+static image g_dummy_img = {.width = 1, .height = 1, .data = NULL};
+
 static const float quad_vertices[] = {
 	0.0f, 0.0f, 0.0f, 0.0f, //
 	1.0f, 0.0f, 1.0f, 0.0f, //
@@ -246,6 +248,17 @@ int renderer_v2_init(void)
 	glUseProgram(renderer_v2.post.shader);
 	glUniform1i(glGetUniformLocation(renderer_v2.post.shader, "uTexture"), 0);
 
+	glGenTextures(1, &renderer_v2.dummy_texture);
+	glBindTexture(GL_TEXTURE_2D, renderer_v2.dummy_texture);
+	{
+		u8 px[4] = {255, 255, 255, 255};
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+	}
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	renderer_v2.initialized = true;
 	LOG_INFO("Renderer v2 initialized successfully");
 	return SUCCESS;
@@ -278,6 +291,12 @@ void renderer_v2_shutdown(void)
 	cleanup_shader_program(&renderer_v2.post);
 
 	cleanup_framebuffer(&renderer_v2.post_fbo, &renderer_v2.post_texture);
+
+	if (renderer_v2.dummy_texture)
+	{
+		glDeleteTextures(1, &renderer_v2.dummy_texture);
+		renderer_v2.dummy_texture = 0;
+	}
 
 	memset(&renderer_v2, 0, sizeof(renderer_v2));
 	LOG_INFO("Renderer v2 shutdown complete");
@@ -392,4 +411,39 @@ void renderer_v2_resize(u16 width, u16 height)
 
 	glUseProgram(renderer_v2.standard.shader);
 	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE, projection);
+}
+
+void renderer_v2_set_projection_size(u16 width, u16 height)
+{
+	if (!renderer_v2.initialized)
+		return;
+
+	float projection[16] = {0};
+	projection[0] = 2.0f / width;
+	projection[5] = -2.0f / height;
+	projection[10] = -1.0f;
+	projection[12] = -1.0f;
+	projection[13] = 1.0f;
+	projection[15] = 1.0f;
+
+	glUseProgram(renderer_v2.standard.shader);
+	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE, projection);
+}
+
+void renderer_v2_fill_rect(f32 x, f32 y, f32 w, f32 h, const f32 color[4])
+{
+	if (!renderer_v2.initialized)
+		return;
+
+	shader_program *prog = &renderer_v2.standard;
+
+	glUseProgram(prog->shader);
+	glUniform1i(prog->use_color_loc, 1);
+	glUniform4fv(prog->color_loc, 1, color);
+
+	renderer_v2_begin_batch(renderer_v2.dummy_texture, &g_dummy_img, (u8)g_block_width);
+	renderer_v2_add_instance(x, y, 0, 0, 0, w, h, 0.0f);
+	renderer_v2_end_batch();
+
+	glUniform1i(prog->use_color_loc, 0);
 }

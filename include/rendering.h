@@ -33,6 +33,7 @@ typedef struct client_render_rules
 	vec_int_t draw_order;
 } client_render_rules;
 
+u8 render_layer(layer_slice slice);
 u8 client_render(const client_render_rules rules);
 
 #endif

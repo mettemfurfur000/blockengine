@@ -231,6 +231,7 @@ static int collect_module_recursive(const char *modname, module_blob_t **out_lis
 /* forward declarations used by preprocess helpers */
 struct dump_state;
 static int lua_dump_writer(lua_State *L, const void *p, size_t sz, void *ud);
+i32 get_lookup_id(u32 type);
 
 static int lua_register_handler(lua_State *L)
 {
@@ -238,11 +239,13 @@ static int lua_register_handler(lua_State *L)
 	luaL_checkany(L, 2);
 	int ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	if (event_id < 0 || event_id >= 128)
+	int event_id_actual = get_lookup_id(event_id);
+
+	if (event_id_actual < 0 || event_id_actual >= 128)
 	{
-		LOG_ERROR("Invalid event id %d", event_id);
+		LOG_ERROR("Invalid event id %d, looked up from %d", event_id_actual, event_id);
 		luaL_unref(L, LUA_REGISTRYINDEX, ref);
-		luaL_error(L, "Invalid event id %d", event_id);
+		luaL_error(L, "Invalid event id %d, looked up from %d", event_id_actual, event_id);
 	}
 
 	scripting_register_event_handler(ref, event_id);
@@ -348,7 +351,7 @@ static enum_entry event_enum[] = {
 	ENUM_ENTRY(ENGINE_INIT_GLOBALS),
 	ENUM_ENTRY(ENGINE_FRAME_PRE),
 	ENUM_ENTRY(ENGINE_FRAME_POST),
-	ENUM_ENTRY(NULL),
+	ENUM_ENTRY(0),
 };
 
 void scripting_init()
@@ -688,14 +691,14 @@ void scripting_set_global_enum(lua_State *L, enum_entry *entries, const char *na
 	lua_newtable(L);
 
 	u32 i = 0;
-	while (entries[i].enum_entry_name != NULL)
+	do
 	{
 		enum_entry e = entries[i];
 		lua_pushinteger(L, e.entry);
 		lua_setfield(L, -2, e.enum_entry_name);
 
 		i++;
-	}
+	} while (entries[i].entry != 0);
 
 	lua_setglobal(L, name);
 	LOG_DEBUG("Pushed enum %s", name);
