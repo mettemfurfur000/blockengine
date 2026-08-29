@@ -22,10 +22,27 @@ static int lua_entity_new_index(lua_State *L)
 
 	else if (strcmp(property, "transform") == 0)
 	{
-		f32 x = lua_getfield(L, 3, "x");
-		f32 y = lua_getfield(L, 3, "y");
-		f32 c = lua_getfield(L, 3, "c");
-		f32 s = lua_getfield(L, 3, "s");
+		f32 x = 0.0f, y = 0.0f, c = 1.0f, s = 0.0f;
+
+		lua_getfield(L, 3, "x");
+		if (lua_isnumber(L, -1))
+			x = (f32)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "y");
+		if (lua_isnumber(L, -1))
+			y = (f32)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "c");
+		if (lua_isnumber(L, -1))
+			c = (f32)lua_tonumber(L, -1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, 3, "s");
+		if (lua_isnumber(L, -1))
+			s = (f32)lua_tonumber(L, -1);
+		lua_pop(L, 1);
 
 		b2Transform t = {
 			{x, y},

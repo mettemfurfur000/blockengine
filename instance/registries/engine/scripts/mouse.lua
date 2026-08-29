@@ -59,7 +59,7 @@ blockengine.register_handler(events.ENGINE_INIT, function()
 end)
 
 local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
-    local new_pos = block_utils.pixel_to_blocks_no_offset(cur_pos_pixels, slice.zoom)
+    local new_pos = block_utils.pixels_to_blocks(cur_pos_pixels, slice.zoom)
 
     local delta = {
         x = new_pos.x - old_pos_blocks.x,

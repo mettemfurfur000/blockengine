@@ -97,13 +97,13 @@ function M.safe_room_create(level, name, width, height)
     return menu
 end
 
-function M.safe_layer_create(room, registry_name, block_width, enable_vars, enable_entities)
+function M.safe_layer_create(room, registry_name, block_width, enable_vars, enable_entities, is_ui)
     if block_width <= 0 or registry_name == nil or room == nil then
         M.log_error("invalid arguments for layer creation")
         os.exit()
     end
 
-    local flags = (enable_vars and 1 or 0 ) | (enable_entities and 1 << 2 or 0)
+    local flags = (enable_vars and 1 or 0 ) | (enable_entities and 1 << 2 or 0) | (is_ui and 1 << 4 or 0)
 
     local layer = room:new_layer(registry_name, block_width, flags)
 

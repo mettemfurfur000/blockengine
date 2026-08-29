@@ -144,7 +144,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
             vars:set_u32("T", G_sdl_tick)
 
-            camera_utils.set_target(vec.mult(next_pos, G_block_width_pixels))
+            camera_utils.set_target(vec.mult(next_pos, G_block_size))
         end
     end
 )

@@ -18,7 +18,7 @@ typedef struct layer_slice
 	u32 old_x, old_y; // for interpolation
 	u32 timestamp_old;
 
-	u8 zoom;
+	f32 zoom;
 	u8 flags; // static layer gets rendered once in a framebuffer
 } layer_slice;
 

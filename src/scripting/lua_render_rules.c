@@ -76,7 +76,7 @@ static int lua_slice_get(lua_State *L)
 	STRUCT_GET(L, slice, y, lua_pushinteger)
 	STRUCT_GET(L, slice, h, lua_pushinteger)
 	STRUCT_GET(L, slice, w, lua_pushinteger)
-	STRUCT_GET(L, slice, zoom, lua_pushinteger)
+	STRUCT_GET(L, slice, zoom, lua_pushnumber)
 	STRUCT_GET(L, slice, flags, lua_pushinteger)
 	// STRUCT_GET(L, slice, ref, lua_pushlightuserdata)
 	NEW_USER_OBJECT(L, Layer, slice.ref);
@@ -101,7 +101,7 @@ static int lua_slice_set(lua_State *L)
 	STRUCT_SET(L, slice, timestamp_old, LUA_TNUMBER, lua_tointeger);
 	STRUCT_SET(L, slice, h, LUA_TNUMBER, lua_tointeger);
 	STRUCT_SET(L, slice, w, LUA_TNUMBER, lua_tointeger);
-	STRUCT_SET(L, slice, zoom, LUA_TNUMBER, lua_tointeger);
+	STRUCT_SET(L, slice, zoom, LUA_TNUMBER, lua_tonumber);
 	STRUCT_SET(L, slice, flags, LUA_TNUMBER, lua_tointeger);
 	// STRUCT_SET(L, slice, ref, LUA_TUSERDATA, lua_touserdata);
 	if (lua_getfield(L, -1, "ref") == 7)

@@ -190,13 +190,6 @@ int main(int argc, char *argv[])
 
 	client_render_rules rules = {.screen_height = config.screen_height, .screen_width = config.screen_width};
 
-	static room_render_options g_render_room_opts = {
-		.clear_background = true,
-		.background_color = {0.08f, 0.08f, 0.12f, 1.0f},
-		.draw_grid = false,
-		.grid_color = {0.30f, 0.30f, 0.30f, 0.50f},
-	};
-
 	scripting_init();
 
 	LUA_SET_GLOBAL_OBJECT("g_render_rules", &rules);
@@ -279,7 +272,7 @@ int main(int argc, char *argv[])
 		call_handlers(e);
 
 		if (render_room_active != NULL && render_room_active_camera != NULL)
-			client_render_room(render_room_active, render_room_active_camera, &g_render_room_opts);
+			client_render_room(render_room_active, render_room_active_camera);
 		else
 			client_render(rules);
 		SDL_GL_SwapWindow(g_window);

@@ -109,13 +109,14 @@ local function build_view(def, registry_name, loaded)
             layer_append_existing(view, G_menu_room, def_entry.name, def_entry.is_ui)
         else
             layer_append_render(view, def_entry.name,
-                wrappers.safe_layer_create(
-                    G_menu_room,
-                    registry_name,
-                    def_entry.bytes or 1,
-                    def_entry.use_vars or false,
-                    def_entry.use_entities or false
-                ),
+                    wrappers.safe_layer_create(
+                        G_menu_room,
+                        registry_name,
+                        def_entry.bytes or 1,
+                        def_entry.use_vars or false,
+                        def_entry.use_entities or false,
+                        def_entry.is_ui or false
+                    ),
                 def_entry.is_ui)
         end
     end
@@ -141,7 +142,7 @@ G_menu_definition = {
     [2] = { name = "objects", bytes = 1, use_vars = true, is_ui = false, use_entities = true },
     [3] = { name = "pallete", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
     [4] = { name = "text", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
-    [5] = { name = "mouse", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
+    [5] = { name = "mouse", bytes = 1, use_vars = true, is_ui = false, use_entities = false },
 }
 
 local function init_menu()
@@ -249,3 +250,116 @@ blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
 
     did_init = true
 end)
+
+-- =========================================================================
+-- Room / camera renderer integration (opt-in, script-controlled)
+-- =========================================================================
+if render_room ~= nil then
+    blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
+        G_camera = render_room.create_camera(G_screen_width, G_screen_height, G_global_zoom)
+        G_active_room = G_menu_room
+        G_render_room_on = true
+
+        -- Lighter background so editor text stays readable. Override any time with
+        -- render_room.set_options({ background_color = {r, g, b, a} }).
+        render_room.set_options({
+            clear_background = true,
+            background_color = {0.16, 0.16, 0.22, 1.0},
+            draw_grid = false,
+        })
+
+        -- Center the new camera on the dev block. The script does NOT create one;
+        -- the block is placed by the editor / level. dev.lua drives
+        -- camera_utils.set_target() as the block moves, which recenters this
+        -- camera so it follows the dev block.
+        G_center_dev_menu = function()
+            local bx, by, layer = nil, nil, nil
+            for _, v in pairs(G_view_menu) do
+                if type(v) == "table" and v.layer then
+                    v.layer:for_each(G_dev_id, function(x, y)
+                        if bx == nil then bx, by, layer = x, y, v.layer end
+                    end)
+                end
+            end
+            if bx == nil then
+                -- No dev block present yet: frame the room center. The camera will
+                -- snap to the dev block once it is placed and moved.
+                bx = math.floor(G_width_blocks / 2)
+                by = math.floor(G_height_blocks / 2)
+            end
+            G_camera:center_on((bx + 0.5) * G_block_width_pixels, (by + 0.5) * G_block_width_pixels)
+        end
+
+        G_center_dev_menu()
+
+        render_room.activate(G_active_room, G_camera)
+    end)
+
+    -- Zoom in / out with the mouse wheel. After changing the zoom the camera must
+    -- be re-centered on the followed block, otherwise its world-pixel top-left stays
+    -- fixed and the view drifts away from the target. set_target() recenters the
+    -- camera and re-syncs G_mouse.offset / G_global_zoom so the editor stays aligned.
+    blockengine.register_handler(events.SDL_MOUSEWHEEL, function(x, y, px, py)
+        if G_camera == nil then
+            return
+        end
+        local z = G_camera:get_zoom()
+        if y > 0 then
+            z = z + 0.2
+        elseif y < 0 then
+            z = z - 0.2
+        end
+        z = math.max(1, math.min(8, z))
+        G_camera:set_zoom(z)
+        G_global_zoom = z
+        G_block_width_pixels = G_block_size * z
+        camera_utils.set_target(G_camera_current_pos)
+    end)
+
+    -- Toggle the new renderer on/off (F = legacy render_rules path, otherwise room/camera).
+    -- blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
+    --     if keysym == 102 then
+    --         if G_render_room_on then
+    --             render_room.deactivate()
+    --             G_render_room_on = false
+    --         else
+    --             render_room.activate(G_active_room, G_camera)
+    --             G_render_room_on = true
+    --         end
+    --     end
+    -- end)
+
+    -- Switch the rendered room (R). A second room is built lazily on first use.
+    -- blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
+    --     if keysym == 114 then
+    --         if G_game_room == nil then
+    --             G_game_room = G_level:new_room("game", G_width_blocks, G_height_blocks)
+    --             local gl = G_game_room:new_layer("engine", 1, 0)
+    --             for i = 2, G_width_blocks - 2 do
+    --                 gl:set_id(i, G_height_blocks - 3, 1)
+    --             end
+    --             gl:set_id(math.floor(G_width_blocks / 2), math.floor(G_height_blocks / 2), G_dev_id)
+    --         end
+
+    --         if G_active_room == G_menu_room then
+    --             G_active_room = G_game_room
+    --             G_camera:center_on((math.floor(G_width_blocks / 2) + 0.5) * G_block_width_pixels,
+    --                 (math.floor(G_height_blocks / 2) + 0.5) * G_block_width_pixels)
+    --         else
+    --             G_active_room = G_menu_room
+    --             G_center_dev_menu()
+    --         end
+
+    --         if G_render_room_on then
+    --             render_room.activate(G_active_room, G_camera)
+    --         end
+    --     end
+    -- end)
+
+    -- Keep the camera viewport in sync with the window size.
+    blockengine.register_handler(events.SDL_WINDOWEVENT, function(width, height)
+        if G_camera ~= nil and width ~= nil and height ~= nil then
+            G_camera:set_viewport(width, height)
+        end
+    end)
+end

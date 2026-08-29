@@ -10,6 +10,7 @@
 #include "include/scripting/image.h"
 #include "include/scripting/level.h"
 #include "include/scripting/registry.h"
+#include "include/scripting/render_room.h"
 #include "include/scripting/sound.h"
 
 #include <lauxlib.h>
@@ -98,4 +99,6 @@ void lua_register_engine_objects(lua_State *L)
 	lua_logging_register(g_L);
 	lua_level_editing_lib_register(g_L);
 	lua_register_render_rules(g_L);
+
+	lua_render_room_register(L);
 }

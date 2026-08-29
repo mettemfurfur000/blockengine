@@ -317,8 +317,10 @@ u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
 
 	LOG_DEBUG("interping between %f and %f, result %f", e->pos_old.y, e_pos.y, interp_y);
 
-	f32 dest_x = -block_x_offset + interp_x - (udata->local_block_width / 2.0f);
-	f32 dest_y = -block_y_offset + interp_y - (udata->local_block_width / 2.0f);
+	// Match the grid-block path: a world pixel W maps to screen (W * zoom - slice.x).
+	// block_x_offset holds slice.x, so scale the interpolated world position by zoom.
+	f32 dest_x = -block_x_offset + interp_x * slice.zoom - (udata->local_block_width / 2.0f);
+	f32 dest_y = -block_y_offset + interp_y * slice.zoom - (udata->local_block_width / 2.0f);
 
 	if (dest_x < -g_block_width || dest_y < -g_block_width)
 		return SUCCESS;
