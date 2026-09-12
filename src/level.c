@@ -2,7 +2,6 @@
 
 #include "include/logging.h"
 #include "include/sdl2_basics.h"
-#include "include/update_system.h"
 #include "include/uuid.h"
 #include "include/vars.h"
 
@@ -240,8 +239,6 @@ u8 block_delete_vars(layer *l, u16 x, u16 y)
 	if (l->var_pool.table == NULL)
 		return SUCCESS; // nothing to delete
 
-	// block_push_var_change(l, x, y, INVALID_HANDLE);
-
 	handle32 handle = INVALID_HANDLE;
 	memcpy((u8 *)&handle, BLOCK_ID_PTR(l, x, y) + l->block_size, sizeof(handle32));
 
@@ -464,12 +461,6 @@ u8 free_room(room *r)
 
 	vec_deinit(&r->layers);
 	SAFE_FREE(r->name);
-
-	// if (r->physics_world)
-	// {
-	//     physics_world_destroy(r->physics_world);
-	//     r->physics_world = NULL;
-	// }
 
 	r->uuid = 0;
 
@@ -719,105 +710,6 @@ u8 layer_cleanup_unused_vars(layer *l)
 	free(used_handles);
 	return SUCCESS;
 }
-
-// void layer_build_ground_physics(layer *l)
-// {
-// 	assert(l);
-// 	b2WorldId world = ((room *)l->parent_room)->b2_world_id;
-// 	assert(b2World_IsValid(world));
-
-// 	f32 block_world_size = (f32)g_block_width;
-
-// 	bool *used = alloca(l->width * l->height);
-// 	assert(used);
-
-// 	for (u32 y = 0; y < l->height; y++)
-// 	{
-// 		for (u32 x = 0; x < l->width; x++)
-// 		{
-// 			u32 idx = y * l->width + x;
-// 			if (used[idx])
-// 				continue;
-
-// 			u64 id = 0;
-// 			block_get_id(l, (u16)x, (u16)y, &id);
-// 			if (id == 0)
-// 			{
-// 				used[idx] = true;
-// 				continue;
-// 			}
-
-// 			u16 width = 1;
-// 			while (x + width < l->width)
-// 			{
-// 				u32 next_idx = y * l->width + (x + width);
-// 				if (used[next_idx])
-// 					break;
-// 				u64 next_id = 0;
-// 				block_get_id(l, (u16)(x + width), (u16)y, &next_id);
-// 				if (next_id == 0)
-// 					break;
-// 				width++;
-// 			}
-
-// 			u16 height = 1;
-// 			bool can_extend_down = true;
-// 			while (can_extend_down && y + height < l->height)
-// 			{
-// 				for (u16 w = 0; w < width; w++)
-// 				{
-// 					u32 check_idx = (y + height) * l->width + (x + w);
-// 					if (used[check_idx])
-// 					{
-// 						can_extend_down = false;
-// 						break;
-// 					}
-// 					u64 check_id = 0;
-// 					block_get_id(l, (u16)(x + w), (u16)(y + height), &check_id);
-// 					if (check_id == 0)
-// 					{
-// 						can_extend_down = false;
-// 						break;
-// 					}
-// 				}
-// 				if (can_extend_down)
-// 					height++;
-// 			}
-
-// 			for (u16 dy = 0; dy < height; dy++)
-// 			{
-// 				for (u16 dx = 0; dx < width; dx++)
-// 				{
-// 					u32 mark_idx = (y + dy) * l->width + (x + dx);
-// 					used[mark_idx] = true;
-// 				}
-// 			}
-
-// 			f32 box_width = (f32)width * block_world_size;
-// 			f32 box_height = (f32)height * block_world_size;
-// 			// TODO: when multiple rooms share a box2d world, use relative room coordinates when calculatink static body
-// 			// coordinates
-
-// 			// f32 pos_x = (f32)x * block_world_size;
-// 			// f32 pos_y = (f32)y * block_world_size;
-// 			f32 pos_x = (f32)x * block_world_size + box_width * 0.5f;
-// 			f32 pos_y = (f32)y * block_world_size + box_height * 0.5f;
-
-// 			b2BodyDef bodyDef = b2DefaultBodyDef();
-// 			bodyDef.type = b2_staticBody;
-// 			bodyDef.position = (b2Vec2){pos_x, pos_y};
-
-// 			b2BodyId body = b2CreateBody(world, &bodyDef);
-// 			if (!b2Body_IsValid(body))
-// 				continue;
-
-// 			b2Polygon box = b2MakeBox(box_width * 0.5f, box_height * 0.5f);
-// 			b2ShapeDef shapeDef = b2DefaultShapeDef();
-
-// 			b2CreatePolygonShape(body, &shapeDef, &box);
-// 		}
-// 	}
-// }
 
 void layer_build_ground_physics(layer *l)
 {

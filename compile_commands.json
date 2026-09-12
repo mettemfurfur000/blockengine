@@ -587,29 +587,10 @@
   "directory": "C:/msys64/home/tem/blockengine",
   "arguments": [
    "gcc",
-   "-O0",
-   "-Wall",
-   "-MMD",
-   "-g",
-   "-IC:/msys64/home/tem/blockengine",
-   "-IC:/msys64/home/tem/blockengine/libs",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-c",
-   "src/./update_system.c",
    "-o",
-   "obj/./update_system.o"
-  ],
-  "file": "src/./update_system.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-o",
-   "obj/client.o",
+   "obj/blockengine_base.o",
    "-c",
-   "mains/client.c",
+   "mains/blockengine_base.c",
    "-O0",
    "-Wall",
    "-MMD",
@@ -619,7 +600,7 @@
    "-IC:/msys64/mingw64/include/SDL2",
    "-Dmain=SDL_main"
   ],
-  "file": "mains/client.c"
+  "file": "mains/blockengine_base.c"
  },
  {
   "directory": "C:/msys64/home/tem/blockengine",

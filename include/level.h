@@ -9,7 +9,6 @@
 #include "spatial_grid.h"
 
 #include "block_entity.h"
-#include "update_system.h"
 
 #include "vec/src/vec.h"
 
@@ -125,9 +124,6 @@ void layer_build_spatial_grid(layer *l);
 handle32 layer_add_block_entity(layer *l, u64 block_id, float x, float y);
 void layer_remove_block_entity(layer *l, handle32 h);
 block_entity *layer_get_block_entity(layer *l, handle32 h);
-
-// Multiblock entity creation. shape_name is a template key (e.g., "T-block", "L-block").
-handle32 layer_add_multiblock_entity(layer *l, const char *shape_name, float x, float y);
 
 bool layer_block_entity_is_valid(layer *l, handle32 h);
 u8 layer_cleanup_unused_vars(layer *l);

@@ -26,10 +26,6 @@ typedef struct block_resources
 	blob vars_sample;	   // sample vars blob for this block, ready to use
 	i32 vars_offsets[256]; // pre-computed offsets for each letter (-1 = not present)
 
-	u64 repeat_times;
-	vec_int_t repeat_skip;
-	vec_str_t repeat_increment;
-
 	image *img;
 	atlas_info info;
 
@@ -90,7 +86,6 @@ typedef vec_t(block_registry) vec_registries_t;
 
 typedef struct
 {
-	void (*increment_fn)(block_resources *);
 	u8 (*function)(const char *, block_resources *);
 	char *name;
 

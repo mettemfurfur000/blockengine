@@ -1,6 +1,7 @@
-[ ] - update system
-    [ ] - record id updates on a layer of blocks
-    [ ] - replay them on another one
+[x] - update system
+    [x] - record id updates on a layer of blocks
+    [x] - replay them on another one
+    (removed in Phase 1: update_system.h was never integrated into the main loop)
 
 
 [ ] - implement layer shadows:

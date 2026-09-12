@@ -11,14 +11,7 @@
 typedef struct
 {
 	const char *log_output; // "stdout" or filename (default: "client.log")
-	// int screen_width;       // Screen width (default: SCREEN_WIDTH)
-	// int screen_height;      // Screen height (default: SCREEN_HEIGHT)
-	// int target_fps;         // Target FPS (default: FPS)
-	// int target_tps;         // Target TPS (default: TPS)
-	// int fullscreen;         // 1 for fullscreen, 0 for windowed, -1 for default
 	const char *registry; // Registry path (default: "engine")
-	// const char *init_script; // Init script file (default: "init.lua")
-	// int enable_perf_checks; // 1 to enable, 0 to disable, -1 for default
 } ClientConfig;
 
 static void print_usage(const char *program_name)

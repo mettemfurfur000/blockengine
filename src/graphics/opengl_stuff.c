@@ -2,6 +2,7 @@
 #include "include/block_renderer_v2.h"
 #include "include/folder_structure.h"
 
+#include "SDL_video.h"
 #include "include/config.h"
 // #include "SDL_opengl.h"
 #include <epoxy/gl_generated.h>
@@ -13,6 +14,8 @@ void setup_opengl(u16 width, u16 height)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glClearColor(0.7f, 0.7f, 0.6f, 1.0f);
+
+	SDL_GL_SetSwapInterval(1); // Enable vsync
 
 	renderer_v2_init();
 }

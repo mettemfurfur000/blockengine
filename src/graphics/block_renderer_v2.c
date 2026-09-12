@@ -25,11 +25,6 @@ static const float quad_vertices[] = {
 
 static const unsigned int quad_indices[] = {0, 1, 2, 2, 3, 0};
 
-static const float post_vertices[] = {-1.0f, -1.0f, 0.0f, 0.0f, 1.0f,  -1.0f, 1.0f, 0.0f,
-									  1.0f,	 1.0f,	1.0f, 1.0f, -1.0f, 1.0f,  0.0f, 1.0f};
-
-static const unsigned int post_indices[] = {0, 1, 2, 2, 3, 0};
-
 static GLuint compile_shader_program_v2(const char *name)
 {
 	char path[MAX_PATH_LENGTH];
@@ -132,71 +127,6 @@ static int init_standard_renderer(shader_program *prog)
 	return SUCCESS;
 }
 
-static int init_post_processing(shader_program *prog)
-{
-	glGenVertexArrays(1, &prog->vao);
-	glBindVertexArray(prog->vao);
-
-	glGenBuffers(1, &prog->vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, prog->vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(post_vertices), post_vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glGenBuffers(1, &prog->ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, prog->ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(post_indices), post_indices, GL_STATIC_DRAW);
-
-	glBindVertexArray(0);
-
-	return SUCCESS;
-}
-
-static void cleanup_framebuffer(GLuint *fbo, GLuint *texture)
-{
-	if (*fbo)
-	{
-		glDeleteFramebuffers(1, fbo);
-		*fbo = 0;
-	}
-	if (*texture)
-	{
-		glDeleteTextures(1, texture);
-		*texture = 0;
-	}
-}
-
-static int create_framebuffer(GLuint *fbo, GLuint *texture, u16 width, u16 height)
-{
-	cleanup_framebuffer(fbo, texture);
-
-	glGenFramebuffers(1, fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
-
-	glGenTextures(1, texture);
-	glBindTexture(GL_TEXTURE_2D, *texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texture, 0);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		LOG_ERROR("Incomplete framebuffer");
-		cleanup_framebuffer(fbo, texture);
-		return FAIL;
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	return SUCCESS;
-}
-
 int renderer_v2_init(void)
 {
 	if (renderer_v2.initialized)
@@ -236,18 +166,6 @@ int renderer_v2_init(void)
 	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE, projection);
 	glUniform1i(renderer_v2.standard.texture_loc, 0);
 
-	if (init_shader_program(&renderer_v2.post, "post") != SUCCESS)
-		return FAIL;
-
-	if (init_post_processing(&renderer_v2.post) != SUCCESS)
-		return FAIL;
-
-	if (create_framebuffer(&renderer_v2.post_fbo, &renderer_v2.post_texture, SCREEN_WIDTH, SCREEN_HEIGHT) != SUCCESS)
-		return FAIL;
-
-	glUseProgram(renderer_v2.post.shader);
-	glUniform1i(glGetUniformLocation(renderer_v2.post.shader, "uTexture"), 0);
-
 	glGenTextures(1, &renderer_v2.dummy_texture);
 	glBindTexture(GL_TEXTURE_2D, renderer_v2.dummy_texture);
 	{
@@ -281,16 +199,6 @@ void renderer_v2_shutdown(void)
 	if (renderer_v2.standard.instance_vbo)
 		glDeleteBuffers(1, &renderer_v2.standard.instance_vbo);
 	cleanup_shader_program(&renderer_v2.standard);
-
-	if (renderer_v2.post.vao)
-		glDeleteVertexArrays(1, &renderer_v2.post.vao);
-	if (renderer_v2.post.vbo)
-		glDeleteBuffers(1, &renderer_v2.post.vbo);
-	if (renderer_v2.post.ebo)
-		glDeleteBuffers(1, &renderer_v2.post.ebo);
-	cleanup_shader_program(&renderer_v2.post);
-
-	cleanup_framebuffer(&renderer_v2.post_fbo, &renderer_v2.post_texture);
 
 	if (renderer_v2.dummy_texture)
 	{
@@ -370,36 +278,10 @@ void renderer_v2_end_batch(void)
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, batch->count);
 }
 
-void renderer_v2_begin_frame(void)
-{
-	// glBindFramebuffer(GL_FRAMEBUFFER, renderer_v2.post_fbo);
-	// glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	// glClear(GL_COLOR_BUFFER_BIT);
-}
-
-void renderer_v2_end_frame(void)
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	glUseProgram(renderer_v2.post.shader);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderer_v2.post_texture);
-
-	glBindVertexArray(renderer_v2.post.vao);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, renderer_v2.post_fbo);
-	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	glClear(GL_COLOR_BUFFER_BIT);
-}
-
 void renderer_v2_resize(u16 width, u16 height)
 {
 	if (!renderer_v2.initialized)
 		return;
-
-	create_framebuffer(&renderer_v2.post_fbo, &renderer_v2.post_texture, width, height);
 
 	float projection[16] = {0};
 	projection[0] = 2.0f / width;

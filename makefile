@@ -35,11 +35,9 @@ ifeq ($(OS),Windows_NT)
     LDFLAGS += -LC:/msys64/mingw64/lib
     LDFLAGS += -llua
     LDFLAGS += -lmingw32
-    LDFLAGS += -lws2_32
     LDFLAGS += -lbacktrace
 
     LDFLAGS += -lopengl32 -lepoxy.dll
-    LDFLAGS += -lWinmm # sum weird time lib that enet uses
 else
     CFLAGS += -I/usr/include/lua5.4/
     CFLAGS += -I/usr/include/SDL2

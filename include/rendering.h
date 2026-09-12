@@ -34,6 +34,5 @@ typedef struct client_render_rules
 } client_render_rules;
 
 u8 render_layer(layer_slice slice);
-u8 client_render(const client_render_rules rules);
 
 #endif

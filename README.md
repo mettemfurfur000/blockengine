@@ -24,11 +24,10 @@ Registry compiled to binary `.brg` format for fast loading. Embedded lua bytecod
 
 ### Rendering Pipeline
 ```
-layer_slice[] → renderer_v2_begin_frame → render_layer (per slice) → renderer_v2_end_frame
+layer_slice[] → render_layer (per slice)
 ```
 - **Instanced rendering**: single draw call per layer via `glDrawElementsInstanced`. Instance buffer starts at 10k capacity, doubles on overflow.
 - **Spatial grid**: 16x16 cells. Only non-empty cells in viewport iterated. Autotile frames cached per block.
-- **Post-processing**: FBO + shader pipeline (commented out/partial — see issues).
 - **Entities**: block_entity objects rendered via Box2D body position, with linear interpolation.
 
 ### Lua Scripting
@@ -53,18 +52,17 @@ Box2D integration. Each room can host a physics world. Layers can generate stati
 SDL2_mixer. Sound chunks loaded per block resource. Script-triggered playback.
 
 ### TKV Format
-Typed key-value tree format for serialization. Strong typing (bool, i8-u64, f32-f64, str, arr, vec3, quat, nested tkv). 6-bit compressed keys. Binary format with O(1) access. Endian-aware stream I/O. Used for config, networking, data exchange.
+Typed key-value tree format for serialization. Strong typing (bool, i8-u64, f32-f64, str, arr, vec3, quat, nested tkv). 6-bit compressed keys. Binary format with O(1) access. Endian-aware stream I/O. Used for config and data exchange.
 
 ### Update System
-Accumulator-based block/variable change tracking. Records block ID changes and var component updates. Supports replay on remote layers (networking).
+~~Accumulator-based block/variable change tracking~~ — removed (Phase 1). Was never integrated into the main loop.
 
 ### Entity System
-- **block_entity**: single block with Box2D body, vars, scale, multiblock shapes.
-- **multiblock_shape**: grid of block IDs forming shapes (T-block, L-block, etc.) with per-block physics overrides.
+- **block_entity**: single block with Box2D body, vars, scale.
 - Handle-table based allocation.
 
 ### Networking
-Cross-platform TCP + UDP. Length-prefixed message protocol. Planned integration with TKV for sync data. WIP (see todo.txt).
+~~Cross-platform TCP + UDP~~ — removed (Phase 1). `net.c`/`net.h` deleted; no callers existed.
 
 ### Signal Handling
 Custom SIGSEGV/SIGABRT handler → log backtrace to file + graceful exit. Uses libbacktrace on both Linux and Windows (MinGW).

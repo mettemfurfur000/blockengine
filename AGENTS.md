@@ -17,7 +17,7 @@ make PERF=1             # Profiling build
 Deps (MSYS2): `mingw-w64-x86_64-toolchain make mingw-w64-x86_64-SDL2{,_image,_ttf,_mixer} mingw-w64-x86_64-lua libbacktrace`
 Deps (Linux): `build-essential libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev liblua5.4-dev libbox2d-dev libepoxy-dev`
 
-Windows-only flags: `-lws2_32 -lWinmm -lbacktrace -lopengl32 -lepoxy.dll`
+Windows-only flags: `-lbacktrace -lopengl32 -lepoxy.dll`
 Linux-only flags: `-llua5.4 -lepoxy`
 
 ## Code Style
@@ -38,7 +38,7 @@ Linux-only flags: `-llua5.4 -lepoxy`
 | `include/level.h` | Level/room/layer structs, block ops |
 | `include/block_registry.h` | Block resource loading, storage |
 | `include/block_renderer_v2.h` | Instanced OpenGL renderer |
-| `include/rendering.h` | layer_slice, client_render |
+| `include/rendering.h` | layer_slice, client_render_rules (Lua render_rules binding) |
 | `include/events.h` | Engine event system |
 | `include/spatial_grid.h` | Spatial partitioning + autotile cache |
 | `include/vars.h` | Block variable blob system |

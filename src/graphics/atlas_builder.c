@@ -88,8 +88,6 @@ void build_atlas(block_registry *reg)
 
 	u32 guess_w = pow(2, (u32)log2((min_side + total_width) / 4.0f));
 	u32 guess_h = pow(2, (u32)log2((min_side + total_height) / 4.0f));
-	// u32 guess_w = pow(2, (u32)log2(min_side + (total_width)));
-	// u32 guess_h = pow(2, (u32)log2(min_side + (total_height)));
 build_again:;
 	u32 obuf_w = guess_w / g_block_width;
 	u32 obuf_h = guess_h / g_block_width;

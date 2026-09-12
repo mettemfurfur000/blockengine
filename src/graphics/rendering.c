@@ -446,19 +446,3 @@ u8 render_layer(layer_slice slice)
 	return SUCCESS;
 }
 
-u8 client_render(const client_render_rules rules)
-{
-	renderer_v2_begin_frame();
-
-	for (u32 i = 0; i < rules.draw_order.length; i++)
-	{
-		i32 layer_id = rules.draw_order.data[i];
-		layer_slice slice = rules.slices.data[layer_id];
-
-		render_layer(slice);
-	}
-
-	renderer_v2_end_frame();
-
-	return SUCCESS;
-}

@@ -1,7 +1,7 @@
 #ifndef FILE_SYSTEM_H
 #define FILE_SYSTEM_H 1
 
-// #include "data_io.h"
+#include "data_io.h"
 #include "level.h"
 
 u8 save_level(level lvl);

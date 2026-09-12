@@ -2,14 +2,21 @@
 
 ## Bugs
 
-### 1. Post-processing FBO logic inverted (P1)
-`src/graphics/block_renderer_v2.c:354-376`
-`renderer_v2_begin_frame` is no-op (FBO bind commented out). `renderer_v2_end_frame` binds FBO 0, draws post shader sampling post_texture, THEN binds post_fbo. Order should be: begin_frame → bind post_fbo + clear, end_frame → bind FBO 0 + draw post shader. Currently renders stale/empty texture.
+### 1. ~~Post-processing FBO logic inverted (P1)~~ — RESOLVED
+Post-processing was removed (Phase 1 cut). See below.
+
+## Removed Systems (Phase 1)
+
+- Post-processing FBO path removed from `block_renderer_v2.c/.h` (post shader, FBO, `renderer_v2_begin_frame`/`end_frame`, `post.vert`/`post.frag`/`crt.frag`).
+- Legacy `client_render()` removed from `rendering.c/.h`; main loop now renders rooms directly.
+- `update_system.h` removed (never integrated into main loop).
+- `multiblock_entity.c/.h` removed (layer_add_multiblock_entity was never implemented).
+- `repeat_*` block registry handlers/fields/serialization removed (only used by legacy `blocks_old/`).
+- `net.c`/`net.h` removed (no callers; `-lws2_32`/`-lWinmm` dropped from makefile).
 
 ## Architectural Issues
 
-### 9. Update system WIP (P1)
-`include/update_system.h` — designed for multiplayer block/var sync but large commented-out code blocks. `update_acc_new`, `update_block_push`, etc. defined but not integrated into main loop. Network sync incomplete.
+### 9. ~~Update system WIP (P1)~~ — RESOLVED (removed)
 
 ### 10. `layer_build_ground_physics()` O(n^2) per-block (P2)
 `src/level.c:822-853` — creates one Box2D static body per block. Old commented-out version had greedy merging (quad grouping). Current approach is simpler but generates many Box2D bodies. Could be slow for large layers.
@@ -27,15 +34,11 @@ Mixes heap-allocated level structs with stack-allocated `level` parameter in `lu
 - Autotile tables hardcoded in `rendering.c`.
 - `TABLE_SIZE 31` in hashtable — prime chosen for hash but undocumented.
 
-### 14. Commented-out code blocks (P3)
-~200+ lines of dead code across:
-- `level.c:723-820` (old ground physics impl)
-- `blockengine_base.c:197` (init script)
-- `scripting.c:497` (SPECIAL_SIGNAL handler)
-- `block_renderer_v2.c:356-358` (FBO clear)
+### 14. ~~Commented-out code blocks (P3)~~ — RESOLVED
+~200+ lines of dead/commented code removed (old ground physics in `level.c`, `init_script` remnants in `blockengine_base.c`, `SPECIAL_SIGNAL` handler in `scripting.c`, FBO clear, `lua_script_filename` handler, `block_entity_collision_script`, etc.).
 
-### 15. `vars.h` winsock include (P3)
-`include/vars.h:4-8` — includes `<winsock.h>` on Win64 for byte-order functions but project has `include/endianless.h`. Dead include.
+### 15. ~~`vars.h` winsock include~~ — RESOLVED
+`vars.h` never included winsock (false alarm). `-lws2_32`/`-lWinmm` (for net.c/enet, now removed) dropped from makefile.
 
 ## Performance
 

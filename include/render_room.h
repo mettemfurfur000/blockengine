@@ -51,7 +51,7 @@ void render_room_begin_frame(u16 width, u16 height, const room_render_options *o
 u8 render_room(room *r, const camera *cam, const room_render_options *opts);
 void render_room_end_frame(void);
 
-// Drop-in alternative to client_render() that renders a single room through a camera.
+// Renders a single room through a camera.
 // Uses the module-global options (see render_room_set_options).
 u8 client_render_room(room *r, camera *cam);
 
@@ -59,7 +59,7 @@ u8 client_render_room(room *r, camera *cam);
 void render_room_set_options(const room_render_options *opts);
 
 // Opt-in activation used by the main loop. When both are set, the room/camera
-// pipeline is used instead of the legacy client_render(). Leave NULL for default.
+// pipeline is used. Leave NULL for default.
 extern room *render_room_active;
 extern camera *render_room_active_camera;
 void render_room_activate(room *r, camera *cam);

@@ -313,9 +313,6 @@ static int lua_layer_paste_block(lua_State *L)
 	if (block_set_id(wrapper->l, x, y, id) != SUCCESS)
 		luaL_error(L, "Failed to set id at: %d, %d", x, y);
 
-	/* Push block update to layer accumulator */
-	// update_block_push(&wrapper->l->id_updates, x, y, id, wrapper->l->block_size);
-
 	block_update_event e = {
 		.type = ENGINE_BLOCK_CREATE,
 		.x = x,
@@ -500,12 +497,6 @@ static int lua_block_copy_vars(lua_State *L)
 	/* Accept either a Vars userdata (blob pointer) or a VarHandle userdata */
 	blob *src_blob = NULL;
 
-	// if (luaL_testudata(L, 4, "Vars"))
-	// {
-	//     LuaHolder *wrapper_vars = (LuaHolder *)luaL_checkudata(L, 4, "Vars");
-	//     src_blob = wrapper_vars->b;
-	// }
-	// else
 	if (luaL_testudata(L, 4, "VarHandle"))
 	{
 		src_blob = get_blob_from_varhandle(L, 4);
@@ -543,41 +534,6 @@ typedef struct
 	lua_State *L;
 	u64 value;
 } tick_iter_data;
-
-// u32 block_entity_collision_script(lua_State *L, block_entity *e, collision_result col_res)
-// {
-// 	u64 id = e->block_id;
-// 	layer *l = e->parent_layer;
-
-// 	assert(l);
-
-// 	if (id == 0 || id >= l->registry->resources.length)
-// 		return SUCCESS;
-
-// 	i32 ref = l->registry->resources.data[id].entity_collision_ref;
-// 	if (ref == 0)
-// 		return SUCCESS;
-
-// 	assert(lua_rawgeti(L, LUA_REGISTRYINDEX, ref) == LUA_TFUNCTION);
-
-// 	lua_pushvalue(L, 1);
-// 	NEW_USER_OBJECT_HANDLE32(L, BlockEntity, l, e->handle);
-// 	lua_pushinteger(L, col_res.block_pos.x);
-// 	lua_pushinteger(L, col_res.block_pos.y);
-// 	lua_pushinteger(L, col_res.block_id);
-// 	lua_pushnumber(L, col_res.hit_pos.x);
-// 	lua_pushnumber(L, col_res.hit_pos.y);
-
-// 	if (lua_pcall(L, 7, 0, 0) != 0)
-// 	{
-// 		LOG_ERROR("Error calling an entity collision callback : %s", lua_tostring(L, -1));
-// 		lua_pop(L, 1);
-// 		lua_pushnil(L);
-// 		return FAIL;
-// 	}
-
-// 	return SUCCESS;
-// }
 
 u32 block_entity_tick_script(lua_State *L, layer *l, block_entity *e, u64 value)
 {
@@ -630,15 +586,8 @@ u32 block_entity_tick_each(handle32 h, void *ptr, void *user_data)
 
 	e->timestamp_old = SDL_GetTicks();
 
-	// block_entity_physics_step(e, info->dt);
-
 	if (!handle_is_valid(info->l->block_entity_pool, h))
 		return SUCCESS;
-
-	// if (l->registry->resources.data[e->block_id].entity_collision_ref)
-	// 	if (block_entity_check_collision_swept(e, l, info->dt, &res))
-	// 		if (block_entity_collision_script(info->L, e, res) != SUCCESS)
-	// 			return FAIL;
 
 	if (block_entity_tick_script(info->L, info->l, e, info->value) != SUCCESS)
 		return FAIL;

@@ -1,4 +1,5 @@
 #include "include/block_registry.h"
+#include "include/data_io.h"
 #include "include/folder_structure.h"
 #include "include/general.h"
 #include "include/logging.h"
@@ -16,19 +17,6 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
 	LOG_DEBUG("Saving block id %llu", res.id);
 	WRITE(res.id, s);
 	blob_vars_write(res.vars_sample, s);
-
-	WRITE(res.repeat_times, s);
-	// write repeat skip
-	WRITE_VEC(res.repeat_skip, j, val, { WRITE(val, s); }, s);
-
-	// write repeat increment
-	WRITE_VEC(
-		res.repeat_increment, j, str,
-		{
-			blob str_blob = blobify(str);
-			blob_write(str_blob, s);
-		},
-		s);
 
 	// input names
 	WRITE_VEC(
@@ -153,23 +141,8 @@ block_resources block_resource_read(block_registry *b, stream_t *s)
 		}
 	}
 
-	// repeat info
-	READ(res.repeat_times, s);
-	// read repeat skip
-	i32 val = 0;
-	READ_VEC(res.repeat_skip, j, val, { READ(val, s); }, s);
-
-	// read repeat increment
-	char *str = NULL;
-	READ_VEC(
-		res.repeat_increment, j, str,
-		{
-			blob str_blob = blob_read(s);
-			str = str_blob.str;
-		},
-		s);
-
 	// input names
+	char *str = NULL;
 	READ_VEC(
 		res.input_names, j, str,
 		{

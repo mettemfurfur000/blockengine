@@ -100,13 +100,6 @@ static int entity_remove_function(lua_State *L)
 	return layer_remove_block_entity(wrapper->l, wrapper->h), 0;
 }
 
-// static int entity_apply_force_function(lua_State *L)
-// {
-// 	LUA_ENT_PRE_CALL_CHECKS(L)
-
-// 	return layer_remove_block_entity(wrapper->l, wrapper->h), 0;
-// }
-
 static int lua_entity_index(lua_State *L)
 {
 	LUA_CHECK_USER_OBJECT(L, BlockEntity, wrapper, 1);
@@ -133,11 +126,6 @@ static int lua_entity_index(lua_State *L)
 		lua_setfield(L, 3, "x");
 		lua_pushnumber(L, t.p.y);
 		lua_setfield(L, 3, "y");
-
-		// lua_pushnumber(L, t.q.c);
-		// lua_setfield(L, 3, "c");
-		// lua_pushnumber(L, t.q.s);
-		// lua_setfield(L, 3, "s");
 
 		lua_pushnumber(L, RAD_TO_DEG(b2Rot_GetAngle(t.q)));
 		lua_setfield(L, 3, "r");

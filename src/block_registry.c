@@ -165,12 +165,6 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 		return SUCCESS;                                                                                                \
 	}
 
-#define DECLARE_DEFAULT_INCREMENTOR(name)                                                                              \
-	void block_res_##name##_incrementor(block_resources *dest)                                                         \
-	{                                                                                                                  \
-		dest->name++;                                                                                                  \
-	}
-
 #define DECLARE_DEFALT_STR_HANDLER(name)                                                                               \
 	u8 block_res_##name##_str_handler(const char *data, block_resources *dest)                                         \
 	{                                                                                                                  \
@@ -206,27 +200,6 @@ also handlers must return FAIL if they cant handle data or if data is invalid
 const static char clean_token[] = "??clean??";
 
 DECLARE_DEFAULT_LONG_FIELD_HANDLER(id)
-DECLARE_DEFAULT_LONG_FIELD_HANDLER(repeat_times)
-// DECLARE_DEFAULT_LONG_FIELD_HANDLER(repeat_skip)
-
-u8 block_res_repeat_skip_handler(const char *data, block_resources *dest)
-{
-	if (strcmp(data, clean_token) == 0)
-	{
-		if (dest->repeat_skip.data)
-			vec_deinit(&dest->repeat_skip);
-		else
-			vec_init(&dest->repeat_skip);
-
-		return SUCCESS;
-	}
-
-	read_int_list(data, &dest->repeat_skip);
-
-	return SUCCESS;
-}
-
-DECLARE_DEFAULT_STR_VEC_HANDLER(repeat_increment)
 u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 {
 	if (strcmp(data, clean_token) == 0)
@@ -271,7 +244,6 @@ u8 block_res_sounds_vec_handler(const char *data, block_resources *dest)
 }
 
 DECLARE_DEFAULT_BYTE_FIELD_HANDLER(override_frame)
-DECLARE_DEFAULT_INCREMENTOR(override_frame)
 
 u8 block_res_data_handler(const char *data, block_resources *dest)
 {
@@ -356,23 +328,6 @@ DECLARE_DEFAULT_INT_FIELD_HANDLER(interp_takes)
 // Autotiling stuff
 
 DECLARE_DEFAULT_BYTE_FIELD_HANDLER(autotile_type)
-// DECLARE_DEFAULT_CHAR_FIELD_HANDLER(autotile_update_key)
-// DECLARE_DEFAULT_CHAR_FIELD_HANDLER(autotile_cache_key)
-
-// u8 block_res_lua_script_handler(const char *data, block_resources *dest)
-// {
-//     if (strcmp(data, clean_token) == 0)
-//     {
-//         free(dest->lua_script_filename);
-//         return SUCCESS;
-//     }
-
-//     u32 len = strlen(data);
-//     dest->lua_script_filename = malloc(len + 1);
-//     memcpy(dest->lua_script_filename, data, len + 1);
-
-//     return SUCCESS;
-// }
 
 DECLARE_DEFALT_STR_HANDLER(lua_script_filename)
 
@@ -404,29 +359,6 @@ const static resource_entry_handler res_handlers[] = {
 		.function = &block_res_sounds_vec_handler,
 		.name = "sounds",
 	 },
-	// dangerous: will replicate the same block multiple times until it reaches
-	// the said id
-	// useful if you just want to have a bunch of blocks with the same texture
-	// and locked type
-	{
-		.function = &block_res_repeat_times_handler,
-		.name = "repeat_times",
-	 },
-	// increment vars will progress, but no actual blocks will be added to the registry - useful if you have holes in
-	// your texture
-	{
-		.function = &block_res_repeat_skip_handler,
-		.name = "repeat_skip",
-		.deps = {"repeat_times"},
-	 },
-	// this controls what variables shoud be incremented as id_range progresses
-	// forward
-	// triggers them and passes id of current ranged block as a string
-	{
-		.function = &block_res_repeat_increment_vec_str_handler,
-		.name = "repeat_increment",
-		.deps = {"repeat_times"},
-	 },
 	// Defines a set of default block variables that each new pasted instance of a block will have
 	// see handler for syntax
 	{
@@ -455,8 +387,7 @@ const static resource_entry_handler res_handlers[] = {
 	 },
 	// Directly sets a frame from the registry. Why would anyone use this?
 	{
-		&block_res_override_frame_incrementor,
-		&block_res_override_frame_handler,
+		.function = &block_res_override_frame_handler,
 		.name = "override_frame",
 		.slots = {"frame_control"},
 	 },
@@ -723,48 +654,6 @@ u32 is_already_in_registry(block_resources_t *reg, block_resources *br)
 	return 0;
 }
 
-static void increment_call(block_resources *br_ref, u32 idx)
-{
-	// compare the repeat increment parameter name
-	for (u32 i = 0; i < br_ref->repeat_increment.length; i++)
-		if (strcmp(res_handlers[idx].name, br_ref->repeat_increment.data[i]) == 0)
-			res_handlers[idx].increment_fn(br_ref);
-}
-
-void call_increments(block_resources *br_ref)
-{
-	for (u32 i = 0; i < TOTAL_HANDLERS; i++)
-		if (res_handlers[i].increment_fn)
-			increment_call(br_ref, i);
-}
-
-static bool is_skip_index(block_resources *br_ref, u32 idx)
-{
-	for (u32 i = 0; i < br_ref->repeat_skip.length; i++)
-		if (br_ref->repeat_skip.data[i] == idx)
-			return true;
-	return false;
-}
-
-// TODO: check if this actually works correctly after the refactor
-void range_ids(block_resources_t *reg, block_resources *br_ref)
-{
-	// start from 1 because block 0 is void
-	for (u32 i = 1; i < br_ref->repeat_times; i++)
-	{
-		call_increments(br_ref);
-		if (is_skip_index(br_ref, i))
-			continue;
-
-		br_ref->id++;
-
-		// mark as ranged and then fix the original resource
-		FLAG_SET(br_ref->flags, RESOURCE_FLAG_RANGED, 1);
-		(void)vec_push(reg, *br_ref);
-		FLAG_SET(br_ref->flags, RESOURCE_FLAG_RANGED, 0);
-	}
-}
-
 static void put_fillers_until(block_resources_t *reg, block_resources entry, u32 block_start, u32 block_end)
 {
 	for (u32 j = block_start; j < block_end; j++)
@@ -823,13 +712,6 @@ u32 registry_read_block(block_registry *reg_ref, const char *file_path)
 	// seems like we have a valid block
 
 	(void)vec_push(reg, br);
-
-	// check for range thing
-
-	if (br.repeat_times != 0)
-	{
-		range_ids(reg, &br);
-	}
 
 	return SUCCESS;
 }

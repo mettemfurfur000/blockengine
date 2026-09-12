@@ -1,6 +1,7 @@
 #include "include/scripting.h"
 // #include "include/image_editing.h"
 #include "SDL_events.h"
+#include "include/data_io.h"
 #include "include/events.h"
 // #include "include/file_system.h"
 #include "include/folder_structure.h"
@@ -427,8 +428,6 @@ int push_event_args(SDL_Event *e)
 		lua_pushinteger(g_L, e->wheel.mouseX);
 		lua_pushinteger(g_L, e->wheel.mouseY);
 		return 4;
-	// case ENGINE_SPECIAL_SIGNAL:
-	//     return 4;
 	case ENGINE_BLOCK_UPDATE:
 	case ENGINE_BLOCK_ERASED:
 	case ENGINE_BLOCK_CREATE:

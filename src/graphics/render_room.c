@@ -245,9 +245,7 @@ u8 render_room(room *r, const camera *cam, const room_render_options *opts)
 
 void render_room_end_frame(void)
 {
-	// Post-processing is intentionally skipped here. The legacy
-	// renderer_v2_end_frame() FBO pass is currently inverted/broken (see ISSUES.md),
-	// so we leave the default framebuffer as-is. A correct post pass can be added later.
+	// Post-processing is intentionally skipped. A correct post pass can be added later.
 }
 
 static room_render_options g_render_room_opts = {

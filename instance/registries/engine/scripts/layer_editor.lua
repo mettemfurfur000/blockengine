@@ -36,20 +36,11 @@ end
 
 local function place_pallete(is_shown)
     local x, y = 0, 0
-    local ranged_begin = 0
 
     for k, v in pairs(G_engine_table) do
-        if ranged_begin ~= nil and ranged_begin ~= 0 then
-            x = x + 1
-            ranged_begin = ranged_begin - 1
+        x = x + 1
 
-            if x >= v.atlas_info.frames then
-                x = 0
-                y = y + 1
-            end -- place them all on the same line if its a repeated block
-        elseif v.all_fields ~= nil and v.all_fields.repeat_times ~= nil and ranged_begin == 0 then
-            ranged_begin = v.all_fields.repeat_times - 1
-        else
+        if x >= v.atlas_info.frames then
             x = 0
             y = y + 1
         end

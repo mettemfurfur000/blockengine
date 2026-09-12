@@ -45,12 +45,6 @@ typedef struct
 typedef struct
 {
 	shader_program standard;
-	shader_program post;
-	GLuint post_fbo;
-	GLuint post_texture;
-	GLuint post_vao;
-	GLuint post_vbo;
-	GLuint post_ebo;
 	layer_batch batch;
 	GLuint dummy_texture;
 	bool initialized;
@@ -66,8 +60,6 @@ int renderer_v2_add_instance(float x, float y, u8 frame, u8 type, u8 flags, floa
 							 float rotation);
 void renderer_v2_end_batch(void);
 
-void renderer_v2_begin_frame(void);
-void renderer_v2_end_frame(void);
 void renderer_v2_resize(u16 width, u16 height);
 
 // Updates only the projection matrix to match a (possibly different) viewport.
