@@ -1,0 +1,5 @@
+automatic_id 1
+vars = { u8 v = 32 }
+texture = character.png
+frame_controller = v
+ignore_type = 1

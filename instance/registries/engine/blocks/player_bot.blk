@@ -1,0 +1,19 @@
+automatic_id 1
+script = player_bot.lua
+inputs = [ tick ]
+# @ - bot uuid
+# I - items on the head, as a byte array, 16 elements
+# v - anim frame
+# t - type frame
+vars = { u32 @ = 0 str I = "~~~~~~~~~~~~~~~~" u8 v = 0 u8 t = 0 i16 x = 0 i16 y = 0 u32 T = 0 }
+#
+texture = player_bot.png
+frame_controller = v
+type_controller = t
+#
+# interp-specific vars
+offset_x_controller = x
+offset_y_controller = y
+interp_timestamp_controller = T
+# 100 ms sinc dev moves every tick at 10tps
+interp_takes = 100

@@ -1,0 +1,4 @@
+automatic_id 1
+texture = ground.png
+ignore_type = 1
+random_frame = 1
