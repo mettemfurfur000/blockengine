@@ -118,6 +118,23 @@ static int lua_cam_get_zoom(lua_State *L)
 	return 1;
 }
 
+static int lua_cam_set_interp_takes(lua_State *L)
+{
+	camera *cam = lua_check_camera(L, 1);
+	lua_Integer takes = luaL_checkinteger(L, 2);
+	if (takes < 0)
+		takes = 0;
+	cam->interp_takes = (u32)takes;
+	return 0;
+}
+
+static int lua_cam_get_interp_takes(lua_State *L)
+{
+	camera *cam = lua_check_camera(L, 1);
+	lua_pushinteger(L, cam->interp_takes);
+	return 1;
+}
+
 static int lua_cam_center_on(lua_State *L)
 {
 	camera *cam = lua_check_camera(L, 1);
@@ -225,6 +242,8 @@ void lua_render_room_register(lua_State *L)
 	static const luaL_Reg cam_methods[] = {
 		{"set_zoom", lua_cam_set_zoom},
 		{"get_zoom", lua_cam_get_zoom},
+		{"set_interp_takes", lua_cam_set_interp_takes},
+		{"get_interp_takes", lua_cam_get_interp_takes},
 		{"center_on", lua_cam_center_on},
 		{"set_position", lua_cam_set_position},
 		{"set_follow", lua_cam_set_follow},

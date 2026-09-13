@@ -31,7 +31,24 @@ function M.id(name)
     return b.id
 end
 
+function M.place_item(layer, x, y, id, from_x, from_y)
+    layer:paste_block(x, y, id)
+    if id == 0 then return end
+
+    local vars = layer:get_vars(x, y)
+    if not vars then return end
+
+    local previous_x = from_x or x
+    local previous_y = from_y or y
+    vars:set_i16("x", (previous_x - x) * G_block_width_pixels)
+    vars:set_i16("y", (previous_y - y) * G_block_width_pixels + G_block_size)
+    vars:set_u32("T", G_sdl_tick or 0)
+end
+
 function M.name_of_id(id)
+    if id == nil then
+        return nil
+    end
     if name_cache[id] ~= nil then
         return name_cache[id]
     end
@@ -98,6 +115,18 @@ function M.random_scrap_id()
         return 0
     end
     return scrap_ids[math.random(1, #scrap_ids)]
+end
+
+function M.scrap_ids()
+    if #scrap_ids == 0 then
+        for name, _ in pairs(M.price) do
+            local id = M.id(name)
+            if id ~= 0 then
+                scrap_ids[#scrap_ids + 1] = id
+            end
+        end
+    end
+    return scrap_ids
 end
 
 function M.stack_init()

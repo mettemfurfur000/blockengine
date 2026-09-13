@@ -62,6 +62,16 @@ end
 
 local function layer_append_existing(table_dest, room_to_lookup, __name, __is_ui)
     local lay_ref = room_to_lookup:get_layer(G_layers_amount)
+    if lay_ref == nil then
+        lay_ref = wrappers.safe_layer_create(
+            room_to_lookup,
+            "engine",
+            1,
+            true,
+            false,
+            __is_ui or false
+        )
+    end
 
     table_dest[__name] = {
         index = G_layers_amount,
@@ -141,10 +151,11 @@ end
 G_menu_definition = {
     [1] = { name = "floor", bytes = 1, use_vars = false, is_ui = false, use_entities = false },
     [2] = { name = "objects", bytes = 1, use_vars = true, is_ui = false, use_entities = true },
-    [3] = { name = "items", bytes = 1, use_vars = false, is_ui = false, use_entities = true },
+    [3] = { name = "items", bytes = 1, use_vars = true, is_ui = false, use_entities = true },
     [4] = { name = "pallete", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
     [5] = { name = "text", bytes = 1, use_vars = true, is_ui = true, use_entities = false },
     [6] = { name = "mouse", bytes = 1, use_vars = true, is_ui = false, use_entities = false },
+    [7] = { name = "held_items", bytes = 1, use_vars = true, is_ui = false, use_entities = false },
 }
 
 local function init_menu()
@@ -258,12 +269,21 @@ local function world_generate()
 
     local function corridor(x1, y1, x2, y2)
         local cx, cy = x1, y1
+        local width_random = math.random(1, 2)
+
         while cx ~= x2 do
             objects:paste_block(cx, cy, 0)
+            if width_random == 2 then
+                objects:paste_block(cx, cy + 1, 0)
+            end
             cx = cx + (cx < x2 and 1 or -1)
         end
+
         while cy ~= y2 do
             objects:paste_block(cx, cy, 0)
+            if width_random == 2 then
+                objects:paste_block(cx + 1, cy, 0)
+            end
             cy = cy + (cy < y2 and 1 or -1)
         end
     end
@@ -296,8 +316,8 @@ local function world_generate()
     end
 
     -- starter fuel cells next to the shop
-    items:paste_block(shop_x + 4, shop_y, fuel_id)
-    items:paste_block(shop_x + 4, shop_y + 1, fuel_id)
+    game_data.place_item(items, shop_x + 4, shop_y, fuel_id)
+    game_data.place_item(items, shop_x + 4, shop_y + 1, fuel_id)
 
     -- player spawn right under the shop platform
     local spawn_x, spawn_y = shop_x, shop_y + 4
@@ -325,15 +345,23 @@ local function world_generate()
                 local roll = math.random()
                 local chance = 0.02 + d * 0.0015
                 if roll < chance then
-                    local price_names = { "item_nut", "item_sheet", "item_pipe", "item_gear", "item_spring", "item_camera", "item_engine", "item_cpu" }
+                    local price_names = { "item_nut", "item_sheet", "item_pipe", "item_gear", "item_spring",
+                        "item_camera", "item_engine", "item_cpu" }
                     local pick = 1
-                    if d > 30 then pick = math.random(5, 8)
-                    elseif d > 18 then pick = math.random(3, 6)
-                    elseif d > 8 then pick = math.random(1, 4)
-                    else pick = math.random(1, 3) end
-                    items:paste_block(x, y, wrappers.find_block(G_engine_table, price_names[pick]).id)
+                    if d > 30 then
+                        pick = math.random(5, 8)
+                    elseif d > 18 then
+                        pick = math.random(3, 6)
+                    elseif d > 8 then
+                        pick = math.random(1, 4)
+                    else
+                        pick = math.random(1, 3)
+                    end
+                    game_data.place_item(items, x, y, wrappers.find_block(G_engine_table, price_names[pick]).id)
                 elseif roll < chance + 0.02 then
-                    floor:paste_block(x, y, rocks_id)
+                    if objects:get_id(x, y) == cave_id then
+                        objects:paste_block(x, y, rocks_id)
+                    end
                 end
             end
         end
@@ -343,16 +371,17 @@ local function world_generate()
     for i = 1, 4 do
         local rx = math.random(6, W - 3)
         local ry = math.random(6, H - 3)
+        floor:paste_block(rx, ry, pile_id)
         for j = -1, 1 do
             for i2 = -1, 1 do
-                if math.random() < 0.6 then
+                if (i2 ~= 0 or j ~= 0) and math.random() < 0.6 then
                     floor:paste_block(rx + i2, ry + j, pile_id)
                 end
             end
         end
     end
 
-    objects:build_ground_physics()
+    -- objects:build_ground_physics()
 end
 
 -- gets all the data
@@ -376,7 +405,7 @@ blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
         G_view_menu.text.layer:paste_block(x, y, 0)
     end)
 
-    G_view_menu.objects.layer:build_ground_physics()
+    -- G_view_menu.objects.layer:build_ground_physics()
 
     if not G_level_loaded_marker then
         world_generate()
@@ -407,7 +436,7 @@ if render_room ~= nil then
 
         render_room.set_options({
             clear_background = true,
-            background_color = {0.16, 0.16, 0.22, 1.0},
+            background_color = { 0.16, 0.16, 0.22, 1.0 },
             draw_grid = false,
         })
 

@@ -396,7 +396,8 @@ u8 render_layer(layer_slice slice)
 
 	u32 ms_started_moving = slice.timestamp_old;
 
-	const f32 slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - ms_started_moving) / (1000.0f / TPS)));
+	const u32 interp_takes = slice.interp_takes != 0 ? slice.interp_takes : (1000 / TPS);
+	const f32 slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - ms_started_moving) / (f32)interp_takes));
 
 	slice.x = lerp(slice.old_x, slice.x, slice_clamp_pos);
 	slice.y = lerp(slice.old_y, slice.y, slice_clamp_pos);
@@ -445,4 +446,3 @@ u8 render_layer(layer_slice slice)
 
 	return SUCCESS;
 }
-

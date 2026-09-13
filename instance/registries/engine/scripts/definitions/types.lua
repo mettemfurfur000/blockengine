@@ -54,6 +54,8 @@
 ---@field set_id fun(self:Layer, x:integer, y:integer, id:integer):nil
 ---@field get_id fun(self:Layer, x:integer, y:integer):integer
 ---@field move_block fun(self:Layer, x:integer, y:integer, d_x:integer, d_y:integer):boolean
+---@field find_path fun(self:Layer, start_x:integer, start_y:integer, goal_x:integer, goal_y:integer, blocked_layer:Layer|nil):{x:integer,y:integer}[]|nil
+---@field find_closest fun(self:Layer, start_x:integer, start_y:integer, target_layer:Layer, ids:integer[], blocked_layer:Layer|nil, exclude_x:integer|nil, exclude_y:integer|nil, exclude_radius:integer|nil):{x:integer,y:integer,distance:integer}|nil
 ---@field paste_block fun(self:Layer, x:integer, y:integer, id:integer):boolean
 ---@field get_input_handler fun(self:Layer, x:integer, y:integer, name:string):function|nil
 ---@field set_static fun(self:Layer, val:integer):nil
@@ -71,6 +73,14 @@
 ---@field box2d_tick fun(self:Room)
 ---@field get_name fun(self:Room):string
 ---@field get_size fun(self:Room):integer, integer
+
+---@class Camera
+---@field set_zoom fun(self:Camera, zoom:number):nil
+---@field get_zoom fun(self:Camera):number
+---@field set_interp_takes fun(self:Camera, milliseconds:integer):nil
+---@field get_interp_takes fun(self:Camera):integer
+---@field center_on fun(self:Camera, x:number, y:number):nil
+---@field get_position fun(self:Camera):{x:number,y:number}
 ---@field get_layer fun(self:Room, index:integer):Layer
 ---@field get_layer_count fun(self:Room):integer
 ---@field new_layer fun(self:Room, reg_name:string, block_width:integer, flags:integer):Layer

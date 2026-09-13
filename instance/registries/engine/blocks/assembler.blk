@@ -3,7 +3,7 @@ script = assembler.lua
 inputs = [ tick ]
 # v - anim frame (0 idle, 1-3 working)
 # f - fuel cells loaded (used as power cells)
-vars = { u8 v = 0 u8 f = 0 i16 Y = 0 }
-offset_y_controller = Y
+vars = { u8 v = 0 u8 f = 0 }
+offset_y_controller = y
 frame_controller = v
 texture = assembler.png

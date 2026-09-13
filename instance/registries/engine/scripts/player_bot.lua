@@ -13,6 +13,12 @@ local self_bot_uuid = 0
 local keystate = {}
 local pending_grab = false
 
+local function update_camera_interp()
+    if G_camera ~= nil then
+        G_camera:set_interp_takes(move_interval_ms)
+    end
+end
+
 local function input_delta()
     return {
         x = (keystate['d'] or 0) - (keystate['a'] or 0),
@@ -72,22 +78,20 @@ end
 local held_icon_cells = {}
 
 local function update_held_icon(vars)
-    local tx = G_view_menu.text.layer
+    local tx = G_view_menu.held_items.layer
 
     for _, cell in ipairs(held_icon_cells) do
         tx:paste_block(cell.x, cell.y, 0)
     end
     held_icon_cells = {}
 
-    if G_camera == nil or G_shop_open or G_bot_pos == nil then
+    if G_camera == nil or G_bot_pos == nil then
         return
     end
 
     local items = game_data.stack_items(vars:get_string("I"))
-    local topleft = G_camera:get_position()
-    local zoom = G_camera:get_zoom()
-    local hx = math.floor((G_bot_pos.x * G_block_size * zoom - topleft.x) / G_block_size)
-    local hy = math.floor((G_bot_pos.y * G_block_size * zoom - topleft.y) / G_block_size) - 1
+    local hx = G_bot_pos.x
+    local hy = G_bot_pos.y
 
     if hx < 0 or hx >= G_width_blocks then
         return
@@ -102,7 +106,9 @@ local function update_held_icon(vars)
         tx:paste_block(hx, icon_y, item_id)
         local ivars = tx:get_vars(hx, icon_y)
         if ivars then
-            ivars:set_i16("Y", -math.floor(G_block_size / 2))
+            ivars:set_i16("x", (vars:get_i16("x") or 0))
+            ivars:set_i16("y", (vars:get_i16("y") or 0))
+            ivars:set_u32("T", (vars:get_u32("T") or 0))
         end
         held_icon_cells[#held_icon_cells + 1] = { x = hx, y = icon_y }
     end
@@ -211,8 +217,14 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
             if #items > 0 then
                 local held = items[1]
+                local front_item = G_view_menu.items.layer:get_id(front.x, front.y)
 
-                if game_data.is_machine(held) then
+                if front_item ~= 0 and not game_data.is_machine(front_item) and #items < game_data.stack_capacity(vars) then
+                    G_view_menu.items.layer:paste_block(front.x, front.y, 0)
+                    vars:set_string("I", game_data.stack_push(items_str, front_item))
+                    vars:set_u8("n", (vars:get_u8("n") or 0) + 1)
+                    energy = maybe_drain_energy(vars, energy)
+                elseif game_data.is_machine(held) then
                     if G_view_menu.objects.layer:get_id(front.x, front.y) == 0 then
                         G_view_menu.objects.layer:paste_block(front.x, front.y, held)
                         vars:set_string("I", game_data.stack_pop(items_str))
@@ -225,9 +237,9 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                     vars:set_u16("c", (vars:get_u16("c") or 0) + price)
                     vars:set_u8("n", (vars:get_u8("n") or 0) + 1)
                     energy = maybe_drain_energy(vars, energy)
-                elseif G_view_menu.items.layer:get_id(front.x, front.y) == 0 then
+                elseif front_item == 0 then
                     if not game_data.is_machine(held) then
-                        G_view_menu.items.layer:paste_block(front.x, front.y, held)
+                        game_data.place_item(G_view_menu.items.layer, front.x, front.y, held, x, y)
                         vars:set_string("I", game_data.stack_pop(items_str))
                         vars:set_u8("n", (vars:get_u8("n") or 0) + 1)
                         energy = maybe_drain_energy(vars, energy)
@@ -236,16 +248,13 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                     end
                 end
             else
-                local floor_front = G_view_menu.floor.layer:get_id(front.x, front.y)
-                if floor_front ~= game_data.id("sell_pad") then
-                    local grab_id = G_view_menu.items.layer:get_id(front.x, front.y)
-                    local cap = game_data.stack_capacity(vars)
-                    if grab_id ~= 0 and #items < cap then
-                        G_view_menu.items.layer:paste_block(front.x, front.y, 0)
-                        vars:set_string("I", game_data.stack_push(items_str, grab_id))
-                        vars:set_u8("n", (vars:get_u8("n") or 0) + 1)
-                        energy = maybe_drain_energy(vars, energy)
-                    end
+                local grab_id = G_view_menu.items.layer:get_id(front.x, front.y)
+                local cap = game_data.stack_capacity(vars)
+                if grab_id ~= 0 and #items < cap then
+                    G_view_menu.items.layer:paste_block(front.x, front.y, 0)
+                    vars:set_string("I", game_data.stack_push(items_str, grab_id))
+                    vars:set_u8("n", (vars:get_u8("n") or 0) + 1)
+                    energy = maybe_drain_energy(vars, energy)
                 end
             end
 
@@ -263,9 +272,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             return
         end
 
-        local last_move = vars:get_u32("T") or 0
         local now = G_sdl_tick or 0
-        if last_move ~= 0 and now > 0 and now - last_move < move_interval_ms then
+        if moved_on_tick ~= 0 and now > 0 and now - moved_on_tick < move_interval_ms then
             vars:set_u16("e", energy)
             vars:set_u8("v", frame_base)
             refresh_hud(vars, x, y)
@@ -276,6 +284,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         vars:set_u8("t", vec.direction(delta.x, delta.y))
 
         local next_pos = vec.add(pos, delta)
+        update_camera_interp()
         local id = G_view_menu.objects.layer:get_id(next_pos.x, next_pos.y)
         if id == 0 then
             if layer:move_block(pos.x, pos.y, delta.x, delta.y) then

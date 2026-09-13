@@ -12,6 +12,7 @@ typedef struct camera
 	f32 old_x, old_y;   // previous position, used for frame interpolation
 	f32 target_x, target_y; // desired top-left; camera_update advances x/y toward this
 	u32 timestamp_old;  // timestamp of the previous position
+	u32 interp_takes;   // duration of camera movement interpolation in milliseconds
 
 	f32 zoom; // zoom multiplier (1 = default block size)
 

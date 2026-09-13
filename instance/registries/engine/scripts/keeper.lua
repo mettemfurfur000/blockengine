@@ -123,7 +123,7 @@ local function grant_item(kvars, idx, layer, x, y)
             end
         end
         if bx then
-            G_view_menu.items.layer:paste_block(bx, by, give_id)
+            game_data.place_item(G_view_menu.items.layer, bx, by, give_id, x, y)
         end
     end
 

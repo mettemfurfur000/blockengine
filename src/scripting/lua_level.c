@@ -19,6 +19,7 @@
 #include <box2d/math_functions.h>
 #include <lauxlib.h>
 #include <lua.h>
+#include <stdlib.h>
 
 #include "include/block_entity.h"
 
@@ -333,11 +334,246 @@ static int lua_layer_move_block(lua_State *L)
 
 	u32 x = luaL_checknumber(L, 2);
 	u32 y = luaL_checknumber(L, 3);
-	u32 delta_x = luaL_checknumber(L, 4);
-	u32 delta_y = luaL_checknumber(L, 5);
+	i16 delta_x = (i16)luaL_checkinteger(L, 4);
+	i16 delta_y = (i16)luaL_checkinteger(L, 5);
 
 	lua_pushboolean(L, block_move(wrapper->l, x, y, delta_x, delta_y) == SUCCESS);
 
+	return 1;
+}
+
+static int lua_layer_find_path(lua_State *L)
+{
+	LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+
+	const i32 start_x = (i32)luaL_checkinteger(L, 2);
+	const i32 start_y = (i32)luaL_checkinteger(L, 3);
+	const i32 goal_x = (i32)luaL_checkinteger(L, 4);
+	const i32 goal_y = (i32)luaL_checkinteger(L, 5);
+	layer *blocked_layer = wrapper->l;
+
+	if (!lua_isnoneornil(L, 6))
+	{
+		LUA_CHECK_USER_OBJECT(L, Layer, blocked_wrapper, 6);
+		blocked_layer = blocked_wrapper->l;
+	}
+
+	const u32 width = blocked_layer->width;
+	const u32 height = blocked_layer->height;
+	const u32 node_count = width * height;
+
+	if (start_x < 0 || start_y < 0 || goal_x < 0 || goal_y < 0 || (u32)start_x >= width ||
+		(u32)start_y >= height || (u32)goal_x >= width || (u32)goal_y >= height)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+
+	const u32 start = (u32)start_y * width + (u32)start_x;
+	const u32 goal = (u32)goal_y * width + (u32)goal_x;
+	u8 *visited = calloc(node_count, sizeof(u8));
+	u32 *queue = malloc(node_count * sizeof(u32));
+	i32 *parent = malloc(node_count * sizeof(i32));
+	if (!visited || !queue || !parent)
+	{
+		free(visited);
+		free(queue);
+		free(parent);
+		return luaL_error(L, "find_path: failed to allocate search buffers");
+	}
+
+	for (u32 i = 0; i < node_count; i++)
+		parent[i] = -1;
+
+	u32 queue_head = 0;
+	u32 queue_tail = 0;
+	queue[queue_tail++] = start;
+	visited[start] = 1;
+
+	static const i32 directions[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+	while (queue_head < queue_tail && !visited[goal])
+	{
+		const u32 current = queue[queue_head++];
+		const i32 current_x = (i32)(current % width);
+		const i32 current_y = (i32)(current / width);
+
+		for (u32 i = 0; i < 4; i++)
+		{
+			const i32 next_x = current_x + directions[i][0];
+			const i32 next_y = current_y + directions[i][1];
+			if (next_x < 0 || next_y < 0 || (u32)next_x >= width || (u32)next_y >= height)
+				continue;
+
+			const u32 next = (u32)next_y * width + (u32)next_x;
+			if (visited[next])
+				continue;
+
+			u64 block_id = 0;
+			if (next != goal && block_get_id(blocked_layer, (u16)next_x, (u16)next_y, &block_id) != SUCCESS)
+				continue;
+			if (next != goal && block_id != 0)
+				continue;
+
+			visited[next] = 1;
+			parent[next] = (i32)current;
+			queue[queue_tail++] = next;
+		}
+	}
+
+	if (!visited[goal])
+	{
+		free(visited);
+		free(queue);
+		free(parent);
+		lua_pushnil(L);
+		return 1;
+	}
+
+	u32 path_length = 1;
+	for (i32 node = (i32)goal; node != (i32)start; node = parent[node])
+		path_length++;
+
+	lua_newtable(L);
+	u32 node = goal;
+	for (u32 i = path_length; i > 0; i--)
+	{
+		lua_newtable(L);
+		lua_pushinteger(L, (lua_Integer)(node % width));
+		lua_setfield(L, -2, "x");
+		lua_pushinteger(L, (lua_Integer)(node / width));
+		lua_setfield(L, -2, "y");
+		lua_seti(L, -2, (lua_Integer)i);
+		node = (node == start) ? start : (u32)parent[node];
+	}
+
+	free(visited);
+	free(queue);
+	free(parent);
+	return 1;
+}
+
+static bool lua_layer_id_in_list(lua_State *L, int index, u64 id)
+{
+	luaL_checktype(L, index, LUA_TTABLE);
+	const size_t length = lua_rawlen(L, index);
+	for (size_t i = 1; i <= length; i++)
+	{
+		lua_rawgeti(L, index, (lua_Integer)i);
+		const u64 candidate = (u64)luaL_checkinteger(L, -1);
+		lua_pop(L, 1);
+		if (candidate == id)
+			return true;
+	}
+	return false;
+}
+
+static int lua_layer_find_closest(lua_State *L)
+{
+	LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
+	const i32 start_x = (i32)luaL_checkinteger(L, 2);
+	const i32 start_y = (i32)luaL_checkinteger(L, 3);
+	LUA_CHECK_USER_OBJECT(L, Layer, target_wrapper, 4);
+	const int ids_index = 5;
+	layer *blocked_layer = wrapper->l;
+	bool has_exclusion = false;
+	i32 exclude_x = 0;
+	i32 exclude_y = 0;
+	i32 exclude_radius = 0;
+	if (!lua_isnoneornil(L, 6))
+	{
+		LUA_CHECK_USER_OBJECT(L, Layer, blocked_wrapper, 6);
+		blocked_layer = blocked_wrapper->l;
+	}
+	if (!lua_isnoneornil(L, 7))
+	{
+		exclude_x = (i32)luaL_checkinteger(L, 7);
+		exclude_y = (i32)luaL_checkinteger(L, 8);
+		exclude_radius = (i32)luaL_checkinteger(L, 9);
+		has_exclusion = true;
+	}
+
+	const u32 width = blocked_layer->width;
+	const u32 height = blocked_layer->height;
+	const u32 node_count = width * height;
+	if (start_x < 0 || start_y < 0 || (u32)start_x >= width || (u32)start_y >= height)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+
+	u8 *visited = calloc(node_count, sizeof(u8));
+	u32 *queue = malloc(node_count * sizeof(u32));
+	u32 *distance = calloc(node_count, sizeof(u32));
+	if (!visited || !queue || !distance)
+	{
+		free(visited);
+		free(queue);
+		free(distance);
+		return luaL_error(L, "find_closest: failed to allocate search buffers");
+	}
+
+	u32 queue_head = 0;
+	u32 queue_tail = 0;
+	const u32 start = (u32)start_y * width + (u32)start_x;
+	queue[queue_tail++] = start;
+	visited[start] = 1;
+	static const i32 directions[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+	i32 found_x = -1;
+	i32 found_y = -1;
+
+	while (queue_head < queue_tail)
+	{
+		const u32 current = queue[queue_head++];
+		const i32 current_x = (i32)(current % width);
+		const i32 current_y = (i32)(current / width);
+		u64 target_id = 0;
+		if (block_get_id(target_wrapper->l, (u16)current_x, (u16)current_y, &target_id) == SUCCESS &&
+			lua_layer_id_in_list(L, ids_index, target_id) &&
+			(!has_exclusion ||
+				abs(current_x - exclude_x) + abs(current_y - exclude_y) > exclude_radius))
+		{
+			found_x = current_x;
+			found_y = current_y;
+			break;
+		}
+
+		for (u32 i = 0; i < 4; i++)
+		{
+			const i32 next_x = current_x + directions[i][0];
+			const i32 next_y = current_y + directions[i][1];
+			if (next_x < 0 || next_y < 0 || (u32)next_x >= width || (u32)next_y >= height)
+				continue;
+			const u32 next = (u32)next_y * width + (u32)next_x;
+			if (visited[next])
+				continue;
+			u64 block_id = 0;
+			if (block_get_id(blocked_layer, (u16)next_x, (u16)next_y, &block_id) != SUCCESS)
+				continue;
+			if (block_id != 0)
+				continue;
+			visited[next] = 1;
+			distance[next] = distance[current] + 1;
+			queue[queue_tail++] = next;
+		}
+	}
+
+	free(visited);
+	free(queue);
+	if (found_x < 0)
+	{
+		free(distance);
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_newtable(L);
+	lua_pushinteger(L, found_x);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, found_y);
+	lua_setfield(L, -2, "y");
+	lua_pushinteger(L, (lua_Integer)distance[(u32)found_y * width + (u32)found_x]);
+	lua_setfield(L, -2, "distance");
+	free(distance);
 	return 1;
 }
 
@@ -742,6 +978,8 @@ void lua_layer_register(lua_State *L)
 		{			  "set_id",			   lua_layer_set_id},
 		{			  "get_id",			   lua_block_get_id},
 		{		  "move_block",		   lua_layer_move_block},
+		{		  "find_path",		   lua_layer_find_path},
+		{		"find_closest",		 lua_layer_find_closest},
 		{		 "paste_block",			lua_layer_paste_block},
 		{	 "get_input_handler",	  lua_get_block_input_handler},
 		{		  "set_static",		   lua_layer_set_static},

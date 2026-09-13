@@ -96,7 +96,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         G_view_menu.items.layer:paste_block(second.x, second.y, 0)
 
         vars:set_u8("f", fuel - 1)
-        G_view_menu.items.layer:paste_block(bx, by, target)
+        game_data.place_item(G_view_menu.items.layer, bx, by, target, x, y)
         vars:set_u8("v", 1 + G_tick % 3)
     end
 )

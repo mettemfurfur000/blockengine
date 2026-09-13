@@ -42,6 +42,7 @@ void camera_init(camera *cam, u16 viewport_w, u16 viewport_h, f32 zoom)
 	cam->target_x = 0.0f;
 	cam->target_y = 0.0f;
 	cam->timestamp_old = SDL_GetTicks();
+	cam->interp_takes = 100;
 	cam->zoom = zoom > 0.0f ? zoom : 1.0f;
 	cam->viewport_w = viewport_w;
 	cam->viewport_h = viewport_h;
@@ -129,16 +130,16 @@ void camera_update(camera *cam)
 			cam->target_y = max_y;
 	}
 
-	// Snap the displayed position straight to the target. The followed block is a
-	// grid block that also moves discretely, so locking the camera exactly to the
-	// target keeps them aligned at any zoom and the camera keeps up instantly when
-	// the block leaves a clamped corner (no tick of lag behind). Keeping old == x
-	// makes render_room's slice lerp a no-op.
-	cam->x = cam->target_x;
-	cam->y = cam->target_y;
-	cam->old_x = cam->target_x;
-	cam->old_y = cam->target_y;
-	cam->timestamp_old = SDL_GetTicks();
+	// Preserve the previous camera position so the room renderer can interpolate
+	// toward the new target over the same interval as moving blocks.
+	if (cam->x != cam->target_x || cam->y != cam->target_y)
+	{
+		cam->old_x = cam->x;
+		cam->old_y = cam->y;
+		cam->x = cam->target_x;
+		cam->y = cam->target_y;
+		cam->timestamp_old = SDL_GetTicks();
+	}
 }
 
 void camera_get_displayed_position(const camera *cam, f32 *out_x, f32 *out_y)
@@ -211,6 +212,7 @@ u8 render_room(room *r, const camera *cam, const room_render_options *opts)
 		layer_slice slice = {0};
 		slice.ref = l;
 		slice.timestamp_old = cam->timestamp_old;
+		slice.interp_takes = cam->interp_takes;
 		slice.w = cam->viewport_w;
 		slice.h = cam->viewport_h;
 		slice.zoom = zoom;

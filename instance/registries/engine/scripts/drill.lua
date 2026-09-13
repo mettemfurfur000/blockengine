@@ -64,7 +64,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                         local bx, by = free_items_cell(x, y)
                         local scrap = game_data.random_scrap_id()
                         if scrap ~= 0 then
-                            G_view_menu.items.layer:paste_block(bx, by, scrap)
+                            game_data.place_item(G_view_menu.items.layer, bx, by, scrap, x, y)
                         end
                     end
 
