@@ -123,6 +123,10 @@ function M.stack_total(item_str)
     return n
 end
 
+function M.stack_capacity(vars)
+    return 1 + (vars:get_u8("p") or 0)
+end
+
 local function stack_build(items)
     local s = ""
     for _, v in ipairs(items) do

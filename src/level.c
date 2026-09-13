@@ -68,6 +68,9 @@ u8 block_move(layer *l, u16 x, u16 y, i16 dx, i16 dy)
 	if (l->var_pool.table == NULL) // skip the move if no var handles
 		return SUCCESS;
 
+	// Moving over a block must release its existing vars before replacing its handle.
+	block_delete_vars(l, dest_x, dest_y);
+
 	// moves handle
 	handle32 h_src = block_get_var_handle(l, x, y);
 

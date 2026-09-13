@@ -105,7 +105,7 @@ local function grant_item(kvars, idx, layer, x, y)
     if give_id == 0 then return end
 
     local items_str = G_self_bot.vars:get_string("I")
-    local cap = 1 + (G_self_bot.vars:get_u8("p") or 0)
+    local cap = game_data.stack_capacity(G_self_bot.vars)
     if game_data.stack_total(items_str) < cap then
         G_self_bot.vars:set_string("I", game_data.stack_push(items_str, give_id))
     else

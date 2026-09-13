@@ -604,6 +604,8 @@ u8 scripting_load_scripts(block_registry *registry)
 
 		lua_pushinteger(g_L, res->id);
 		lua_setglobal(g_L, "scripting_current_block_id");
+		lua_pushinteger(g_L, res->interp_takes);
+		lua_setglobal(g_L, "scripting_current_block_interp_takes");
 		lua_pushcfunction(g_L, lua_light_block_input_register);
 		lua_setglobal(g_L, "scripting_light_block_input_register");
 		lua_pushlightuserdata(g_L, registry);
@@ -676,6 +678,8 @@ scripting_cleanup:
 	// cleaning up
 	lua_pushnil(g_L);
 	lua_setglobal(g_L, "scripting_current_block_id");
+	lua_pushnil(g_L);
+	lua_setglobal(g_L, "scripting_current_block_interp_takes");
 	lua_pushnil(g_L);
 	lua_setglobal(g_L, "scripting_register_block_input");
 	lua_pushnil(g_L);

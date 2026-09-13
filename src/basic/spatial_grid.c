@@ -182,7 +182,7 @@ void spatial_grid_update(spatial_grid *grid, u16 x, u16 y, u64 old_id, u64 new_i
 		spatial_grid_cell_remove(cell, x, y);
 	}
 
-	if (new_id != 0)
+	if (new_id != 0 && old_id != new_id)
 	{
 		spatial_grid_cell_add(cell, x, y);
 	}

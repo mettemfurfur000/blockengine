@@ -72,6 +72,11 @@ u16 util_get_new_handle_index(handle_table *table)
 		table->count++;
 	}
 
+	/* Reuse released slots before extending the table. */
+	slot_index = handle_table_get_inactive(table);
+	if (slot_index != INVALID_HANDLE_INDEX)
+		return slot_index;
+
 	/* if capacity limit is not reached yet, return the last one in our list */
 	if (table->count < table->capacity)
 	{
@@ -80,21 +85,16 @@ u16 util_get_new_handle_index(handle_table *table)
 		return slot_index;
 	}
 
-	/* try to find a free one */
-	slot_index = handle_table_get_inactive(table);
-	if (slot_index != INVALID_HANDLE_INDEX)
-		return slot_index;
-
-	/* try expanding the table then */
-
 	if (table->capacity == MAX_HANDLE_TABLE_CAPACITY)
 	{
 		// bad news!
 		// i probly should drop the handle type field to extend the index field to 24-ish bits
-
 		LOG_ERROR("Reached maximum handle table capacity of %d slots", table->capacity);
+
 		return INVALID_HANDLE_INDEX;
 	}
+
+	/* try expanding the table then */
 
 	u32 new_capacity = table->capacity * 2;
 	new_capacity = (new_capacity > MAX_HANDLE_TABLE_CAPACITY) ? MAX_HANDLE_TABLE_CAPACITY : new_capacity;
@@ -287,7 +287,7 @@ int handle_table_set_slot(handle_table *table, u16 index, void *ptr, u16 generat
 u16 handle_table_get_inactive(handle_table *table)
 {
 	/* walk slots to find an inactive one */
-	for (u16 i = 0; i < table->capacity; ++i)
+	for (u16 i = 1; i < table->count; ++i)
 		if (!table->slots[i].active)
 			return i;
 	return INVALID_HANDLE_INDEX;
