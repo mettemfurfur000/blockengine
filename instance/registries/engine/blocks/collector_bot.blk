@@ -1,0 +1,11 @@
+automatic_id 1
+script = collector_bot.lua
+inputs = [ tick ]
+# v - anim frame
+# t - type frame
+# f - fuel cells loaded
+vars = { u8 v = 0 u8 t = 0 u8 f = 0 i16 Y = 0 }
+offset_y_controller = Y
+frame_controller = v
+type_controller = t
+texture = collector_bot.png

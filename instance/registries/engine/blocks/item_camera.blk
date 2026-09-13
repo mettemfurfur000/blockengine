@@ -1,0 +1,6 @@
+automatic_id 1
+texture = item.png
+override_frame = 5
+ignore_type = 1
+vars = { i16 Y = 0 }
+offset_y_controller = Y

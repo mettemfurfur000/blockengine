@@ -31,7 +31,7 @@ function M.world_print(x, y, width, msg)
     end
 
     if msg == " " then
-        for i = 0, width do
+        for i = 0, width - 1 do
             G_view_menu.text.layer:paste_block(x + i, y, 0)
         end
     end
@@ -42,7 +42,8 @@ function M.world_print(x, y, width, msg)
         spaces_str = spaces_str .. " "
     end
 
-    G_view_menu.text.layer:bprint(G_character_id, x, y, width, msg .. spaces_str)
+    -- bprint's length_limit is an absolute column, so pass x + width
+    G_view_menu.text.layer:bprint(G_character_id, x, y, x + width, msg .. spaces_str)
 end
 
 function M.tablelength(T)
@@ -122,7 +123,7 @@ function M.find_block(reg_table, filename)
             if file_src == nil then
                 goto continue
             end
-            local match = string.gmatch(file_src, "/(%w+).blk$")()
+            local match = string.match(file_src, "([^\\/]+)%.blk$")
             if match == filename then
                 return v
             end

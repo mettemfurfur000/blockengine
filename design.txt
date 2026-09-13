@@ -1,0 +1,35 @@
+a game where you collect gears
+
+you? - a tiny robot that can hold 1 item at a time and move around
+	- wasd to move
+	- e to pick up/drop
+	- mouse to use UI
+		- if an item is usable - click to use
+		- click to buy in the shop
+run? - robot needs [energy] to function, and [shop] sells it for [scrap]
+	- if energy hits 0, game ends and you become scrap
+scrap? - around the [map] there will be scrap laying around with a certain price
+	items can be stepped on unless
+	items:
+	nut - 2
+	sheet - 5
+	pipe - 5
+	gear - 10
+	spring - 25
+	camera - 50
+	engine - 75
+	cpu - 100
+hold? - adjacent items can be picked up and dropped in a different location
+energy? - robot can hold 60 points of energy max, and spends 1 every 10 seconds, and spends 1 every 10 [actions]
+	this gives you 600 seconds (5 minutes) of idling, or approximately 600 tiles worth of travel minus time spent moving
+action? - each pick-up, drop or move counts as a move
+shop? - shop keeper buys scrap if dropped on a sell pad
+	he also sells upgrades and fuel for a robot:
+		20 - fuel cell - fully refreshes energy if picked up and used
+		40 - energy upgrade - adds 10 to energy limit ( price goes up each time it was bought for 20 points)
+		60 - stack upgrade - increases amount of items you can hold, then the item pile on your head will act as a FIFO stack
+		100 - scrap collector - will automaticaly look for scrap, bringing it to the place it was dropped in. requires fuel cells to function
+		200 - scrap drill - if placed near a [scrap pile] and fed fuel cells, will look for [scrap piles] to recycle them into random scrap. will not waste fuel if no piles found near
+		400 - assembler - will take items around it to craft a more expensive item in exchange for power cells
+
+map? - procedurally generated map with rooms and caves that has scrap randomly spawned in them, further from the shop - potentially more expensive and more scrap in general

@@ -3,6 +3,7 @@ local blockengine = require("registries.engine.scripts.definitions.blockengine")
 local wrappers = require("registries.engine.scripts.wrappers")
 local level_editor = require("registries.engine.scripts.definitions.level_editor")
 local camera_utils = require("registries.engine.scripts.camera_utils")
+local game_data = require("registries.engine.scripts.game_data")
 
 G_block_size = 16
 G_global_zoom = 1
@@ -161,6 +162,8 @@ local function init_menu()
         print("created new menu level")
     end
 
+    G_level_loaded_marker = loaded
+
     G_engine = G_block_registry -- might not work if used multiple registries
 
     -- safety check
@@ -217,6 +220,141 @@ end)
 
 did_init = false
 
+local function world_generate()
+    local ground_id = wrappers.find_block(G_engine_table, "ground").id
+    local cave_id = wrappers.find_block(G_engine_table, "cave_wall").id
+    local keeper_id = wrappers.find_block(G_engine_table, "keeper").id
+    local sell_id = wrappers.find_block(G_engine_table, "sell_pad").id
+    local player_id = wrappers.find_block(G_engine_table, "player_bot").id
+    local fuel_id = wrappers.find_block(G_engine_table, "fuel_cell").id
+    local pile_id = wrappers.find_block(G_engine_table, "scrap_pile").id
+    local rocks_id = wrappers.find_block(G_engine_table, "rocks").id
+
+    local floor = G_view_menu.floor.layer
+    local objects = G_view_menu.objects.layer
+    local items = G_view_menu.items.layer
+
+    local W, H = G_width_blocks, G_height_blocks
+
+    for y = 0, H - 1 do
+        for x = 0, W - 1 do
+            floor:paste_block(x, y, ground_id)
+            objects:paste_block(x, y, cave_id)
+        end
+    end
+
+    local seed = sdl.get_ticks()
+    if os ~= nil and os.time then seed = seed + os.time() end
+    math.randomseed(seed)
+
+    local rooms = {}
+    local function carve_rect(x, y, w, h)
+        for j = y, math.min(y + h - 1, H - 2) do
+            for i = x, math.min(x + w - 1, W - 2) do
+                objects:paste_block(i, j, 0)
+            end
+        end
+    end
+
+    local function corridor(x1, y1, x2, y2)
+        local cx, cy = x1, y1
+        while cx ~= x2 do
+            objects:paste_block(cx, cy, 0)
+            cx = cx + (cx < x2 and 1 or -1)
+        end
+        while cy ~= y2 do
+            objects:paste_block(cx, cy, 0)
+            cy = cy + (cy < y2 and 1 or -1)
+        end
+    end
+
+    local room_count = 7
+    for i = 1, room_count do
+        local rw = math.random(5, 9)
+        local rh = math.random(4, 7)
+        local rx = math.random(2, W - rw - 2)
+        local ry = math.random(2, H - rh - 2)
+        carve_rect(rx, ry, rw, rh)
+        table.insert(rooms, { x = rx + math.floor(rw / 2), y = ry + math.floor(rh / 2) })
+    end
+
+    carve_rect(2, 2, 12, 10) -- shop room
+    table.insert(rooms, { x = 8, y = 7 })
+
+    for i = 2, #rooms do
+        corridor(rooms[i - 1].x, rooms[i - 1].y, rooms[i].x, rooms[i].y)
+    end
+
+    -- shop: keeper on a small platform + sell pad in front
+    local shop_x, shop_y = 8, 6
+    objects:paste_block(shop_x, shop_y, keeper_id)
+    for j = shop_y + 1, shop_y + 3 do
+        for i = shop_x, shop_x + 2 do
+            objects:paste_block(i, j, 0)
+            floor:paste_block(i, j, sell_id)
+        end
+    end
+
+    -- starter fuel cells next to the shop
+    items:paste_block(shop_x + 4, shop_y, fuel_id)
+    items:paste_block(shop_x + 4, shop_y + 1, fuel_id)
+
+    -- player spawn right under the shop platform
+    local spawn_x, spawn_y = shop_x, shop_y + 4
+    objects:paste_block(spawn_x, spawn_y, player_id)
+    G_spawn_pos = { x = spawn_x, y = spawn_y }
+    local pvars = objects:get_vars(spawn_x, spawn_y)
+    if pvars then
+        pvars:set_string("I", game_data.stack_init())
+        pvars:set_u16("e", 60)
+        pvars:set_u16("m", 60)
+        pvars:set_u16("c", 100)
+        pvars:set_u32("d", 0)
+        pvars:set_u8("n", 0)
+        pvars:set_u8("p", 0)
+    end
+
+    -- scatter scrap (rarer/more expensive further from the shop)
+    local function dist(px, py)
+        return math.abs(px - shop_x) + math.abs(py - shop_y)
+    end
+    for y = 0, H - 1 do
+        for x = 0, W - 1 do
+            if objects:get_id(x, y) == 0 then
+                local d = dist(x, y)
+                local roll = math.random()
+                local chance = 0.02 + d * 0.0015
+                if roll < chance then
+                    local price_names = { "item_nut", "item_sheet", "item_pipe", "item_gear", "item_spring", "item_camera", "item_engine", "item_cpu" }
+                    local pick = 1
+                    if d > 30 then pick = math.random(5, 8)
+                    elseif d > 18 then pick = math.random(3, 6)
+                    elseif d > 8 then pick = math.random(1, 4)
+                    else pick = math.random(1, 3) end
+                    items:paste_block(x, y, wrappers.find_block(G_engine_table, price_names[pick]).id)
+                elseif roll < chance + 0.02 then
+                    floor:paste_block(x, y, rocks_id)
+                end
+            end
+        end
+    end
+
+    -- scatter a few scrap piles for the drill
+    for i = 1, 4 do
+        local rx = math.random(6, W - 3)
+        local ry = math.random(6, H - 3)
+        for j = -1, 1 do
+            for i2 = -1, 1 do
+                if math.random() < 0.6 then
+                    floor:paste_block(rx + i2, ry + j, pile_id)
+                end
+            end
+        end
+    end
+
+    objects:build_ground_physics()
+end
+
 -- gets all the data
 -- blockengine.register_handler(events.ENGINE_INIT, function()
 blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
@@ -230,12 +368,23 @@ blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
     G_total_blocks = wrappers.tablelength(G_engine_table)
     G_character_id = wrappers.find_block(G_engine_table, "character").id
     G_dev_id = wrappers.find_block(G_engine_table, "dev").id
+    G_player_bot_id = wrappers.find_block(G_engine_table, "player_bot").id
+
+    local _game_data = require("registries.engine.scripts.game_data")
 
     G_view_menu.text.layer:for_each(G_character_id, function(x, y) -- clear all left ova text
         G_view_menu.text.layer:paste_block(x, y, 0)
     end)
 
     G_view_menu.objects.layer:build_ground_physics()
+
+    if not G_level_loaded_marker then
+        world_generate()
+    else
+        G_view_menu.objects.layer:for_each(G_player_bot_id, function(px, py)
+            if G_spawn_pos == nil then G_spawn_pos = { x = px, y = py } end
+        end)
+    end
 
     wrappers.try(function()
         set_render_rule_order(G_view_menu)
@@ -264,11 +413,15 @@ if render_room ~= nil then
 
         G_center_dev_menu = function()
             local bx, by, layer = nil, nil, nil
-            for _, v in pairs(G_view_menu) do
-                if type(v) == "table" and v.layer then
-                    v.layer:for_each(G_dev_id, function(x, y)
-                        if bx == nil then bx, by, layer = x, y, v.layer end
-                    end)
+            if G_spawn_pos ~= nil then
+                bx, by = G_spawn_pos.x, G_spawn_pos.y
+            else
+                for _, v in pairs(G_view_menu) do
+                    if type(v) == "table" and v.layer then
+                        v.layer:for_each(G_dev_id, function(x, y)
+                            if bx == nil then bx, by, layer = x, y, v.layer end
+                        end)
+                    end
                 end
             end
             if bx == nil then

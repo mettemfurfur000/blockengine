@@ -1,0 +1,8 @@
+automatic_id 1
+script = keeper.lua
+inputs = [ tick click ]
+# t - type frame (0 idle, 1 interact)
+# h - count of energy upgrades purchased (drives its price)
+vars = { u8 t = 0 u8 h = 0 }
+type_controller = t
+texture = keeper.png

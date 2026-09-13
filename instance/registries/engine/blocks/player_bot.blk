@@ -1,11 +1,17 @@
 automatic_id 1
 script = player_bot.lua
-inputs = [ tick ]
+inputs = [ tick click ]
 # @ - bot uuid
 # I - items on the head, as a byte array, 16 elements
 # v - anim frame
 # t - type frame
-vars = { u32 @ = 0 str I = "~~~~~~~~~~~~~~~~" u8 v = 0 u8 t = 0 i16 x = 0 i16 y = 0 u32 T = 0 }
+# e - current energy
+# m - max energy
+# c - scrap credits
+# d - last time-drain tick (ms)
+# n - actions since last action-drain
+# p - stack upgrades bought (capacity = 1 + p)
+vars = { u32 @ = 0 str I = "~~~~~~~~~~~~~~~~" u8 v = 0 u8 t = 0 i16 x = 0 i16 y = 0 u32 T = 0 u16 e = 60 u16 m = 60 u16 c = 0 u32 d = 0 u8 n = 0 u8 p = 0 }
 #
 texture = player_bot.png
 frame_controller = v
