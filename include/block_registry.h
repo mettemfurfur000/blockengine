@@ -101,6 +101,13 @@ void free_block_resources(block_resources *b);
 u32 is_already_in_registry(block_resources_t *reg, block_resources *br);
 u32 read_block_registry(block_registry *reg_ref, const char *folder_name);
 
+// returns the block name derived from source_filename (basename minus .blk),
+// malloc'd, caller frees. NULL if the resource has no source_filename.
+char *block_source_name(block_resources *b);
+
+// returns the id of the block with the given name, or FAIL if not found
+u64 block_registry_find_id_by_name(block_registry *reg, const char *name);
+
 void sort_by_id(block_resources_t *reg);
 void free_block_registry(block_registry *b_reg);
 

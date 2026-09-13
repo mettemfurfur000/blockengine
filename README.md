@@ -22,6 +22,16 @@ Properties system supports: id, texture, sounds, vars, fps, frame/type/flip/rota
 
 Registry compiled to binary `.brg` format for fast loading. Embedded lua bytecode support.
 
+### Registry Name ↔ ID Stability
+Levels reference blocks by registry ID. IDs are positional (`automatic_id`), so editing `.blk` files (insert/reorder) shifts IDs and would corrupt saved levels. To stay robust, block identity is derived from the block's `source_filename` (serialized in `.brg`):
+- `block_source_name()` — basename of `source_filename` minus extension (e.g. `registries/engine/blocks/dev.blk` → `dev`).
+- `block_registry_find_id_by_name()` — resolve a name to the current ID.
+
+### Save Format (`.lvl`)
+Binary, gzip-compressed (magic `0x4C564C`), versioned:
+- **v3** (+): after each registry name blob, a per-registry `{id, name}` snapshot is written (`count:u32`, then `id:u64` + `name:blob` per entry). Grid cells still store raw ids. On load (`version >= 3`), each saved id is remapped id → name → current id via the freshly loaded registry. Blocks whose name no longer exists in the registry (or that had no mapping, e.g. gap fillers) become void with a warning.
+- **v2 and earlier**: no snapshot; loaded id is used as-is (raw passthrough). Old files keep working unmodified.
+
 ### Rendering Pipeline
 ```
 layer_slice[] → render_layer (per slice)

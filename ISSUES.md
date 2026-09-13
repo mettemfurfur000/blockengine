@@ -14,6 +14,13 @@ Post-processing was removed (Phase 1 cut). See below.
 - `repeat_*` block registry handlers/fields/serialization removed (only used by legacy `blocks_old/`).
 - `net.c`/`net.h` removed (no callers; `-lws2_32`/`-lWinmm` dropped from makefile).
 
+## Phase 2 (name ↔ ID stability)
+
+- `.lvl` bumped to SAVE_VERSION 3. After each per-registry name blob, a `{id, name}` snapshot (`write_registry_name_map`) is stored. Loaders (`load_level`, `load_level_ack_registry`) read it for `version >= 3` and remap grid ids via `block_registry_find_id_by_name` in `read_block_grid`. Removed/deleted blocks and un-mappable ids become void with a warning.
+- Block names derived from `all_fields.source_filename` via `block_source_name()` — no `.brg` format change (still BRG1).
+- v2 files load unchanged via raw-id passthrough.
+- Verified headless (save→load round-trip, registry reorder remap, deleted-block voiding, genuine-v2 passthrough).
+
 ## Architectural Issues
 
 ### 9. ~~Update system WIP (P1)~~ — RESOLVED (removed)

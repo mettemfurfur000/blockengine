@@ -716,6 +716,53 @@ u32 registry_read_block(block_registry *reg_ref, const char *file_path)
 	return SUCCESS;
 }
 
+char *block_source_name(block_resources *b)
+{
+	if (!b || !b->all_fields)
+		return NULL;
+
+	blob src = get_entry(b->all_fields, blobify("source_filename"));
+	if (!src.ptr)
+		return NULL;
+
+	const char *base = src.str;
+	const char *last_slash = NULL;
+	for (const char *p = base; *p; p++)
+		if (*p == '/' || *p == '\\')
+			last_slash = p;
+	if (last_slash)
+		base = last_slash + 1;
+
+	const char *dot = strrchr(base, '.');
+	u32 len = (u32)(dot ? (size_t)(dot - base) : strlen(base));
+
+	char *name = malloc(len + 1);
+	assert(name != NULL);
+	memcpy(name, base, len);
+	name[len] = '\0';
+	return name;
+}
+
+u64 block_registry_find_id_by_name(block_registry *reg, const char *name)
+{
+	assert(reg != NULL);
+	if (!name)
+		return FAIL;
+
+	for (u32 i = 0; i < reg->resources.length; i++)
+	{
+		char *tmp = block_source_name(&reg->resources.data[i]);
+		if (!tmp)
+			continue;
+		i32 eq = strcmp(tmp, name);
+		SAFE_FREE(tmp);
+		if (eq == 0)
+			return reg->resources.data[i].id;
+	}
+
+	return FAIL;
+}
+
 // reads all blocks in a folder and adds them to the registry
 u32 registry_read_folder(block_registry *reg_ref, const char *folder_path)
 {

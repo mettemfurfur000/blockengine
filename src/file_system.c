@@ -9,7 +9,96 @@
 #include <string.h>
 
 #define SAVE_MAGIC 0x4C564C
-#define SAVE_VERSION 2
+#ifndef SAVE_VERSION
+#define SAVE_VERSION 3
+#endif
+
+typedef struct
+{
+	u64 id;
+	char *name;
+} saved_block_name;
+
+typedef vec_t(saved_block_name) saved_name_map_t;
+
+typedef struct
+{
+	char *registry_name;
+	saved_name_map_t map;
+} saved_registry_map;
+
+typedef vec_t(saved_registry_map) saved_maps_t;
+
+static saved_registry_map *find_saved_map(saved_maps_t *maps, const char *reg_name)
+{
+	saved_registry_map m;
+	i32 i;
+	vec_foreach(maps, m, i)
+	{
+		if (strcmp(m.registry_name, reg_name) == 0)
+			return &maps->data[i];
+	}
+	return NULL;
+}
+
+static void free_saved_maps(saved_maps_t *maps)
+{
+	saved_registry_map m;
+	i32 i;
+	vec_foreach(maps, m, i)
+	{
+		SAFE_FREE(m.registry_name);
+		saved_block_name bn;
+		u32 j;
+		vec_foreach(&m.map, bn, j)
+		{
+			SAFE_FREE(bn.name);
+		}
+		vec_deinit(&m.map);
+	}
+	vec_deinit(maps);
+}
+
+static void write_registry_name_map(block_registry *reg, stream_t *f)
+{
+	u32 count = 0;
+	for (u32 i = 0; i < reg->resources.length; i++)
+	{
+		char *name = block_source_name(&reg->resources.data[i]);
+		if (name)
+		{
+			count++;
+			SAFE_FREE(name);
+		}
+	}
+
+	WRITE(count, f);
+	for (u32 i = 0; i < reg->resources.length; i++)
+	{
+		char *name = block_source_name(&reg->resources.data[i]);
+		if (!name)
+			continue;
+		WRITE(reg->resources.data[i].id, f);
+		blob_write(blobify(name), f);
+		SAFE_FREE(name);
+	}
+}
+
+static void read_registry_name_map(stream_t *f, saved_name_map_t *dest)
+{
+	vec_init(dest);
+	u32 count = 0;
+	READ(count, f);
+	vec_reserve(dest, count);
+	for (u32 i = 0; i < count; i++)
+	{
+		saved_block_name bn = {};
+		READ(bn.id, f);
+		blob nb = blob_read(f);
+		bn.name = nb.str;
+		(void)vec_push(dest, bn);
+	}
+}
 
 void write_block_grid(layer *l, stream_t *f)
 {
@@ -29,7 +118,7 @@ void write_block_grid(layer *l, stream_t *f)
 		}
 }
 
-void read_block_grid(layer *l, stream_t *f)
+void read_block_grid(layer *l, stream_t *f, saved_name_map_t *saved_names)
 {
 	u64 id = 0;
 	handle32 h = {};
@@ -37,7 +126,37 @@ void read_block_grid(layer *l, stream_t *f)
 		for (u32 x = 0; x < l->width; x++)
 		{
 			stream_read((u8 *)&id, l->block_size, f);
-			if (block_set_id(l, x, y, id) != SUCCESS)
+			u64 resolved_id = id;
+			if (id != 0 && saved_names && l->registry)
+			{
+				saved_block_name bn;
+				u32 i;
+				i32 found = 0;
+				vec_foreach(saved_names, bn, i)
+				{
+					if (bn.id == id)
+					{
+						found = 1;
+						u64 current_id = block_registry_find_id_by_name(l->registry, bn.name);
+						if (current_id != FAIL)
+							resolved_id = current_id;
+						else
+						{
+							LOG_WARNING("Saved block \"%s\" no longer exists in registry \"%s\", replaced with void",
+										bn.name, l->registry->name);
+							resolved_id = 0;
+						}
+						break;
+					}
+				}
+				if (!found)
+				{
+					LOG_WARNING("Saved block id %llu has no name mapping in registry \"%s\", replaced with void", id,
+								l->registry->name);
+					resolved_id = 0;
+				}
+			}
+			if (block_set_id(l, x, y, resolved_id) != SUCCESS)
 			{
 				LOG_WARNING("Failed to read block at %d, %d", x, y);
 				block_set_id(l, x, y, 0);
@@ -174,6 +293,9 @@ u8 save_level(level lvl)
 		const char *reg_name = ((block_registry *)lvl.registries.data[i])->name;
 		assert(reg_name);
 		blob_write(blobify((char *)reg_name), &s);
+#if SAVE_VERSION >= 3
+		write_registry_name_map((block_registry *)lvl.registries.data[i], &s);
+#endif
 	}
 
 	WRITE(lvl.rooms.length, &s);
@@ -253,9 +375,21 @@ u8 load_level(level *lvl, const char *name_in)
 
 	u32 reg_count;
 	READ(reg_count, &s);
+
+	saved_maps_t saved_maps;
+	vec_init(&saved_maps);
+
 	for (u32 i = 0; i < reg_count; i++)
 	{
 		char *name = blob_read(&s).str;
+		saved_registry_map sm = {};
+		sm.registry_name = name;
+		if (version >= 3)
+		{
+			read_registry_name_map(&s, &sm.map);
+			(void)vec_push(&saved_maps, sm);
+		}
+
 		block_registry *reg = find_registry(lvl->registries, name);
 		if (!reg)
 		{
@@ -264,7 +398,6 @@ u8 load_level(level *lvl, const char *name_in)
 			if (!reg)
 			{
 				LOG_WARNING("Failed to load registry %s", name);
-				free(name);
 				continue;
 			}
 		}
@@ -316,7 +449,10 @@ u8 load_level(level *lvl, const char *name_in)
 
 			read_layer_meta(layer_meta, l, r);
 			init_layer(l, r);
-			read_block_grid(l, &s);
+			saved_registry_map *sm = NULL;
+			if (l->registry)
+				sm = find_saved_map(&saved_maps, l->registry->name);
+			read_block_grid(l, &s, sm ? &sm->map : NULL);
 			read_handle_table(&l->var_pool, &s);
 
 			r->layers.data[j] = l;
@@ -327,6 +463,7 @@ u8 load_level(level *lvl, const char *name_in)
 		(void)vec_push(&lvl->rooms, r);
 	}
 
+	free_saved_maps(&saved_maps);
 	arena_destroy(scratch);
 	arena_destroy(tkv_arena);
 	stream_close(&s);
@@ -376,9 +513,21 @@ u8 load_level_ack_registry(level *lvl, const char *name_in, block_registry *ack_
 
 	u32 reg_count;
 	READ(reg_count, &s);
+
+	saved_maps_t saved_maps;
+	vec_init(&saved_maps);
+
 	for (u32 i = 0; i < reg_count; i++)
 	{
 		char *name = blob_read(&s).str;
+		saved_registry_map sm = {};
+		sm.registry_name = name;
+		if (version >= 3)
+		{
+			read_registry_name_map(&s, &sm.map);
+			(void)vec_push(&saved_maps, sm);
+		}
+
 		if (strcmp(name, ack_reg->name) == 0)
 		{
 			block_registry *reg = ack_reg;
@@ -436,7 +585,10 @@ u8 load_level_ack_registry(level *lvl, const char *name_in, block_registry *ack_
 
 			read_layer_meta(layer_meta, l, r);
 			init_layer(l, r);
-			read_block_grid(l, &s);
+			saved_registry_map *sm = NULL;
+			if (l->registry)
+				sm = find_saved_map(&saved_maps, l->registry->name);
+			read_block_grid(l, &s, sm ? &sm->map : NULL);
 			read_handle_table(&l->var_pool, &s);
 
 			r->layers.data[j] = l;
@@ -447,6 +599,7 @@ u8 load_level_ack_registry(level *lvl, const char *name_in, block_registry *ack_
 		(void)vec_push(&lvl->rooms, r);
 	}
 
+	free_saved_maps(&saved_maps);
 	arena_destroy(scratch);
 	arena_destroy(tkv_arena);
 	stream_close(&s);
