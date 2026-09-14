@@ -60,15 +60,15 @@ local function mouse_action(x, y, button)
         y = y
     })
 
-    wrappers.world_print(G_pallete_width, G_ui_offset_position_debug, G_ui_width,
+    wrappers.text_print(G_pallete_width, G_ui_offset_position_debug, G_ui_width,
         (block_highlight.x .. ", " .. block_highlight.y))
 
     local vars = editor.layer_being_edited.layer:get_vars(block_highlight.x, block_highlight.y)
 
     if vars and vars:is_valid() then
-        wrappers.world_print(G_pallete_width, G_ui_offset_var_handle_debug, G_ui_width,
+        wrappers.text_print(G_pallete_width, G_ui_offset_var_handle_debug, G_ui_width,
             table.concat({ vars:get_raw() }, ","))
-        wrappers.world_print(G_pallete_width, G_ui_offset_vars_debug, G_ui_width, vars:__tostring())
+        wrappers.text_print(G_pallete_width, G_ui_offset_vars_debug, G_ui_width, vars:__tostring())
     end
 
     if button == 1 then
@@ -130,31 +130,24 @@ end)
 -- resets the whole editor thing
 local function ui_update()
     if not editor.is_shown then
-        wrappers.world_fill(0, 0, G_ui_width, G_height_blocks - 1, 0)
+        wrappers.text_fill(0, 0, G_ui_width, G_height_blocks - 1, 0)
         return
     end
 
     if editor.layer_being_edited ~= nil then
-        wrappers.world_print(G_pallete_width, G_ui_offset_layer_name, G_ui_width,
+        wrappers.text_print(G_pallete_width, G_ui_offset_layer_name, G_ui_width,
             editor.layer_being_edited.name .. ":" .. editor.layer_being_edited_index)
     end
 
     if editor.selected_block ~= nil and editor.selected_block.id ~= 0 then
         local filename = string.match(editor.selected_block.all_fields.source_filename, "[^/\\]*%.%w+$"):sub(1, -5)
-        wrappers.world_print(G_pallete_width, G_ui_offset_block_name, G_ui_width, "" .. filename)
+        wrappers.text_print(G_pallete_width, G_ui_offset_block_name, G_ui_width, "" .. filename)
 
         G_view_menu.text.layer:paste_block(G_pallete_width, G_ui_offset_preview, editor.selected_block.id)
     end
 
-    wrappers.world_print(G_pallete_width, G_ui_offset_mode, G_ui_width, editor.mode)
+    wrappers.text_print(G_pallete_width, G_ui_offset_mode, G_ui_width, editor.mode)
 end
-
--- Scrolls the pallete
-blockengine.register_handler(events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
-    local slice = render_rules.get_slice(g_render_rules, editor.pallete_index)
-    slice.y = math.max(0, math.min(G_screen_height, (slice.y or 0) - y * 32))
-    render_rules.set_slice(g_render_rules, editor.pallete_index, slice)
-end)
 
 -- clicks on the pallete choose the tile
 blockengine.register_handler(events.SDL_MOUSEBUTTONDOWN, function(x, y, state, clicks, button)

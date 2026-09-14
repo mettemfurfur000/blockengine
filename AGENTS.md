@@ -38,7 +38,7 @@ Linux-only flags: `-llua5.4 -lepoxy`
 | `include/level.h` | Level/room/layer structs, block ops |
 | `include/block_registry.h` | Block resource loading, storage |
 | `include/block_renderer_v2.h` | Instanced OpenGL renderer |
-| `include/rendering.h` | layer_slice, client_render_rules (Lua render_rules binding) |
+| `include/rendering.h` | Internal layer rendering helpers used by the camera renderer |
 | `include/events.h` | Engine event system |
 | `include/spatial_grid.h` | Spatial partitioning + autotile cache |
 | `include/vars.h` | Block variable blob system |

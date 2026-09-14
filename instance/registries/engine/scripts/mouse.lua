@@ -18,8 +18,6 @@ G_mouse = {
 }
 
 blockengine.register_handler(events.ENGINE_INIT, function()
-    local width, height = render_rules.get_size(g_render_rules)
-
     local pos = { -- puts it just wherevr
         x = 0,
         y = 0
@@ -58,8 +56,8 @@ blockengine.register_handler(events.ENGINE_INIT, function()
     print("mouse initialized")
 end)
 
-local function mouse_move(layer, slice, cur_pos_pixels, old_pos_blocks)
-    local new_pos = block_utils.pixels_to_blocks(cur_pos_pixels, slice.zoom)
+local function mouse_move(layer, cur_pos_pixels, old_pos_blocks)
+    local new_pos = block_utils.pixels_to_blocks(cur_pos_pixels)
 
     local delta = {
         x = new_pos.x - old_pos_blocks.x,
@@ -79,8 +77,7 @@ blockengine.register_handler(events.SDL_MOUSEMOTION, function(x, y, state, click
         return
     end
 
-    local cur_slice = render_rules.get_slice(g_render_rules, G_view_menu.mouse.index);
-    G_mouse.pos = mouse_move(G_mouse.home_layer, cur_slice, {
+    G_mouse.pos = mouse_move(G_mouse.home_layer, {
         x = x,
         y = y
     }, G_mouse.pos)
@@ -91,7 +88,7 @@ blockengine.register_handler(events.SDL_MOUSEWHEEL, function(x, y, pos_x, pos_y)
         return
     end
 
-    G_mouse.pos = mouse_move(G_mouse.home_layer, render_rules.get_slice(g_render_rules, G_mouse.home_layer_index), {
+    G_mouse.pos = mouse_move(G_mouse.home_layer, {
         x = pos_x,
         y = pos_y
     }, G_mouse.pos)
@@ -104,11 +101,10 @@ blockengine.register_handler(events.SDL_MOUSEBUTTONDOWN, function(x, y, state, c
         return
     end
 
-    local cur_slice = render_rules.get_slice(g_render_rules, G_view_menu.mouse.index);
     local actual_pos = block_utils.pixels_to_blocks({
         x = x,
         y = y
-    }, cur_slice.zoom)
+    })
 
     -- print("click at " .. actual_pos.x .. ", " .. actual_pos.y)
 

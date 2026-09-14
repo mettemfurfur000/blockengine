@@ -34,7 +34,7 @@ Binary, gzip-compressed (magic `0x4C564C`), versioned:
 
 ### Rendering Pipeline
 ```
-layer_slice[] → render_layer (per slice)
+camera → render_room → render_layer (per layer)
 ```
 - **Instanced rendering**: single draw call per layer via `glDrawElementsInstanced`. Instance buffer starts at 10k capacity, doubles on overflow.
 - **Spatial grid**: 16x16 cells. Only non-empty cells in viewport iterated. Autotile frames cached per block.
@@ -106,7 +106,7 @@ blockengine/
 ├── src/
 │   ├── basic/        # Core: arena, backtrace, handle, hashtable, logging, spatial_grid, timer, vars, vec_math
 │   ├── graphics/     # Rendering: block_renderer_v2, opengl, sdl2, atlas_builder, image_editing
-│   ├── scripting/    # Lua: bindings per type (level, entity, registry, sound, image, render_rules)
+│   ├── scripting/    # Lua: bindings per type (level, entity, registry, sound, image, render_room)
 │   ├── tkv/          # TKV format implementation
 │   └── language/     # Tokenizer
 ├── libs/             # External: dirent, stb, vec

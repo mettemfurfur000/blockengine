@@ -15,8 +15,22 @@ function M.try(f, catch_f)
     end
 end
 
-function M.world_fill(x, y, w, h, id)
+function M.text_fill(x, y, w, h, id)
     id = id or 0
+
+    if w <= 0 or h <= 0 then
+        return
+    end
+
+    if x < 0 or y < 0 then
+        M.log_error("invalid arguments for text_fill")
+        return
+    end
+
+    if w > G_ui_width or h > G_height_blocks then
+        M.log_error("invalid arguments for text_fill")
+        return
+    end
 
     for j = y, h do
         for i = x, w do
@@ -25,7 +39,7 @@ function M.world_fill(x, y, w, h, id)
     end
 end
 
-function M.world_print(x, y, width, msg)
+function M.text_print(x, y, width, msg)
     if type(msg) ~= "string" then
         msg = tostring(msg)
     end

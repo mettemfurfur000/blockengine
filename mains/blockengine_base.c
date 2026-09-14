@@ -181,11 +181,12 @@ int main(int argc, char *argv[])
 	const int target_tps = config.target_tps;
 	const int tick_period = 1000 / target_tps;
 
-	client_render_rules rules = {.screen_height = config.screen_height, .screen_width = config.screen_width};
-
 	scripting_init();
 
-	LUA_SET_GLOBAL_OBJECT("g_render_rules", &rules);
+	lua_pushinteger(g_L, SCREEN_WIDTH);
+	lua_setglobal(g_L, "G_screen_width");
+	lua_pushinteger(g_L, SCREEN_HEIGHT);
+	lua_setglobal(g_L, "G_screen_height");
 
 	block_registry *reg = registry_load(config.registry);
 
@@ -217,7 +218,7 @@ int main(int argc, char *argv[])
 	bool isFullscreen = (config.fullscreen == 1) ? true : false;
 	if (config.fullscreen != -1)
 	{
-		set_fullscreen(&rules, isFullscreen);
+		set_fullscreen(isFullscreen);
 	}
 
 	for (;;)
@@ -232,7 +233,7 @@ int main(int argc, char *argv[])
 				if (e.key.keysym.sym == SDLK_F11)
 				{
 					isFullscreen = !isFullscreen;
-					set_fullscreen(&rules, isFullscreen);
+					set_fullscreen(isFullscreen);
 				}
 				break;
 			case SDL_QUIT:

@@ -11,40 +11,8 @@ G_block_width_pixels = G_block_size * G_global_zoom
 --- loads and registers layer editor functions
 local _ = require("registries.engine.scripts.layer_editor")
 
-if render_rules == nil then
-    wrappers.log_error("render_rules module not found")
-    return
-end
-
-G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
-
 G_width_blocks = math.floor(2 * G_screen_width / (G_block_size * G_global_zoom))
 G_height_blocks = math.floor(2 * G_screen_height / (G_block_size * G_global_zoom))
-
--- constructs a layer slice that dictates how the layer is rendered
-local function layer_slice(x, y, w, h, z, lay_ref)
-    if lay_ref == nil then
-        print("no ref layer to generate a slice")
-        os.exit(0)
-    end
-
-    return {
-        x = x,
-        y = y,
-        old_x = x,
-        old_y = y,
-        timestamp_old = G_sdl_tick or sdl.get_ticks(),
-        h = h,
-        w = w,
-        zoom = z,
-        ref = lay_ref,
-        flags = 0
-    }
-end
-
-local function make_basic_slice(lay_ref)
-    return layer_slice(0, 0, G_screen_width, G_screen_height, G_global_zoom, lay_ref)
-end
 
 G_layers_amount = 0
 
@@ -54,7 +22,6 @@ local function layer_append_render(table_dest, __name, lay_ref, __is_ui)
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
-        slice = make_basic_slice(lay_ref)
     }
     G_layers_amount = G_layers_amount + 1
 end
@@ -67,34 +34,9 @@ local function layer_append_existing(table_dest, room_to_lookup, __name, __is_ui
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
-        slice = make_basic_slice(lay_ref)
     }
 
     G_layers_amount = G_layers_amount + 1
-end
-
-local function set_slices(ref_table)
-    for k, v in pairs(ref_table) do
-        if v.slice_push_ignore ~= true then
-            render_rules.set_slice(g_render_rules, v.index, v.slice)
-        end
-    end
-end
-
-local function set_render_rule_order(ref_table)
-    local order = {}
-
-    for k, v in pairs(ref_table) do
-        if v.slice_push_ignore ~= true then
-            table.insert(order, v.index)
-        end
-    end
-
-    table.sort(order)
-
-    render_rules.set_order(g_render_rules, order)
-
-    set_slices(ref_table)
 end
 
 local function build_view(def, registry_name, loaded)
@@ -109,14 +51,14 @@ local function build_view(def, registry_name, loaded)
             layer_append_existing(view, G_menu_room, def_entry.name, def_entry.is_ui)
         else
             layer_append_render(view, def_entry.name,
-                    wrappers.safe_layer_create(
-                        G_menu_room,
-                        registry_name,
-                        def_entry.bytes or 1,
-                        def_entry.use_vars or false,
-                        def_entry.use_entities or false,
-                        def_entry.is_ui or false
-                    ),
+                wrappers.safe_layer_create(
+                    G_menu_room,
+                    registry_name,
+                    def_entry.bytes or 1,
+                    def_entry.use_vars or false,
+                    def_entry.use_entities or false,
+                    def_entry.is_ui or false
+                ),
                 def_entry.is_ui)
         end
     end
@@ -131,8 +73,6 @@ local function create_menu()
         wrappers.log_error("error creating level")
         os.exit()
     end
-
-    -- G_level:add_existing(G_block_registry) -- add the existing engine registry to the level
 
     G_menu_room = wrappers.safe_room_create(G_level, "menu", G_width_blocks, G_height_blocks)
 end
@@ -194,9 +134,6 @@ blockengine.register_handler(events.SDL_QUIT, function(code) -- tick over all ex
         level_editor.save_level(G_level)
         print("Saved level")
     end
-
-    -- test serialize
-    -- G_level:serialize_registry(0)
 end)
 
 blockengine.register_handler(events.SDL_WINDOWEVENT, function(width, height)
@@ -210,9 +147,9 @@ blockengine.register_handler(events.SDL_WINDOWEVENT, function(width, height)
 
     camera_utils.recalc_camera_limits()
 
-    G_view_menu = build_view(G_menu_definition, "engine", true)
-
-    set_render_rule_order(G_view_menu)
+    if G_camera ~= nil then
+        G_camera:set_viewport(width, height)
+    end
 end)
 
 did_init = false
@@ -232,17 +169,14 @@ blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
     G_character_id = wrappers.find_block(G_engine_table, "character").id
     G_dev_id = wrappers.find_block(G_engine_table, "dev").id
 
-    -- print("attempting to clear all leftover text with id " .. G_character_id)
-
     G_view_menu.text.layer:for_each(G_character_id, function(x, y) -- clear all left ova text
-        -- print("found some text at " .. x .. ", " .. y)
         G_view_menu.text.layer:paste_block(x, y, 0)
     end)
 
     G_view_menu.objects.layer:build_ground_physics()
 
     wrappers.try(function()
-        set_render_rule_order(G_view_menu)
+
     end, function(e)
         wrappers.log_error(e)
         os.exit()
@@ -264,7 +198,7 @@ if render_room ~= nil then
         -- render_room.set_options({ background_color = {r, g, b, a} }).
         render_room.set_options({
             clear_background = true,
-            background_color = {0.16, 0.16, 0.22, 1.0},
+            background_color = { 0.16, 0.16, 0.22, 1.0 },
             draw_grid = false,
         })
 
@@ -315,47 +249,6 @@ if render_room ~= nil then
         G_block_width_pixels = G_block_size * z
         camera_utils.set_target(G_camera_current_pos)
     end)
-
-    -- Toggle the new renderer on/off (F = legacy render_rules path, otherwise room/camera).
-    -- blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
-    --     if keysym == 102 then
-    --         if G_render_room_on then
-    --             render_room.deactivate()
-    --             G_render_room_on = false
-    --         else
-    --             render_room.activate(G_active_room, G_camera)
-    --             G_render_room_on = true
-    --         end
-    --     end
-    -- end)
-
-    -- Switch the rendered room (R). A second room is built lazily on first use.
-    -- blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
-    --     if keysym == 114 then
-    --         if G_game_room == nil then
-    --             G_game_room = G_level:new_room("game", G_width_blocks, G_height_blocks)
-    --             local gl = G_game_room:new_layer("engine", 1, 0)
-    --             for i = 2, G_width_blocks - 2 do
-    --                 gl:set_id(i, G_height_blocks - 3, 1)
-    --             end
-    --             gl:set_id(math.floor(G_width_blocks / 2), math.floor(G_height_blocks / 2), G_dev_id)
-    --         end
-
-    --         if G_active_room == G_menu_room then
-    --             G_active_room = G_game_room
-    --             G_camera:center_on((math.floor(G_width_blocks / 2) + 0.5) * G_block_width_pixels,
-    --                 (math.floor(G_height_blocks / 2) + 0.5) * G_block_width_pixels)
-    --         else
-    --             G_active_room = G_menu_room
-    --             G_center_dev_menu()
-    --         end
-
-    --         if G_render_room_on then
-    --             render_room.activate(G_active_room, G_camera)
-    --         end
-    --     end
-    -- end)
-
     -- Keep the camera viewport in sync with the window size.
     blockengine.register_handler(events.SDL_WINDOWEVENT, function(width, height)
         if G_camera ~= nil and width ~= nil and height ~= nil then

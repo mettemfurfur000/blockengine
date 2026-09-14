@@ -54,7 +54,7 @@
 ---@field set_id fun(self:Layer, x:integer, y:integer, id:integer):nil
 ---@field get_id fun(self:Layer, x:integer, y:integer):integer
 ---@field move_block fun(self:Layer, x:integer, y:integer, d_x:integer, d_y:integer):boolean
----@field find_path fun(self:Layer, start_x:integer, start_y:integer, goal_x:integer, goal_y:integer, blocked_layer:Layer|nil):{x:integer,y:integer}[]|nil
+---@field find_path fun(self:Layer, start_x:integer, start_y:integer, goal_x:integer, goal_y:integer, blocked_layer:Layer|nil, flags:integer|nil, ignored_ids:integer[]|nil):{x:integer,y:integer}[]|nil
 ---@field find_closest fun(self:Layer, start_x:integer, start_y:integer, target_layer:Layer, ids:integer[], blocked_layer:Layer|nil, exclude_x:integer|nil, exclude_y:integer|nil, exclude_radius:integer|nil):{x:integer,y:integer,distance:integer}|nil
 ---@field paste_block fun(self:Layer, x:integer, y:integer, id:integer):boolean
 ---@field get_input_handler fun(self:Layer, x:integer, y:integer, name:string):function|nil

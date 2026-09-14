@@ -747,26 +747,6 @@
    "-IC:/msys64/mingw64/include/SDL2",
    "-Dmain=SDL_main",
    "-c",
-   "src/./scripting/lua_render_rules.c",
-   "-o",
-   "obj/./scripting/lua_render_rules.o"
-  ],
-  "file": "src/./scripting/lua_render_rules.c"
- },
- {
-  "directory": "C:/msys64/home/tem/blockengine",
-  "arguments": [
-   "gcc",
-   "-O0",
-   "-Wall",
-   "-MMD",
-   "-Wl,--as-needed",
-   "-g",
-   "-IC:/msys64/home/tem/blockengine",
-   "-IC:/msys64/home/tem/blockengine/libs",
-   "-IC:/msys64/mingw64/include/SDL2",
-   "-Dmain=SDL_main",
-   "-c",
    "src/./scripting/lua_sound.c",
    "-o",
    "obj/./scripting/lua_sound.o"

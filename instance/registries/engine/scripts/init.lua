@@ -12,40 +12,8 @@ G_block_width_pixels = G_block_size * G_global_zoom
 --- loads and registers layer editor functions
 local _ = require("registries.engine.scripts.layer_editor")
 
-if render_rules == nil then
-    wrappers.log_error("render_rules module not found")
-    return
-end
-
-G_screen_width, G_screen_height = render_rules.get_size(g_render_rules)
-
 G_width_blocks = math.floor(2 * G_screen_width / (G_block_size * G_global_zoom))
 G_height_blocks = math.floor(2 * G_screen_height / (G_block_size * G_global_zoom))
-
--- constructs a layer slice that dictates how the layer is rendered
-local function layer_slice(x, y, w, h, z, lay_ref)
-    if lay_ref == nil then
-        print("no ref layer to generate a slice")
-        os.exit(0)
-    end
-
-    return {
-        x = x,
-        y = y,
-        old_x = x,
-        old_y = y,
-        timestamp_old = G_sdl_tick or sdl.get_ticks(),
-        h = h,
-        w = w,
-        zoom = z,
-        ref = lay_ref,
-        flags = 0
-    }
-end
-
-local function make_basic_slice(lay_ref)
-    return layer_slice(0, 0, G_screen_width, G_screen_height, G_global_zoom, lay_ref)
-end
 
 G_layers_amount = 0
 
@@ -55,7 +23,6 @@ local function layer_append_render(table_dest, __name, lay_ref, __is_ui)
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
-        slice = make_basic_slice(lay_ref)
     }
     G_layers_amount = G_layers_amount + 1
 end
@@ -78,34 +45,9 @@ local function layer_append_existing(table_dest, room_to_lookup, __name, __is_ui
         name = __name,
         layer = lay_ref,
         is_ui = __is_ui or false,
-        slice = make_basic_slice(lay_ref)
     }
 
     G_layers_amount = G_layers_amount + 1
-end
-
-local function set_slices(ref_table)
-    for k, v in pairs(ref_table) do
-        if v.slice_push_ignore ~= true then
-            render_rules.set_slice(g_render_rules, v.index, v.slice)
-        end
-    end
-end
-
-local function set_render_rule_order(ref_table)
-    local order = {}
-
-    for k, v in pairs(ref_table) do
-        if v.slice_push_ignore ~= true then
-            table.insert(order, v.index)
-        end
-    end
-
-    table.sort(order)
-
-    render_rules.set_order(g_render_rules, order)
-
-    set_slices(ref_table)
 end
 
 local function build_view(def, registry_name, loaded)
@@ -224,9 +166,9 @@ blockengine.register_handler(events.SDL_WINDOWEVENT, function(width, height)
 
     camera_utils.recalc_camera_limits()
 
-    G_view_menu = build_view(G_menu_definition, "engine", true)
-
-    set_render_rule_order(G_view_menu)
+    if G_camera ~= nil then
+        G_camera:set_viewport(width, height)
+    end
 end)
 
 did_init = false
@@ -246,6 +188,17 @@ local function world_generate()
     local items = G_view_menu.items.layer
 
     local W, H = G_width_blocks, G_height_blocks
+
+    local function can_place_rock(x, y)
+        if x <= 0 or y <= 0 or x >= W - 1 or y >= H - 1 then
+            return false
+        end
+
+        return objects:get_id(x - 1, y) == 0 and
+            objects:get_id(x + 1, y) == 0 and
+            objects:get_id(x, y - 1) == 0 and
+            objects:get_id(x, y + 1) == 0
+    end
 
     for y = 0, H - 1 do
         for x = 0, W - 1 do
@@ -287,15 +240,17 @@ local function world_generate()
             cy = cy + (cy < y2 and 1 or -1)
         end
     end
-
     local room_count = 7
+
     for i = 1, room_count do
-        local rw = math.random(5, 9)
-        local rh = math.random(4, 7)
-        local rx = math.random(2, W - rw - 2)
-        local ry = math.random(2, H - rh - 2)
-        carve_rect(rx, ry, rw, rh)
-        table.insert(rooms, { x = rx + math.floor(rw / 2), y = ry + math.floor(rh / 2) })
+        local room_width = math.random(3, 10)
+        local room_height = math.random(3, 10)
+
+        local room_x = math.random(2, W - room_width - 2)
+        local room_y = math.random(2, H - room_height - 2)
+
+        carve_rect(room_x, room_y, room_width, room_height)
+        table.insert(rooms, { x = room_x + math.floor(room_width / 2), y = room_y + math.floor(room_height / 2) })
     end
 
     carve_rect(2, 2, 12, 10) -- shop room
@@ -338,19 +293,27 @@ local function world_generate()
     local function dist(px, py)
         return math.abs(px - shop_x) + math.abs(py - shop_y)
     end
+
     for y = 0, H - 1 do
         for x = 0, W - 1 do
             if objects:get_id(x, y) == 0 then
                 local d = dist(x, y)
                 local roll = math.random()
-                local chance = 0.02 + d * 0.0015
-                if roll < chance then
+                local chance = 0.1 - d * 0.00001
+
+                if roll > chance then
+                    goto continue
+                end
+
+                if math.random() < 0.2 then
                     local price_names = { "item_nut", "item_sheet", "item_pipe", "item_gear", "item_spring",
                         "item_camera", "item_engine", "item_cpu" }
+
                     local pick = 1
-                    if d > 30 then
+
+                    if d > 64 then
                         pick = math.random(5, 8)
-                    elseif d > 18 then
+                    elseif d > 32 then
                         pick = math.random(3, 6)
                     elseif d > 8 then
                         pick = math.random(1, 4)
@@ -358,30 +321,37 @@ local function world_generate()
                         pick = math.random(1, 3)
                     end
                     game_data.place_item(items, x, y, wrappers.find_block(G_engine_table, price_names[pick]).id)
-                elseif roll < chance + 0.02 then
-                    if objects:get_id(x, y) == cave_id then
+                else
+                    if can_place_rock(x, y) then
                         objects:paste_block(x, y, rocks_id)
+                    end
+                end
+            end
+            ::continue::
+        end
+    end
+
+    -- scatter scrap piles in further rooms
+
+    local scrap_radius = 2
+
+    for i = 1, #rooms do
+        local room = rooms[i]
+        if dist(room.x, room.y) > 64 then
+            local rx = room.x
+            local ry = room.y
+
+            floor:paste_block(rx, ry, pile_id)
+
+            for j = -scrap_radius, scrap_radius do
+                for i2 = -scrap_radius, scrap_radius do
+                    if (i2 ~= 0 or j ~= 0) and math.random() < 0.6 then
+                        floor:paste_block(rx + i2, ry + j, pile_id)
                     end
                 end
             end
         end
     end
-
-    -- scatter a few scrap piles for the drill
-    for i = 1, 4 do
-        local rx = math.random(6, W - 3)
-        local ry = math.random(6, H - 3)
-        floor:paste_block(rx, ry, pile_id)
-        for j = -1, 1 do
-            for i2 = -1, 1 do
-                if (i2 ~= 0 or j ~= 0) and math.random() < 0.6 then
-                    floor:paste_block(rx + i2, ry + j, pile_id)
-                end
-            end
-        end
-    end
-
-    -- objects:build_ground_physics()
 end
 
 -- gets all the data
@@ -416,7 +386,7 @@ blockengine.register_handler(events.ENGINE_INIT_GLOBALS, function()
     end
 
     wrappers.try(function()
-        set_render_rule_order(G_view_menu)
+
     end, function(e)
         wrappers.log_error(e)
         os.exit()

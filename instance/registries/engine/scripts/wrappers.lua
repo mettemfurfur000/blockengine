@@ -15,7 +15,7 @@ function M.try(f, catch_f)
     end
 end
 
-function M.world_fill(x, y, w, h, id)
+function M.text_fill(x, y, w, h, id)
     id = id or 0
 
     for j = y, h do
@@ -25,7 +25,7 @@ function M.world_fill(x, y, w, h, id)
     end
 end
 
-function M.world_print(x, y, width, msg)
+function M.text_print(x, y, width, msg)
     if type(msg) ~= "string" then
         msg = tostring(msg)
     end

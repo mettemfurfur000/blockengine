@@ -3,11 +3,54 @@ local game_data = require("registries.engine.scripts.game_data")
 local current_block = scripting_current_block_id
 
 local MAX_FUEL = 60
-local MOVES_PER_FUEL = 10
+local MOVES_PER_FUEL = 25
 local FUEL_DRAIN_INTERVAL_MS = 10000
 local RETURN_RESERVE = 2
 local DROP_EXCLUSION_RADIUS = 2
 local MOVE_INTERVAL_MS = scripting_current_block_interp_takes
+local PATH_IGNORE_SOURCE = 1
+local reservations = {}
+local next_owner_id = 1
+
+local function reservation_key(x, y)
+    return x .. ":" .. y
+end
+
+local function owner_id(vars)
+    local id = vars:get_i16("a") or 0
+    if id == 0 then
+        id = next_owner_id
+        next_owner_id = next_owner_id + 1
+        vars:set_i16("a", id)
+    end
+    return id
+end
+
+local function release_reservation(vars)
+    local id = owner_id(vars)
+    for key, owner in pairs(reservations) do
+        if owner == id then
+            reservations[key] = nil
+        end
+    end
+end
+
+local function reserve_target(vars, x, y)
+    local key = reservation_key(x, y)
+    local id = owner_id(vars)
+    local owner = reservations[key]
+    if owner ~= nil and owner ~= id then
+        return false
+    end
+
+    release_reservation(vars)
+    reservations[key] = id
+    return true
+end
+
+local function owns_reservation(vars, x, y)
+    return reservations[reservation_key(x, y)] == owner_id(vars)
+end
 
 local function free_items_cell(x, y)
     for dy = -1, 1 do
@@ -25,19 +68,30 @@ local function is_own_drop(vars, x, y)
 end
 
 local function path_between(x, y, target_x, target_y)
-    return G_view_menu.objects.layer:find_path(x, y, target_x, target_y, G_view_menu.objects.layer)
+    return G_view_menu.objects.layer:find_path(
+        x, y, target_x, target_y, G_view_menu.objects.layer, PATH_IGNORE_SOURCE)
 end
 
 local function move_along_path(layer, vars, x, y, target_x, target_y, fuel)
     local path = path_between(x, y, target_x, target_y)
     if not path or #path < 2 then
+        print("Failed to find path for collector bot from (" ..
+        x .. ", " .. y .. ") to (" .. target_x .. ", " .. target_y .. ")")
         return false
     end
 
     local next_node = path[2]
     local move_x = next_node.x - x
     local move_y = next_node.y - y
+
+    -- check if your next block is non-empty, if so, don't move and wait for the next tick
+    if layer:get_id(x + move_x, y + move_y) ~= 0 then
+        return false
+    end
+
     if not layer:move_block(x, y, move_x, move_y) then
+        print("Failed to move collector bot from (" ..
+        x .. ", " .. y .. ") to (" .. (x + move_x) .. ", " .. (y + move_y) .. ")")
         return false
     end
 
@@ -68,7 +122,15 @@ local function find_nearest_scrap(x, y, vars)
         x, y, G_view_menu.items.layer, game_data.scrap_ids(), G_view_menu.objects.layer,
         home_x, home_y, DROP_EXCLUSION_RADIUS)
     if target and not is_own_drop(vars, target.x, target.y) then
+        local key = reservation_key(target.x, target.y)
+        if reservations[key] ~= nil and not owns_reservation(vars, target.x, target.y) then
+            return nil
+        end
+
         target.path = path_between(x, y, target.x, target.y)
+        if not target.path or not reserve_target(vars, target.x, target.y) then
+            return nil
+        end
         target.id = G_view_menu.items.layer:get_id(target.x, target.y)
         return target
     end
@@ -122,6 +184,9 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         end
 
         if fuel <= 0 then
+            if carrying == 0 then
+                release_reservation(vars)
+            end
             vars:set_u8("v", 0)
             vars:set_u8("t", 0)
             return
@@ -144,6 +209,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                     vars:set_u16("q", 0)
                     vars:set_u8("c", 0)
                 end
+                release_reservation(vars)
                 vars:set_u8("v", 0)
                 vars:set_u8("t", 0)
                 return
@@ -161,7 +227,12 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             local return_distance = return_path and (#return_path - 1) or nil
             local required_fuel = return_distance and (#target.path - 1) + return_distance + RETURN_RESERVE or nil
 
+            required_fuel = required_fuel and math.ceil(required_fuel / MOVES_PER_FUEL) or nil
+
             if not required_fuel or required_fuel > MAX_FUEL then
+                print("Cannot collect scrap at " ..
+                target.x ..
+                ", " .. target.y .. ": required fuel is " .. (required_fuel or "unknown") .. ", max fuel is " .. MAX_FUEL)
                 return
             end
 
@@ -193,13 +264,17 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             end
 
             local px, py = free_items_cell(x, y)
-            if px then
-                local item_id = G_view_menu.items.layer:get_id(target.x, target.y)
+            local item_id = G_view_menu.items.layer:get_id(target.x, target.y)
+            if px and item_id ~= 0 and game_data.is_scrap(item_id) and
+                owns_reservation(vars, target.x, target.y) then
                 G_view_menu.items.layer:paste_block(target.x, target.y, 0)
                 vars:set_u16("q", item_id)
                 vars:set_u8("c", 1)
                 vars:set_u8("v", 1 + G_tick % 2)
                 vars:set_u8("t", math.random(0, 3))
+                release_reservation(vars)
+            else
+                release_reservation(vars)
             end
             return
         end

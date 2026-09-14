@@ -72,7 +72,7 @@ end
 
 local function clear_hud_row(y, w)
     w = w or 30
-    wrappers.world_fill(G_ui_width, y, G_ui_width + w, 0)
+    wrappers.text_fill(G_ui_width, y, G_ui_width + w, 0)
 end
 
 local held_icon_cells = {}
@@ -121,20 +121,20 @@ local function refresh_hud(vars, x, y)
     local items = game_data.stack_items(vars:get_string("I"))
 
     clear_hud_row(0)
-    wrappers.world_print(G_ui_width, 0, 30, "ENERGY " .. energy .. "/" .. max_energy .. "  CREDITS " .. credits)
+    wrappers.text_print(G_ui_width, 0, 30, "ENERGY " .. energy .. "/" .. max_energy .. "  CREDITS " .. credits)
 
     clear_hud_row(1)
     if #items == 0 then
-        wrappers.world_print(G_ui_width, 1, 30, "HOLD: nothing  [E grab/drop, click use]")
+        wrappers.text_print(G_ui_width, 1, 30, "HOLD: nothing  [E grab/drop, click use]")
     else
         local name = game_data.name_of_id(items[1]) or ("#" .. items[1])
-        wrappers.world_print(G_ui_width, 1, 30,
+        wrappers.text_print(G_ui_width, 1, 30,
             "HOLD: " .. name .. " (" .. #items .. "/" .. game_data.stack_capacity(vars) .. ")  [E grab/drop, click use]")
     end
 
     clear_hud_row(2)
     if energy <= 0 then
-        wrappers.world_print(G_ui_width, 2, 30, "*** GAME OVER ***")
+        wrappers.text_print(G_ui_width, 2, 30, "*** GAME OVER ***")
     end
 
     update_held_icon(vars)

@@ -9,18 +9,22 @@ local current_block = scripting_current_block_id
 
 G_shop_open = false
 
-local SHOP_LEFT = 35
-local SHOP_TOP = 4
-local SHOP_COLS = 14
-local SHOP_ROWS = 6
+-- shop position, in blocks, relative to the top left corner of the screen
+
+local SHOP_LEFT = 32
+local SHOP_TOP = 7
+local SHOP_COLS = 16
+local SHOP_ROWS = 7
+
+local SHOP_ACTIVE_DISTANCE = 4
 
 local menu_items = {
-    { name = "fuel cell", price = 20, give = "fuel_cell" },
-    { name = "energy upgrade", price = 40, give = "energy_upgrade", dynamic = true },
-    { name = "stack upgrade", price = 60, give = "stack_upgrade" },
+    { name = "fuel cell",       price = 20,  give = "fuel_cell" },
+    { name = "energy upgrade",  price = 40,  give = "energy_upgrade", dynamic = true },
+    { name = "stack upgrade",   price = 60,  give = "stack_upgrade" },
     { name = "scrap collector", price = 100, give = "collector_bot" },
-    { name = "scrap drill", price = 200, give = "drill" },
-    { name = "assembler", price = 400, give = "assembler" },
+    { name = "scrap drill",     price = 200, give = "drill" },
+    { name = "assembler",       price = 400, give = "assembler" },
 }
 
 local function keeper_vars(layer, x, y)
@@ -48,6 +52,17 @@ local function icon_cell(idx)
     }
 end
 
+local function is_player_near(x, y)
+    local near = false
+    if G_bot_pos then
+        local dx = G_bot_pos.x - x
+        local dy = G_bot_pos.y - y
+        near = math.abs(dx) + math.abs(dy) <= SHOP_ACTIVE_DISTANCE
+    end
+
+    return near
+end
+
 local function draw_menu(kvars)
     local pallete = G_view_menu.pallete.layer
     local text = G_view_menu.text.layer
@@ -59,21 +74,21 @@ local function draw_menu(kvars)
         end
     end
 
-    wrappers.world_print(SHOP_LEFT + 5, SHOP_TOP, 4, "SHOP")
+    wrappers.text_print(SHOP_LEFT + 5, SHOP_TOP, 4, "SHOP")
 
     for i = 1, #menu_items do
         local cell = icon_cell(i)
         local item = menu_items[i]
         local give_id = game_data.id(item.give)
         text:paste_block(cell.x, cell.y, give_id)
-        wrappers.world_print(SHOP_LEFT + 1 + ((i - 1) % 3) * 4, cell.y + 1, 4, tostring(row_price(kvars, i)))
+        wrappers.text_print(SHOP_LEFT + 1 + ((i - 1) % 3) * 4, cell.y + 1, 4, tostring(row_price(kvars, i)))
     end
 
     local credits = 0
     if G_self_bot and G_self_bot.vars then
         credits = G_self_bot.vars:get_u16("c") or 0
     end
-    wrappers.world_print(SHOP_LEFT + 1, SHOP_TOP + SHOP_ROWS - 1, 12, "credits: " .. credits)
+    wrappers.text_print(SHOP_LEFT + 1, SHOP_TOP + SHOP_ROWS - 1, 12, "credits: " .. credits)
 end
 
 local function clear_menu()
@@ -139,25 +154,27 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             draw_menu(kvars)
         end
 
-        local near = false
-        if G_bot_pos then
-            local dx = G_bot_pos.x - x
-            local dy = G_bot_pos.y - y
-            near = math.abs(dx) + math.abs(dy) <= 2
+        local near = is_player_near(x, y)
+
+        if not near and G_shop_open then
+            G_shop_open = false
+            clear_menu()
         end
+
         kvars:set_u8("t", near and 1 or 0)
     end
 )
 
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "click",
     function(layer, x, y, input_value)
+        if not is_player_near(x, y) then return end
+        local kvars = keeper_vars(layer, x, y)
+        if not kvars then return end
+
         G_shop_open = not G_shop_open
         if G_shop_open then
-            print("shop open")
             draw_menu(keeper_vars(layer, x, y))
-            camera_utils.set_target(vec.mult({ x = x, y = y }, G_block_size))
         else
-            print("shop closed")
             clear_menu()
         end
     end

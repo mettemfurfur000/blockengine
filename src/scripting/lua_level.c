@@ -14,12 +14,14 @@
 #include "include/scripting_var_handles.h"
 
 #include "include/config.h"
+#include "include/arena.h"
 
 #include <box2d/box2d.h>
 #include <box2d/math_functions.h>
 #include <lauxlib.h>
 #include <lua.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "include/block_entity.h"
 
@@ -342,6 +344,11 @@ static int lua_layer_move_block(lua_State *L)
 	return 1;
 }
 
+static bool lua_layer_id_in_list(lua_State *L, int index, u64 id);
+
+#define FIND_PATH_IGNORE_SOURCE 0x01
+#define FIND_PATH_IGNORE_TARGET 0x02
+
 static int lua_layer_find_path(lua_State *L)
 {
 	LUA_CHECK_USER_OBJECT(L, Layer, wrapper, 1);
@@ -357,6 +364,11 @@ static int lua_layer_find_path(lua_State *L)
 		LUA_CHECK_USER_OBJECT(L, Layer, blocked_wrapper, 6);
 		blocked_layer = blocked_wrapper->l;
 	}
+	const u32 path_flags = (u32)luaL_optinteger(L, 7, 0);
+	const int ignored_ids_index = 8;
+	const bool has_ignored_ids = !lua_isnoneornil(L, ignored_ids_index);
+	if (has_ignored_ids)
+		luaL_checktype(L, ignored_ids_index, LUA_TTABLE);
 
 	const u32 width = blocked_layer->width;
 	const u32 height = blocked_layer->height;
@@ -371,17 +383,43 @@ static int lua_layer_find_path(lua_State *L)
 
 	const u32 start = (u32)start_y * width + (u32)start_x;
 	const u32 goal = (u32)goal_y * width + (u32)goal_x;
-	u8 *visited = calloc(node_count, sizeof(u8));
-	u32 *queue = malloc(node_count * sizeof(u32));
-	i32 *parent = malloc(node_count * sizeof(i32));
+	u64 start_id = 0;
+	u64 goal_id = 0;
+	if (block_get_id(blocked_layer, (u16)start_x, (u16)start_y, &start_id) != SUCCESS ||
+		block_get_id(blocked_layer, (u16)goal_x, (u16)goal_y, &goal_id) != SUCCESS)
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+	if (start_id != 0 && !(path_flags & FIND_PATH_IGNORE_SOURCE) &&
+		(!has_ignored_ids || !lua_layer_id_in_list(L, ignored_ids_index, start_id)))
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+	if (goal_id != 0 && !(path_flags & FIND_PATH_IGNORE_TARGET) &&
+		(!has_ignored_ids || !lua_layer_id_in_list(L, ignored_ids_index, goal_id)))
+	{
+		lua_pushnil(L);
+		return 1;
+	}
+	static arena *path_arena = NULL;
+	if (path_arena == NULL)
+		path_arena = arena_create(8192);
+	if (path_arena == NULL)
+		return luaL_error(L, "find_path: failed to create search arena");
+	arena_free(path_arena);
+
+	u8 *visited = arena_alloc(path_arena, node_count * sizeof(u8));
+	u32 *queue = arena_alloc(path_arena, node_count * sizeof(u32));
+	i32 *parent = arena_alloc(path_arena, node_count * sizeof(i32));
 	if (!visited || !queue || !parent)
 	{
-		free(visited);
-		free(queue);
-		free(parent);
+		arena_free(path_arena);
 		return luaL_error(L, "find_path: failed to allocate search buffers");
 	}
 
+	memset(visited, 0, node_count * sizeof(u8));
 	for (u32 i = 0; i < node_count; i++)
 		parent[i] = -1;
 
@@ -409,9 +447,12 @@ static int lua_layer_find_path(lua_State *L)
 				continue;
 
 			u64 block_id = 0;
-			if (next != goal && block_get_id(blocked_layer, (u16)next_x, (u16)next_y, &block_id) != SUCCESS)
+			if (block_get_id(blocked_layer, (u16)next_x, (u16)next_y, &block_id) != SUCCESS)
 				continue;
-			if (next != goal && block_id != 0)
+			const bool ignore_endpoint = (next == start && (path_flags & FIND_PATH_IGNORE_SOURCE)) ||
+				(next == goal && (path_flags & FIND_PATH_IGNORE_TARGET));
+			if (block_id != 0 && !ignore_endpoint &&
+				(!has_ignored_ids || !lua_layer_id_in_list(L, ignored_ids_index, block_id)))
 				continue;
 
 			visited[next] = 1;
@@ -422,9 +463,7 @@ static int lua_layer_find_path(lua_State *L)
 
 	if (!visited[goal])
 	{
-		free(visited);
-		free(queue);
-		free(parent);
+		arena_free(path_arena);
 		lua_pushnil(L);
 		return 1;
 	}
@@ -446,9 +485,7 @@ static int lua_layer_find_path(lua_State *L)
 		node = (node == start) ? start : (u32)parent[node];
 	}
 
-	free(visited);
-	free(queue);
-	free(parent);
+	arena_free(path_arena);
 	return 1;
 }
 

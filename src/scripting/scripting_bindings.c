@@ -3,7 +3,6 @@
 #include "include/block_registry.h"
 #include "include/level.h"
 #include "include/scripting.h"
-#include "include/scripting/render_rules.h"
 #include "include/scripting_var_handles.h"
 
 #include "include/scripting/entity.h"
@@ -98,7 +97,5 @@ void lua_register_engine_objects(lua_State *L)
 
 	lua_logging_register(g_L);
 	lua_level_editing_lib_register(g_L);
-	lua_register_render_rules(g_L);
-
 	lua_render_room_register(L);
 }

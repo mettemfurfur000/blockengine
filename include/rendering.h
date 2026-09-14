@@ -25,15 +25,6 @@ typedef struct layer_slice
 
 typedef vec_t(layer_slice) layer_slices_t;
 
-typedef struct client_render_rules
-{
-	u16 screen_width, screen_height;
-	u64 cur_frame;
-
-	layer_slices_t slices;
-	vec_int_t draw_order;
-} client_render_rules;
-
 u8 render_layer(layer_slice slice);
 
 #endif

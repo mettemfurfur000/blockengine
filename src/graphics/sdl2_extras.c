@@ -2,21 +2,12 @@
 #include "include/block_renderer_v2.h"
 #include "include/sdl2_basics.h"
 
-void set_fullscreen(client_render_rules *rules, bool set_full)
+void set_fullscreen(bool set_full)
 {
 	SDL_SetWindowFullscreen(g_window, set_full ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 	SDL_GetWindowSize(g_window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
 
 	printf("Got window size %d x %d for fullscreen\n", SCREEN_WIDTH, SCREEN_HEIGHT);
-
-	rules->screen_height = SCREEN_HEIGHT;
-	rules->screen_width = SCREEN_WIDTH;
-
-	for (u32 i = 0; i < rules->slices.length; i++)
-	{
-		rules->slices.data[i].h = SCREEN_HEIGHT;
-		rules->slices.data[i].w = SCREEN_WIDTH;
-	}
 
 	renderer_v2_resize(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
