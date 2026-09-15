@@ -36,5 +36,6 @@ void spatial_grid_get_visible(spatial_grid *grid, i32 start_x, i32 start_y, i32 
 							  void (*callback)(void *ctx, u16 x, u16 y, u8 *cached_frame));
 
 void spatial_grid_set_cached_frame(spatial_grid *grid, u16 x, u16 y, u8 frame);
+u8 spatial_grid_read_cached_frame(spatial_grid *grid, u16 x, u16 y);
 
 #endif

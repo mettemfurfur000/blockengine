@@ -115,6 +115,7 @@ u8 block_set_id(layer *l, u16 x, u16 y, u64 id)
 	// TODO: handle the block update and send
 
 	spatial_grid_update(&l->spatial, x, y, old_id, id);
+	l->render_version++;
 	return SUCCESS;
 }
 
@@ -424,6 +425,8 @@ u8 free_layer(layer *l)
 	assert(l->blocks);
 
 	spatial_grid_destroy(&l->spatial);
+
+	layer_free_render_cache(l);
 
 	if (l->var_pool.table)
 	{

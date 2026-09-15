@@ -14,7 +14,7 @@
 #include <box2d/box2d.h>
 #include <box2d/math_functions.h>
 
-#define BLOCKS_EXTRA 1
+#define REGION_MARGIN 1
 
 const u32 funny_primes[] = {1155501, 6796373, 7883621, 4853063, 8858313, 6307353, 1532671, 6233633, 873473, 685613};
 const u8 funny_shifts[] = {9, 7, 5, 3, 1, 2, 4, 6, 8, 10};
@@ -130,20 +130,6 @@ static u8 autotile_select_shared_47(const layer *l, const u8 select_table[], con
 
 typedef struct
 {
-	layer_slice slice;
-	block_registry *b_reg;
-	layer *l;
-	i32 local_block_width;
-	i32 block_x_offset;
-	i32 block_y_offset;
-	i32 start_block_x;
-	i32 start_block_y;
-	u32 ms_since_start;
-	f32 seconds_since_start;
-} render_context;
-
-typedef struct
-{
 	u8 frame;
 	u8 type;
 	u8 flip;
@@ -207,242 +193,532 @@ static void compute_render_props(const block_resources *br, blob *var, u32 ms_si
 		out->frame = br->override_frame;
 }
 
-static void render_block_callback(void *ctx, u16 x, u16 y, u8 *cached_frame)
+//
+// Per-layer world-space slot cache.
+//
+// Each layer keeps a dense slot array covering the visible block region plus a
+// margin. Slots are moved/exposed when the camera slides, rebuilt on block
+// writes (layer render_version), and revalidated per frame only when the
+// resource can change appearance through var controllers.
+//
+
+typedef enum
 {
-	render_context *rc = (render_context *)ctx;
-
-	i32 i = (i32)x;
-	i32 j = (i32)y;
-
-	layer *l = rc->l;
-	const u8 bytes_per_block = l->total_bytes_per_block;
-	const i32 local_block_width = rc->local_block_width;
-
-	i32 dest_x =
-		-rc->block_x_offset - local_block_width * (BLOCKS_EXTRA + 1) + (i - rc->start_block_x + 1) * local_block_width;
-	i32 dest_y =
-		-rc->block_y_offset - local_block_width * (BLOCKS_EXTRA + 1) + (j - rc->start_block_y + 1) * local_block_width;
-
-	u64 id = *(l->blocks + ((j * l->width) + i) * bytes_per_block);
-
-	if (id == 0)
-		return;
-
-	block_resources br = rc->b_reg->resources.data[id];
-
-	blob *var = NULL;
-	block_get_vars(l, i, j, &var);
-
-	computed_render_props props;
-	compute_render_props(&br, var, rc->ms_since_start, rc->slice.timestamp_old, 0, &props);
-
-	if (br.autotile_type)
-	{
-		if (*cached_frame != AUTOTILE_CACHE_INVALID)
-			props.frame = *cached_frame;
-		else
-			switch (br.autotile_type)
-			{
-			case 1:
-				props.frame = autotile_select_shared_9(l, autotile_table_type_1, id, i, j);
-				break;
-			case 2:
-				props.frame = autotile_select_shared_9(l, autotile_table_type_2, id, i, j);
-				break;
-			case 3:
-				props.frame = autotile_select_shared_47(l, autotile_table_type_3, id, i, j);
-				break;
-			}
-		*cached_frame = props.frame;
-	}
-
-	if (FLAG_GET(br.flags, RESOURCE_FLAG_RANDOM_POS))
-	{
-		props.frame = tile_rand(i, j) % br.info.total_frames;
-	}
-
-	if (props.frame || props.type || props.flip || props.rotation)
-	{
-		u8 actual_frame = props.frame % br.info.frames;
-		u8 actual_type = FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(props.frame / br.info.frames)
-																	   : (props.type % br.info.types);
-		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y,
-								 br.info.atlas_offset_x + actual_frame, br.info.atlas_offset_y + actual_type,
-								 props.flip, rc->slice.zoom * 1.0f, rc->slice.zoom * 1.0f,
-								 (f32)props.rotation * (M_PI / 180.0f));
-	}
-	else
-	{
-		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y, br.info.atlas_offset_x,
-								 br.info.atlas_offset_y, 0, rc->slice.zoom * 1.0f, rc->slice.zoom * 1.0f, 0);
-	}
-}
-
-static i32 block_x_offset;
-static i32 block_y_offset;
-static u32 ms_since_start;
-static f32 seconds_since_start;
-static f32 slice_clamp_pos;
+	RENDER_SLOT_VOID = 0,
+	RENDER_SLOT_STATIC,
+	RENDER_SLOT_VAR,
+	RENDER_SLOT_TIME,
+} render_slot_kind;
 
 typedef struct
 {
-	block_registry *b_reg;
-	layer_slice slice;
-	i32 local_block_width;
-} render_user_data;
+	u8 kind;
+	u8 needs_rebuild;
+	u8 needs_upload;
+	u8 valid;
+} render_slot_meta;
 
-u32 block_entity_iterate_fn_render(handle32 h, void *ptr, void *user_data)
+typedef struct layer_render_cache
+{
+	u32 version_seen;
+	f32 zoom_seen;
+	i32 region_bx0, region_by0;
+	u32 region_bw, region_bh;
+
+	instance_data *slot_insts;
+	render_slot_meta *slot_meta;
+	instance_data *inst_scratch;
+	render_slot_meta *meta_scratch;
+	u32 slot_capacity;
+
+	instance_data *entity_data;
+	u32 entity_capacity;
+	u32 entity_count;
+
+	layer_batch batch;
+} layer_render_cache;
+
+static u64 layer_read_id(const layer *l, i32 bx, i32 by)
+{
+	u8 *ptr = BLOCK_ID_PTR(l, bx, by);
+	u64 id = 0;
+	switch (l->block_size)
+	{
+	case 1:
+		id = *(u8 *)ptr;
+		break;
+	case 2:
+		id = *(u16 *)ptr;
+		break;
+	case 4:
+		id = *(u32 *)ptr;
+		break;
+	case 8:
+		id = *(u64 *)ptr;
+		break;
+	default:
+		assert(0 && "unsupported block size");
+		break;
+	}
+	return id;
+}
+
+static u8 render_slot_classify(const block_resources *br)
+{
+	if (br->frames_per_second > 1)
+		return RENDER_SLOT_TIME;
+	if (br->interp_takes != 0 && br->interp_timestamp_controller != 0)
+		return RENDER_SLOT_TIME;
+	if (br->anim_controller != 0 || br->type_controller != 0 || br->flip_controller != 0 ||
+		br->rotation_controller != 0 || br->offset_x_controller != 0 || br->offset_y_controller != 0)
+		return RENDER_SLOT_VAR;
+	return RENDER_SLOT_STATIC;
+}
+
+static void slot_make_void(layer_render_cache *c, u32 n)
+{
+	instance_data hole = {0};
+	render_slot_meta *m = &c->slot_meta[n];
+	if (m->kind != RENDER_SLOT_VOID || m->valid || m->needs_upload ||
+		memcmp(&c->slot_insts[n], &hole, sizeof(instance_data)) != 0)
+	{
+		c->slot_insts[n] = hole;
+		m->kind = RENDER_SLOT_VOID;
+		m->valid = 0;
+		m->needs_upload = 1;
+	}
+	m->needs_rebuild = 0;
+}
+
+static bool compute_slot_instance(instance_data *out, const layer *l, const block_resources *br, i32 bx, i32 by,
+								  u32 ms, u32 default_timestamp, f32 view_zoom)
+{
+	blob *var = NULL;
+	block_get_vars(l, (u16)bx, (u16)by, &var);
+
+	computed_render_props props;
+	compute_render_props(br, var, ms, default_timestamp, 0, &props);
+
+	if (br->autotile_type)
+	{
+		u8 frame = spatial_grid_read_cached_frame((spatial_grid *)&l->spatial, (u16)bx, (u16)by);
+		if (frame == AUTOTILE_CACHE_INVALID)
+		{
+			u64 id = layer_read_id(l, bx, by);
+			switch (br->autotile_type)
+			{
+			case 1:
+				props.frame = autotile_select_shared_9(l, autotile_table_type_1, id, bx, by);
+				break;
+			case 2:
+				props.frame = autotile_select_shared_9(l, autotile_table_type_2, id, bx, by);
+				break;
+			case 3:
+				props.frame = autotile_select_shared_47(l, autotile_table_type_3, id, bx, by);
+				break;
+			default:
+				break;
+			}
+			spatial_grid_set_cached_frame((spatial_grid *)&l->spatial, (u16)bx, (u16)by, props.frame);
+		}
+		else
+		{
+			props.frame = frame;
+		}
+	}
+
+	if (FLAG_GET(br->flags, RESOURCE_FLAG_RANDOM_POS))
+		props.frame = tile_rand(bx, by) % br->info.total_frames;
+
+	instance_data inst = {0};
+	inst.x = (f32)bx * g_block_width + (f32)props.offset_x / view_zoom;
+	inst.y = (f32)by * g_block_width + (f32)props.offset_y / view_zoom;
+	inst.scale_x = 1.0f;
+	inst.scale_y = 1.0f;
+	inst.rotation = (f32)props.rotation * (M_PI / 180.0f);
+	inst.frame = br->info.atlas_offset_x + (u8)(props.frame % br->info.frames);
+	inst.type = FLAG_GET(br->flags, RESOURCE_FLAG_IGNORE_TYPE)
+					? (u8)(props.frame / br->info.frames)
+					: (u8)(props.type % br->info.types);
+	inst.type += br->info.atlas_offset_y;
+	inst.flags = props.flip;
+	inst.padding = 0;
+
+	*out = inst;
+	return true;
+}
+
+static layer_render_cache *layer_get_render_cache(layer *l)
+{
+	layer_render_cache *c = (layer_render_cache *)l->render_cache;
+	if (!c)
+	{
+		c = (layer_render_cache *)calloc(1, sizeof(layer_render_cache));
+		l->render_cache = c;
+	}
+	return c;
+}
+
+void layer_free_render_cache(layer *l)
+{
+	if (!l)
+		return;
+
+	layer_render_cache *c = (layer_render_cache *)l->render_cache;
+	if (!c)
+		return;
+
+	if (renderer_v2.initialized)
+	{
+		if (c->batch.vao)
+			glDeleteVertexArrays(1, &c->batch.vao);
+		if (c->batch.instance_vbo)
+			glDeleteBuffers(1, &c->batch.instance_vbo);
+	}
+	SAFE_FREE(c->slot_insts);
+	SAFE_FREE(c->slot_meta);
+	SAFE_FREE(c->inst_scratch);
+	SAFE_FREE(c->meta_scratch);
+	SAFE_FREE(c->entity_data);
+	SAFE_FREE(c);
+	l->render_cache = NULL;
+}
+
+static void cache_ensure_region(layer_render_cache *c, u32 bw, u32 bh)
+{
+	u32 need = bw * bh;
+	if (need <= c->slot_capacity)
+		return;
+
+	u32 ncap = c->slot_capacity ? c->slot_capacity : 256;
+	while (ncap < need)
+		ncap *= 2;
+
+	instance_data *ni = (instance_data *)realloc(c->slot_insts, ncap * sizeof(instance_data));
+	render_slot_meta *nm = (render_slot_meta *)realloc(c->slot_meta, ncap * sizeof(render_slot_meta));
+	instance_data *nis = (instance_data *)realloc(c->inst_scratch, ncap * sizeof(instance_data));
+	render_slot_meta *nms = (render_slot_meta *)realloc(c->meta_scratch, ncap * sizeof(render_slot_meta));
+	if (!ni || !nm || !nis || !nms)
+	{
+		LOG_ERROR("failed to grow layer render cache to %u slots", ncap);
+		SAFE_FREE(ni);
+		SAFE_FREE(nm);
+		SAFE_FREE(nis);
+		SAFE_FREE(nms);
+		return;
+	}
+	memset(ni + c->slot_capacity, 0, (ncap - c->slot_capacity) * sizeof(instance_data));
+	memset(nm + c->slot_capacity, 0, (ncap - c->slot_capacity) * sizeof(render_slot_meta));
+	memset(nis + c->slot_capacity, 0, (ncap - c->slot_capacity) * sizeof(instance_data));
+	memset(nms + c->slot_capacity, 0, (ncap - c->slot_capacity) * sizeof(render_slot_meta));
+	c->slot_insts = ni;
+	c->slot_meta = nm;
+	c->inst_scratch = nis;
+	c->meta_scratch = nms;
+	c->slot_capacity = ncap;
+}
+
+static void cache_prepare_region(layer_render_cache *c, layer *l, f32 cam_x, f32 cam_y, f32 view_zoom, f32 view_w,
+								 f32 view_h)
+{
+	f32 world_scale = view_zoom * g_block_width;
+	i32 bx0 = (i32)floorf(cam_x / world_scale) - REGION_MARGIN;
+	i32 by0 = (i32)floorf(cam_y / world_scale) - REGION_MARGIN;
+	u32 bw = (u32)ceilf(view_w / world_scale) + 2 * REGION_MARGIN;
+	u32 bh = (u32)ceilf(view_h / world_scale) + 2 * REGION_MARGIN;
+
+	cache_ensure_region(c, bw, bh);
+
+	bool geometry_changed = (c->region_bw != bw || c->region_bh != bh || c->zoom_seen != view_zoom);
+
+	if (geometry_changed)
+	{
+		u32 total = bw * bh;
+		memset(c->slot_insts, 0, total * sizeof(instance_data));
+		memset(c->slot_meta, 0, total * sizeof(render_slot_meta));
+		memset(c->inst_scratch, 0, total * sizeof(instance_data));
+		memset(c->meta_scratch, 0, total * sizeof(render_slot_meta));
+		c->region_bx0 = bx0;
+		c->region_by0 = by0;
+		c->region_bw = bw;
+		c->region_bh = bh;
+		c->zoom_seen = view_zoom;
+		c->version_seen = l->render_version;
+		for (u32 n = 0; n < total; n++)
+		{
+			c->slot_meta[n].needs_rebuild = 1;
+			c->slot_meta[n].needs_upload = 1;
+		}
+		return;
+	}
+
+	bool rebuild_all = (c->version_seen != l->render_version);
+	c->version_seen = l->render_version;
+
+	if (bx0 == c->region_bx0 && by0 == c->region_by0)
+	{
+		if (rebuild_all)
+		{
+			for (u32 n = 0; n < bw * bh; n++)
+				c->slot_meta[n].needs_rebuild = 1;
+		}
+		return;
+	}
+
+	i32 obx0 = c->region_bx0;
+	i32 oby0 = c->region_by0;
+
+	for (u32 sy = 0; sy < bh; sy++)
+	{
+		for (u32 sx = 0; sx < bw; sx++)
+		{
+			i32 bx = bx0 + (i32)sx;
+			i32 by = by0 + (i32)sy;
+			u32 n = sy * bw + sx;
+
+			if (!rebuild_all && bx >= obx0 && bx < obx0 + (i32)bw && by >= oby0 && by < oby0 + (i32)bh)
+			{
+				u32 o = (u32)(by - oby0) * bw + (u32)(bx - obx0);
+				c->inst_scratch[n] = c->slot_insts[o];
+				c->meta_scratch[n] = c->slot_meta[o];
+				c->meta_scratch[n].needs_upload = 1;
+			}
+			else
+			{
+				memset(&c->inst_scratch[n], 0, sizeof(instance_data));
+				memset(&c->meta_scratch[n], 0, sizeof(render_slot_meta));
+				c->meta_scratch[n].needs_rebuild = 1;
+				c->meta_scratch[n].needs_upload = 1;
+			}
+		}
+	}
+
+	instance_data *iswap = c->slot_insts;
+	c->slot_insts = c->inst_scratch;
+	c->inst_scratch = iswap;
+
+	render_slot_meta *mswap = c->slot_meta;
+	c->slot_meta = c->meta_scratch;
+	c->meta_scratch = mswap;
+
+	c->region_bx0 = bx0;
+	c->region_by0 = by0;
+}
+
+static void cache_fill(layer_render_cache *c, layer *l, block_registry *b_reg, u32 ms, u32 default_timestamp,
+					   f32 view_zoom)
+{
+	const u32 bw = c->region_bw, bh = c->region_bh;
+	block_resources_t *res = &b_reg->resources;
+
+	for (u32 sy = 0; sy < bh; sy++)
+	{
+		for (u32 sx = 0; sx < bw; sx++)
+		{
+			u32 n = sy * bw + sx;
+			render_slot_meta *m = &c->slot_meta[n];
+
+			if (!m->needs_rebuild && m->kind == RENDER_SLOT_STATIC)
+				continue;
+
+			i32 bx = c->region_bx0 + (i32)sx;
+			i32 by = c->region_by0 + (i32)sy;
+
+			if (bx < 0 || by < 0 || bx >= (i32)l->width || by >= (i32)l->height)
+			{
+				slot_make_void(c, n);
+				continue;
+			}
+
+			u64 id = layer_read_id(l, bx, by);
+			if (id == 0)
+			{
+				slot_make_void(c, n);
+				continue;
+			}
+
+			block_resources *br = &res->data[id];
+			u8 kind = render_slot_classify(br);
+
+			if (kind == RENDER_SLOT_STATIC && m->kind == RENDER_SLOT_STATIC && !m->needs_rebuild)
+				continue;
+
+			instance_data inst;
+			compute_slot_instance(&inst, l, br, bx, by, ms, default_timestamp, view_zoom);
+
+			if (memcmp(&c->slot_insts[n], &inst, sizeof(instance_data)) != 0)
+				m->needs_upload = 1;
+			c->slot_insts[n] = inst;
+			m->kind = kind;
+			m->valid = 1;
+			m->needs_rebuild = 0;
+		}
+	}
+}
+
+typedef struct
+{
+	layer_render_cache *cache;
+	block_registry *b_reg;
+	u32 ms;
+	f32 zoom;
+	f32 cull_x0, cull_y0, cull_x1, cull_y1;
+} render_entity_ctx;
+
+static u32 render_entity_cb(handle32 h, void *ptr, void *user_data)
 {
 	(void)h;
+	render_entity_ctx *rc = (render_entity_ctx *)user_data;
 	block_entity *e = (block_entity *)ptr;
-	assert(e && e->block_id);
-
-	render_user_data *udata = ((render_user_data *)user_data);
-
-	block_registry *b_reg = udata->b_reg;
-	layer_slice slice = udata->slice;
-
-	block_resources br = b_reg->resources.data[e->block_id];
-
-	slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - e->timestamp_old) / (1000.0f / TPS)));
-
+	if (!e || !e->block_id)
+		return SUCCESS;
 	if (!b2Body_IsValid(e->b2_body_id))
 		return SUCCESS;
+
+	f32 clamp_pos = fmax(0.0f, fmin(1.0, (rc->ms - e->timestamp_old) / (1000.0f / TPS)));
 
 	b2Vec2 e_pos = b2Body_GetPosition(e->b2_body_id);
 	f32 rotation = RAD_TO_DEG(b2Rot_GetAngle(b2Body_GetRotation(e->b2_body_id)));
 
-	f32 interp_x = lerp((f32)e->pos_old.x, (f32)e_pos.x, slice_clamp_pos);
-	f32 interp_y = lerp((f32)e->pos_old.y, (f32)e_pos.y, slice_clamp_pos);
+	f32 interp_x = lerp((f32)e->pos_old.x, (f32)e_pos.x, clamp_pos);
+	f32 interp_y = lerp((f32)e->pos_old.y, (f32)e_pos.y, clamp_pos);
 
-	LOG_DEBUG("interping between %f and %f, result %f", e->pos_old.y, e_pos.y, interp_y);
-
-	// Match the grid-block path: a world pixel W maps to screen (W * zoom - slice.x).
-	// block_x_offset holds slice.x, so scale the interpolated world position by zoom.
-	f32 dest_x = -block_x_offset + interp_x * slice.zoom - (udata->local_block_width / 2.0f);
-	f32 dest_y = -block_y_offset + interp_y * slice.zoom - (udata->local_block_width / 2.0f);
-
-	if (dest_x < -g_block_width || dest_y < -g_block_width)
+	if (interp_x < rc->cull_x0 || interp_x > rc->cull_x1 || interp_y < rc->cull_y0 || interp_y > rc->cull_y1)
 		return SUCCESS;
-	if (dest_x > slice.w + g_block_width || dest_y > slice.h + g_block_width)
-		return SUCCESS;
+
+	block_resources *br = &rc->b_reg->resources.data[e->block_id];
 
 	blob *var = NULL;
 	block_entity_get_vars(e, &var);
 
 	computed_render_props props;
-	compute_render_props(&br, var, ms_since_start, e->timestamp_old, (i16)roundf(rotation), &props);
+	compute_render_props(br, var, rc->ms, e->timestamp_old, (i16)roundf(rotation), &props);
 
-	f32 scale_x = e->scale_x * slice.zoom * 1.0f;
-	f32 scale_y = e->scale_y * slice.zoom * 1.0f;
+	f32 cx = interp_x - (e->scale_x * g_block_width) * 0.5f;
+	f32 cy = interp_y - (e->scale_y * g_block_width) * 0.5f;
 
-	if (props.frame || props.type || props.flip || props.rotation)
+	instance_data inst = {0};
+	inst.x = cx + (f32)props.offset_x / rc->zoom;
+	inst.y = cy + (f32)props.offset_y / rc->zoom;
+	inst.scale_x = e->scale_x;
+	inst.scale_y = e->scale_y;
+	inst.rotation = (f32)props.rotation * (M_PI / 180.0f);
+	inst.flags = props.flip;
+	inst.frame = br->info.atlas_offset_x + (u8)(props.frame % br->info.frames);
+	inst.type = FLAG_GET(br->flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(props.frame / br->info.frames)
+															   : (u8)(props.type % br->info.types);
+	inst.type += br->info.atlas_offset_y;
+	inst.padding = 0;
+
+	layer_render_cache *c = rc->cache;
+	if (c->entity_count >= c->entity_capacity)
 	{
-		u8 actual_frame = props.frame % br.info.frames;
-		u8 actual_type = FLAG_GET(br.flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(props.frame / br.info.frames)
-																	   : (props.type % br.info.types);
-		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y,
-								 br.info.atlas_offset_x + actual_frame, br.info.atlas_offset_y + actual_type,
-								 props.flip, scale_x, scale_y, (f32)props.rotation * (M_PI / 180.0f));
+		u32 ncap = c->entity_capacity ? c->entity_capacity * 2 : 64;
+		instance_data *nd = (instance_data *)realloc(c->entity_data, ncap * sizeof(instance_data));
+		if (!nd)
+			return FAIL;
+		c->entity_data = nd;
+		c->entity_capacity = ncap;
 	}
-	else
-	{
-		renderer_v2_add_instance(dest_x + props.offset_x, dest_y + props.offset_y, br.info.atlas_offset_x,
-								 br.info.atlas_offset_y, props.flip, scale_x, scale_y,
-								 (f32)props.rotation * (M_PI / 180.0f));
-	}
+	c->entity_data[c->entity_count++] = inst;
 	return SUCCESS;
 }
 
-static void render_entities(layer *l, layer_slice slice, block_registry *b_reg, i32 local_block_width)
+static void render_entities(layer_render_cache *c, layer *l, block_registry *b_reg, u32 ms, f32 zoom)
 {
-	if (!l || !b_reg || l->block_entity_count_estimate == 0)
+	c->entity_count = 0;
+	if (!l->block_entity_pool || l->block_entity_count_estimate == 0)
 		return;
 
-	block_x_offset = slice.x;
-	block_y_offset = slice.y;
+	f32 wx0 = (f32)c->region_bx0 * g_block_width - g_block_width;
+	f32 wy0 = (f32)c->region_by0 * g_block_width - g_block_width;
+	f32 wx1 = (f32)(c->region_bx0 + (i32)c->region_bw) * g_block_width + g_block_width;
+	f32 wy1 = (f32)(c->region_by0 + (i32)c->region_bh) * g_block_width + g_block_width;
 
-	ms_since_start = SDL_GetTicks();
-	seconds_since_start = ms_since_start / 1000.0f;
-
-	render_user_data udata = {
+	render_entity_ctx rc = {
+		.cache = c,
 		.b_reg = b_reg,
-		.slice = slice,
-		.local_block_width = local_block_width,
+		.ms = ms,
+		.zoom = zoom,
+		.cull_x0 = wx0,
+		.cull_y0 = wy0,
+		.cull_x1 = wx1,
+		.cull_y1 = wy1,
 	};
 
-	handle_table_iterate(l->block_entity_pool, block_entity_iterate_fn_render, &udata);
+	handle_table_iterate(l->block_entity_pool, render_entity_cb, &rc);
+}
+
+static void cache_submit(layer_render_cache *c, GLuint texture, image *atlas, u8 block_width)
+{
+	renderer_v2_layer_begin(&c->batch, texture, atlas, block_width);
+
+	const u32 total = c->region_bw * c->region_bh;
+	u32 i = 0;
+	while (i < total)
+	{
+		if (!c->slot_meta[i].needs_upload)
+		{
+			i++;
+			continue;
+		}
+		u32 start = i, cnt = 0;
+		while (i < total && c->slot_meta[i].needs_upload)
+		{
+			c->slot_meta[i].needs_upload = 0;
+			cnt++;
+			i++;
+		}
+		renderer_v2_layer_upload(&c->batch, start, cnt, &c->slot_insts[start]);
+	}
+
+	if (c->entity_count)
+		renderer_v2_layer_upload(&c->batch, total, c->entity_count, c->entity_data);
+
+	renderer_v2_layer_draw(&c->batch, total + c->entity_count);
 }
 
 u8 render_layer(layer_slice slice)
 {
 	assert(slice.zoom > 0);
-	const i32 local_block_width = (g_block_width * slice.zoom);
-
-	const i32 width = slice.w / local_block_width;
-	const i32 height = slice.h / local_block_width;
-
-	if (!slice.ref)
+	layer *l = (layer *)slice.ref;
+	if (!l || !l->blocks)
 		return SUCCESS;
 
-	if (!slice.ref->blocks)
-		return SUCCESS;
+	block_registry *b_reg = l->registry;
 
-	block_registry *b_reg = slice.ref->registry;
+	const u32 ms = SDL_GetTicks();
 
-	ms_since_start = SDL_GetTicks();
-	// const u32 ms_since_start = clock();
-	seconds_since_start = ms_since_start / 1000.0f;
-
-	u32 ms_started_moving = slice.timestamp_old;
+	const bool is_ui = (l->flags & LAYER_FLAG_UI) != 0;
 
 	const u32 interp_takes = slice.interp_takes != 0 ? slice.interp_takes : (1000 / TPS);
-	const f32 slice_clamp_pos = fmax(0.0f, fmin(1.0, (ms_since_start - ms_started_moving) / (f32)interp_takes));
-
-	slice.x = lerp(slice.old_x, slice.x, slice_clamp_pos);
-	slice.y = lerp(slice.old_y, slice.y, slice_clamp_pos);
-
-	const i32 start_block_x = ((slice.x / local_block_width) - BLOCKS_EXTRA);
-	const i32 start_block_y = ((slice.y / local_block_width) - BLOCKS_EXTRA);
-
-	const i32 end_block_x = start_block_x + width + BLOCKS_EXTRA + 1;
-	const i32 end_block_y = start_block_y + height + BLOCKS_EXTRA + 1;
-
-	const i32 block_x_offset = slice.x % local_block_width;
-	const i32 block_y_offset = slice.y % local_block_width;
-
-	GLuint texture = b_reg->atlas_texture_uid;
-
-	renderer_v2_begin_batch(texture, b_reg->atlas, g_block_width);
-
-	layer *l = (layer *)slice.ref;
-
-	if (l->spatial.cells == NULL)
+	const f32 clamp_pos = fmax(0.0f, fmin(1.0, (f32)(ms - slice.timestamp_old) / (f32)interp_takes));
+	f32 cam_x = lerp((f32)slice.old_x, (f32)slice.x, clamp_pos);
+	f32 cam_y = lerp((f32)slice.old_y, (f32)slice.y, clamp_pos);
+	if (!is_ui)
 	{
-		spatial_grid_build_from_layer(&l->spatial, l->width, l->height, l->block_size, l->blocks,
-									  l->total_bytes_per_block);
+		if (cam_x < 0.0f)
+			cam_x = 0.0f;
+		if (cam_y < 0.0f)
+			cam_y = 0.0f;
 	}
 
-	render_context rc = {
-		.slice = slice,
-		.b_reg = b_reg,
-		.l = l,
-		.local_block_width = local_block_width,
-		.block_x_offset = block_x_offset,
-		.block_y_offset = block_y_offset,
-		.start_block_x = start_block_x,
-		.start_block_y = start_block_y,
-		.ms_since_start = ms_since_start,
-		.seconds_since_start = seconds_since_start,
-	};
+	const f32 view_zoom = slice.zoom > 0.0f ? slice.zoom : 1.0f;
+	const f32 proj_cam_x = is_ui ? 0.0f : cam_x;
+	const f32 proj_cam_y = is_ui ? 0.0f : cam_y;
 
-	spatial_grid_get_visible((spatial_grid *)&l->spatial, start_block_x, start_block_y, end_block_x, end_block_y, &rc,
-							 render_block_callback);
+	renderer_v2_set_view(slice.w, slice.h, proj_cam_x, proj_cam_y, view_zoom);
 
-	if (l->block_entity_pool)
-		render_entities(l, slice, b_reg, local_block_width);
+	if (l->spatial.cells == NULL)
+		spatial_grid_build_from_layer(&l->spatial, l->width, l->height, l->block_size, l->blocks, l->total_bytes_per_block);
 
-	renderer_v2_end_batch();
+	layer_render_cache *c = layer_get_render_cache(l);
+
+	cache_prepare_region(c, l, cam_x, cam_y, view_zoom, (f32)slice.w, (f32)slice.h);
+	cache_fill(c, l, b_reg, ms, slice.timestamp_old, view_zoom);
+	render_entities(c, l, b_reg, ms, view_zoom);
+
+	cache_submit(c, b_reg->atlas_texture_uid, b_reg->atlas, (u8)g_block_width);
 
 	return SUCCESS;
 }

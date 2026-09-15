@@ -230,6 +230,25 @@ void spatial_grid_get_visible(spatial_grid *grid, i32 start_x, i32 start_y, i32 
 	}
 }
 
+u8 spatial_grid_read_cached_frame(spatial_grid *grid, u16 x, u16 y)
+{
+	if (!grid || !grid->cells)
+		return AUTOTILE_CACHE_INVALID;
+	if (x >= grid->grid_width * grid->cell_size || y >= grid->grid_height * grid->cell_size)
+		return AUTOTILE_CACHE_INVALID;
+
+	u32 cell_index = spatial_grid_get_cell_index(grid, x, y);
+	spatial_cell *cell = &grid->cells[cell_index];
+
+	for (u32 i = 0; i < cell->count; i++)
+	{
+		if (cell->positions[i].x == x && cell->positions[i].y == y)
+			return cell->positions[i].cached_autotile_frame;
+	}
+
+	return AUTOTILE_CACHE_INVALID;
+}
+
 void spatial_grid_set_cached_frame(spatial_grid *grid, u16 x, u16 y, u8 frame)
 {
 	if (!grid || !grid->cells)

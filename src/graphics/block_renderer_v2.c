@@ -16,6 +16,25 @@ block_renderer_v2 renderer_v2 = {0};
 
 static image g_dummy_img = {.width = 1, .height = 1, .data = NULL};
 
+// Column-major orthographic projection: screen (world*zoom - cam) -> NDC.
+static void renderer_v2_fill_projection(float p[16], u16 width, u16 height, f32 cam_x, f32 cam_y, f32 zoom)
+{
+	memset(p, 0, 16 * sizeof(float));
+	p[0] = 2.0f * zoom / width;
+	p[5] = -2.0f * zoom / height;
+	p[10] = -1.0f;
+	p[12] = -(2.0f * cam_x) / width - 1.0f;
+	p[13] = (2.0f * cam_y) / height + 1.0f;
+	p[15] = 1.0f;
+}
+
+static const float *renderer_v2_projection_matrix(u16 width, u16 height, f32 cam_x, f32 cam_y, f32 zoom)
+{
+	static float p[16];
+	renderer_v2_fill_projection(p, width, height, cam_x, cam_y, zoom);
+	return p;
+}
+
 static const float quad_vertices[] = {
 	0.0f, 0.0f, 0.0f, 0.0f, //
 	1.0f, 0.0f, 1.0f, 0.0f, //
@@ -154,16 +173,13 @@ int renderer_v2_init(void)
 	glBindBuffer(GL_ARRAY_BUFFER, renderer_v2.standard.instance_vbo);
 	glBufferData(GL_ARRAY_BUFFER, renderer_v2.batch.capacity * sizeof(instance_data), NULL, GL_DYNAMIC_DRAW);
 
-	float projection[16] = {0};
-	projection[0] = 2.0f / SCREEN_WIDTH;
-	projection[5] = -2.0f / SCREEN_HEIGHT;
-	projection[10] = -1.0f;
-	projection[12] = -1.0f;
-	projection[13] = 1.0f;
-	projection[15] = 1.0f;
+	renderer_v2.view_zoom = 1.0f;
+	renderer_v2.view_w = SCREEN_WIDTH;
+	renderer_v2.view_h = SCREEN_HEIGHT;
 
 	glUseProgram(renderer_v2.standard.shader);
-	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE, projection);
+	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE,
+					   (const float *)renderer_v2_projection_matrix(SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, 0.0f, 1.0f));
 	glUniform1i(renderer_v2.standard.texture_loc, 0);
 
 	glGenTextures(1, &renderer_v2.dummy_texture);
@@ -255,61 +271,138 @@ int renderer_v2_add_instance(float x, float y, u8 frame, u8 type, u8 flags, floa
 	return SUCCESS;
 }
 
-void renderer_v2_end_batch(void)
+static void batch_ensure_gl(layer_batch *batch)
 {
-	if (renderer_v2.batch.count == 0)
+	if (batch->vao)
+		return;
+
+	shader_program *pg = &renderer_v2.standard;
+
+	glGenVertexArrays(1, &batch->vao);
+	glGenBuffers(1, &batch->instance_vbo);
+	glBindVertexArray(batch->vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, pg->vbo);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pg->ebo);
+
+	glBindBuffer(GL_ARRAY_BUFFER, batch->instance_vbo);
+	size_t stride = sizeof(instance_data);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(instance_data, x));
+	glEnableVertexAttribArray(2);
+	glVertexAttribDivisor(2, 1);
+
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(instance_data, scale_x));
+	glEnableVertexAttribArray(3);
+	glVertexAttribDivisor(3, 1);
+
+	glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, stride, (void *)offsetof(instance_data, rotation));
+	glEnableVertexAttribArray(4);
+	glVertexAttribDivisor(4, 1);
+
+	glVertexAttribIPointer(5, 1, GL_UNSIGNED_BYTE, stride, (void *)offsetof(instance_data, frame));
+	glEnableVertexAttribArray(5);
+	glVertexAttribDivisor(5, 1);
+
+	glVertexAttribIPointer(6, 1, GL_UNSIGNED_BYTE, stride, (void *)offsetof(instance_data, type));
+	glEnableVertexAttribArray(6);
+	glVertexAttribDivisor(6, 1);
+
+	glVertexAttribIPointer(7, 1, GL_UNSIGNED_BYTE, stride, (void *)offsetof(instance_data, flags));
+	glEnableVertexAttribArray(7);
+	glVertexAttribDivisor(7, 1);
+
+	glBindVertexArray(0);
+}
+
+void renderer_v2_layer_begin(layer_batch *batch, GLuint texture, image *atlas_img, u8 block_width)
+{
+	batch->count = 0;
+	batch->texture = texture;
+	batch->atlas_img = atlas_img;
+	batch->block_width = block_width;
+}
+
+void renderer_v2_layer_upload(layer_batch *batch, u32 offset, u32 count, const instance_data *src)
+{
+	if (!batch->vao)
+		batch_ensure_gl(batch);
+
+	u32 needed = offset + count;
+	if (needed > batch->vbo_capacity)
+	{
+		u32 new_capacity = batch->vbo_capacity ? batch->vbo_capacity : 256;
+		while (new_capacity < needed)
+			new_capacity *= 2;
+
+		glBindBuffer(GL_ARRAY_BUFFER, batch->instance_vbo);
+		glBufferData(GL_ARRAY_BUFFER, new_capacity * sizeof(instance_data), NULL, GL_DYNAMIC_DRAW);
+		batch->vbo_capacity = new_capacity;
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, batch->instance_vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, offset * sizeof(instance_data), count * sizeof(instance_data), src);
+}
+
+void renderer_v2_layer_draw(const layer_batch *batch, u32 count)
+{
+	if (!batch->vao || count == 0)
 		return;
 
 	shader_program *prog = &renderer_v2.standard;
-	layer_batch *batch = &renderer_v2.batch;
 
 	glUseProgram(prog->shader);
+	glUniform1i(prog->use_color_loc, 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, batch->texture);
-
 	glUniform2f(prog->resize_ratio_loc, (float)batch->atlas_img->width / g_block_width,
 				(float)batch->atlas_img->height / g_block_width);
 	glUniform1f(prog->block_width_loc, (float)batch->block_width);
+	glBindVertexArray(batch->vao);
+	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, count);
+}
 
-	glBindBuffer(GL_ARRAY_BUFFER, prog->instance_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, batch->count * sizeof(instance_data), batch->data);
+void renderer_v2_end_batch(void)
+{
+	layer_batch *batch = &renderer_v2.batch;
+	if (batch->count == 0)
+		return;
 
-	glBindVertexArray(prog->vao);
-	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, batch->count);
+	renderer_v2_layer_upload(batch, 0, batch->count, batch->data);
+	renderer_v2_layer_draw(batch, batch->count);
+	batch->count = 0;
+}
+
+void renderer_v2_set_view(u16 width, u16 height, f32 cam_x, f32 cam_y, f32 zoom)
+{
+	renderer_v2.view_w = width;
+	renderer_v2.view_h = height;
+	renderer_v2.view_cam_x = cam_x;
+	renderer_v2.view_cam_y = cam_y;
+	renderer_v2.view_zoom = zoom > 0.0f ? zoom : 1.0f;
+
+	if (!renderer_v2.initialized)
+		return;
+
+	float projection[16];
+	renderer_v2_fill_projection(projection, width, height, cam_x, cam_y, renderer_v2.view_zoom);
+
+	glUseProgram(renderer_v2.standard.shader);
+	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE, projection);
 }
 
 void renderer_v2_resize(u16 width, u16 height)
 {
-	if (!renderer_v2.initialized)
-		return;
-
-	float projection[16] = {0};
-	projection[0] = 2.0f / width;
-	projection[5] = -2.0f / height;
-	projection[10] = -1.0f;
-	projection[12] = -1.0f;
-	projection[13] = 1.0f;
-	projection[15] = 1.0f;
-
-	glUseProgram(renderer_v2.standard.shader);
-	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE, projection);
+	renderer_v2_set_view(width, height, renderer_v2.view_cam_x, renderer_v2.view_cam_y, renderer_v2.view_zoom);
 }
 
 void renderer_v2_set_projection_size(u16 width, u16 height)
 {
-	if (!renderer_v2.initialized)
-		return;
-
-	float projection[16] = {0};
-	projection[0] = 2.0f / width;
-	projection[5] = -2.0f / height;
-	projection[10] = -1.0f;
-	projection[12] = -1.0f;
-	projection[13] = 1.0f;
-	projection[15] = 1.0f;
-
-	glUseProgram(renderer_v2.standard.shader);
-	glUniformMatrix4fv(renderer_v2.standard.projection_loc, 1, GL_FALSE, projection);
+	renderer_v2_set_view(width, height, renderer_v2.view_cam_x, renderer_v2.view_cam_y, renderer_v2.view_zoom);
 }
 
 void renderer_v2_fill_rect(f32 x, f32 y, f32 w, f32 h, const f32 color[4])
@@ -317,14 +410,19 @@ void renderer_v2_fill_rect(f32 x, f32 y, f32 w, f32 h, const f32 color[4])
 	if (!renderer_v2.initialized)
 		return;
 
+	f32 zoom = renderer_v2.view_zoom > 0.0f ? renderer_v2.view_zoom : 1.0f;
+
 	shader_program *prog = &renderer_v2.standard;
 
 	glUseProgram(prog->shader);
 	glUniform1i(prog->use_color_loc, 1);
 	glUniform4fv(prog->color_loc, 1, color);
 
+	f32 wx = (x + renderer_v2.view_cam_x) / zoom;
+	f32 wy = (y + renderer_v2.view_cam_y) / zoom;
+
 	renderer_v2_begin_batch(renderer_v2.dummy_texture, &g_dummy_img, (u8)g_block_width);
-	renderer_v2_add_instance(x, y, 0, 0, 0, w, h, 0.0f);
+	renderer_v2_add_instance(wx, wy, 0, 0, 0, w / zoom, h / zoom, 0.0f);
 	renderer_v2_end_batch();
 
 	glUniform1i(prog->use_color_loc, 0);

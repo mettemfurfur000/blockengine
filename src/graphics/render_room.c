@@ -157,7 +157,7 @@ void render_room_begin_frame(u16 width, u16 height, const room_render_options *o
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, width, height);
-	renderer_v2_set_projection_size(width, height);
+	renderer_v2_set_view(width, height, 0.0f, 0.0f, 1.0f);
 
 	if (opts && opts->clear_background)
 		glClearColor(opts->background_color[0], opts->background_color[1], opts->background_color[2],
@@ -173,6 +173,10 @@ static void render_room_grid(const camera *cam, const room_render_options *opts)
 	f32 step = (f32)g_block_width * (f32)cam->zoom;
 	if (step < 1.0f)
 		return;
+
+	f32 disp_x = 0.0f, disp_y = 0.0f;
+	camera_get_displayed_position(cam, &disp_x, &disp_y);
+	renderer_v2_set_view(cam->viewport_w, cam->viewport_h, disp_x, disp_y, cam->zoom);
 
 	f32 c[4] = {opts->grid_color[0], opts->grid_color[1], opts->grid_color[2], opts->grid_color[3]};
 
@@ -247,7 +251,6 @@ u8 render_room(room *r, const camera *cam, const room_render_options *opts)
 
 void render_room_end_frame(void)
 {
-	// Post-processing is intentionally skipped. A correct post pass can be added later.
 }
 
 static room_render_options g_render_room_opts = {

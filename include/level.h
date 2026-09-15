@@ -48,6 +48,9 @@ typedef struct layer
 
 	handle_table *block_entity_pool;
 	u32 block_entity_count_estimate;
+
+	u32 render_version;
+	void *render_cache;
 } layer;
 
 typedef struct level level;
@@ -104,6 +107,8 @@ u8 init_level(level *l);
 u8 free_layer(layer *l);
 u8 free_room(room *r);
 u8 free_level(level *l);
+
+void layer_free_render_cache(layer *l);
 
 void room_create_world(room *r_target, room *shared);
 
