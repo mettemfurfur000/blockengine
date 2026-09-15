@@ -58,7 +58,7 @@ end
 
 local function bot_register(vars, x, y)
     ::register_again::
-    local uuid_new = math.random(0, 1 << 16)
+    local uuid_new = math.random(1, (1 << 16) - 1)
     if bot_lookup(uuid_new) then
         goto register_again
     end
@@ -68,6 +68,43 @@ local function bot_register(vars, x, y)
         self_bot_uuid = uuid_new
     end
     table.insert(bots_reg, newbot)
+end
+
+local function claim_existing_player()
+    self_bot_uuid = 0
+    bots_reg = {}
+    G_bot_pos = nil
+    G_self_bot = nil
+    G_game_over = false
+    pending_grab = false
+
+    if G_view_menu == nil or G_view_menu.objects == nil then
+        return
+    end
+
+    G_view_menu.objects.layer:for_each(current_block, function(x, y)
+        local vars = G_view_menu.objects.layer:get_vars(x, y)
+        if not vars then return end
+
+        local uuid = vars:get_u32("@")
+        if uuid == nil or uuid == 0 then
+            bot_register(vars, x, y)
+            uuid = vars:get_u32("@")
+        else
+            table.insert(bots_reg, { uuid = uuid, items = {}, var_handle = vars, pos = { x, y } })
+        end
+
+        if self_bot_uuid == 0 then
+            self_bot_uuid = uuid
+            print("claimed player at " .. x .. "," .. y)
+
+            -- SDL ticks restart between runs, so movement interpolation state from
+            -- the saved level must not throttle the first move after loading.
+            vars:set_u32("T", 0)
+            vars:set_i16("x", 0)
+            vars:set_i16("y", 0)
+        end
+    end)
 end
 
 local function clear_hud_row(y, w)
@@ -141,8 +178,13 @@ local function refresh_hud(vars, x, y)
 end
 
 local frames = {
-    stand = 0, walk_0 = 1, walk_1 = 2, grab_attempt = 3,
-    has_items_stand = 4, has_items_walk_0 = 5, has_items_walk_1 = 6,
+    stand = 0,
+    walk_0 = 1,
+    walk_1 = 2,
+    grab_attempt = 3,
+    has_items_stand = 4,
+    has_items_walk_0 = 5,
+    has_items_walk_1 = 6,
     has_items_grab_attempt = 7
 }
 
@@ -159,6 +201,8 @@ local function maybe_drain_energy(vars, e)
     return e
 end
 
+blockengine.register_handler(events.ENGINE_INIT, claim_existing_player)
+
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
     --- @param layer Layer
     function(layer, x, y, value)
@@ -171,7 +215,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         if moved_on_tick == G_sdl_tick then return end
 
         local uuid = vars:get_u32("@")
-        if uuid == 0 then
+        if uuid == nil or uuid == 0 then
             bot_register(vars, x, y)
             uuid = vars:get_u32("@")
         elseif self_bot_uuid == 0 then
@@ -273,7 +317,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         end
 
         local now = G_sdl_tick or 0
-        if moved_on_tick ~= 0 and now > 0 and now - moved_on_tick < move_interval_ms then
+        if moved_on_tick ~= 0 and now > 0 and now >= moved_on_tick and now - moved_on_tick < move_interval_ms then
             vars:set_u16("e", energy)
             vars:set_u8("v", frame_base)
             refresh_hud(vars, x, y)
