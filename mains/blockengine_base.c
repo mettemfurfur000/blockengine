@@ -5,8 +5,8 @@
 #include "include/block_registry.h"
 #include "include/events.h"
 #include "include/logging.h"
-#include "include/rendering.h"
 #include "include/render_room.h"
+#include "include/rendering.h"
 #include "include/scripting.h"
 #include "include/sdl2_basics.h"
 #include "include/sdl2_extras.h"
@@ -60,18 +60,18 @@ static ClientConfig parse_arguments(int argc, char *argv[])
 
 	static struct option long_options[] = {
 		{		   "log", required_argument, 0, 'l'},
-		{		 "width", required_argument, 0, 'w'},
+		   {			"width", required_argument, 0, 'w'},
 		{		 "height", required_argument, 0, 'h'},
-		{		   "fps", required_argument, 0, 'f'},
+		   {			"fps", required_argument, 0, 'f'},
 		{		   "tps", required_argument, 0, 't'},
-		{	 "fullscreen",	   no_argument, 0, 'F'},
+		   {	"fullscreen",		  no_argument, 0, 'F'},
 		{		 "windowed",		 no_argument, 0, 'W'},
-		{		 "registry", required_argument, 0, 'r'},
+		   {		"registry", required_argument, 0, 'r'},
 		{	 "perf-checks",		no_argument, 0, 'p'},
-		{"no-perf-checks",	   no_argument, 0, 'P'},
+		   {"no-perf-checks",		  no_argument, 0, 'P'},
 		{		  "help",		 no_argument, 0, 'H'},
-		{			   0,				 0, 0,	  0}
-	};
+		   {				0,				   0, 0,	 0}
+	   };
 
 	int option_index = 0;
 	int c;
@@ -290,12 +290,11 @@ int main(int argc, char *argv[])
 logic_exit:
 	LOG_INFO("exiting...");
 
-	deinit_signal_handlers();
-	deinit_backtrace();
-
+	scripting_close();
 	exit_graphics();
 
-	scripting_close();
+	deinit_signal_handlers();
+	deinit_backtrace();
 
 	return 0;
 }

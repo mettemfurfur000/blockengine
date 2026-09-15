@@ -1,4 +1,5 @@
 #include "include/sdl2_basics.h"
+#include "include/block_renderer_v2.h"
 #include "SDL_video.h"
 #include "include/events.h"
 #include "include/general.h"
@@ -11,7 +12,7 @@ char *window_name = "Block Engine";
 
 SDL_Window *g_window = NULL;
 // SDL_Renderer *g_renderer = NULL; // do not use
-SDL_GLContext *g_gl_context = NULL;
+SDL_GLContext g_gl_context = NULL;
 
 int g_block_width = 16;
 
@@ -104,10 +105,13 @@ int init_graphics(bool set_fullscreen)
 
 int exit_graphics()
 {
-	SDL_DestroyWindow(g_window);
+	renderer_v2_shutdown();
 
-	// SDL_DestroyRenderer(g_renderer);
 	SDL_GL_DeleteContext(g_gl_context);
+	g_gl_context = NULL;
+
+	SDL_DestroyWindow(g_window);
+	g_window = NULL;
 
 	SDL_Quit();
 

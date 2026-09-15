@@ -6,6 +6,7 @@
 #include "include/scripting.h"
 
 #include <box2d/box2d.h>
+#include <string.h>
 
 static camera *lua_check_camera(lua_State *L, int index)
 {

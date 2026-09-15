@@ -17,7 +17,7 @@ extern int SCREEN_HEIGHT;
 extern char *window_name;
 
 extern SDL_Window *g_window;
-extern SDL_GLContext *g_gl_context;
+extern SDL_GLContext g_gl_context;
 
 extern int g_block_width;
 

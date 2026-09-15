@@ -13,7 +13,7 @@ M.price = {
     item_cpu = 100,
 }
 
-M.machines = { "collector_bot", "drill", "assembler" }
+M.machines = { "collector_bot", "drill", "assembler", "collector_beacon" }
 M.usables = { "fuel_cell", "energy_upgrade", "stack_upgrade" }
 
 local id_cache = {}

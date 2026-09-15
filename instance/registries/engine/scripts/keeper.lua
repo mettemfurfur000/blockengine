@@ -14,15 +14,16 @@ G_shop_open = false
 local SHOP_LEFT = 32
 local SHOP_TOP = 7
 local SHOP_COLS = 16
-local SHOP_ROWS = 7
+local SHOP_ROWS = 9
 
 local SHOP_ACTIVE_DISTANCE = 4
 
 local menu_items = {
     { name = "fuel cell",       price = 20,  give = "fuel_cell" },
-    { name = "energy upgrade",  price = 40,  give = "energy_upgrade", dynamic = true },
+    { name = "energy upgrade",  price = 40,  give = "energy_upgrade",  dynamic = true },
     { name = "stack upgrade",   price = 60,  give = "stack_upgrade" },
     { name = "scrap collector", price = 100, give = "collector_bot" },
+    { name = "scrap beacon",    price = 40,  give = "collector_beacon" },
     { name = "scrap drill",     price = 200, give = "drill" },
     { name = "assembler",       price = 400, give = "assembler" },
 }

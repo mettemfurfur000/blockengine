@@ -4,11 +4,13 @@
 #include "include/block_renderer_v2.h"
 #include "include/handle.h"
 #include "include/logging.h"
+#include "include/rendering.h"
 #include "include/sdl2_basics.h"
 #include "include/config.h"
 
 #include <box2d/box2d.h>
 #include <math.h>
+#include <stdlib.h>
 
 room *render_room_active = NULL;
 camera *render_room_active_camera = NULL;

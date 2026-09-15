@@ -586,7 +586,11 @@ static int lua_layer_find_closest(lua_State *L)
 			u64 block_id = 0;
 			if (block_get_id(blocked_layer, (u16)next_x, (u16)next_y, &block_id) != SUCCESS)
 				continue;
-			if (block_id != 0)
+			u64 next_target_id = 0;
+			if (block_get_id(target_wrapper->l, (u16)next_x, (u16)next_y, &next_target_id) != SUCCESS)
+				continue;
+			const bool is_target = lua_layer_id_in_list(L, ids_index, next_target_id);
+			if (block_id != 0 && !is_target)
 				continue;
 			visited[next] = 1;
 			distance[next] = distance[current] + 1;
