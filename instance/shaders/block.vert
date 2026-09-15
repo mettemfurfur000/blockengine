@@ -8,6 +8,7 @@ layout(location = 4) in float aInstanceRotation; // rotation
 layout(location = 5) in uint aInstanceFrame;     // frame number
 layout(location = 6) in uint aInstanceType;      // block type
 layout(location = 7) in uint aInstanceFlags;     // flags
+layout(location = 8) in float aInstanceTile;    // horizontal repeat count (1 = single block)
 
 uniform mat4 uProjection;
 uniform vec2 uResizeRatio;
@@ -42,7 +43,6 @@ void main() {
     // Set final position
     gl_Position = uProjection * vec4(finalPos, 0.0, 1.0);
     
-    // Start with the input texture coordinates
     vec2 finalTexCoord = aTexCoord;
     
     // Handle horizontal flip if bit 0 of flags is set
@@ -55,7 +55,7 @@ void main() {
         finalTexCoord.y = 1.0 - finalTexCoord.y;
     }
     
-    // Apply frame and type offsets
+    // Each instance represents one atlas tile.
     vec2 texCoordOffset = vec2(float(aInstanceFrame), float(aInstanceType));
     TexCoord = (finalTexCoord + texCoordOffset) / uResizeRatio;
 }

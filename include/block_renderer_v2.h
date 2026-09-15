@@ -11,6 +11,7 @@ typedef struct
 	float x, y;
 	float scale_x, scale_y;
 	float rotation;
+	float tile_u;
 	u8 frame;
 	u8 type;
 	u8 flags;
@@ -84,7 +85,20 @@ void renderer_v2_set_projection_size(u16 width, u16 height);
 // re-upload every frame.
 void renderer_v2_layer_begin(layer_batch *batch, GLuint texture, image *atlas_img, u8 block_width);
 void renderer_v2_layer_upload(layer_batch *batch, u32 offset, u32 count, const instance_data *src);
+
+// Ensures the instance buffer can hold `needed` instances. Returns true when
+// the underlying GPU buffer was (re)created this call, which invalidates any
+// previously uploaded data.
+bool renderer_v2_layer_reserve(layer_batch *batch, u32 needed);
 void renderer_v2_layer_draw(const layer_batch *batch, u32 count);
+
+// Releases the per-layer GPU resources.
+void renderer_v2_layer_release(layer_batch *batch);
+
+// Draws a plain 1:1 textured quad over world rect [x, x+w] x [y, y+h] using the
+// standard program with the texture covering the whole quad. Used to composite
+// pre-rendered layer framebuffers. Does not go through the instance batch API.
+void renderer_v2_draw_texture_quad(GLuint texture, f32 x, f32 y, f32 w, f32 h);
 
 // Draws a single solid colored rectangle in screen pixels using the standard shader.
 // Used by the room/camera pipeline for backgrounds and debug overlays.

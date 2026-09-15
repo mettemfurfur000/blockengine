@@ -224,6 +224,7 @@ typedef struct layer_render_cache
 	f32 zoom_seen;
 	i32 region_bx0, region_by0;
 	u32 region_bw, region_bh;
+	bool region_dirty;
 
 	instance_data *slot_insts;
 	render_slot_meta *slot_meta;
@@ -234,6 +235,15 @@ typedef struct layer_render_cache
 	instance_data *entity_data;
 	u32 entity_capacity;
 	u32 entity_count;
+
+	instance_data *merged_data;
+	u32 merged_count;
+
+	u8 cache_mode;
+	GLuint fbo;
+	GLuint fbo_tex;
+	u16 fbo_w, fbo_h;
+	bool fbo_started;
 
 	layer_batch batch;
 } layer_render_cache;
@@ -286,6 +296,7 @@ static void slot_make_void(layer_render_cache *c, u32 n)
 		m->kind = RENDER_SLOT_VOID;
 		m->valid = 0;
 		m->needs_upload = 1;
+		c->region_dirty = true;
 	}
 	m->needs_rebuild = 0;
 }
@@ -336,6 +347,7 @@ static bool compute_slot_instance(instance_data *out, const layer *l, const bloc
 	inst.scale_x = 1.0f;
 	inst.scale_y = 1.0f;
 	inst.rotation = (f32)props.rotation * (M_PI / 180.0f);
+	inst.tile_u = 1.0f;
 	inst.frame = br->info.atlas_offset_x + (u8)(props.frame % br->info.frames);
 	inst.type = FLAG_GET(br->flags, RESOURCE_FLAG_IGNORE_TYPE)
 					? (u8)(props.frame / br->info.frames)
@@ -370,16 +382,18 @@ void layer_free_render_cache(layer *l)
 
 	if (renderer_v2.initialized)
 	{
-		if (c->batch.vao)
-			glDeleteVertexArrays(1, &c->batch.vao);
-		if (c->batch.instance_vbo)
-			glDeleteBuffers(1, &c->batch.instance_vbo);
+		renderer_v2_layer_release(&c->batch);
+		if (c->fbo_tex)
+			glDeleteTextures(1, &c->fbo_tex);
+		if (c->fbo)
+			glDeleteFramebuffers(1, &c->fbo);
 	}
 	SAFE_FREE(c->slot_insts);
 	SAFE_FREE(c->slot_meta);
 	SAFE_FREE(c->inst_scratch);
 	SAFE_FREE(c->meta_scratch);
 	SAFE_FREE(c->entity_data);
+	SAFE_FREE(c->merged_data);
 	SAFE_FREE(c);
 	l->render_cache = NULL;
 }
@@ -398,13 +412,15 @@ static void cache_ensure_region(layer_render_cache *c, u32 bw, u32 bh)
 	render_slot_meta *nm = (render_slot_meta *)realloc(c->slot_meta, ncap * sizeof(render_slot_meta));
 	instance_data *nis = (instance_data *)realloc(c->inst_scratch, ncap * sizeof(instance_data));
 	render_slot_meta *nms = (render_slot_meta *)realloc(c->meta_scratch, ncap * sizeof(render_slot_meta));
-	if (!ni || !nm || !nis || !nms)
+	instance_data *nmerged = (instance_data *)realloc(c->merged_data, ncap * sizeof(instance_data));
+	if (!ni || !nm || !nis || !nms || !nmerged)
 	{
 		LOG_ERROR("failed to grow layer render cache to %u slots", ncap);
 		SAFE_FREE(ni);
 		SAFE_FREE(nm);
 		SAFE_FREE(nis);
 		SAFE_FREE(nms);
+		SAFE_FREE(nmerged);
 		return;
 	}
 	memset(ni + c->slot_capacity, 0, (ncap - c->slot_capacity) * sizeof(instance_data));
@@ -415,6 +431,7 @@ static void cache_ensure_region(layer_render_cache *c, u32 bw, u32 bh)
 	c->slot_meta = nm;
 	c->inst_scratch = nis;
 	c->meta_scratch = nms;
+	c->merged_data = nmerged;
 	c->slot_capacity = ncap;
 }
 
@@ -444,6 +461,7 @@ static void cache_prepare_region(layer_render_cache *c, layer *l, f32 cam_x, f32
 		c->region_bh = bh;
 		c->zoom_seen = view_zoom;
 		c->version_seen = l->render_version;
+		c->region_dirty = true;
 		for (u32 n = 0; n < total; n++)
 		{
 			c->slot_meta[n].needs_rebuild = 1;
@@ -460,11 +478,16 @@ static void cache_prepare_region(layer_render_cache *c, layer *l, f32 cam_x, f32
 		if (rebuild_all)
 		{
 			for (u32 n = 0; n < bw * bh; n++)
+			{
 				c->slot_meta[n].needs_rebuild = 1;
+				c->slot_meta[n].needs_upload = 1;
+			}
+			c->region_dirty = true;
 		}
 		return;
 	}
 
+	c->region_dirty = true;
 	i32 obx0 = c->region_bx0;
 	i32 oby0 = c->region_by0;
 
@@ -547,7 +570,10 @@ static void cache_fill(layer_render_cache *c, layer *l, block_registry *b_reg, u
 			compute_slot_instance(&inst, l, br, bx, by, ms, default_timestamp, view_zoom);
 
 			if (memcmp(&c->slot_insts[n], &inst, sizeof(instance_data)) != 0)
+			{
 				m->needs_upload = 1;
+				c->region_dirty = true;
+			}
 			c->slot_insts[n] = inst;
 			m->kind = kind;
 			m->valid = 1;
@@ -603,6 +629,7 @@ static u32 render_entity_cb(handle32 h, void *ptr, void *user_data)
 	inst.scale_x = e->scale_x;
 	inst.scale_y = e->scale_y;
 	inst.rotation = (f32)props.rotation * (M_PI / 180.0f);
+	inst.tile_u = 1.0f;
 	inst.flags = props.flip;
 	inst.frame = br->info.atlas_offset_x + (u8)(props.frame % br->info.frames);
 	inst.type = FLAG_GET(br->flags, RESOURCE_FLAG_IGNORE_TYPE) ? (u8)(props.frame / br->info.frames)
@@ -649,33 +676,166 @@ static void render_entities(layer_render_cache *c, layer *l, block_registry *b_r
 	handle_table_iterate(l->block_entity_pool, render_entity_cb, &rc);
 }
 
+static u32 build_merged(layer_render_cache *c, bool allow_merge)
+{
+	const u32 bw = c->region_bw, bh = c->region_bh;
+	u32 out = 0;
+
+	for (u32 sy = 0; sy < bh; sy++)
+	{
+		u32 sx = 0;
+		while (sx < bw)
+		{
+			u32 n = sy * bw + sx;
+			render_slot_meta *m = &c->slot_meta[n];
+			instance_data *inst = &c->slot_insts[n];
+
+			bool mergeable = allow_merge && m->valid && m->kind == RENDER_SLOT_STATIC &&
+							 inst->rotation == 0.0f && inst->scale_x == 1.0f && inst->scale_y == 1.0f &&
+							 inst->flags == 0 && inst->tile_u == 1.0f &&
+							 inst->x == (f32)(c->region_bx0 + (i32)sx) * g_block_width &&
+							 inst->y == (f32)(c->region_by0 + (i32)sy) * g_block_width;
+
+			if (!mergeable)
+			{
+				instance_data single = *inst;
+				single.tile_u = 1.0f;
+				c->merged_data[out++] = single;
+				sx++;
+				continue;
+			}
+
+			u32 run = 1;
+			while (sx + run < bw)
+			{
+				u32 nn = sy * bw + (sx + run);
+				render_slot_meta *mn = &c->slot_meta[nn];
+				instance_data *in = &c->slot_insts[nn];
+				if (!mn->valid || mn->kind != RENDER_SLOT_STATIC || in->rotation != 0.0f ||
+					in->scale_x != 1.0f || in->scale_y != 1.0f || in->flags != 0 || in->tile_u != 1.0f ||
+					in->x != (f32)(c->region_bx0 + (i32)(sx + run)) * g_block_width || in->y != inst->y ||
+					in->frame != inst->frame || in->type != inst->type)
+					break;
+				run++;
+			}
+
+			instance_data mrg = *inst;
+			mrg.scale_x = (f32)run;
+			mrg.tile_u = (f32)run;
+			c->merged_data[out++] = mrg;
+			sx += run;
+		}
+	}
+	return out;
+}
+
 static void cache_submit(layer_render_cache *c, GLuint texture, image *atlas, u8 block_width)
 {
 	renderer_v2_layer_begin(&c->batch, texture, atlas, block_width);
 
 	const u32 total = c->region_bw * c->region_bh;
-	u32 i = 0;
-	while (i < total)
+
+	bool reallocated = renderer_v2_layer_reserve(&c->batch, total + c->entity_count);
+	if (reallocated && !c->region_dirty)
+		c->region_dirty = true;
+
+	if (c->region_dirty)
 	{
-		if (!c->slot_meta[i].needs_upload)
-		{
-			i++;
-			continue;
-		}
-		u32 start = i, cnt = 0;
-		while (i < total && c->slot_meta[i].needs_upload)
-		{
+		c->merged_count = build_merged(c, false);
+
+		renderer_v2_layer_upload(&c->batch, 0, c->merged_count, c->merged_data);
+		for (u32 i = 0; i < total; i++)
 			c->slot_meta[i].needs_upload = 0;
-			cnt++;
-			i++;
-		}
-		renderer_v2_layer_upload(&c->batch, start, cnt, &c->slot_insts[start]);
+		c->region_dirty = false;
 	}
 
 	if (c->entity_count)
-		renderer_v2_layer_upload(&c->batch, total, c->entity_count, c->entity_data);
+		renderer_v2_layer_upload(&c->batch, c->merged_count, c->entity_count, c->entity_data);
 
-	renderer_v2_layer_draw(&c->batch, total + c->entity_count);
+	renderer_v2_layer_draw(&c->batch, c->merged_count + c->entity_count);
+}
+
+static void cache_submit_fbo(layer_render_cache *c, layer *l, block_registry *b_reg, u32 ms, u32 default_timestamp,
+							 f32 cam_x, f32 cam_y, f32 view_zoom, u16 view_w, u16 view_h)
+{
+	u32 total = c->region_bw * c->region_bh;
+	u16 fw = (u16)(c->region_bw * g_block_width);
+	u16 fh = (u16)(c->region_bh * g_block_width);
+
+	if (!c->fbo_started)
+	{
+		glGenTextures(1, &c->fbo_tex);
+		glBindTexture(GL_TEXTURE_2D, c->fbo_tex);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glGenFramebuffers(1, &c->fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, c->fbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, c->fbo_tex, 0);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			LOG_WARNING("layer framebuffer incomplete, falling back to slot cache");
+			c->cache_mode = LAYER_CACHE_MODE_SLOT;
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		c->fbo_started = true;
+	}
+
+	if (c->cache_mode != LAYER_CACHE_MODE_FBO)
+	{
+		cache_submit(c, b_reg->atlas_texture_uid, b_reg->atlas, (u8)g_block_width);
+		return;
+	}
+
+	if (c->fbo_w != fw || c->fbo_h != fh)
+	{
+		glBindTexture(GL_TEXTURE_2D, c->fbo_tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fw, fh, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		c->fbo_w = fw;
+		c->fbo_h = fh;
+		c->region_dirty = true;
+	}
+
+	if (c->region_dirty)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, c->fbo);
+		glViewport(0, 0, c->fbo_w, c->fbo_h);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		renderer_v2_set_view(c->fbo_w, c->fbo_h, (f32)c->region_bx0 * g_block_width,
+							 (f32)c->region_by0 * g_block_width, 1.0f);
+		renderer_v2_layer_begin(&c->batch, b_reg->atlas_texture_uid, b_reg->atlas, (u8)g_block_width);
+		renderer_v2_layer_upload(&c->batch, 0, total, c->slot_insts);
+		renderer_v2_layer_draw(&c->batch, total);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		for (u32 i = 0; i < total; i++)
+			c->slot_meta[i].needs_upload = 0;
+		c->region_dirty = false;
+	}
+
+	glViewport(0, 0, view_w, view_h);
+	renderer_v2_set_view(view_w, view_h, cam_x, cam_y, view_zoom);
+
+	renderer_v2_draw_texture_quad(c->fbo_tex, (f32)c->region_bx0 * g_block_width,
+								  (f32)c->region_by0 * g_block_width, (f32)c->fbo_w, (f32)c->fbo_h);
+
+	if (c->entity_count)
+	{
+		renderer_v2_layer_begin(&c->batch, b_reg->atlas_texture_uid, b_reg->atlas, (u8)g_block_width);
+		renderer_v2_layer_upload(&c->batch, 0, c->entity_count, c->entity_data);
+		renderer_v2_layer_draw(&c->batch, c->entity_count);
+	}
+}
+
+void render_layer_set_cache_mode(layer *l, u8 mode)
+{
+	if (!l)
+		return;
+	layer_render_cache *c = layer_get_render_cache(l);
+	c->cache_mode = (mode == LAYER_CACHE_MODE_FBO) ? LAYER_CACHE_MODE_FBO : LAYER_CACHE_MODE_SLOT;
+	if (c->cache_mode == LAYER_CACHE_MODE_FBO)
+		c->region_dirty = true;
 }
 
 u8 render_layer(layer_slice slice)
@@ -717,6 +877,12 @@ u8 render_layer(layer_slice slice)
 	cache_prepare_region(c, l, cam_x, cam_y, view_zoom, (f32)slice.w, (f32)slice.h);
 	cache_fill(c, l, b_reg, ms, slice.timestamp_old, view_zoom);
 	render_entities(c, l, b_reg, ms, view_zoom);
+
+	if (c->cache_mode == LAYER_CACHE_MODE_FBO)
+	{
+		cache_submit_fbo(c, l, b_reg, ms, slice.timestamp_old, cam_x, cam_y, view_zoom, slice.w, slice.h);
+		return SUCCESS;
+	}
 
 	cache_submit(c, b_reg->atlas_texture_uid, b_reg->atlas, (u8)g_block_width);
 

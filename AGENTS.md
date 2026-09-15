@@ -80,3 +80,6 @@ Create `.c` in `src/<module>/`, `.h` in `include/`. Makefile auto-discovers via 
 - Builder is headless (no graphics). Client connects to display.
 - Post-processing currently disabled (FBO logic has issues).
 - `sizeof(handlers)` in `scripting.c:586` is wrong (byte count vs element count) — but bounds never reached in practice.
+- Block atlas UVs are normalized by `uResizeRatio` in `instance/shaders/block.vert`; keep ordinary instances at one 16x16 atlas tile.
+- Do not enable horizontal instance merging in `src/graphics/rendering.c` unless the shader repeats the atlas tile per merged block. The stable path uses `build_merged(c, false)` so adjacent blocks remain separate tiles.
+- `instance_data.tile_u` is reserved for merged-run support but must not be used in shader UV math unless the full repeat path is verified; introducing `fract()` there previously collapsed blocks to their top-left texel.
