@@ -4,6 +4,8 @@ lua/*
 gmon.out
 out*
 .env/*
+__pycache__/*
+*.pyc
 # .vscode/*
 # .cache/*
 .*/*

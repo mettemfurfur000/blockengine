@@ -112,6 +112,18 @@ tkv_test: mains/tkv_test.c copy_instance vec $(OBJS)
 	gcc -o obj/tkv_test.o -c mains/tkv_test.c ${CFLAGS}
 	g++ ${CFLAGS} -o build/tkv_test obj/tkv_test.o obj/vec.o $(OBJS) $(LDFLAGS) -lstdc++
 
+.PHONY: perf-gpu
+perf-gpu:
+	python scripts/perf/gpu_bench.py
+
+.PHONY: perf-gpu-save
+perf-gpu-save:
+	python scripts/perf/gpu_bench.py --save-baseline
+
+.PHONY: perf-gpu-check
+perf-gpu-check:
+	python scripts/perf/gpu_bench.py --compare
+
 GEN_ANNOT_CFLAGS = $(filter-out -Dmain=SDL_main -IC:/msys64/mingw64/include/SDL2,$(CFLAGS))
 GEN_ANNOT_OBJS = obj/gen_annotations_main.o obj/gen_annotations.o obj/tokenizer.o
 
