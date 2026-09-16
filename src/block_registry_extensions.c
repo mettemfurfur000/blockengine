@@ -115,6 +115,15 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
 		},
 		s)
 
+	// component names - the blobs themselves are deduped at registry level
+	WRITE_VEC(
+		res.component_names, j, str,
+		{
+			blob comp_name_blob = blobify(str);
+			blob_write(comp_name_blob, s);
+		},
+		s)
+
 	// all fields written
 	write_hashtable(res.all_fields, s);
 }
@@ -122,24 +131,13 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
 block_resources block_resource_read(block_registry *b, stream_t *s)
 {
 	block_resources res = {};
-	for (i32 i = 0; i < sizeof(res.vars_offsets) / sizeof(res.vars_offsets[0]); i++)
-		res.vars_offsets[i] = FAIL;
+	rebuild_vars_offsets(&res);
 
 	READ(res.id, s);
 	LOG_DEBUG("Loading block id %llu", res.id);
 	res.vars_sample = blob_vars_read(s);
 
-	if (res.vars_sample.ptr && res.vars_sample.size > 0)
-	{
-		u32 pos = 0;
-		while (pos + 1 < res.vars_sample.size)
-		{
-			u8 letter = res.vars_sample.ptr[pos];
-			u8 size = res.vars_sample.ptr[pos + 1];
-			res.vars_offsets[letter] = (i32)pos;
-			pos += (u32)size + 2;
-		}
-	}
+	rebuild_vars_offsets(&res);
 
 	// input names
 	char *str = NULL;
@@ -242,6 +240,15 @@ block_resources block_resource_read(block_registry *b, stream_t *s)
 		},
 		s);
 
+	// component names
+	READ_VEC(
+		res.component_names, j, str,
+		{
+			blob comp_name_blob = blob_read(s);
+			str = comp_name_blob.str;
+		},
+		s);
+
 	// all fields
 	res.all_fields = alloc_table();
 	read_hashtable(res.all_fields, s);
@@ -301,6 +308,65 @@ u8 registry_save(block_registry *b)
 	{
 		WRITE_N(bytecode, &s, bytecode_size);
 		free(bytecode);
+	}
+
+	// deduped component blob table: compile every unique component script once
+	{
+		vec_str_t unique_components = {};
+		vec_init(&unique_components);
+
+		block_resources res;
+		u32 bi;
+		vec_foreach(&b->resources, res, bi)
+		{
+			char *comp_name;
+			u32 ci;
+			vec_foreach(&res.component_names, comp_name, ci)
+			{
+				char *existing;
+				u32 ei;
+				bool found = false;
+				vec_foreach(&unique_components, existing, ei)
+				{
+					if (strcmp(existing, comp_name) == 0)
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					(void)vec_push(&unique_components, strdup(comp_name));
+			}
+		}
+
+		u32 comp_count = unique_components.length;
+		WRITE(comp_count, &s);
+
+		for (u32 i = 0; i < unique_components.length; i++)
+		{
+			blob comp_name_blob = blobify(unique_components.data[i]);
+			blob_write(comp_name_blob, &s);
+
+			unsigned char *bytecode = NULL;
+			u32 bytecode_size = 0;
+			if (scripting_compile_file_to_bytecode(b->name, unique_components.data[i], &bytecode, &bytecode_size) !=
+				SUCCESS)
+			{
+				LOG_ERROR("Failed to compile component %s for registry %s", unique_components.data[i], b->name);
+				bytecode_size = 0;
+			}
+
+			WRITE(bytecode_size, &s);
+			if (bytecode_size > 0 && bytecode != NULL)
+			{
+				WRITE_N(bytecode, &s, bytecode_size);
+				free(bytecode);
+			}
+		}
+
+		for (u32 i = 0; i < unique_components.length; i++)
+			free(unique_components.data[i]);
+		vec_deinit(&unique_components);
 	}
 
 	// write all block resources
@@ -386,6 +452,36 @@ block_registry *registry_load(const char *name)
 		}
 
 		free(bytecode);
+	}
+
+	// read deduped component blob table
+	{
+		u32 comp_count = 0;
+		READ(comp_count, &s);
+
+		vec_init(&reg->component_blobs);
+
+		for (u32 i = 0; i < comp_count; i++)
+		{
+			blob comp_name_blob = blob_read(&s);
+
+			u32 bytecode_size = 0;
+			READ(bytecode_size, &s);
+
+			component_blob_entry entry = {};
+			entry.name = comp_name_blob.str;
+			entry.blob_size = bytecode_size;
+
+			if (bytecode_size > 0)
+			{
+				entry.blob = malloc(bytecode_size);
+				READ_N(entry.blob, &s, bytecode_size);
+			}
+			else
+				entry.blob = NULL;
+
+			(void)vec_push(&reg->component_blobs, entry);
+		}
 	}
 
 	// read all block resources

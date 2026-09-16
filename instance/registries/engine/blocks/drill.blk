@@ -1,9 +1,8 @@
 automatic_id 1
-script = drill.lua
+components = [ components/movement.lua drill.lua  ]
 inputs = [ tick ]
 # v - anim frame (0 idle, 1 working)
 # f - fuel cells loaded
 vars = { u8 v = 0 u8 f = 0 }
-offset_y_controller = y
 frame_controller = v
 texture = drill.png

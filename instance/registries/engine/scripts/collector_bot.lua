@@ -1,27 +1,20 @@
-local game_data = require("registries.engine.scripts.game_data")
+local game_data              = require("registries.engine.scripts.game_data")
+local block_utils            = require("registries.engine.scripts.block_utils")
+local wrappers               = require("registries.engine.scripts.wrappers")
 
-local current_block = scripting_current_block_id
+local current_block          = scripting_current_block_id
+local movement               = scripting_current_block_api.movement
+local refuelable_component   = scripting_current_block_api.refuelable
 
-local MAX_FUEL = 60
-local MOVES_PER_FUEL = 25
+local MOVES_PER_FUEL         = 25
 local FUEL_DRAIN_INTERVAL_MS = 10000
-local RETURN_RESERVE = 2
-local MOVE_INTERVAL_MS = scripting_current_block_interp_takes
-local PATH_IGNORE_SOURCE = 1
+local RETURN_RESERVE         = 2
+local MOVE_INTERVAL_MS       = movement.interp_takes
+local PATH_IGNORE_SOURCE     = 1
+local PATH_IGNORE_TARGET     = 2
 
-local BEACON_OFFSETS = {
-    { x = 1,  y = 1 },
-    { x = 0,  y = 1 },
-    { x = -1, y = 1 },
-    { x = 1,  y = -1 },
-    { x = 0,  y = -1 },
-    { x = -1, y = -1 },
-    { x = 1,  y = 0 },
-    { x = -1, y = 0 }
-}
-
-local reservations = {}
-local next_owner_id = 1
+local reservations           = {}
+local next_owner_id          = 1
 
 local function reservation_key(x, y)
     return x .. ":" .. y
@@ -91,18 +84,18 @@ local function move_along_path(layer, vars, x, y, target_x, target_y, fuel)
         return false
     end
 
-    vars:set_i16("x", -move_x * G_block_width_pixels)
-    vars:set_i16("y", -move_y * G_block_width_pixels)
-    vars:set_u32("T", G_sdl_tick)
+    movement.begin(vars, move_x, move_y)
     local moves = (vars:get_u8("n") or 0) + 1
     if moves >= MOVES_PER_FUEL then
         fuel = fuel - 1
         moves = 0
     end
+
     vars:set_u8("n", moves)
-    vars:set_u8("f", fuel)
+    refuelable_component.set_fuel(layer, x + move_x, y + move_y, fuel)
     vars:set_u8("v", 1 + G_tick % 2)
     vars:set_u8("t", math.random(0, 3))
+
     return true
 end
 
@@ -122,21 +115,26 @@ local function find_beacon_drop_cell(x, y)
         return nil
     end
 
+    if not G_view_menu.objects.layer:find_path(
+        x, y, beacon.x, beacon.y, G_view_menu.objects.layer,
+        PATH_IGNORE_SOURCE + PATH_IGNORE_TARGET) then
+        return nil
+    end
+
     local best = nil
     local width, height = G_view_menu.items.layer:get_size()
-    for _, item_offset in ipairs(BEACON_OFFSETS) do
-        local item_x = beacon.x + item_offset.x
-        local item_y = beacon.y + item_offset.y
-        if item_x >= 0 and item_y >= 0 and item_x < width and item_y < height and
-            G_view_menu.objects.layer:get_id(item_x, item_y) == 0 and
-            G_view_menu.items.layer:get_id(item_x, item_y) == 0 then
-            local path = path_between(x, y, item_x, item_y)
+
+    local empty_cells = block_utils.adjacent_blocks(G_view_menu.items.layer, beacon.x, beacon.y, 0)
+
+    for _, cell in ipairs(empty_cells) do
+        if G_view_menu.objects.layer:get_id(cell.x, cell.y) == 0 then
+            local path = path_between(x, y, cell.x, cell.y)
             if path and (best == nil or #path < #best.path) then
                 best = {
-                    x = item_x,
-                    y = item_y,
-                    item_x = item_x,
-                    item_y = item_y,
+                    x = cell.x,
+                    y = cell.y,
+                    item_x = cell.x,
+                    item_y = cell.y,
                     path = path
                 }
             end
@@ -154,12 +152,9 @@ local function find_nearest_scrap(x, y, vars)
         if beacon_id == 0 then
             return false
         end
-        for _, offset in ipairs(BEACON_OFFSETS) do
-            if G_view_menu.objects.layer:get_id(cell_x + offset.x, cell_y + offset.y) == beacon_id then
-                return true
-            end
-        end
-        return false
+        local adjacent_beacons = block_utils.adjacent_blocks(G_view_menu.objects.layer, cell_x, cell_y, beacon_id)
+
+        return #adjacent_beacons > 0
     end
 
     for target_y = 0, height - 1 do
@@ -190,29 +185,22 @@ local function find_nearest_scrap(x, y, vars)
     return nil
 end
 
-local function consume_adjacent_battery(layer, x, y, fuel, fuel_id)
-    for dy = -1, 1 do
-        for dx = -1, 1 do
-            if dx ~= 0 or dy ~= 0 then
-                if layer:get_id(x + dx, y + dy) == fuel_id then
-                    layer:paste_block(x + dx, y + dy, 0)
-                    return MAX_FUEL
-                end
-            end
-        end
-    end
-    return fuel
-end
-
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
     function(layer, x, y, value)
         local vars = layer:get_vars(x, y)
         if not vars then return end
 
-        local moved_on_tick = vars:get_u32("T")
-        if moved_on_tick == G_sdl_tick then return end
+        -- Initialize newly placed bots before reading or processing fuel.
+        -- Use a persistent marker so this does not reset fuel on every tick
+        -- before the bot has made its first move.
+        if (vars:get_u8("i") or 0) == 0 then
+            refuelable_component.initialize(vars, 0, game_data.robot_default_max_fuel)
+            vars:set_u8("i", 1)
+        end
 
-        local fuel = vars:get_u8("f") or 0
+        if movement.moved_this_tick(vars) then return end
+
+        local fuel = refuelable_component.get_fuel(layer, x, y)
         local carrying = vars:get_u8("c") or 0
 
         local fuel_id = game_data.id("fuel_cell")
@@ -223,11 +211,13 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         elseif now > 0 and now - last_drain >= FUEL_DRAIN_INTERVAL_MS then
             fuel = math.max(0, fuel - 1)
             vars:set_u32("D", now)
-            vars:set_u8("f", fuel)
+            refuelable_component.set_fuel(layer, x, y, fuel)
         end
         if fuel == 0 then
-            fuel = consume_adjacent_battery(G_view_menu.items.layer, x, y, fuel, fuel_id)
-            vars:set_u8("f", fuel)
+            if block_utils.consume_fuel(layer, x, y) then
+                fuel = game_data.robot_default_max_fuel
+            end
+            refuelable_component.set_fuel(layer, x, y, fuel)
         end
 
         if fuel <= 0 then
@@ -239,6 +229,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             return
         end
 
+        local moved_on_tick = movement.last_move_tick(vars)
         if moved_on_tick ~= 0 and now > 0 and now - moved_on_tick < MOVE_INTERVAL_MS then
             -- skipping this tick to respect the move interval
             return
@@ -251,39 +242,41 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 item_x, item_y = x, y
             end
             if x == item_x and y == item_y then
-                game_data.place_item(G_view_menu.items.layer, item_x, item_y,
-                    vars:get_u16("q") or 0, x, y)
-                vars:set_u16("q", 0)
-                vars:set_u8("c", 0)
-                release_reservation(vars)
-                vars:set_u8("v", 0)
-                vars:set_u8("t", 0)
-                return
+                if G_view_menu.items.layer:get_id(item_x, item_y) == 0 then
+                    game_data.place_item(G_view_menu.items.layer, item_x, item_y,
+                        vars:get_u16("q") or 0, x, y)
+                    vars:set_u16("q", 0)
+                    vars:set_u8("c", 0)
+                    release_reservation(vars)
+                    vars:set_u8("v", 0)
+                    vars:set_u8("t", 0)
+                    return
+                end
+
+                local drop = find_beacon_drop_cell(x, y)
+                if drop then
+                    vars:set_i16("d", drop.item_x)
+                    vars:set_i16("e", drop.item_y)
+                    item_x, item_y = drop.item_x, drop.item_y
+                else
+                    return
+                end
             end
 
             if G_view_menu.objects.layer:get_id(item_x, item_y) ~= 0 or
                 G_view_menu.items.layer:get_id(item_x, item_y) ~= 0 then
-                item_x, item_y = x, y
+                local drop = find_beacon_drop_cell(x, y)
+                if not drop then
+                    return
+                end
+                item_x, item_y = drop.item_x, drop.item_y
                 vars:set_i16("d", item_x)
                 vars:set_i16("e", item_y)
-                game_data.place_item(G_view_menu.items.layer, item_x, item_y,
-                    vars:get_u16("q") or 0, x, y)
-                vars:set_u16("q", 0)
-                vars:set_u8("c", 0)
-                release_reservation(vars)
-                vars:set_u8("v", 0)
-                vars:set_u8("t", 0)
-                return
             end
 
             local path = path_between(x, y, item_x, item_y)
             if path then
                 move_along_path(layer, vars, x, y, item_x, item_y, fuel)
-            else
-                game_data.place_item(G_view_menu.items.layer, x, y, vars:get_u16("q") or 0, x, y)
-                vars:set_u16("q", 0)
-                vars:set_u8("c", 0)
-                release_reservation(vars)
             end
             return
         end
@@ -331,12 +324,14 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
             required_fuel = math.ceil(required_fuel / MOVES_PER_FUEL)
 
-            if required_fuel > MAX_FUEL then
+            if required_fuel > game_data.robot_default_max_fuel then
                 release_reservation(vars)
                 print("Cannot collect scrap at " ..
                     target.x ..
                     ", " ..
-                    target.y .. ": required fuel is " .. (required_fuel or "unknown") .. ", max fuel is " .. MAX_FUEL)
+                    target.y ..
+                    ": required fuel is " ..
+                    (required_fuel or "unknown") .. ", max fuel is " .. game_data.robot_default_max_fuel)
                 return
             end
 
@@ -345,8 +340,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 if battery and battery.distance <= fuel + 1 then
                     if battery.distance == 1 then
                         G_view_menu.items.layer:paste_block(battery.x, battery.y, 0)
-                        fuel = MAX_FUEL
-                        vars:set_u8("f", fuel)
+                        fuel = game_data.robot_default_max_fuel
+                        refuelable_component.set_fuel(layer, x, y, fuel)
                         if fuel >= required_fuel then
                             target.path = path_between(x, y, target.x, target.y)
                         else
@@ -372,13 +367,19 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             local item_id = G_view_menu.items.layer:get_id(target.x, target.y)
             if item_id ~= 0 and game_data.is_scrap(item_id) and
                 owns_reservation(vars, target.x, target.y) then
+                local drop = find_beacon_drop_cell(x, y)
+                if not drop then
+                    release_reservation(vars)
+                    vars:set_u8("s", 0)
+                    return
+                end
+
                 G_view_menu.items.layer:paste_block(target.x, target.y, 0)
                 vars:set_u16("q", item_id)
                 vars:set_u8("c", 1)
                 vars:set_u8("s", 0)
-                local drop = find_beacon_drop_cell(x, y)
-                vars:set_i16("d", drop and drop.item_x or x)
-                vars:set_i16("e", drop and drop.item_y or y)
+                vars:set_i16("d", drop.item_x)
+                vars:set_i16("e", drop.item_y)
                 vars:set_u8("v", 1 + G_tick % 2)
                 vars:set_u8("t", math.random(0, 3))
                 release_reservation(vars)

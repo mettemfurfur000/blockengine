@@ -1,40 +1,11 @@
 local vec = require("registries.engine.scripts.vector_additions")
-local sdl = require("registries.engine.scripts.definitions.sdl")
-local wrappers = require("registries.engine.scripts.wrappers")
-local blockengine = require("registries.engine.scripts.definitions.blockengine")
 local camera_utils = require("registries.engine.scripts.camera_utils")
 
 local current_block = scripting_current_block_id
+local movement = scripting_current_block_api.movement
+local wasd = scripting_current_block_api.wasd
 
 print("loading a controller block id " .. current_block)
-
-local keystate = {}
-
-local function input_delta()
-    return {
-        x = (keystate['d'] or 0) - (keystate['a'] or 0),
-        y = (keystate['s'] or 0) - (keystate['w'] or 0)
-    }
-end
-
-blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
-    if rep ~= nil and rep <= 1 and state ~= 0 then
-        -- keystate[string.char(keysym)] = state
-        wrappers.try(function()
-            keystate[string.char(keysym)] = state
-        end, function(e)
-        end)
-    end
-end)
-
-blockengine.register_handler(events.SDL_KEYUP, function(keysym, mod, state, rep)
-    if rep ~= nil and rep <= 0 and state ~= 1 then
-        wrappers.try(function()
-            keystate[string.char(keysym)] = state
-        end, function(e)
-        end)
-    end
-end)
 
 scripting_light_block_input_register(scripting_current_light_registry, current_block, "tick",
     ---@param layer Layer
@@ -46,10 +17,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             return
         end
 
-        local moved_on_tick = vars:get_u32("T")
-        -- print("move tick is " .. moved_on_tick .. ", current is " .. G_sdl_tick)
-        if moved_on_tick == G_sdl_tick then -- already moved at this tick
-            -- print("moved already!")
+        if movement.moved_this_tick(vars) then
             return
         end
 
@@ -58,9 +26,9 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             y = y
         }
 
-        local delta = input_delta()
+        local delta = wasd.delta()
         if delta.x == 0 and delta.y == 0 then
-            if keystate[' '] == 1 then
+            if wasd.down(' ') then
                 vars:set_u8("v", 3) -- bonk
                 local dir = vars:get_u8("t")
                 delta = vec.delta(dir)
@@ -86,10 +54,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                 print("failed to move dev to " .. next_pos.x .. ":" .. next_pos.y)
             end
 
-            vars:set_i16("x", -delta.x * G_block_width_pixels)
-            vars:set_i16("y", -delta.y * G_block_width_pixels)
-
-            vars:set_u32("T", G_sdl_tick)
+            movement.begin(vars, delta.x, delta.y)
 
             camera_utils.set_target(vec.mult(next_pos, G_block_size))
         end

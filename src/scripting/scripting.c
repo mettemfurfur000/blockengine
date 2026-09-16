@@ -19,6 +19,18 @@
 
 lua_State *g_L = 0;
 
+u8 scripting_builder_mode = 0;
+
+// current block_resources being run by scripting_load_scripts, exposed to the
+// component bindings (lua_block_component.c)
+block_resources *g_current_block_res = NULL;
+
+void scripting_set_builder_mode(u8 on)
+{
+	scripting_builder_mode = on;
+	LOG_DEBUG("scripting_builder_mode set to %d", on);
+}
+
 vec_int_t handlers[128] = {};
 
 /* module container magic */
@@ -597,10 +609,21 @@ u8 scripting_load_scripts(block_registry *registry)
 
 	i8 status = SUCCESS;
 
+	// global flag for components/scripts to detect the headless registry builder
+	lua_pushboolean(g_L, scripting_builder_mode);
+	lua_setglobal(g_L, "scripting_is_builder");
+
+	// global table mapping block id -> per-block component API table, persists
+	// across block loads so components can find each other's registered APIs
+	lua_newtable(g_L);
+	lua_setglobal(g_L, "scripting_block_apis");
+
 	for (u32 i = 0; i < reg->length; i++)
 	{
 		block_resources *res = &reg->data[i];
 		const char *lua_file = res->lua_script_filename;
+
+		g_current_block_res = res;
 
 		lua_pushinteger(g_L, res->id);
 		lua_setglobal(g_L, "scripting_current_block_id");
@@ -610,6 +633,57 @@ u8 scripting_load_scripts(block_registry *registry)
 		lua_setglobal(g_L, "scripting_light_block_input_register");
 		lua_pushlightuserdata(g_L, registry);
 		lua_setglobal(g_L, "scripting_current_light_registry");
+
+		// fresh per-block API table for components to register into
+		lua_newtable(g_L);
+		lua_setglobal(g_L, "scripting_current_block_api");
+
+		// run all components of this block, shared subfolder components first so a
+		// block's own component can safely read the APIs registered by shared ones
+		for (u32 pass = 0; pass < 2; pass++)
+		{
+			for (u32 c = 0; c < res->component_names.length; c++)
+			{
+				const char *comp_name = res->component_names.data[c];
+
+				// pass 0: names with a path (components/...) are shared libraries
+				// pass 1: top-level names are the block's own component
+				bool is_shared = strchr(comp_name, '/') != NULL;
+				if (is_shared != (pass == 0))
+					continue;
+
+				lua_pushstring(g_L, comp_name);
+				lua_setglobal(g_L, "scripting_current_component_name");
+
+				component_blob_entry *blob = registry_find_component_blob(registry, comp_name);
+				if (blob != NULL && blob->blob != NULL && blob->blob_size > 0) // embedded bytecode load
+				{
+					LOG_DEBUG("Loading embedded component %s (bytecode)", comp_name);
+
+					if (scripting_load_compiled_blob(reg_name, comp_name, blob->blob, blob->blob_size) != SUCCESS)
+					{
+						LOG_ERROR("Failed to load embedded component %s", comp_name);
+						status = FAIL;
+						goto scripting_cleanup;
+					}
+				}
+				else // legacy/source fallback (e.g. registry builder before blobs exist)
+				{
+					LOG_DEBUG("Loading component %s (source)", comp_name);
+
+					if (scripting_do_script(reg_name, comp_name) != SUCCESS)
+					{
+						LOG_ERROR("Failed to load component %s", comp_name);
+						status = FAIL;
+						goto scripting_cleanup;
+					}
+				}
+			}
+		}
+
+		// update globals a component may have changed (interp_takes)
+		lua_pushinteger(g_L, res->interp_takes);
+		lua_setglobal(g_L, "scripting_current_block_interp_takes");
 
 		if (res->lua_script_blob != NULL && res->lua_script_blob_size > 0) // embedded bytecode load
 		{
@@ -641,6 +715,15 @@ u8 scripting_load_scripts(block_registry *registry)
 			res->lua_script_blob = NULL;
 			res->lua_script_blob_size = 0;
 		}
+
+		// stash this block's API table so other blocks can reach it by id
+		lua_getglobal(g_L, "scripting_block_apis");
+		lua_getglobal(g_L, "scripting_current_block_api");
+		lua_seti(g_L, -2, res->id);
+		lua_pop(g_L, 1);
+
+		// components may have added vars: rebuild the fast lookup offsets
+		rebuild_vars_offsets(res);
 
 		// checking if all inputs hav a handler
 		// should match if the script actually registered them
@@ -684,6 +767,14 @@ scripting_cleanup:
 	lua_setglobal(g_L, "scripting_register_block_input");
 	lua_pushnil(g_L);
 	lua_setglobal(g_L, "scripting_current_light_registry");
+	lua_pushnil(g_L);
+	lua_setglobal(g_L, "scripting_current_component_name");
+	lua_pushnil(g_L);
+	lua_setglobal(g_L, "scripting_current_block_api");
+	lua_pushnil(g_L);
+	lua_setglobal(g_L, "scripting_is_builder");
+
+	g_current_block_res = NULL;
 
 	return status;
 }

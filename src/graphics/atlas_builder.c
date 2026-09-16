@@ -4,6 +4,18 @@
 #include "include/opengl_stuff.h"
 
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+// a texture that already got an atlas placement, keyed by its file path so
+// every block that shares the texture reuses the same placement
+typedef struct atlas_packed_entry
+{
+	char *filename;
+	atlas_info info;
+} atlas_packed_entry;
+
+typedef vec_t(atlas_packed_entry) atlas_packed_t;
 
 int __img_cmp(const void *a, const void *b)
 {
@@ -61,6 +73,9 @@ void build_atlas(block_registry *reg)
 
 	const u32 len = reg->resources.length;
 
+	vec_str_t counted = {};
+	vec_init(&counted);
+
 	for (u32 i = 0; i < len; i++)
 	{
 		block_resources *r = &reg->resources.data[i];
@@ -75,6 +90,26 @@ void build_atlas(block_registry *reg)
 			FLAG_GET(r->flags, RESOURCE_FLAG_RANGED))
 			continue;
 
+		// blocks sharing a texture only reserve atlas space once
+		if (r->texture_filename != NULL)
+		{
+			bool duplicate = false;
+			char *name;
+			u32 ci;
+			vec_foreach(&counted, name, ci)
+			{
+				if (strcmp(name, r->texture_filename) == 0)
+				{
+					duplicate = true;
+					break;
+				}
+			}
+			if (duplicate)
+				continue;
+
+			(void)vec_push(&counted, r->texture_filename);
+		}
+
 		total_height += r->img->height;
 		total_width += r->img->width;
 		total_pixels += r->img->height * r->img->width;
@@ -82,13 +117,27 @@ void build_atlas(block_registry *reg)
 		// LOG_DEBUG("appending %dx%d from %s", r->img->height, r->img->width, r->texture_filename);
 	}
 
+	vec_deinit(&counted);
+
 	u32 min_side = sqrt(total_pixels);
 
 	// guessed size in pixels
 
 	u32 guess_w = pow(2, (u32)log2((min_side + total_width) / 4.0f));
 	u32 guess_h = pow(2, (u32)log2((min_side + total_height) / 4.0f));
+
+	atlas_packed_t packed = {};
+	vec_init(&packed);
+
 build_again:;
+	{
+		// drop placements recorded by a previous failed guess
+		atlas_packed_entry *pe;
+		u32 pei;
+		vec_foreach_ptr(&packed, pe, pei) free(pe->filename);
+		vec_clear(&packed);
+	}
+
 	u32 obuf_w = guess_w / g_block_width;
 	u32 obuf_h = guess_h / g_block_width;
 
@@ -128,6 +177,31 @@ build_again:;
 				continue;
 			}
 
+			// texture already packed for another block: reuse its placement
+			// instead of embedding a duplicate copy in the atlas
+			if (r->texture_filename != NULL)
+			{
+				atlas_packed_entry *found = NULL;
+				atlas_packed_entry *fentry;
+				u32 fei;
+				vec_foreach_ptr(&packed, fentry, fei)
+				{
+					if (strcmp(fentry->filename, r->texture_filename) == 0)
+					{
+						found = fentry;
+						break;
+					}
+				}
+
+				if (found != NULL)
+				{
+					r->info = found->info;
+					index++;
+					i--;
+					continue;
+				}
+			}
+
 			u32 tex_w = img->width / g_block_width;
 			u32 tex_h = img->height / g_block_width;
 
@@ -142,6 +216,13 @@ build_again:;
 				// also write our offset to de registry, in pixels
 				r->info.atlas_offset_x = i;
 				r->info.atlas_offset_y = j;
+
+				// remember the placement so shared textures are packed once
+				if (r->texture_filename != NULL)
+				{
+					atlas_packed_entry new_entry = {.filename = strdup(r->texture_filename), .info = r->info};
+					(void)vec_push(&packed, new_entry);
+				}
 
 				// since we skipped all the ranged entries we need to update
 				// their atlas offsets too
@@ -175,6 +256,13 @@ build_again:;
 		image_free(atlas);
 		goto build_again;
 	}
+
+	{
+		atlas_packed_entry *pe;
+		u32 pei;
+		vec_foreach_ptr(&packed, pe, pei) free(pe->filename);
+	}
+	vec_deinit(&packed);
 
 	image_save(atlas, "atlas_latest_debug.png"); // REMOVE ME MAYBE
 	sort_by_id(&reg->resources);

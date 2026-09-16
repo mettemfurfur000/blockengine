@@ -87,10 +87,15 @@ int main(int argc, char *argv[])
 
 	scripting_init();
 
+	// signal to components/scripts that we are compiling the registry headless
+	scripting_set_builder_mode(1);
+
 	block_registry r = {};
 
 	read_block_registry(&r, config.registry);
 	registry_save(&r);
+
+	scripting_set_builder_mode(0);
 
 	deinit_signal_handlers();
 	deinit_backtrace();

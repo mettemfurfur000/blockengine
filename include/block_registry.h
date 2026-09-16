@@ -15,7 +15,16 @@
 #define RESOURCE_FLAG_AUTO_ID 0b00001000
 #define RESOURCE_FLAG_RANGED 0b00010000
 
-#define REGISTRY_VERSION_MAGIC "BRG1"
+#define REGISTRY_VERSION_MAGIC "BRG2"
+
+typedef struct component_blob_entry
+{
+	char *name;
+	unsigned char *blob;
+	u32 blob_size;
+} component_blob_entry;
+
+typedef vec_t(component_blob_entry) component_blob_t;
 
 typedef struct block_resources
 {
@@ -34,6 +43,8 @@ typedef struct block_resources
 	// compiled lua bytecode embedded in .brg (owned by this struct)
 	unsigned char *lua_script_blob;
 	u32 lua_script_blob_size;
+
+	vec_str_t component_names;
 
 	vec_sound_t sounds;
 
@@ -71,6 +82,7 @@ typedef vec_t(block_resources) block_resources_t;
 typedef struct block_registry
 {
 	block_resources_t resources;
+	component_blob_t component_blobs;
 
 	const char *name;
 	image *atlas;
@@ -110,6 +122,14 @@ u64 block_registry_find_id_by_name(block_registry *reg, const char *name);
 
 void sort_by_id(block_resources_t *reg);
 void free_block_registry(block_registry *b_reg);
+
+// recompute vars_offsets from the current vars_sample (call after components
+// mutate vars at load time)
+void rebuild_vars_offsets(block_resources *res);
+
+// returns a pointer to the compiled component blob entry for the given name,
+// or NULL if the component was not compiled into this registry.
+component_blob_entry *registry_find_component_blob(block_registry *reg, const char *name);
 
 u32 read_all_registries(char *folder, vec_registries_t *dest);
 block_registry *find_registry(vec_void_t src, char *name);

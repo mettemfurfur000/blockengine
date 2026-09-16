@@ -183,12 +183,12 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
 blockengine.register_handler(events.SDL_MOUSEBUTTONDOWN, function(sx, sy, state, clicks, button)
     if not G_shop_open then return end
-    local rect = block_utils.pixel_to_layer_blocks(G_view_menu.pallete.index, { x = sx, y = sy })
-    if rect.x < SHOP_LEFT or rect.x > SHOP_LEFT + 11 then return end
-    if rect.y < SHOP_TOP + 1 or rect.y > SHOP_TOP + 4 then return end
+    local coord = block_utils.pixel_to_layer_blocks(G_view_menu.pallete.index, { x = sx, y = sy })
+    if coord.x < SHOP_LEFT or coord.x > SHOP_LEFT + SHOP_COLS then return end
+    if coord.y < SHOP_TOP + 1 or coord.y > SHOP_TOP + SHOP_ROWS then return end
 
-    local col = math.floor((rect.x - SHOP_LEFT) / 4)
-    local brow = math.floor((rect.y - SHOP_TOP - 1) / 2)
+    local col = math.floor((coord.x - SHOP_LEFT) / 4)
+    local brow = math.floor((coord.y - SHOP_TOP - 1) / 2)
     local row = brow * 3 + col + 1
     if row < 1 or row > #menu_items then return end
 

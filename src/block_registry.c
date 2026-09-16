@@ -333,6 +333,24 @@ DECLARE_DEFALT_STR_HANDLER(lua_script_filename)
 
 DECLARE_DEFAULT_STR_VEC_HANDLER(input_names)
 
+// "components" is a .blk entry name; it maps to the component_names vec
+u8 block_res_components_vec_str_handler(const char *data, block_resources *dest)
+{
+	if (strcmp(data, clean_token) == 0)
+	{
+		int i;
+		char *val;
+		vec_foreach(&dest->component_names, val, i) SAFE_FREE(val);
+
+		if (dest->component_names.data)
+			vec_deinit(&dest->component_names);
+		else
+			vec_init(&dest->component_names);
+	}
+	read_str_list(data, &dest->component_names);
+	return SUCCESS;
+}
+
 /* end of block resource handlers */
 
 const static resource_entry_handler res_handlers[] = {
@@ -475,12 +493,18 @@ const static resource_entry_handler res_handlers[] = {
 		.function = &block_res_lua_script_filename_str_handler,
 		.name = "script",
 	 },
-	// Used to accept ticks and other block inputs
+	// Used to accept ticks and other block inputs. Handlers may be registered
+	// by a block script or by components, so no dependency on "script" is enforced.
 	{
 		.function = &block_res_input_names_vec_str_handler,
 		.name = "inputs",
-		.deps = {"script"},
-	 }
+	 },
+	// List of component scripts attached to the block. Each component runs at
+	// registry load and can alter the block resource (vars, interpolation, APIs).
+	{
+		.function = &block_res_components_vec_str_handler,
+		.name = "components",
+	 },
 };
 
 const u32 TOTAL_HANDLERS = sizeof(res_handlers) / sizeof(*res_handlers);
@@ -909,6 +933,43 @@ void free_block_registry(block_registry *b_reg)
 	for (u32 i = 0; i < b_reg->resources.length; i++)
 		free_block_resources(&b_reg->resources.data[i]);
 	vec_deinit(&b_reg->resources);
+
+	for (u32 i = 0; i < b_reg->component_blobs.length; i++)
+	{
+		SAFE_FREE(b_reg->component_blobs.data[i].name);
+		SAFE_FREE(b_reg->component_blobs.data[i].blob);
+	}
+	vec_deinit(&b_reg->component_blobs);
+}
+
+component_blob_entry *registry_find_component_blob(block_registry *reg, const char *name)
+{
+	assert(reg);
+	assert(name);
+
+	for (u32 i = 0; i < reg->component_blobs.length; i++)
+		if (strcmp(reg->component_blobs.data[i].name, name) == 0)
+			return &reg->component_blobs.data[i];
+
+	return NULL;
+}
+
+void rebuild_vars_offsets(block_resources *res)
+{
+	for (i32 i = 0; i < (i32)(sizeof(res->vars_offsets) / sizeof(res->vars_offsets[0])); i++)
+		res->vars_offsets[i] = FAIL;
+
+	if (res->vars_sample.ptr && res->vars_sample.size > 0)
+	{
+		u32 pos = 0;
+		while (pos + 1 < res->vars_sample.size)
+		{
+			u8 letter = res->vars_sample.ptr[pos];
+			u8 size = res->vars_sample.ptr[pos + 1];
+			res->vars_offsets[letter] = (i32)pos;
+			pos += (u32)size + 2;
+		}
+	}
 }
 
 u32 read_all_registries(char *folder, vec_registries_t *dest)

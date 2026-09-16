@@ -1,36 +1,21 @@
 local game_data = require("registries.engine.scripts.game_data")
+local block_utils = require("registries.engine.scripts.block_utils")
 
 local current_block = scripting_current_block_id
-
-local MAX_FUEL = 10
-
-local function free_items_cell(x, y)
-    for dy = -1, 1 do
-        for dx = -1, 1 do
-            if dx ~= 0 or dy ~= 0 then
-                if G_view_menu.items.layer:get_id(x + dx, y + dy) == 0 then
-                    return x + dx, y + dy
-                end
-            end
-        end
-    end
-    return nil, nil
-end
+local refuelable_component = scripting_current_block_api.refuelable
 
 local function adjacent_scrap(x, y)
-    local ids = {}
-    for dy = -1, 1 do
-        for dx = -1, 1 do
-            if dx ~= 0 or dy ~= 0 then
-                local id = G_view_menu.items.layer:get_id(x + dx, y + dy)
-                if game_data.is_scrap(id) then
-                    ids[#ids + 1] = { id = id, price = game_data.price_of_id(id), x = x + dx, y = y + dy }
-                end
-            end
+    local blocks = block_utils.adjacent_blocks_all(G_view_menu.items.layer, x, y)
+    local scrap = {}
+
+    for _, block in ipairs(blocks) do
+        if game_data.is_scrap(block.id) then
+            scrap[#scrap + 1] = { id = block.id, price = game_data.price_of_id(block.id), x = block.x, y = block.y }
         end
     end
-    table.sort(ids, function(a, b) return a.price < b.price end)
-    return ids
+
+    table.sort(scrap, function(a, b) return a.price < b.price end)
+    return scrap
 end
 
 local function craft_target(total_price, threshold)
@@ -52,20 +37,11 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         local vars = layer:get_vars(x, y)
         if not vars then return end
 
-        local fuel = vars:get_u8("f") or 0
+        local fuel = refuelable_component.get_fuel(layer, x, y)
 
-        local fuel_id = game_data.id("fuel_cell")
-        if fuel < MAX_FUEL then
-            for dy = -1, 1 do
-                for dx = -1, 1 do
-                    if dx ~= 0 or dy ~= 0 then
-                        if G_view_menu.items.layer:get_id(x + dx, y + dy) == fuel_id then
-                            G_view_menu.items.layer:paste_block(x + dx, y + dy, 0)
-                            fuel = fuel + 1
-                            vars:set_u8("f", fuel)
-                        end
-                    end
-                end
+        if fuel < game_data.machine_max_fuel then
+            if block_utils.consume_fuel(layer, x, y) then
+                refuelable_component.add_fuel(layer, x, y, game_data.fuel_value)
             end
         end
 
@@ -75,18 +51,23 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             return
         end
 
+        if not refuelable_component.spend_fuel(G_view_menu.items.layer, x, y, game_data.craft_cost) then
+            vars:set_u8("v", 0)
+            return
+        end
+
         local consumed = around[1]
         local second = around[2]
         local total_price = consumed.price + second.price
         local threshold = second.price
 
-        local target = craft_target(total_price, threshold)
+        local target = craft_target(total_price * 2, threshold)
         if not target then
             vars:set_u8("v", 0)
             return
         end
 
-        local bx, by = free_items_cell(x, y)
+        local bx, by = block_utils.adjacent_block(G_view_menu.items.layer, x, y, 0)
         if not bx then
             vars:set_u8("v", 0)
             return
@@ -95,7 +76,6 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         G_view_menu.items.layer:paste_block(consumed.x, consumed.y, 0)
         G_view_menu.items.layer:paste_block(second.x, second.y, 0)
 
-        vars:set_u8("f", fuel - 1)
         game_data.place_item(G_view_menu.items.layer, bx, by, target, x, y)
         vars:set_u8("v", 1 + G_tick % 3)
     end

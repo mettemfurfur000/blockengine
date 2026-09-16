@@ -1,14 +1,21 @@
 automatic_id 1
-script = collector_bot.lua
+components = [ components/movement.lua components/refuelable.lua collector_bot.lua  ]
 inputs = [ tick ]
 # v - anim frame
 # t - type frame
-# f - fuel cells loaded
-vars = { u8 v = 0 u8 t = 0 u8 f = 0 u8 c = 0 u8 s = 0 u8 n = 0 u16 q = 0 i16 x = 0 i16 y = 0 i16 h = 0 i16 k = 0 i16 d = 0 i16 e = 0 i16 a = 0 i16 b = 0 u32 T = 0 u32 D = 0 }
-offset_x_controller = x
-offset_y_controller = y
-interp_timestamp_controller = T
-interp_takes = 100
+# c - carrying item flag
+# s - has target scrap
+# n - moves since last fuel usage
+# q - carried item id
+# h - target x
+# k - target y
+# d - carried drop x
+# e - carried drop y
+# a - reservation owner id
+# b - (unused)
+# D - last fuel-drain tick
+# i - initializer marker
+vars = { u8 v = 0 u8 t = 0 u8 c = 0 u8 s = 0 u8 n = 0 u16 q = 0 i16 h = 0 i16 k = 0 i16 d = 0 i16 e = 0 i16 a = 0 i16 b = 0 u32 D = 0 u8 i = 0 }
 frame_controller = v
 type_controller = t
 texture = collector_bot.png

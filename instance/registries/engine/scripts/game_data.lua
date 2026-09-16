@@ -16,6 +16,14 @@ M.price = {
 M.machines = { "collector_bot", "drill", "assembler", "collector_beacon" }
 M.usables = { "fuel_cell", "energy_upgrade", "stack_upgrade" }
 
+M.robot_default_max_fuel = 60
+
+M.fuel_value = 20
+M.craft_cost = 2
+M.mine_cost = 1
+
+M.machine_max_fuel = 100
+
 local id_cache = {}
 local name_cache = {}
 
@@ -40,9 +48,11 @@ function M.place_item(layer, x, y, id, from_x, from_y)
 
     local previous_x = from_x or x
     local previous_y = from_y or y
-    vars:set_i16("x", (previous_x - x) * G_block_width_pixels)
-    vars:set_i16("y", (previous_y - y) * G_block_width_pixels + G_block_size)
-    vars:set_u32("T", G_sdl_tick or 0)
+
+    local movement = component.component_get_block_api(id).movement
+    if movement then
+        movement.begin(vars, x - previous_x, y - previous_y)
+    end
 end
 
 function M.name_of_id(id)

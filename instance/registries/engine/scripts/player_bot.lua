@@ -5,47 +5,18 @@ local camera_utils = require("registries.engine.scripts.camera_utils")
 local game_data = require("registries.engine.scripts.game_data")
 
 local current_block = scripting_current_block_id
-local move_interval_ms = scripting_current_block_interp_takes
+local movement = scripting_current_block_api.movement
+local wasd = scripting_current_block_api.wasd
+local move_interval_ms = movement.interp_takes
 
 local bots_reg = {}
 local self_bot_uuid = 0
-
-local keystate = {}
-local pending_grab = false
 
 local function update_camera_interp()
     if G_camera ~= nil then
         G_camera:set_interp_takes(move_interval_ms)
     end
 end
-
-local function input_delta()
-    return {
-        x = (keystate['d'] or 0) - (keystate['a'] or 0),
-        y = (keystate['s'] or 0) - (keystate['w'] or 0)
-    }
-end
-
-blockengine.register_handler(events.SDL_KEYDOWN, function(keysym, mod, state, rep)
-    if rep ~= nil and rep <= 1 and state ~= 0 then
-        wrappers.try(function()
-            local ch = string.char(keysym)
-            local prev = keystate[ch]
-            keystate[ch] = state
-            if ch == 'e' and prev ~= 1 then
-                pending_grab = true
-            end
-        end, function(e) end)
-    end
-end)
-
-blockengine.register_handler(events.SDL_KEYUP, function(keysym, mod, state, rep)
-    if rep ~= nil and rep <= 0 and state ~= 1 then
-        wrappers.try(function()
-            keystate[string.char(keysym)] = state
-        end, function(e) end)
-    end
-end)
 
 local function bot_lookup(uuid)
     for _, v in ipairs(bots_reg) do
@@ -76,7 +47,6 @@ local function claim_existing_player()
     G_bot_pos = nil
     G_self_bot = nil
     G_game_over = false
-    pending_grab = false
 
     if G_view_menu == nil or G_view_menu.objects == nil then
         return
@@ -100,9 +70,7 @@ local function claim_existing_player()
 
             -- SDL ticks restart between runs, so movement interpolation state from
             -- the saved level must not throttle the first move after loading.
-            vars:set_u32("T", 0)
-            vars:set_i16("x", 0)
-            vars:set_i16("y", 0)
+            movement.reset(vars)
         end
     end)
 end
@@ -113,16 +81,21 @@ local function clear_hud_row(y, w)
 end
 
 local held_icon_cells = {}
+local held_icon_items = {}
+local held_icon_pos = nil
 
 local function update_held_icon(vars)
-    local tx = G_view_menu.held_items.layer
-
-    for _, cell in ipairs(held_icon_cells) do
-        tx:paste_block(cell.x, cell.y, 0)
-    end
-    held_icon_cells = {}
+    local icon_layer = G_view_menu.held_items.layer
 
     if G_camera == nil or G_bot_pos == nil then
+        for _, cell in pairs(held_icon_cells) do
+            if cell then
+                icon_layer:paste_block(cell.x, cell.y, 0)
+            end
+        end
+        held_icon_cells = {}
+        held_icon_items = {}
+        held_icon_pos = nil
         return
     end
 
@@ -130,25 +103,58 @@ local function update_held_icon(vars)
     local hx = G_bot_pos.x
     local hy = G_bot_pos.y
 
-    if hx < 0 or hx >= G_width_blocks then
-        return
+    if held_icon_pos ~= nil then
+        local dx = hx - held_icon_pos.x
+        local dy = hy - held_icon_pos.y
+        if dx ~= 0 or dy ~= 0 then
+            local first = dy > 0 and 1 or #held_icon_cells
+            local last = dy > 0 and #held_icon_cells or 1
+            local step = dy > 0 and 1 or -1
+            for index = first, last, step do
+                local cell = held_icon_cells[index]
+                if cell then
+                    local next_x = cell.x + dx
+                    local next_y = cell.y + dy
+                    if next_x < 0 or next_x >= G_width_blocks or next_y < 0 or next_y >= G_height_blocks then
+                        icon_layer:paste_block(cell.x, cell.y, 0)
+                        held_icon_cells[index] = nil
+                    elseif icon_layer:move_block(cell.x, cell.y, dx, dy) then
+                        -- move 1 past to edit the vars of the new cell, since the old cell is now empty
+                        cell.x = next_x
+                        cell.y = next_y
+
+                        movement.copy_movement(icon_layer, next_x, next_y, vars)
+                    end
+                end
+            end
+        end
     end
 
     for index, item_id in ipairs(items) do
         local icon_y = hy - index + 1
-        if icon_y < 0 or icon_y >= G_height_blocks then
-            break
+        local cell = held_icon_cells[index]
+        if cell == nil then
+            if hx >= 0 and hx < G_width_blocks and icon_y >= 0 and icon_y < G_height_blocks then
+                icon_layer:paste_block(hx, icon_y, item_id)
+                movement.copy_movement(icon_layer, hx, icon_y, vars)
+                held_icon_cells[index] = { x = hx, y = icon_y }
+            end
+        elseif held_icon_items[index] ~= item_id then
+            icon_layer:paste_block(cell.x, cell.y, item_id)
+            movement.copy_movement(icon_layer, cell.x, cell.y, vars)
         end
-
-        tx:paste_block(hx, icon_y, item_id)
-        local ivars = tx:get_vars(hx, icon_y)
-        if ivars then
-            ivars:set_i16("x", (vars:get_i16("x") or 0))
-            ivars:set_i16("y", (vars:get_i16("y") or 0))
-            ivars:set_u32("T", (vars:get_u32("T") or 0))
-        end
-        held_icon_cells[#held_icon_cells + 1] = { x = hx, y = icon_y }
     end
+
+    for index = #held_icon_cells, #items + 1, -1 do
+        local cell = held_icon_cells[index]
+        if cell then
+            icon_layer:paste_block(cell.x, cell.y, 0)
+            held_icon_cells[index] = nil
+        end
+    end
+
+    held_icon_items = items
+    held_icon_pos = { x = hx, y = hy }
 end
 
 local function refresh_hud(vars, x, y)
@@ -211,8 +217,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         local vars = layer:get_vars(x, y)
         if not vars then return end
 
-        local moved_on_tick = vars:get_u32("T")
-        if moved_on_tick == G_sdl_tick then return end
+        if movement.moved_this_tick(vars) then return end
 
         local uuid = vars:get_u32("@")
         if uuid == nil or uuid == 0 then
@@ -246,17 +251,16 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         end
 
         local pos = { x = x, y = y }
-        local delta = input_delta()
+        local delta = wasd.delta()
         local dir = vars:get_u8("t")
 
         local items_str = vars:get_string("I")
         local items = game_data.stack_items(items_str)
-        local is_grabbing = pending_grab
+        local is_grabbing = wasd.consume_press('e')
         local is_standing = delta.x == 0 and delta.y == 0
         local frame_base = #items > 0 and frames.has_items_stand or frames.stand
 
         if is_grabbing then
-            pending_grab = false
             local front = vec.add(pos, vec.delta(dir))
 
             if #items > 0 then
@@ -317,7 +321,8 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         end
 
         local now = G_sdl_tick or 0
-        if moved_on_tick ~= 0 and now > 0 and now >= moved_on_tick and now - moved_on_tick < move_interval_ms then
+        if movement.last_move_tick(vars) ~= 0 and now > 0 and now >= movement.last_move_tick(vars) and
+            now - movement.last_move_tick(vars) < move_interval_ms then
             vars:set_u16("e", energy)
             vars:set_u8("v", frame_base)
             refresh_hud(vars, x, y)
@@ -332,9 +337,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         local id = G_view_menu.objects.layer:get_id(next_pos.x, next_pos.y)
         if id == 0 then
             if layer:move_block(pos.x, pos.y, delta.x, delta.y) then
-                vars:set_i16("x", -delta.x * G_block_width_pixels)
-                vars:set_i16("y", -delta.y * G_block_width_pixels)
-                vars:set_u32("T", G_sdl_tick)
+                movement.begin(vars, delta.x, delta.y)
                 vars:set_u8("n", (vars:get_u8("n") or 0) + 1)
                 energy = maybe_drain_energy(vars, energy)
                 G_bot_pos = next_pos
