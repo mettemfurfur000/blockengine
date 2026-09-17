@@ -1,5 +1,5 @@
 automatic_id 1
-components = [ components/wasd.lua components/movement.lua player_bot.lua ]
+traits = [ traits/wasd.lua traits/movement.lua player_bot.lua ]
 inputs = [ tick click ]
 # @ - bot uuid
 # I - items on the head, as a byte array, 16 elements

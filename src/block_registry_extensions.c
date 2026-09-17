@@ -115,12 +115,12 @@ void block_resource_write(block_resources res, block_registry *b, stream_t *s)
 		},
 		s)
 
-	// component names - the blobs themselves are deduped at registry level
+	// trait names - the blobs themselves are deduped at registry level
 	WRITE_VEC(
-		res.component_names, j, str,
+		res.trait_names, j, str,
 		{
-			blob comp_name_blob = blobify(str);
-			blob_write(comp_name_blob, s);
+			blob trait_name_blob = blobify(str);
+			blob_write(trait_name_blob, s);
 		},
 		s)
 
@@ -240,12 +240,12 @@ block_resources block_resource_read(block_registry *b, stream_t *s)
 		},
 		s);
 
-	// component names
+	// trait names
 	READ_VEC(
-		res.component_names, j, str,
+		res.trait_names, j, str,
 		{
-			blob comp_name_blob = blob_read(s);
-			str = comp_name_blob.str;
+			blob trait_name_blob = blob_read(s);
+			str = trait_name_blob.str;
 		},
 		s);
 
@@ -310,49 +310,49 @@ u8 registry_save(block_registry *b)
 		free(bytecode);
 	}
 
-	// deduped component blob table: compile every unique component script once
+	// deduped trait blob table: compile every unique trait script once
 	{
-		vec_str_t unique_components = {};
-		vec_init(&unique_components);
+		vec_str_t unique_traits = {};
+		vec_init(&unique_traits);
 
 		block_resources res;
 		u32 bi;
 		vec_foreach(&b->resources, res, bi)
 		{
-			char *comp_name;
+			char *trait_name;
 			u32 ci;
-			vec_foreach(&res.component_names, comp_name, ci)
+			vec_foreach(&res.trait_names, trait_name, ci)
 			{
 				char *existing;
 				u32 ei;
 				bool found = false;
-				vec_foreach(&unique_components, existing, ei)
+				vec_foreach(&unique_traits, existing, ei)
 				{
-					if (strcmp(existing, comp_name) == 0)
+					if (strcmp(existing, trait_name) == 0)
 					{
 						found = true;
 						break;
 					}
 				}
 				if (!found)
-					(void)vec_push(&unique_components, strdup(comp_name));
+					(void)vec_push(&unique_traits, strdup(trait_name));
 			}
 		}
 
-		u32 comp_count = unique_components.length;
-		WRITE(comp_count, &s);
+		u32 trait_count = unique_traits.length;
+		WRITE(trait_count, &s);
 
-		for (u32 i = 0; i < unique_components.length; i++)
+		for (u32 i = 0; i < unique_traits.length; i++)
 		{
-			blob comp_name_blob = blobify(unique_components.data[i]);
-			blob_write(comp_name_blob, &s);
+			blob trait_name_blob = blobify(unique_traits.data[i]);
+			blob_write(trait_name_blob, &s);
 
 			unsigned char *bytecode = NULL;
 			u32 bytecode_size = 0;
-			if (scripting_compile_file_to_bytecode(b->name, unique_components.data[i], &bytecode, &bytecode_size) !=
+			if (scripting_compile_file_to_bytecode(b->name, unique_traits.data[i], &bytecode, &bytecode_size) !=
 				SUCCESS)
 			{
-				LOG_ERROR("Failed to compile component %s for registry %s", unique_components.data[i], b->name);
+				LOG_ERROR("Failed to compile trait %s for registry %s", unique_traits.data[i], b->name);
 				bytecode_size = 0;
 			}
 
@@ -364,9 +364,9 @@ u8 registry_save(block_registry *b)
 			}
 		}
 
-		for (u32 i = 0; i < unique_components.length; i++)
-			free(unique_components.data[i]);
-		vec_deinit(&unique_components);
+		for (u32 i = 0; i < unique_traits.length; i++)
+			free(unique_traits.data[i]);
+		vec_deinit(&unique_traits);
 	}
 
 	// write all block resources
@@ -454,22 +454,22 @@ block_registry *registry_load(const char *name)
 		free(bytecode);
 	}
 
-	// read deduped component blob table
+	// read deduped trait blob table
 	{
-		u32 comp_count = 0;
-		READ(comp_count, &s);
+		u32 trait_count = 0;
+		READ(trait_count, &s);
 
-		vec_init(&reg->component_blobs);
+		vec_init(&reg->trait_blobs);
 
-		for (u32 i = 0; i < comp_count; i++)
+		for (u32 i = 0; i < trait_count; i++)
 		{
-			blob comp_name_blob = blob_read(&s);
+			blob trait_name_blob = blob_read(&s);
 
 			u32 bytecode_size = 0;
 			READ(bytecode_size, &s);
 
-			component_blob_entry entry = {};
-			entry.name = comp_name_blob.str;
+			trait_blob_entry entry = {};
+			entry.name = trait_name_blob.str;
 			entry.blob_size = bytecode_size;
 
 			if (bytecode_size > 0)
@@ -480,7 +480,7 @@ block_registry *registry_load(const char *name)
 			else
 				entry.blob = NULL;
 
-			(void)vec_push(&reg->component_blobs, entry);
+			(void)vec_push(&reg->trait_blobs, entry);
 		}
 	}
 

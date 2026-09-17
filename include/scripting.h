@@ -79,7 +79,7 @@ extern u8 scripting_builder_mode;
 void scripting_set_builder_mode(u8 on);
 
 // current block_resources being loaded by scripting_load_scripts; consumed by
-// the component bindings (lua_block_component.c)
+// the trait bindings (lua_block_trait.c)
 extern block_resources *g_current_block_res;
 
 // utils

@@ -6,7 +6,7 @@
 #include "include/scripting_var_handles.h"
 
 #include "include/scripting/entity.h"
-#include "include/scripting/block_component.h"
+#include "include/scripting/block_trait.h"
 #include "include/scripting/image.h"
 #include "include/scripting/level.h"
 #include "include/scripting/registry.h"
@@ -96,7 +96,7 @@ void lua_register_engine_objects(lua_State *L)
 
 	image_load_editing_library(L);
 
-	lua_block_component_register(L);
+	lua_block_trait_register(L);
 
 	lua_logging_register(g_L);
 	lua_level_editing_lib_register(g_L);

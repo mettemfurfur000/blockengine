@@ -2,15 +2,15 @@ local game_data = require("registries.engine.scripts.game_data")
 local block_utils = require("registries.engine.scripts.block_utils")
 
 local current_block = scripting_current_block_id
-local refuelable_component = scripting_current_block_api.refuelable
+local refuelable_trait = scripting_current_block_api.refuelable
 
 local function feed_fuel(layer, x, y)
-    if refuelable_component.get_fuel(layer, x, y) >= game_data.machine_max_fuel then
+    if refuelable_trait.get_fuel(layer, x, y) >= game_data.machine_max_fuel then
         return
     end
 
     if block_utils.consume_fuel(layer, x, y) then
-        refuelable_component.add_fuel(layer, x, y, 20)
+        refuelable_trait.add_fuel(layer, x, y, 20)
     end
 end
 
@@ -25,7 +25,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
 
         feed_fuel(layer, x, y)
 
-        if not refuelable_component.spend_fuel(G_view_menu.items.layer, x, y, game_data.mine_cost) then
+        if not refuelable_trait.spend_fuel(G_view_menu.items.layer, x, y, game_data.mine_cost) then
             vars:set_u8("v", 0)
             return
         end

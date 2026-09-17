@@ -2,7 +2,7 @@ local game_data = require("registries.engine.scripts.game_data")
 local block_utils = require("registries.engine.scripts.block_utils")
 
 local current_block = scripting_current_block_id
-local refuelable_component = scripting_current_block_api.refuelable
+local refuelable_trait = scripting_current_block_api.refuelable
 
 local function adjacent_scrap(x, y)
     local blocks = block_utils.adjacent_blocks_all(G_view_menu.items.layer, x, y)
@@ -37,11 +37,11 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         local vars = layer:get_vars(x, y)
         if not vars then return end
 
-        local fuel = refuelable_component.get_fuel(layer, x, y)
+        local fuel = refuelable_trait.get_fuel(layer, x, y)
 
         if fuel < game_data.machine_max_fuel then
             if block_utils.consume_fuel(layer, x, y) then
-                refuelable_component.add_fuel(layer, x, y, game_data.fuel_value)
+                refuelable_trait.add_fuel(layer, x, y, game_data.fuel_value)
             end
         end
 
@@ -51,7 +51,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
             return
         end
 
-        if not refuelable_component.spend_fuel(G_view_menu.items.layer, x, y, game_data.craft_cost) then
+        if not refuelable_trait.spend_fuel(G_view_menu.items.layer, x, y, game_data.craft_cost) then
             vars:set_u8("v", 0)
             return
         end

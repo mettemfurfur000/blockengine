@@ -1,6 +1,6 @@
 automatic_id 1
 texture = button.png
-components = [ button.lua ]
+traits = [ button.lua ]
 inputs = [ click ]
 vars = { u8 a = 0 }
 frame_controller = a

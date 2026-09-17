@@ -1,5 +1,5 @@
 automatic_id 1
-components = [ components/movement.lua components/refuelable.lua collector_bot.lua  ]
+traits = [ traits/movement.lua traits/refuelable.lua collector_bot.lua  ]
 inputs = [ tick ]
 # v - anim frame
 # t - type frame

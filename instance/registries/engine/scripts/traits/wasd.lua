@@ -48,4 +48,4 @@ blockengine.register_handler(events.SDL_KEYUP, function(keysym, mod, state, rep)
     end
 end)
 
-component.component_register_api("wasd", api)
+trait.trait_register_api("wasd", api)

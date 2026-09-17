@@ -4,7 +4,7 @@ local wrappers               = require("registries.engine.scripts.wrappers")
 
 local current_block          = scripting_current_block_id
 local movement               = scripting_current_block_api.movement
-local refuelable_component   = scripting_current_block_api.refuelable
+local refuelable_trait   = scripting_current_block_api.refuelable
 
 local MOVES_PER_FUEL         = 25
 local FUEL_DRAIN_INTERVAL_MS = 10000
@@ -92,7 +92,7 @@ local function move_along_path(layer, vars, x, y, target_x, target_y, fuel)
     end
 
     vars:set_u8("n", moves)
-    refuelable_component.set_fuel(layer, x + move_x, y + move_y, fuel)
+    refuelable_trait.set_fuel(layer, x + move_x, y + move_y, fuel)
     vars:set_u8("v", 1 + G_tick % 2)
     vars:set_u8("t", math.random(0, 3))
 
@@ -194,13 +194,13 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         -- Use a persistent marker so this does not reset fuel on every tick
         -- before the bot has made its first move.
         if (vars:get_u8("i") or 0) == 0 then
-            refuelable_component.initialize(vars, 0, game_data.robot_default_max_fuel)
+            refuelable_trait.initialize(vars, 0, game_data.robot_default_max_fuel)
             vars:set_u8("i", 1)
         end
 
         if movement.moved_this_tick(vars) then return end
 
-        local fuel = refuelable_component.get_fuel(layer, x, y)
+        local fuel = refuelable_trait.get_fuel(layer, x, y)
         local carrying = vars:get_u8("c") or 0
 
         local fuel_id = game_data.id("fuel_cell")
@@ -211,13 +211,13 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
         elseif now > 0 and now - last_drain >= FUEL_DRAIN_INTERVAL_MS then
             fuel = math.max(0, fuel - 1)
             vars:set_u32("D", now)
-            refuelable_component.set_fuel(layer, x, y, fuel)
+            refuelable_trait.set_fuel(layer, x, y, fuel)
         end
         if fuel == 0 then
             if block_utils.consume_fuel(layer, x, y) then
                 fuel = game_data.robot_default_max_fuel
             end
-            refuelable_component.set_fuel(layer, x, y, fuel)
+            refuelable_trait.set_fuel(layer, x, y, fuel)
         end
 
         if fuel <= 0 then
@@ -341,7 +341,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
                     if battery.distance == 1 then
                         G_view_menu.items.layer:paste_block(battery.x, battery.y, 0)
                         fuel = game_data.robot_default_max_fuel
-                        refuelable_component.set_fuel(layer, x, y, fuel)
+                        refuelable_trait.set_fuel(layer, x, y, fuel)
                         if fuel >= required_fuel then
                             target.path = path_between(x, y, target.x, target.y)
                         else

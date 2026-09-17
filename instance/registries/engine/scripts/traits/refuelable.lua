@@ -1,8 +1,8 @@
 local fuel_key = "F"
 local fuel_max_key = "M"
 
-component.component_add_var(fuel_key, 1)
-component.component_add_var(fuel_max_key, 1)
+trait.trait_add_var(fuel_key, 1)
+trait.trait_add_var(fuel_max_key, 1)
 
 local api = {}
 
@@ -57,7 +57,7 @@ function api.set_max_fuel(layer, x, y, amount)
     return true
 end
 
--- returns overflow amount if fuel exceeds max fuel_component
+-- returns overflow amount if fuel exceeds max fuel_trait
 function api.add_fuel(layer, x, y, amount)
     local vars = layer:get_vars(x, y)
     if not vars then return false, 0 end
@@ -73,4 +73,4 @@ function api.add_fuel(layer, x, y, amount)
     return true, overflow
 end
 
-component.component_register_api("refuelable", api)
+trait.trait_register_api("refuelable", api)

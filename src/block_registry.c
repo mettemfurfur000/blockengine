@@ -333,21 +333,21 @@ DECLARE_DEFALT_STR_HANDLER(lua_script_filename)
 
 DECLARE_DEFAULT_STR_VEC_HANDLER(input_names)
 
-// "components" is a .blk entry name; it maps to the component_names vec
-u8 block_res_components_vec_str_handler(const char *data, block_resources *dest)
+// "traits" is a .blk entry name; it maps to the trait_names vec
+u8 block_res_traits_vec_str_handler(const char *data, block_resources *dest)
 {
 	if (strcmp(data, clean_token) == 0)
 	{
 		int i;
 		char *val;
-		vec_foreach(&dest->component_names, val, i) SAFE_FREE(val);
+		vec_foreach(&dest->trait_names, val, i) SAFE_FREE(val);
 
-		if (dest->component_names.data)
-			vec_deinit(&dest->component_names);
+		if (dest->trait_names.data)
+			vec_deinit(&dest->trait_names);
 		else
-			vec_init(&dest->component_names);
+			vec_init(&dest->trait_names);
 	}
-	read_str_list(data, &dest->component_names);
+	read_str_list(data, &dest->trait_names);
 	return SUCCESS;
 }
 
@@ -494,16 +494,16 @@ const static resource_entry_handler res_handlers[] = {
 		.name = "script",
 	 },
 	// Used to accept ticks and other block inputs. Handlers may be registered
-	// by a block script or by components, so no dependency on "script" is enforced.
+	// by a block script or by traits, so no dependency on "script" is enforced.
 	{
 		.function = &block_res_input_names_vec_str_handler,
 		.name = "inputs",
 	 },
-	// List of component scripts attached to the block. Each component runs at
+	// List of trait scripts attached to the block. Each trait runs at
 	// registry load and can alter the block resource (vars, interpolation, APIs).
 	{
-		.function = &block_res_components_vec_str_handler,
-		.name = "components",
+		.function = &block_res_traits_vec_str_handler,
+		.name = "traits",
 	 },
 };
 
@@ -934,22 +934,22 @@ void free_block_registry(block_registry *b_reg)
 		free_block_resources(&b_reg->resources.data[i]);
 	vec_deinit(&b_reg->resources);
 
-	for (u32 i = 0; i < b_reg->component_blobs.length; i++)
+	for (u32 i = 0; i < b_reg->trait_blobs.length; i++)
 	{
-		SAFE_FREE(b_reg->component_blobs.data[i].name);
-		SAFE_FREE(b_reg->component_blobs.data[i].blob);
+		SAFE_FREE(b_reg->trait_blobs.data[i].name);
+		SAFE_FREE(b_reg->trait_blobs.data[i].blob);
 	}
-	vec_deinit(&b_reg->component_blobs);
+	vec_deinit(&b_reg->trait_blobs);
 }
 
-component_blob_entry *registry_find_component_blob(block_registry *reg, const char *name)
+trait_blob_entry *registry_find_trait_blob(block_registry *reg, const char *name)
 {
 	assert(reg);
 	assert(name);
 
-	for (u32 i = 0; i < reg->component_blobs.length; i++)
-		if (strcmp(reg->component_blobs.data[i].name, name) == 0)
-			return &reg->component_blobs.data[i];
+	for (u32 i = 0; i < reg->trait_blobs.length; i++)
+		if (strcmp(reg->trait_blobs.data[i].name, name) == 0)
+			return &reg->trait_blobs.data[i];
 
 	return NULL;
 }
