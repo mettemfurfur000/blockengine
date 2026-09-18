@@ -15,3 +15,5 @@ vars = { u32 @ = 0 str I = "~~~~~~~~~~~~~~~~" u8 v = 0 u8 t = 0 u16 e = 60 u16 m
 texture = player_bot.png
 frame_controller = v
 type_controller = t
+# currently unused since no refuelable component
+cfg_fuel_max = 60 

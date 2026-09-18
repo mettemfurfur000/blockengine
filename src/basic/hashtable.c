@@ -1,4 +1,5 @@
 #include "include/hashtable.h"
+#include "include/logging.h"
 
 #include <lua.h>
 #include <stdlib.h>
@@ -213,10 +214,10 @@ void put_entry(hash_node **table, blob key, blob value)
 
 blob get_entry(hash_node **table, blob key)
 {
-	if (!table)
-		return key;
-
 	blob ret = {};
+
+	if (!table)
+		return ret;
 
 	unsigned long hash = hash_function(key);
 	hash_node *node = table[hash];
@@ -232,29 +233,20 @@ blob get_entry(hash_node **table, blob key)
 	return ret;
 }
 
-void print_node(hash_node *node, const char *context)
-{
-	// LOG_DEBUG("%s %.*s [%d] : %.*s [%d], %p -> %p",
-	// 		  context,
-	// 		  node->key.size,
-	// 		  node->key.ptr,
-	// 		  node->key.size,
-	// 		  node->value.size, node->value.ptr,
-	// 		  node->value.size,
-	// 		  node->key.ptr,
-	// 		  node->value.ptr);
-}
-
 void print_table(hash_node **table)
 {
 	hash_node *node;
-	// LOG_DEBUG("table content:");
 
-	for (u32 i = 0; i < TABLE_SIZE; ++i)
+	for (u32 i = 0; i < TABLE_SIZE; i++)
 	{
 		node = table[i];
 		while (node != NULL)
 		{
+			if (node->key.str && node->value.str)
+				LOG_DEBUG(".%d: %s = %s", i, node->key.str, node->value.str);
+			else
+				LOG_DEBUG(".%d: (empty/invalid node)", i);
+
 			node = node->next;
 		}
 	}

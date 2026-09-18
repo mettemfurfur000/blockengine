@@ -19,3 +19,5 @@ vars = { u8 v = 0 u8 t = 0 u8 c = 0 u8 s = 0 u8 n = 0 u16 q = 0 i16 h = 0 i16 k 
 frame_controller = v
 type_controller = t
 texture = collector_bot.png
+# 
+cfg_fuel_max = 60

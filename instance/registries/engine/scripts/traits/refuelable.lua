@@ -1,15 +1,25 @@
+local wrappers = require("registries.engine.scripts.wrappers")
+
 local fuel_key = "F"
 local fuel_max_key = "M"
+local fuel_cfg_max_entry = "cfg_fuel_max"
 
-trait.trait_add_var(fuel_key, 1)
-trait.trait_add_var(fuel_max_key, 1)
+trait.add_var(fuel_key, 1)
+trait.add_var(fuel_max_key, 1)
+
+local max_fuel = trait.get_resource_field(fuel_cfg_max_entry)
+
+if not max_fuel then
+    wrappers.log_warning(fuel_cfg_max_entry ..
+        " is not set for block \'" ..
+        trait.get_resource_field("source_filename") ..
+        "\', setting to 20 by default")
+    max_fuel = "20"
+end
+
+trait.set_u8(fuel_max_key, tonumber(max_fuel))
 
 local api = {}
-
-function api.initialize(vars, initial, max)
-    vars:set_u8(fuel_key, initial)
-    vars:set_u8(fuel_max_key, max)
-end
 
 function api.spend_fuel(layer, x, y, amount)
     amount = amount or 1
@@ -73,4 +83,4 @@ function api.add_fuel(layer, x, y, amount)
     return true, overflow
 end
 
-trait.trait_register_api("refuelable", api)
+trait.register_api("refuelable", api)

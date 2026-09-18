@@ -49,7 +49,7 @@ function M.place_item(layer, x, y, id, from_x, from_y)
     local previous_x = from_x or x
     local previous_y = from_y or y
 
-    local movement = trait.trait_get_block_api(id).movement
+    local movement = trait.get_block_api(id).movement
     if movement then
         movement.begin(vars, x - previous_x, y - previous_y)
     end

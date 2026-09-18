@@ -1,8 +1,9 @@
 automatic_id 1
-traits = [ traits/movement.lua drill.lua  ]
+traits = [ traits/movement.lua traits/refuelable.lua drill.lua  ]
 inputs = [ tick ]
 # v - anim frame (0 idle, 1 working)
-# f - fuel cells loaded
-vars = { u8 v = 0 u8 f = 0 }
+vars = { u8 v = 0 }
 frame_controller = v
 texture = drill.png
+# config
+cfg_fuel_max = 100

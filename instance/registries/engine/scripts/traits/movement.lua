@@ -2,14 +2,14 @@ local old_x_key = "x"
 local old_y_key = "y"
 local timestamp_key = "T"
 
-trait.trait_add_var(old_x_key, 2)
-trait.trait_add_var(old_y_key, 2)
-trait.trait_add_var(timestamp_key, 4)
+trait.add_var(old_x_key, 2)
+trait.add_var(old_y_key, 2)
+trait.add_var(timestamp_key, 4)
 
-trait.trait_set_controller("offset_x", old_x_key)
-trait.trait_set_controller("offset_y", old_y_key)
-trait.trait_set_controller("interp_timestamp", timestamp_key)
-trait.trait_set_interp_takes(100)
+trait.set_controller("offset_x", old_x_key)
+trait.set_controller("offset_y", old_y_key)
+trait.set_controller("interp_timestamp", timestamp_key)
+trait.set_interp_takes(100)
 
 local api = {}
 api.interp_takes = 100
@@ -40,7 +40,7 @@ function api.copy_movement(dest_layer, dest_x, dest_y, source_vars)
         return
     end
 
-    if not trait.trait_get_block_api(id).movement then
+    if not trait.get_block_api(id).movement then
         error("block has no movement api, cannot copy movement vars : " .. dest_x .. ", " .. dest_y)
         -- return
     end
@@ -61,4 +61,4 @@ function api.begin(vars, dx, dy)
     vars:set_u32(timestamp_key, G_sdl_tick)
 end
 
-trait.trait_register_api("movement", api)
+trait.register_api("movement", api)

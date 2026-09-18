@@ -41,7 +41,6 @@ void free_table(hash_node **table);
 void put_entry(hash_node **table, blob key, blob value);
 blob get_entry(hash_node **table, blob key);
 
-void print_node(hash_node *node, const char *context);
 void print_table(hash_node **table);
 void remove_entry(hash_node **table, blob key);
 

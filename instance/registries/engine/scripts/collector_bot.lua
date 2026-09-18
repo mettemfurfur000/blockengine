@@ -189,15 +189,7 @@ scripting_light_block_input_register(scripting_current_light_registry, current_b
     function(layer, x, y, value)
         local vars = layer:get_vars(x, y)
         if not vars then return end
-
-        -- Initialize newly placed bots before reading or processing fuel.
-        -- Use a persistent marker so this does not reset fuel on every tick
-        -- before the bot has made its first move.
-        if (vars:get_u8("i") or 0) == 0 then
-            refuelable_trait.initialize(vars, 0, game_data.robot_default_max_fuel)
-            vars:set_u8("i", 1)
-        end
-
+        
         if movement.moved_this_tick(vars) then return end
 
         local fuel = refuelable_trait.get_fuel(layer, x, y)

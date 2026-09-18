@@ -1,7 +1,10 @@
+#include "include/data_io.h"
+#include "include/logging.h"
 #include "include/scripting/block_trait.h"
 
 #include <lauxlib.h>
 #include <lua.h>
+#include <signal.h>
 #include <string.h>
 
 #include "include/block_registry.h"
@@ -9,11 +12,13 @@
 #include "include/scripting.h"
 #include "include/vars.h"
 
+#include "include/hashtable.h"
+
 // all trait bindings operate on the currently loading block resource
 static block_resources *current_block()
 {
 	if (g_current_block_res == NULL)
-		luaL_error(g_L, "trait_* called outside of block script loading");
+		luaL_error(g_L, "* called outside of block script loading");
 	return g_current_block_res;
 }
 
@@ -152,7 +157,7 @@ static int lua_trait_register_api(lua_State *L)
 
 	lua_getglobal(L, "scripting_current_block_api");
 	if (lua_isnil(L, -1))
-		return luaL_error(L, "trait_register_api called outside of block script loading");
+		return luaL_error(L, "register_api called outside of block script loading");
 
 	lua_pushvalue(L, 2);
 	lua_setfield(L, -2, name);
@@ -179,31 +184,58 @@ static int lua_trait_get_block_api(lua_State *L)
 	return 1;
 }
 
+static int lua_trait_get_block_id(lua_State *L)
+{
+	block_resources *res = current_block();
+
+	lua_pushinteger(L, res->id);
+
+	return 1;
+}
+
+static int lua_trait_get_field(lua_State *L)
+{
+	block_resources *res = current_block();
+
+	const char *str = luaL_checkstring(L, 1);
+
+	blob out = get_entry(res->all_fields, blobify(str));
+
+	if (!out.ptr)
+		lua_pushnil(L);
+	else
+		lua_pushstring(L, out.str);
+
+	return 1;
+}
+
 static const struct luaL_Reg trait_funcs[] = {
-	{			  "trait_add_var",				lua_trait_add_var},
-	{			  "trait_set_u8",			   lua_trait_set_u8},
-	{			 "trait_set_u16",			  lua_trait_set_u16},
-	{			 "trait_set_u32",			  lua_trait_set_u32},
-	{			 "trait_set_u64",			  lua_trait_set_u64},
-	{			  "trait_set_i8",			   lua_trait_set_i8},
-	{			 "trait_set_i16",			  lua_trait_set_i16},
-	{			 "trait_set_i32",			  lua_trait_set_i32},
-	{			 "trait_set_i64",			  lua_trait_set_i64},
-	{			  "trait_get_u8",			   lua_trait_get_u8},
-	{			 "trait_get_u16",			  lua_trait_get_u16},
-	{			 "trait_get_u32",			  lua_trait_get_u32},
-	{			 "trait_get_u64",			  lua_trait_get_u64},
-	{			  "trait_get_i8",			   lua_trait_get_i8},
-	{			 "trait_get_i16",			  lua_trait_get_i16},
-	{			 "trait_get_i32",			  lua_trait_get_i32},
-	{			 "trait_get_i64",			  lua_trait_get_i64},
-	{			 "trait_set_str",			  lua_trait_set_str},
-	{			 "trait_get_str",			  lua_trait_get_str},
-	{	   "trait_set_controller",	   lua_trait_set_controller},
-	{  "trait_set_interp_takes",  lua_trait_set_interp_takes},
-	{	   "trait_register_api",		 lua_trait_register_api},
-	{	 "trait_get_block_api",	  lua_trait_get_block_api},
-	{						  NULL,						 NULL},
+	{		   "add_var",			lua_trait_add_var},
+	{			"set_u8",		   lua_trait_set_u8},
+	{		   "set_u16",			lua_trait_set_u16},
+	{		   "set_u32",			lua_trait_set_u32},
+	{		   "set_u64",			lua_trait_set_u64},
+	{			"set_i8",		   lua_trait_set_i8},
+	{		   "set_i16",			lua_trait_set_i16},
+	{		   "set_i32",			lua_trait_set_i32},
+	{		   "set_i64",			lua_trait_set_i64},
+	{			"get_u8",		   lua_trait_get_u8},
+	{		   "get_u16",			lua_trait_get_u16},
+	{		   "get_u32",			lua_trait_get_u32},
+	{		   "get_u64",			lua_trait_get_u64},
+	{			"get_i8",		   lua_trait_get_i8},
+	{		   "get_i16",			lua_trait_get_i16},
+	{		   "get_i32",			lua_trait_get_i32},
+	{		   "get_i64",			lua_trait_get_i64},
+	{		   "set_str",			lua_trait_set_str},
+	{		   "get_str",			lua_trait_get_str},
+	{	 "set_controller",   lua_trait_set_controller},
+	{	 "set_interp_takes", lua_trait_set_interp_takes},
+	{	  "register_api",	 lua_trait_register_api},
+	{	 "get_block_api",	  lua_trait_get_block_api},
+	{	  "get_block_id",	 lua_trait_get_block_id},
+	{"get_resource_field",		   lua_trait_get_field},
+	{				NULL,					   NULL},
 };
 
 void lua_block_trait_register(lua_State *L)

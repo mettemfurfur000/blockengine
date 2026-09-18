@@ -1,5 +1,9 @@
 local M = {}
 
+function M.log_warning(msg)
+    log_msg(3, msg)
+end
+
 function M.log_error(msg)
     log_msg(2, msg)
 end
